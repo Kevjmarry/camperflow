@@ -1,99 +1,27 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
-export default function GuestPage({
+export default async function GuestPage({
   searchParams,
 }: {
   searchParams: { code?: string };
 }) {
-  const bookingCode = searchParams.code || "Not provided";
+  const t = await getTranslations("guest");
+
+  if (searchParams.code) {
+    redirect(`/guest/${searchParams.code}`);
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header style={{ borderBottom: '1px solid rgb(var(--border))' }}>
-        <div className="container">
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            height: '64px' 
-          }}>
-            <Link 
-              href="/" 
-              style={{ 
-                fontWeight: 600, 
-                fontSize: '18px',
-                color: 'rgb(var(--text))',
-                textDecoration: 'none'
-              }}
-            >
-              CamperFlow
-            </Link>
-            <Link href="/" className="btn btn-ghost" style={{ 
-              fontSize: '14px', 
-              padding: 'var(--space-2) var(--space-4)',
-              minHeight: '36px'
-            }}>
-              Sign out
-            </Link>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+        <div>
+          <h1 className="text-3xl font-bold text-center">{t("title")}</h1>
+          <p className="mt-4 text-center text-gray-600">
+            {t("invalidCode")}
+          </p>
         </div>
-      </header>
-
-      <main style={{ 
-        flex: 1,
-        padding: 'var(--space-8) 0'
-      }}>
-        <div className="container-narrow">
-          <div className="surface" style={{ padding: 'var(--space-8)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              <div>
-                <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
-                  Guest Dashboard
-                </h1>
-                <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>
-                  Welcome! Here's your booking information.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div>
-                  <p className="label">Booking Code</p>
-                  <p style={{ 
-                    fontSize: '18px', 
-                    fontWeight: 600, 
-                    color: 'rgb(var(--text))' 
-                  }}>
-                    {bookingCode}
-                  </p>
-                </div>
-
-                <div style={{ 
-                  borderTop: '1px solid rgb(var(--border))',
-                  paddingTop: 'var(--space-4)'
-                }}>
-                  <p style={{ fontSize: '15px', color: 'rgb(var(--muted))' }}>
-                    This is a placeholder page. Your actual guest dashboard will show:
-                  </p>
-                  <ul style={{ 
-                    marginTop: 'var(--space-3)', 
-                    marginLeft: 'var(--space-6)', 
-                    color: 'rgb(var(--muted))', 
-                    fontSize: '15px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-2)'
-                  }}>
-                    <li>Camper details and photos</li>
-                    <li>Pickup/return dates and location</li>
-                    <li>Equipment checklist</li>
-                    <li>Contact information</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

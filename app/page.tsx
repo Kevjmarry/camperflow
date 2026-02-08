@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -13,6 +12,10 @@ export default function AppEntryPage() {
     if (bookingCode.trim()) {
       router.push(`/guest?code=${encodeURIComponent(bookingCode.trim())}`);
     }
+  };
+
+  const handleStaffLogin = () => {
+    router.push('/staff/login');
   };
 
   return (
@@ -153,7 +156,7 @@ export default function AppEntryPage() {
                 </div>
 
                 <button 
-                  onClick={() => router.push('/staff')}
+                  onClick={handleStaffLogin}
                   className="btn btn-secondary" 
                   style={{ 
                     width: '100%',
@@ -174,10 +177,7 @@ export default function AppEntryPage() {
             fontSize: '13px',
             color: 'rgb(var(--muted))'
           }}>
-            By continuing you agree to the{' '}
-            <Link href="/terms">rental rules</Link>
-            {' and '}
-            <Link href="/privacy">privacy policy</Link>
+            By continuing you agree to the rental rules and privacy policy
           </p>
         </div>
       </main>

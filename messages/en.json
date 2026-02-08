@@ -1,0 +1,681 @@
+{
+  "entry": {
+    "appName": "CamperFlow",
+    "guest": {
+      "title": "Guest Access",
+      "description": "Enter your booking code to view your camper details",
+      "bookingCodeLabel": "Booking code",
+      "bookingCodePlaceholder": "e.g. CF-2024-1234",
+      "bookingCodeHelp": "You'll find this in your confirmation email",
+      "continue": "Continue"
+    },
+    "divider": {
+      "or": "or"
+    },
+    "staff": {
+      "title": "Staff Login",
+      "description": "Access the rental operations dashboard",
+      "login": "Staff login"
+    },
+    "footer": {
+      "legal": "By continuing you agree to the rental rules and privacy policy"
+    }
+  },
+  "staffLogin": {
+    "title": "Staff Login",
+    "subtitle": "Sign in to access the operations dashboard",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "error": {
+      "accessDenied": "Access denied. This account does not have staff privileges.",
+      "unexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "pageContainer": {
+    "signOut": "Sign out"
+  },
+  "staffDashboard": {
+    "title": "Staff dashboard",
+    "subtitle": "Manage bookings, vehicles, and operations",
+    "signOut": "Sign out",
+    "cards": {
+      "bookings": {
+        "title": "Bookings",
+        "subtitle": "View and manage all reservations"
+      },
+      "vehicles": {
+        "title": "Vehicles",
+        "subtitle": "Fleet management and status"
+      },
+      "team": {
+        "title": "Staff team",
+        "subtitle": "View staff members and roles"
+      },
+      "customers": {
+        "title": "Customers",
+        "subtitle": "Customer information and history"
+      },
+      "company": {
+        "title": "Company Settings",
+        "subtitle": "Branding and appearance"
+      }
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "newBooking": "New booking",
+      "addVehicle": "Add vehicle",
+      "staffNote": "Your tasks will appear automatically when assigned to a booking."
+    }
+  },
+  "staffTeam": {
+    "backToDashboard": "Back to dashboard",
+    "title": "Staff team",
+    "member": "member",
+    "members": "members",
+    "loading": "Loading staff...",
+    "error": {
+      "notAuthenticated": "Not authenticated",
+      "noProfile": "No staff profile found",
+      "failed": "Failed to load staff"
+    },
+    "you": "You",
+    "role": {
+      "manager": "Manager",
+      "cleaner": "Cleaner",
+      "mechanical": "Mechanical"
+    },
+    "photoAlt": "Staff photo"
+  },
+  "staffMember": {
+    "backToStaffTeam": "Back to staff team",
+    "loading": "Loading staff member…",
+    "error": {
+      "notAuthenticated": "Not authenticated",
+      "failed": "Failed to load staff member",
+      "saveFailed": "Failed to save changes",
+      "uploadFailed": "Failed to upload photo",
+      "uploadGeneric": "Upload failed"
+    },
+    "roleLabel": "Role:",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "deactivate": "Deactivate staff",
+    "deactivating": "Deactivating...",
+    "deactivateConfirm": "Deactivate this staff member? They will no longer appear as active.",
+    "deactivateFailed": "Failed to deactivate staff member",
+    "section": {
+      "capabilities": "Capabilities",
+      "contact": "Contact",
+      "notes": "Notes"
+    },
+    "field": {
+      "phone": "Phone:",
+      "email": "Email:"
+    },
+    "form": {
+      "name": "Name",
+      "role": "Role",
+      "photoUrl": "Photo URL",
+      "uploadPhoto": "Upload Photo",
+      "uploading": "Uploading…",
+      "phone": "Phone",
+      "email": "Email",
+      "notes": "Notes",
+      "active": "Active",
+      "canManageAuto": "Can manage (auto-set by role)",
+      "canClean": "Can clean",
+      "canMechanical": "Can mechanical"
+    },
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "capability": {
+      "cleaning": "Cleaning",
+      "mechanical": "Mechanical"
+    }
+  },
+  "vehicles": {
+    "backToDashboard": "Back to dashboard",
+    "title": "Vehicles",
+    "subtitle": "Manage your fleet",
+    "addVehicle": "Add vehicle",
+    "error": {
+      "notAuthenticated": "Not authenticated",
+      "permissionsFailed": "Failed to check permissions",
+      "loadFailed": "Failed to load vehicles"
+    },
+    "loading": "Loading vehicles...",
+    "empty": "No vehicles found.",
+    "status": {
+      "ready": "Ready",
+      "preparing": "Preparing",
+      "onRent": "On rent"
+    },
+    "action": {
+      "edit": "Edit",
+      "view": "View"
+    }
+  },
+  "vehicleDetail": {
+    "notFound": {
+      "title": "Vehicle not found",
+      "description": "The vehicle you're looking for doesn't exist or has been deleted.",
+      "back": "Back to vehicles"
+    },
+    "loading": "Loading vehicle...",
+    "backToVehicles": "Back to vehicles",
+    "title": "Vehicle details",
+    "error": {
+      "notAuthenticated": "Not authenticated",
+      "failedPrefix": "Failed to load vehicle: ",
+      "unexpectedPrefix": "Unexpected error: ",
+      "generic": "Failed to load vehicle"
+    },
+    "status": {
+      "ready": "Ready",
+      "preparing": "Preparing",
+      "onRent": "On Rent"
+    },
+    "field": {
+      "registration": "Registration",
+      "year": "Year",
+      "make": "Make",
+      "model": "Model"
+    },
+    "section": {
+      "photo": "Photo",
+      "vin": "VIN",
+      "notes": "Notes"
+    },
+    "photoAlt": "Vehicle"
+  },
+  "vehicleEdit": {
+    "backToVehiclesArrow": "← Back to vehicles",
+    "title": "Edit vehicle",
+    "subtitle": "Update vehicle information",
+    "readOnlyTitle": "Vehicle details",
+    "readOnlySubtitle": "Read-only access",
+    "photo": {
+      "label": "Vehicle photo",
+      "uploading": "Uploading photo...",
+      "hint": "Upload a photo of the vehicle"
+    },
+    "field": {
+      "name": {
+        "label": "Vehicle name",
+        "placeholder": "e.g. VW California Ocean",
+        "help": "The make and model of the vehicle"
+      },
+      "registrationPlate": {
+        "label": "Registration plate",
+        "placeholder": "e.g. ABC-123",
+        "help": "Vehicle registration number or license plate"
+      },
+      "make": {
+        "label": "Make",
+        "placeholder": "e.g. Volkswagen",
+        "help": "Vehicle manufacturer"
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "e.g. California Ocean",
+        "help": "Vehicle model name"
+      },
+      "year": {
+        "label": "Year",
+        "placeholder": "e.g. 2023",
+        "help": "Manufacturing year (4 digits)"
+      },
+      "vin": {
+        "label": "VIN (optional)",
+        "placeholder": "e.g. 1HGBH41JXMN109186",
+        "help": "Vehicle Identification Number"
+      },
+      "status": {
+        "label": "Status"
+      },
+      "notes": {
+        "label": "Notes (optional)",
+        "placeholder": "Additional notes about this vehicle",
+        "help": "Internal notes or comments"
+      }
+    },
+    "status": {
+      "ready": "Ready",
+      "preparing": "Preparing",
+      "onRent": "On Rent"
+    },
+    "action": {
+      "saveChanges": "Save changes",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "deleteVehicle": "Delete vehicle",
+      "deleting": "Deleting..."
+    },
+    "danger": {
+      "title": "Danger zone",
+      "description": "Deleting this vehicle will permanently remove it from your fleet."
+    },
+    "confirmDelete": "Are you sure you want to delete this vehicle? This action cannot be undone.",
+    "error": {
+      "vehicleNameRequired": "Vehicle name is required",
+      "registrationPlateRequired": "Registration plate is required",
+      "makeRequired": "Make is required",
+      "modelRequired": "Model is required",
+      "yearInvalid": "Year must be a 4-digit number",
+      "registrationDuplicate": "A vehicle with this registration already exists",
+      "companyConfig": "Company configuration error. Please contact support.",
+      "permissionDeniedUpdate": "Permission denied: You do not have access to update this vehicle",
+      "permissionDeniedDelete": "Permission denied: You do not have access to delete this vehicle",
+      "authPrefix": "Auth error: ",
+      "staffLookupPrefix": "Staff lookup error: ",
+      "noCompanyId": "No company_id found for staff user",
+      "updateFailedPrefix": "Update failed: ",
+      "deleteFailedPrefix": "Delete failed: ",
+      "uploadFailedPrefix": "Upload failed: ",
+      "savePhotoUrlFailedPrefix": "Failed to save photo URL: ",
+      "unexpectedPrefix": "Unexpected error: "
+    }
+  },
+  "vehicleNew": {
+    "loading": "Loading...",
+    "backToVehiclesArrow": "← Back to vehicles",
+    "title": "Add Vehicle",
+    "subtitle": "Add a new vehicle to your fleet",
+    "photo": {
+      "label": "Vehicle Photo (optional)",
+      "selectedPrefix": "Selected: ",
+      "hint": "Upload a photo of the vehicle"
+    },
+    "field": {
+      "name": {
+        "label": "Vehicle Name *"
+      },
+      "registrationPlate": {
+        "label": "Registration Plate *"
+      },
+      "make": {
+        "label": "Make *"
+      },
+      "model": {
+        "label": "Model *"
+      },
+      "year": {
+        "label": "Year *"
+      },
+      "vin": {
+        "label": "VIN (optional)"
+      },
+      "notes": {
+        "label": "Notes (optional)"
+      },
+      "status": {
+        "label": "Status"
+      }
+    },
+    "status": {
+      "ready": "Ready",
+      "preparing": "Preparing",
+      "onRentOption": "On rent"
+    },
+    "action": {
+      "creating": "Creating...",
+      "createVehicle": "Create Vehicle",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "cannotSubmitMissingCompanyId": "Cannot submit: company_id is missing",
+      "yearInvalid": "Year must be a 4-digit number",
+      "insertFailedPrefix": "Insert failed: ",
+      "authPrefix": "Auth error: ",
+      "notAuthenticated": "Not authenticated",
+      "staffLookupPrefix": "Staff lookup error: ",
+      "noCompanyId": "No company_id found for staff user",
+      "unexpectedPrefix": "Unexpected error: "
+    }
+  },
+  "bookings": {
+    "backToDashboardArrow": "← Back to dashboard",
+    "title": "Bookings",
+    "subtitle": "Manage customer reservations",
+    "action": {
+      "newBooking": "New booking",
+      "edit": "Edit",
+      "view": "View"
+    },
+    "filter": {
+      "statusLabel": "Status:",
+      "all": "All",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "onRent": "On Rent",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "loading": "Loading bookings...",
+    "empty": "No bookings found.",
+    "table": {
+      "bookingNumber": "Booking #",
+      "customer": "Customer",
+      "vehicle": "Vehicle",
+      "pickup": "Pickup",
+      "return": "Return",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "unassigned": "Unassigned",
+    "date": {
+      "locale": "en-US"
+    },
+    "placeholder": {
+      "dash": "-"
+    }
+  },
+  "bookingsDetail": {
+    "backToBookingsArrow": "← Back to bookings",
+    "title": {
+      "redacted": "Booking Details"
+    },
+    "meta": {
+      "customerLabel": "Customer:",
+      "vehicleLabel": "Vehicle:",
+      "pickupLabel": "Pickup:",
+      "returnLabel": "Return:"
+    },
+    "quickActions": {
+      "label": "Quick actions:",
+      "markOnRent": "Mark as On Rent",
+      "markCompleted": "Mark as Completed"
+    },
+    "section": {
+      "bookingDetails": "Booking Details",
+      "customerDetails": "Customer Details",
+      "checklists": "Checklists"
+    },
+    "field": {
+      "status": "Status",
+      "pickupDateTime": "Pickup date & time",
+      "returnDateTime": "Return date & time",
+      "vehicle": "Vehicle",
+      "customerName": "Customer name",
+      "phoneNumber": "Phone number",
+      "emailOptional": "Email (optional)",
+      "requiredStar": "*",
+      "notes": "Notes"
+    },
+    "vehicle": {
+      "unassigned": "Unassigned"
+    },
+    "conflict": {
+      "warningPrefix": "Warning: Vehicle is already booked during this period (Booking ",
+      "warningSuffix": "). Please choose a different vehicle or dates."
+    },
+    "error": {
+      "notAuthenticated": "Not authenticated",
+      "permissionsFailed": "Failed to check permissions",
+      "loadFailed": "Failed to load booking",
+      "customerNameRequired": "Customer name is required",
+      "returnAfterPickup": "Return date must be after pickup date",
+      "vehicleNotAvailable": "Cannot save: Vehicle is not available for the selected dates",
+      "updateFailed": "Failed to update booking",
+      "permissionDeniedUpdate": "Permission denied: You do not have access to update this booking",
+      "statusUpdateFailed": "Failed to update booking status",
+      "cancelFailed": "Failed to cancel booking",
+      "deleteFailed": "Failed to delete booking",
+      "permissionDeniedDelete": "Permission denied: You do not have access to delete this booking"
+    },
+    "success": {
+      "updated": "Booking updated successfully",
+      "statusUpdated": "Booking status updated successfully"
+    },
+    "confirm": {
+      "cancelBooking": "Cancel this booking? This will set status to cancelled.",
+      "deleteBooking": "Are you sure you want to delete this booking? This cannot be undone."
+    },
+    "notFound": {
+      "title": "Booking not found",
+      "description": "The booking you're looking for doesn't exist or has been deleted.",
+      "back": "Back to bookings"
+    },
+    "loading": "Loading booking...",
+    "action": {
+      "saving": "Saving...",
+      "saveChanges": "Save changes",
+      "cancelBooking": "Cancel Booking",
+      "delete": "Delete"
+    },
+    "checklists": {
+      "empty": "No checklists for this booking",
+      "typeSuffix": " Checklist",
+      "action": {
+        "view": "View checklist",
+        "open": "Open checklist"
+      }
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "blocked": "Blocked",
+      "onRent": "On Rent",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "bookingsNew": {
+    "permissions": {
+      "checking": "Checking permissions..."
+    },
+    "back": "Back to bookings",
+    "title": "New booking",
+    "subtitle": "Create a new customer reservation",
+    "section": {
+      "bookingDetails": "Booking Details",
+      "customerDetails": "Customer Details"
+    },
+    "pickup": {
+      "label": "Pickup date & time"
+    },
+    "return": {
+      "label": "Return date & time"
+    },
+    "vehicle": {
+      "label": "Vehicle (optional)",
+      "unassigned": "Unassigned",
+      "helper": "Can be assigned later"
+    },
+    "status": {
+      "label": "Status",
+      "helper": "Choose initial booking status",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "blocked": "Blocked"
+    },
+    "customer": {
+      "name": {
+        "label": "Customer name",
+        "placeholder": "Full name"
+      },
+      "phone": {
+        "label": "Phone number",
+        "placeholder": "+1 234 567 8900"
+      },
+      "email": {
+        "label": "Email (optional)",
+        "placeholder": "email@example.com"
+      },
+      "blockedOptional": "Optional for blocked bookings"
+    },
+    "notes": {
+      "label": "Notes (optional)",
+      "placeholder": "Add any additional information..."
+    },
+    "button": {
+      "creating": "Creating...",
+      "create": "Create booking",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "accessDenied": "Access denied: Only administrators can create bookings",
+      "companyNotLoaded": "Company information not loaded",
+      "customerNameRequired": "Customer name is required",
+      "customerPhoneRequired": "Customer phone is required",
+      "datesRequired": "Pickup and return dates are required",
+      "returnAfterPickup": "Return date must be after pickup date",
+      "vehicleUnavailableCreate": "Cannot create booking: Vehicle is not available for the selected dates"
+    },
+    "warning": {
+      "vehicleConflict": "Warning: Vehicle is already booked during this period (Booking {bookingNumber}). Please choose a different vehicle or dates."
+    }
+  },
+  "company": {
+    "loading": "Loading company settings...",
+    "back": "Back to dashboard",
+    "title": "Company Settings",
+    "subtitle": {
+      "admin": "Customize your company branding and appearance",
+      "view": "View company branding and appearance"
+    },
+    "section": {
+      "info": "Company Information",
+      "logo": "Company Logo",
+      "colors": "Brand Colors",
+      "preview": "Preview"
+    },
+    "name": {
+      "label": "Company name",
+      "placeholder": "Your company name",
+      "required": "Company name is required"
+    },
+    "logo": {
+      "change": "Change logo",
+      "upload": "Upload logo",
+      "helper": "PNG, JPG, or SVG. Max 2MB. Recommended: 200x80px",
+      "invalidType": "Please select an image file (PNG, JPG, or SVG)",
+      "invalidSize": "Logo file must be less than 2MB",
+      "uploadError": "Failed to upload logo"
+    },
+    "color": {
+      "primary": "Primary color",
+      "secondary": "Secondary color"
+    },
+    "preview": {
+      "companyFallback": "Your Company",
+      "primaryButton": "Primary Button",
+      "secondaryButton": "Secondary Button",
+      "status": {
+        "onRent": "On rent",
+        "needsCleaning": "Needs cleaning"
+      }
+    },
+    "save": "Save changes",
+    "saving": "Saving...",
+    "uploading": "Uploading logo...",
+    "cancel": "Cancel"
+  },
+  "app": {
+    "metadata": {
+      "title": "CamperFlow",
+      "description": "Campervan rental operations"
+    },
+    "entry": {
+      "header": {
+        "title": "CamperFlow"
+      },
+      "guest": {
+        "title": "Guest Access",
+        "subtitle": "Enter your booking code to view your camper details",
+        "label": "Booking code",
+        "placeholder": "e.g. CF-2024-1234",
+        "helper": "You'll find this in your confirmation email",
+        "cta": "Continue"
+      },
+      "divider": {
+        "or": "or"
+      },
+      "staff": {
+        "title": "Staff Login",
+        "subtitle": "Access the rental operations dashboard",
+        "cta": "Staff login"
+      },
+      "footer": {
+        "terms": "By continuing you agree to the rental rules and privacy policy"
+      }
+    }
+  },
+  "demo": {
+    "title": "Request a demo",
+    "subtitle": "Leave your details and we'll get back to you",
+    "form": {
+      "name": {
+        "label": "Name",
+        "placeholder": "Your name"
+      },
+      "company": {
+        "label": "Company",
+        "placeholder": "Your rental company"
+      },
+      "contact": {
+        "label": "Email or phone",
+        "placeholder": "How can we reach you?"
+      },
+      "message": {
+        "label": "Message (optional)",
+        "placeholder": "Tell us about your needs..."
+      },
+      "submit": "Send request"
+    },
+    "success": {
+      "title": "Request received",
+      "subtitle": "Thank you for your interest in CamperFlow. We'll be in touch soon.",
+      "backHome": "Back to home",
+      "openApp": "Open app"
+    }
+  },
+  "guest": {
+    "portal": {
+      "title": "Guest Portal",
+      "invalidCode": "Please provide a valid booking code in the URL."
+    },
+    "title": "Guest Portal",
+    "invalidCode": "Please provide a valid booking code in the URL."
+  },
+  "staff": {
+    "dashboard": {
+      "title": "Staff dashboard",
+      "subtitle": "Manage bookings, vehicles, and operations",
+      "signOut": "Sign out",
+      "cards": {
+        "bookings": {
+          "title": "Bookings",
+          "desc": "View and manage all reservations"
+        },
+        "vehicles": {
+          "title": "Vehicles",
+          "desc": "Fleet management and status"
+        },
+        "team": {
+          "title": "Staff team",
+          "desc": "View staff members and roles"
+        },
+        "customers": {
+          "title": "Customers",
+          "desc": "Customer information and history"
+        },
+        "company": {
+          "title": "Company Settings",
+          "desc": "Branding and appearance"
+        }
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "newBooking": "New booking",
+        "addVehicle": "Add vehicle",
+        "nonAdminHint": "Your tasks will appear automatically when assigned to a booking."
+      }
+    }
+  }
+}
