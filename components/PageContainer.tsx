@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
 interface PageContainerProps {
@@ -17,6 +18,7 @@ export default function PageContainer({
   showSignOut = true,
 }: PageContainerProps) {
   const router = useRouter()
+  const t = useTranslations('pageContainer')
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -67,7 +69,7 @@ export default function PageContainer({
                   marginLeft: 'auto',
                 }}
               >
-                Sign out
+                {t('signOut')}
               </button>
             )}
           </div>

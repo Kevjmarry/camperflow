@@ -23,16 +23,16 @@
   },
   "staffLogin": {
     "title": "Mitarbeiter-Login",
-    "subtitle": "Anmelden, um auf das Verwaltungs-Dashboard zuzugreifen",
+    "subtitle": "Melde dich an, um auf das Betriebs-Dashboard zuzugreifen",
     "emailLabel": "E-Mail",
-    "emailPlaceholder": "ihre@email.com",
+    "emailPlaceholder": "deine@email.com",
     "passwordLabel": "Passwort",
-    "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+    "passwordPlaceholder": "Gib dein Passwort ein",
     "signIn": "Anmelden",
-    "signingIn": "Anmeldung läuft...",
+    "signingIn": "Anmeldung...",
     "error": {
       "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
-      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
     }
   },
   "pageContainer": {
@@ -88,7 +88,15 @@
       "cleaner": "Reinigung",
       "mechanical": "Technik"
     },
-    "photoAlt": "Mitarbeiterfoto"
+    "photoAlt": "Mitarbeiterfoto",
+    "memberCount": "{count, plural, =1 {Mitglied} other {Mitglieder}}",
+    "errorNoProfile": "Kein Mitarbeiterprofil gefunden",
+    "errorLoadFailed": "Fehler beim Laden der Mitarbeiter",
+    "youBadge": "Du",
+    "roleManager": "Manager",
+    "roleCleaner": "Reinigung",
+    "roleMechanical": "Technik",
+    "capabilityJoiner": " + "
   },
   "staffMember": {
     "backToStaffTeam": "Zurück zum Mitarbeiterteam",
@@ -358,6 +366,7 @@
     },
     "loading": "Buchungen werden geladen...",
     "empty": "Keine Buchungen gefunden.",
+    "emptyAdminSuffix": " Erstellen Sie Ihre erste Buchung, um zu starten.",
     "table": {
       "bookingNumber": "Buchungsnr.",
       "customer": "Kunde",
@@ -373,6 +382,19 @@
     },
     "placeholder": {
       "dash": "-"
+    },
+    "statusLabels": {
+      "draft": "Entwurf",
+      "confirmed": "Bestätigt",
+      "blocked": "Blockiert",
+      "onRent": "Vermietet",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
+    },
+    "error": {
+      "notAuthenticated": "Nicht authentifiziert",
+      "permissionsFailed": "Berechtigungen konnten nicht überprüft werden",
+      "loadFailed": "Buchungen konnten nicht geladen werden"
     }
   },
   "bookingsDetail": {
@@ -587,10 +609,10 @@
       },
       "guest": {
         "title": "Gastzugang",
-        "subtitle": "Gib deinen Buchungscode ein, um deine Camper-Details anzusehen",
+        "subtitle": "Geben Sie Ihren Buchungscode ein, um Ihre Camper-Details anzusehen",
         "label": "Buchungscode",
         "placeholder": "z. B. CF-2024-1234",
-        "helper": "Du findest ihn in deiner Bestätigungs-E-Mail",
+        "helper": "Sie finden ihn in Ihrer Bestätigungs-E-Mail",
         "cta": "Weiter"
       },
       "divider": {
@@ -598,11 +620,11 @@
       },
       "staff": {
         "title": "Mitarbeiter-Login",
-        "subtitle": "Zugriff auf das Dashboard für die Vermietungsverwaltung",
+        "subtitle": "Zugriff auf das Verwaltungs-Dashboard",
         "cta": "Mitarbeiter-Login"
       },
       "footer": {
-        "terms": "Mit dem Fortfahren stimmst du den Mietregeln und der Datenschutzerklärung zu"
+        "terms": "Mit dem Fortfahren stimmen Sie den Mietbedingungen und der Datenschutzerklärung zu"
       }
     }
   },
@@ -636,14 +658,80 @@
     }
   },
   "guest": {
-    "portal": {
-      "title": "Gästeportal",
-      "invalidCode": "Bitte geben Sie einen gültigen Buchungscode in der URL an."
+    "title": "Gastzugang",
+    "invalidCode": "Ungültiger oder fehlender Buchungscode. Bitte gehen Sie zurück und geben Sie Ihren Buchungscode erneut ein."
+  },
+  "guestBooking": {
+    "title": "Ihre Buchung",
+    "guestAccess": "Gastzugang",
+    "bookingInformation": "Buchungsinformationen",
+    "bookingNumber": "Buchungsnummer",
+    "status": "Status",
+    "statusValues": {
+      "confirmed": "Bestätigt",
+      "pending": "Ausstehend",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
     },
-    "title": "Gästeportal",
-    "invalidCode": "Bitte geben Sie einen gültigen Buchungscode in der URL an."
+    "pickupDate": "Abholdatum",
+    "returnDate": "Rückgabedatum",
+    "additionalNotes": "Zusätzliche Hinweise",
+    "vehicleInformation": "Fahrzeuginformationen",
+    "vehicle": "Fahrzeug",
+    "licensePlate": "Kennzeichen",
+    "vin": "FIN",
+    "customerInformation": "Kundeninformationen",
+    "name": "Name",
+    "email": "E-Mail-Adresse",
+    "phone": "Telefonnummer",
+    "checklists": "Checklisten",
+    "checklistDefault": "Checkliste",
+    "checklistCompleted": "Abgeschlossen",
+    "checklistAvailable": "Verfügbar",
+    "checklistLocked": "Gesperrt",
+    "notSpecified": "Nicht angegeben",
+    "notAccessibleTitle": "Buchung nicht verfügbar",
+    "notAccessibleMessage": "Auf den Buchungscode",
+    "notAccessibleMessageEnd": "konnte nicht zugegriffen werden.",
+    "contactUs": "Bitte kontaktieren Sie uns und geben Sie Ihren Buchungscode an.",
+    "notFoundTitle": "Buchung nicht gefunden",
+    "notFoundMessage": "Der Buchungscode",
+    "notFoundMessageEnd": "existiert nicht."
+  },
+  "guestBookings": {
+    "redirecting": "Weiterleitung…",
+    "bookingLookup": "Buchung suchen",
+    "incompleteLinkMessage": "In diesem Link fehlt der Buchungscode.",
+    "instructionMessage": "Bitte gehen Sie zurück und geben Sie Ihren Buchungscode erneut ein."
+  },
+  "guestChecklist": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "checklistNotFoundOrInvalidCode": "Checkliste nicht gefunden oder ungültiger Code",
+    "checklistNotFound": "Checkliste nicht gefunden",
+    "backToPortal": "Zurück zum Portal",
+    "backToBooking": "← Zurück zur Buchung",
+    "checklistFallback": "Checkliste",
+    "status": "Status",
+    "progress": "Fortschritt",
+    "itemsCount": "{completed} von {total} Einträgen",
+    "noItemsAvailable": "Keine Checklisteneinträge verfügbar.",
+    "note": "Hinweis",
+    "completedOn": "✓ Abgeschlossen am {date}"
   },
   "staff": {
+    "login": {
+      "title": "Mitarbeiter-Login",
+      "subtitle": "Melde dich an, um auf das Betriebs-Dashboard zuzugreifen",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "deine@email.com",
+      "passwordLabel": "Passwort",
+      "passwordPlaceholder": "Gib dein Passwort ein",
+      "signInButton": "Anmelden",
+      "signingIn": "Anmeldung...",
+      "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
+      "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
+    },
     "dashboard": {
       "title": "Mitarbeiter-Dashboard",
       "subtitle": "Buchungen, Fahrzeuge und Betrieb verwalten",
@@ -676,6 +764,375 @@
         "addVehicle": "Fahrzeug hinzufügen",
         "nonAdminHint": "Deine Aufgaben erscheinen automatisch, sobald sie einer Buchung zugewiesen wurden."
       }
+    },
+    "bookings": {
+      "new": {
+        "checkingPermissions": "Berechtigungen werden geprüft...",
+        "backToBookings": "← Zurück zu den Buchungen",
+        "title": "Neue Buchung",
+        "subtitle": "Neue Kundenreservierung erstellen",
+        "sections": {
+          "bookingDetails": "Buchungsdetails",
+          "customerDetails": "Kundendaten"
+        },
+        "fields": {
+          "pickupAt": "Abholung Datum & Uhrzeit",
+          "returnAt": "Rückgabe Datum & Uhrzeit",
+          "vehicleOptional": "Fahrzeug (optional)",
+          "status": "Status",
+          "customerName": "Kundenname",
+          "customerPhone": "Telefonnummer",
+          "emailOptional": "E-Mail (optional)",
+          "notesOptional": "Notizen (optional)"
+        },
+        "vehicle": {
+          "unassigned": "Nicht zugewiesen",
+          "helper": "Kann später zugewiesen werden"
+        },
+        "statusOptions": {
+          "pending": "Ausstehend",
+          "confirmed": "Bestätigt",
+          "blocked": "Blockiert"
+        },
+        "statusHelper": "Anfangsstatus der Buchung wählen",
+        "placeholders": {
+          "fullName": "Vollständiger Name",
+          "phone": "+49 123 4567890",
+          "email": "email@beispiel.de",
+          "notes": "Zusätzliche Informationen hinzufügen..."
+        },
+        "blockedOptionalHelper": "Optional bei blockierten Buchungen",
+        "create": "Buchung erstellen",
+        "creating": "Wird erstellt...",
+        "cancel": "Abbrechen",
+        "conflictWarning": "Warnung: Das Fahrzeug ist in diesem Zeitraum bereits gebucht (Buchung {bookingNumber}). Bitte wählen Sie ein anderes Fahrzeug oder andere Daten.",
+        "errors": {
+          "notAdmin": "Zugriff verweigert: Nur Administratoren können Buchungen erstellen",
+          "noCompany": "Unternehmensinformationen nicht geladen",
+          "customerNameRequired": "Kundenname ist erforderlich",
+          "customerPhoneRequired": "Telefonnummer des Kunden ist erforderlich",
+          "datesRequired": "Abhol- und Rückgabedatum sind erforderlich",
+          "returnAfterPickup": "Das Rückgabedatum muss nach dem Abholdatum liegen",
+          "vehicleUnavailable": "Buchung kann nicht erstellt werden: Fahrzeug ist für den ausgewählten Zeitraum nicht verfügbar",
+          "createFailed": "Buchung konnte nicht erstellt werden"
+        }
+      }
+    },
+    "vehicles": {
+      "new": {
+        "loading": "Wird geladen...",
+        "back": "← Zurück zu den Fahrzeugen",
+        "title": "Fahrzeug hinzufügen",
+        "subtitle": "Neues Fahrzeug zu Ihrem Fuhrpark hinzufügen",
+        "photo": {
+          "label": "Fahrzeugfoto (optional)",
+          "hint": "Laden Sie ein Foto des Fahrzeugs hoch",
+          "selectedPrefix": "Ausgewählt: "
+        },
+        "field": {
+          "name": "Fahrzeugname *",
+          "registrationPlate": "Kennzeichen *",
+          "make": "Marke *",
+          "model": "Modell *",
+          "year": "Baujahr *",
+          "vin": "VIN (optional)",
+          "status": "Status",
+          "notes": "Notizen (optional)"
+        },
+        "status": {
+          "ready": "Bereit",
+          "preparing": "In Vorbereitung",
+          "onRent": "Vermietet"
+        },
+        "action": {
+          "create": "Fahrzeug erstellen",
+          "creating": "Wird erstellt...",
+          "cancel": "Abbrechen"
+        },
+        "error": {
+          "unableLoadStaff": "Mitarbeiterdaten konnten nicht geladen werden",
+          "cannotSubmitMissingCompanyId": "Senden nicht möglich: company_id fehlt",
+          "yearInvalid": "Das Baujahr muss eine 4-stellige Zahl sein",
+          "insertFailedPrefix": "Einfügen fehlgeschlagen: ",
+          "unexpectedPrefix": "Unerwarteter Fehler: "
+        }
+      }
     }
+  },
+  "bookingDetail": {
+    "title": "Buchungsdetails",
+    "loading": "Buchung wird geladen...",
+    "date": {
+      "locale": "de-DE"
+    },
+    "notFound": {
+      "title": "Buchung nicht gefunden",
+      "message": "Die gesuchte Buchung existiert nicht oder wurde gelöscht."
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "confirmed": "Bestätigt",
+      "blocked": "Blockiert",
+      "onRent": "In Vermietung",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
+    },
+    "vehicle": {
+      "unassigned": "Nicht zugewiesen"
+    },
+    "placeholder": {
+      "dash": "-"
+    },
+    "field": {
+      "status": "Status",
+      "vehicle": "Fahrzeug",
+      "pickup": "Abholung",
+      "return": "Rückgabe",
+      "pickupDateTime": "Abholdatum & -zeit",
+      "returnDateTime": "Rückgabedatum & -zeit",
+      "customerName": "Kundenname",
+      "phoneNumber": "Telefonnummer",
+      "emailOptional": "E-Mail (optional)",
+      "notes": "Notizen"
+    },
+    "section": {
+      "bookingDetails": "Buchungsdetails",
+      "customerDetails": "Kundendaten"
+    },
+    "summary": {
+      "customer": "Kunde",
+      "vehicle": "Fahrzeug",
+      "pickup": "Abholung",
+      "return": "Rückgabe"
+    },
+    "quickActions": {
+      "label": "Schnellaktionen:",
+      "markOnRent": "Als vermietet markieren",
+      "markCompleted": "Als abgeschlossen markieren"
+    },
+    "checklists": {
+      "title": "Checklisten",
+      "empty": "Keine Checklisten für diese Buchung",
+      "checklistSuffix": "Checkliste",
+      "viewChecklist": "Checkliste anzeigen",
+      "openChecklist": "Checkliste öffnen",
+      "status": {
+        "notStarted": "Nicht gestartet",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen"
+      }
+    },
+    "action": {
+      "backToBookings": "Zurück zu Buchungen",
+      "backToBookingsArrow": "← Zurück zu Buchungen",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Wird gespeichert...",
+      "cancelBooking": "Buchung stornieren",
+      "delete": "Löschen"
+    },
+    "error": {
+      "notAuthenticated": "Nicht authentifiziert",
+      "permissionsFailed": "Berechtigungen konnten nicht überprüft werden",
+      "loadFailed": "Buchung konnte nicht geladen werden",
+      "customerNameRequired": "Kundenname ist erforderlich",
+      "returnAfterPickup": "Rückgabedatum muss nach Abholdatum liegen",
+      "vehicleUnavailable": "Kann nicht gespeichert werden: Fahrzeug ist für die gewählten Termine nicht verfügbar",
+      "updateFailed": "Buchung konnte nicht aktualisiert werden",
+      "updatePermissionDenied": "Zugriff verweigert: Sie haben keine Berechtigung, diese Buchung zu aktualisieren",
+      "statusUpdateFailed": "Buchungsstatus konnte nicht aktualisiert werden",
+      "cancelFailed": "Buchung konnte nicht storniert werden",
+      "deleteFailed": "Buchung konnte nicht gelöscht werden",
+      "deletePermissionDenied": "Zugriff verweigert: Sie haben keine Berechtigung, diese Buchung zu löschen"
+    },
+    "warning": {
+      "vehicleConflict": "Warnung: Fahrzeug ist bereits für diesen Zeitraum gebucht (Buchung {bookingNumber}). Bitte wählen Sie ein anderes Fahrzeug oder andere Termine."
+    },
+    "success": {
+      "bookingUpdated": "Buchung erfolgreich aktualisiert",
+      "statusUpdated": "Buchungsstatus erfolgreich aktualisiert"
+    },
+    "confirm": {
+      "cancelBooking": "Diese Buchung stornieren? Dies wird den Status auf storniert setzen.",
+      "deleteBooking": "Sind Sie sicher, dass Sie diese Buchung löschen möchten? Dies kann nicht rückgängig gemacht werden."
+    }
+  },
+  "staffCompany": {
+    "navigation": {
+      "backToDashboard": "← Zurück zum Dashboard"
+    },
+    "title": "Unternehmenseinstellungen",
+    "description": {
+      "admin": "Passen Sie Ihr Unternehmensbranding und Erscheinungsbild an",
+      "viewer": "Unternehmensbranding und Erscheinungsbild anzeigen"
+    },
+    "sections": {
+      "information": "Unternehmensinformationen",
+      "logo": "Unternehmenslogo",
+      "brandColors": "Markenfarben",
+      "preview": "Vorschau"
+    },
+    "labels": {
+      "companyName": "Unternehmensname",
+      "primaryColor": "Primärfarbe",
+      "secondaryColor": "Sekundärfarbe"
+    },
+    "placeholders": {
+      "companyName": "Ihr Unternehmensname",
+      "yourCompany": "Ihr Unternehmen"
+    },
+    "helpers": {
+      "logoRequirements": "PNG, JPG oder SVG. Max. 2MB. Empfohlen: 200x80px",
+      "primaryColorUsage": "Wird für Schaltflächen und Links verwendet",
+      "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet"
+    },
+    "actions": {
+      "uploadLogo": "Logo hochladen",
+      "changeLogo": "Logo ändern",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichern...",
+      "uploadingLogo": "Logo wird hochgeladen...",
+      "cancel": "Abbrechen"
+    },
+    "preview": {
+      "logoAlt": "Logo-Vorschau",
+      "logoInHeader": "Logo",
+      "primaryButton": "Primäre Schaltfläche",
+      "secondaryButton": "Sekundäre Schaltfläche",
+      "statusOnRent": "Vermietet",
+      "statusNeedsCleaning": "Muss gereinigt werden"
+    },
+    "errors": {
+      "companyNameRequired": "Unternehmensname ist erforderlich",
+      "invalidFileType": "Bitte wählen Sie eine Bilddatei (PNG, JPG oder SVG)",
+      "fileTooLarge": "Logo-Datei muss kleiner als 2MB sein",
+      "loadFailed": "Unternehmenseinstellungen konnten nicht geladen werden. Bitte aktualisieren Sie die Seite.",
+      "uploadLogoFailed": "Logo konnte nicht hochgeladen werden",
+      "saveSettingsFailed": "Unternehmenseinstellungen konnten nicht gespeichert werden"
+    },
+    "success": {
+      "saved": "Unternehmenseinstellungen erfolgreich gespeichert!"
+    },
+    "loading": "Unternehmenseinstellungen werden geladen..."
+  },
+  "staffTeamMember": {
+    "backToTeam": "← Zurück zum Team",
+    "loading": "Mitarbeiter wird geladen…",
+    "unnamedStaff": "Unbenannter Mitarbeiter",
+    "inactive": "Inaktiv",
+    "roleLabel": "Rolle:",
+    "edit": "Bearbeiten",
+    "deactivating": "Wird deaktiviert...",
+    "deactivate": "Mitarbeiter deaktivieren",
+    "capabilitiesLabel": "Fähigkeiten",
+    "contactLabel": "Kontakt",
+    "phoneLabel": "Telefon:",
+    "emailLabel": "E-Mail:",
+    "notesLabel": "Notizen",
+    "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
+    "joiner": " + ",
+    "uploading": "Wird hochgeladen…",
+    "saving": "Speichern...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "types": {
+      "manager": "Manager",
+      "cleaner": "Reinigungskraft",
+      "mechanical": "Mechaniker"
+    },
+    "capabilities": {
+      "cleaning": "Reinigung",
+      "mechanical": "Mechanik"
+    },
+    "roles": {
+      "staff": "Mitarbeiter",
+      "management": "Verwaltung"
+    },
+    "fields": {
+      "firstName": "Vorname *",
+      "lastName": "Nachname *",
+      "role": "Rolle",
+      "canManage": "Kann verwalten (automatisch durch Rolle gesetzt)",
+      "canClean": "Kann reinigen",
+      "canMechanical": "Kann mechanische Arbeiten",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "uploadPhoto": "Foto hochladen",
+      "photoUrl": "Foto-URL",
+      "notes": "Notizen",
+      "active": "Aktiv"
+    },
+    "errors": {
+      "profileNotFound": "Benutzerprofil nicht gefunden",
+      "memberNotFound": "Mitarbeiter nicht gefunden",
+      "loadFailed": "Mitarbeiter konnte nicht geladen werden",
+      "uploadFailed": "Upload fehlgeschlagen",
+      "uploadPhotoFailed": "Foto konnte nicht hochgeladen werden",
+      "nameRequired": "Vorname und Nachname sind erforderlich.",
+      "saveFailed": "Änderungen konnten nicht gespeichert werden",
+      "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
+    }
+  },
+  "staffVehicles": {
+    "errors": {
+      "notAuthenticated": "Nicht authentifiziert",
+      "failedCheckPermissions": "Berechtigungen konnten nicht überprüft werden",
+      "failedLoadVehicles": "Fahrzeuge konnten nicht geladen werden"
+    },
+    "navigation": {
+      "backToDashboard": "← Zurück zum Dashboard"
+    },
+    "title": "Fahrzeuge",
+    "subtitle": "Verwalten Sie Ihre Flotte",
+    "actions": {
+      "addVehicle": "Fahrzeug hinzufügen"
+    },
+    "loading": "Fahrzeuge werden geladen...",
+    "empty": {
+      "noVehicles": "Keine Fahrzeuge gefunden.",
+      "addFirstVehicle": " Fügen Sie Ihr erstes Fahrzeug hinzu, um zu beginnen."
+    },
+    "status": {
+      "ready": "Bereit",
+      "preparing": "In Vorbereitung",
+      "onRent": "Vermietet"
+    },
+    "buttons": {
+      "edit": "Bearbeiten",
+      "view": "Ansehen"
+    }
+  },
+  "staffVehicleEdit": {
+    "title": "Fahrzeug bearbeiten",
+    "backToVehicles": "← Zurück zu Fahrzeugen",
+    "loading": "Fahrzeug wird geladen...",
+    "nameLabel": "Name",
+    "namePlaceholder": "Fahrzeugname",
+    "registrationPlateLabel": "Kennzeichen",
+    "registrationPlatePlaceholder": "z. B. AB-123-CD",
+    "makeLabel": "Marke",
+    "makePlaceholder": "z. B. Mercedes-Benz",
+    "modelLabel": "Modell",
+    "modelPlaceholder": "z. B. Sprinter",
+    "yearLabel": "Jahr",
+    "yearPlaceholder": "z. B. 2022",
+    "vinLabel": "FIN",
+    "vinPlaceholder": "Fahrzeug-Identifizierungsnummer",
+    "notesLabel": "Notizen",
+    "notesPlaceholder": "Zusätzliche Notizen...",
+    "statusLabel": "Status",
+    "statusReady": "Bereit",
+    "statusPreparing": "In Vorbereitung",
+    "statusOnRent": "Vermietet",
+    "saveButton": "Änderungen speichern",
+    "saving": "Speichern...",
+    "deleteButton": "Löschen",
+    "deleting": "Löschen...",
+    "confirmDelete": "Sind Sie sicher, dass Sie dieses Fahrzeug löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "notAuthenticated": "Sie müssen angemeldet sein, um Fahrzeuge zu bearbeiten.",
+    "notAllowed": "Sie haben keine Berechtigung, Fahrzeuge zu bearbeiten.",
+    "vehicleNotFound": "Fahrzeug nicht gefunden.",
+    "loadFailed": "Fehler beim Laden des Fahrzeugs.",
+    "saveFailed": "Fehler beim Speichern der Änderungen.",
+    "deleteFailed": "Fehler beim Löschen des Fahrzeugs."
   }
 }

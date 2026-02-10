@@ -27,6 +27,8 @@ const defaultCompany: CompanySettings = {
   accent_color: "#10b981",
 };
 
+const STORAGE_KEY = "camperflow:last_company_theme";
+
 const ThemeContext = createContext<ThemeContextType>({
   company: null,
   loading: true,
@@ -37,8 +39,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [company, setCompany] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Prevent overlapping loads from racing and leaving state inconsistent.
   const requestIdRef = useRef(0);
+
+  const applyAndCacheTheme = (settings: CompanySettings) => {
+    applyTheme(settings);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    } catch {}
+  };
+
+  const loadCachedTheme = (): CompanySettings | null => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as CompanySettings) : null;
+    } catch {
+      return null;
+    }
+  };
 
   const loadCompanySettings = async (): Promise<void> => {
     const requestId = ++requestIdRef.current;
@@ -56,50 +73,70 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       const supabase = createClient();
 
-      // 1) Get authenticated user
       const {
         data: { user },
-        error: authError,
       } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        safeSetCompany(defaultCompany);
-        applyTheme(defaultCompany);
+      // No authenticated user → try cached company first
+      if (!user) {
+        const cached = loadCachedTheme();
+        if (cached) {
+          safeSetCompany(cached);
+          applyTheme(cached);
+        } else {
+          safeSetCompany(defaultCompany);
+          applyTheme(defaultCompany);
+        }
         return;
       }
 
-      // 2) Query staff_profiles to get company_id
-      const { data: staffProfile, error: staffError } = await supabase
+      const { data: staffProfile } = await supabase
         .from("staff_profiles")
         .select("company_id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      if (staffError || !staffProfile?.company_id) {
-        safeSetCompany(defaultCompany);
-        applyTheme(defaultCompany);
+      if (!staffProfile?.company_id) {
+        const cached = loadCachedTheme();
+        if (cached) {
+          safeSetCompany(cached);
+          applyTheme(cached);
+        } else {
+          safeSetCompany(defaultCompany);
+          applyTheme(defaultCompany);
+        }
         return;
       }
 
-      // 3) Query companies table
-      const { data: companyData, error: companyError } = await supabase
+      const { data: companyData } = await supabase
         .from("companies")
         .select("id, name, logo_url, primary_color, secondary_color, accent_color")
         .eq("id", staffProfile.company_id)
         .maybeSingle();
 
-      if (companyError || !companyData) {
-        safeSetCompany(defaultCompany);
-        applyTheme(defaultCompany);
+      if (!companyData) {
+        const cached = loadCachedTheme();
+        if (cached) {
+          safeSetCompany(cached);
+          applyTheme(cached);
+        } else {
+          safeSetCompany(defaultCompany);
+          applyTheme(defaultCompany);
+        }
         return;
       }
 
       safeSetCompany(companyData);
-      applyTheme(companyData);
-    } catch (error) {
-      console.error("Failed to load company settings:", error);
-      safeSetCompany(defaultCompany);
-      applyTheme(defaultCompany);
+      applyAndCacheTheme(companyData);
+    } catch {
+      const cached = loadCachedTheme();
+      if (cached) {
+        safeSetCompany(cached);
+        applyTheme(cached);
+      } else {
+        safeSetCompany(defaultCompany);
+        applyTheme(defaultCompany);
+      }
     } finally {
       safeSetLoading(false);
     }
@@ -111,7 +148,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const supabase = createClient();
+
     loadCompanySettings();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      refreshCompany();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
