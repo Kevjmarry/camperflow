@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import PageContainer from "@/components/PageContainer";
+export const dynamic = "force-dynamic";
+
 
 export default function DemoPage() {
   const [submitted, setSubmitted] = useState(false);
