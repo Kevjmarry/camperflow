@@ -1,7 +1,9 @@
-export const dynamic = "force-dynamic";
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
+
 import { FormEvent, useState } from "react";
 import PageContainer from "@/components/PageContainer";
 
