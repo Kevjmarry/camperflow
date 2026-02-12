@@ -35,6 +35,8 @@ export default function EditVehiclePage({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -117,6 +119,42 @@ export default function EditVehiclePage({
   ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelectedFileName(null);
+      return;
+    }
+
+    setSelectedFileName(file.name);
+    setUploading(true);
+    setError(null);
+
+    try {
+      const filePath = `${vehicleId}/${Date.now()}-${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('vehicle-photos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('vehicle-photos')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, photo_url: publicUrl }));
+    } catch (err) {
+      setError(t("photoUploadFailed"));
+      setSelectedFileName(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -484,6 +522,96 @@ export default function EditVehiclePage({
                 value={formData.vin}
                 onChange={handleChange}
                 placeholder={t("vinPlaceholder")}
+                style={{
+                  width: "100%",
+                  padding: "var(--space-3)",
+                  fontSize: "14px",
+                  border: "1px solid rgb(var(--border))",
+                  borderRadius: "var(--radius)",
+                  background: "rgb(var(--background))",
+                  color: "rgb(var(--text))",
+                }}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="photo"
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgb(var(--text))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                {t("photoLabel")}
+              </label>
+              
+              {formData.photo_url && (
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <img
+                    src={formData.photo_url}
+                    alt="Vehicle preview"
+                    style={{
+                      width: "100%",
+                      maxWidth: "400px",
+                      height: "auto",
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
+                    }}
+                  />
+                </div>
+              )}
+
+              <input
+                id="photo"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={uploading}
+                style={{
+                  width: "100%",
+                  padding: "var(--space-3)",
+                  fontSize: "14px",
+                  border: "1px solid rgb(var(--border))",
+                  borderRadius: "var(--radius)",
+                  background: "rgb(var(--background))",
+                  color: "rgb(var(--text))",
+                  cursor: uploading ? "not-allowed" : "pointer",
+                }}
+              />
+              <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: "var(--space-2)" }}>
+                {uploading ? (
+                  <span>{t("uploading")}...</span>
+                ) : selectedFileName ? (
+                  <span>{t("photoSelectedPrefix")}: {selectedFileName}</span>
+                ) : (
+                  <span>{t("photoHint")}</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="photo_url"
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgb(var(--text))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                {t("photoUrlLabel")}
+              </label>
+              <input
+                id="photo_url"
+                name="photo_url"
+                type="text"
+                value={formData.photo_url}
+                onChange={handleChange}
+                placeholder={t("photoUrlPlaceholder")}
                 style={{
                   width: "100%",
                   padding: "var(--space-3)",
