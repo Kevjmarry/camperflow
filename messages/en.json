@@ -96,7 +96,10 @@
     "roleManager": "Manager",
     "roleCleaner": "Cleaner",
     "roleMechanical": "Mechanical",
-    "capabilityJoiner": " + "
+    "capabilityJoiner": " + ",
+    "sectionActive": "Active",
+    "sectionInactive": "Inactive",
+    "addMember": "Add team member"
   },
   "staffMember": {
     "backToStaffTeam": "Back to staff team",
@@ -1074,8 +1077,19 @@
       "nameRequired": "First name and last name are required.",
       "saveFailed": "Failed to save changes",
       "deactivateFailed": "Failed to deactivate staff member"
-    }
-  },
+    },
+      "passwordRequired": "Please enter a new password and confirm it.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordTooShort": "Password must be at least 6 characters.",
+      "passwordRecentLoginRequired": "For security reasons, please sign out and sign back in before changing your password.",
+      "passwordUpdateSuccess": "Password updated successfully.",
+      "passwordUpdateFailed": "Failed to update password.",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "reactivate": "Reactivate",
+      "reactivating": "Reactivating...",
+      "reactivateConfirm": "Reactivate this staff member?"
+    },
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Not authenticated",
@@ -1146,5 +1160,44 @@
   "loadFailed": "Failed to load vehicle.",
   "saveFailed": "Failed to save changes.",
   "deleteFailed": "Failed to delete vehicle."
+},
+"staffTeamNew": {
+  "checkingPermissions": "Checking permissions…",
+  "backToTeam": "Back to team",
+  "title": "Add team member",
+  "subtitle": "Create a new staff account for your company.",
+  "accessDenied": {
+    "title": "Access denied",
+    "message": "You don’t have permission to manage the team."
+  },
+  "comingSoon": {
+    "message": "Coming soon",
+    "description": "This screen is ready, but creating team members will be enabled later.",
+    "returnToList": "Return to team list"
+  },
+  "errors": {
+  "profileNotFound": "Staff profile not found.",      
+  "nameRequired": "First name and last name are required.",
+  "noCompany": "No company is associated with your account.",
+  "photoUploadFailed": "Photo upload failed.",
+  "createFailed": "Failed to create team member."
+  },
+  "form": {
+  "firstName": "First name",
+  "lastName": "Last name",
+  "role": "Role",
+  "roleStaff": "Staff",
+  "roleAdmin": "Admin",
+  "capabilities": "Capabilities",
+  "canClean": "Can clean vehicles",
+  "canMechanical": "Can perform mechanical tasks",
+  "phone": "Phone",
+  "email": "Email",
+  "photo": "Photo",
+  "notes": "Notes",
+  "save": "Save",
+  "saving": "Saving...",
+  "cancel": "Cancel"
+} 
 }
 }

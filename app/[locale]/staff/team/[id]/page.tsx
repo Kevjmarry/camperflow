@@ -9,8 +9,9 @@ import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
 interface StaffProfile {
-  id: string;
-  auth_user_id: string;
+  profile_id: string;
+  id: string | null;
+  auth_user_id: string | null;
   company_id: string;
   first_name: string | null;
   last_name: string | null;
@@ -52,12 +53,14 @@ export default function StaffMemberPage() {
   const [member, setMember] = useState<StaffProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isViewingOwnProfile, setIsViewingOwnProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [isTogglingActive, setIsTogglingActive] = useState(false);
 
   const [formData, setFormData] = useState<StaffFormData>({
     first_name: "",
@@ -86,6 +89,8 @@ export default function StaffMemberPage() {
           return;
         }
 
+        setCurrentUserId(userRes.user.id);
+
         const { data: currentUserProfile } = await supabase
           .from("staff_profiles")
           .select("company_id, role, can_manage")
@@ -102,8 +107,8 @@ export default function StaffMemberPage() {
 
         const { data, error } = await supabase
           .from("staff_profiles")
-          .select("id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
-          .eq("id", staffId)
+          .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+          .eq("profile_id", staffId)
           .eq("company_id", currentUserProfile.company_id)
           .single();
 
@@ -113,6 +118,7 @@ export default function StaffMemberPage() {
         }
 
         setMember(data as StaffProfile);
+        setIsViewingOwnProfile(!!data.auth_user_id && data.auth_user_id === userRes.user.id);
         
         setFormData({
           first_name: data.first_name || "",
@@ -239,15 +245,15 @@ export default function StaffMemberPage() {
           notes: formData.notes || null,
           active: formData.active,
         })
-        .eq("id", staffId)
+        .eq("profile_id", staffId)
         .eq("company_id", companyId);
 
       if (error) throw error;
 
       const { data } = await supabase
         .from("staff_profiles")
-        .select("id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
-        .eq("id", staffId)
+        .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+        .eq("profile_id", staffId)
         .eq("company_id", companyId)
         .single();
 
@@ -263,28 +269,37 @@ export default function StaffMemberPage() {
     }
   };
 
-  const handleDeactivate = async () => {
+  const handleToggleActive = async (newActiveState: boolean) => {
     if (!companyId) return;
 
-    if (!confirm(t('confirmDeactivate'))) {
+    if (!isAdmin) {
+      alert(t('notAllowedToggleActive'));
       return;
     }
 
-    setIsDeactivating(true);
+    const confirmMessage = newActiveState 
+      ? t('reactivateConfirm')
+      : t('confirmDeactivate');
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsTogglingActive(true);
 
     try {
       const { error } = await supabase
         .from("staff_profiles")
-        .update({ active: false })
-        .eq("id", staffId)
+        .update({ active: newActiveState })
+        .eq("profile_id", staffId)
         .eq("company_id", companyId);
 
       if (error) throw error;
 
       const { data } = await supabase
         .from("staff_profiles")
-        .select("id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
-        .eq("id", staffId)
+        .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+        .eq("profile_id", staffId)
         .eq("company_id", companyId)
         .single();
 
@@ -292,9 +307,12 @@ export default function StaffMemberPage() {
         setMember(data as StaffProfile);
       }
     } catch (err: any) {
-      alert(err?.message || t('errors.deactivateFailed'));
+      const errorMessage = newActiveState 
+        ? t('reactivateFailed')
+        : t('errors.deactivateFailed');
+      alert(err?.message || errorMessage);
     } finally {
-      setIsDeactivating(false);
+      setIsTogglingActive(false);
     }
   };
 
@@ -386,17 +404,15 @@ export default function StaffMemberPage() {
                     <p style={{ color: "rgb(var(--muted))", fontSize: "14px" }}>
                       {t('roleLabel')} {member.role}
                     </p>
-                    {!member.active && (
-                      <span style={{
-                        fontSize: "12px",
-                        padding: "2px 8px",
-                        borderRadius: "var(--radius)",
-                        background: "rgb(var(--error) / 0.1)",
-                        color: "rgb(var(--error))",
-                      }}>
-                        {t('inactive')}
-                      </span>
-                    )}
+                    <span style={{
+                      fontSize: "12px",
+                      padding: "2px 8px",
+                      borderRadius: "var(--radius)",
+                      background: member.active ? "rgb(var(--success) / 0.1)" : "rgb(var(--error) / 0.1)",
+                      color: member.active ? "rgb(var(--success))" : "rgb(var(--error))",
+                    }}>
+                      {member.active ? t('statusActive') : t('statusInactive')}
+                    </span>
                   </div>
                   {getTypeLabel(member) && (
                     <div style={{
@@ -426,22 +442,39 @@ export default function StaffMemberPage() {
                   >
                     {t('edit')}
                   </button>
-                  {member.active && (
+                  {member.active ? (
                     <button
-                      onClick={handleDeactivate}
-                      disabled={isDeactivating}
+                      onClick={() => handleToggleActive(false)}
+                      disabled={isTogglingActive}
                       style={{
                         padding: "8px 16px",
                         background: "rgb(var(--error) / 0.1)",
                         color: "rgb(var(--error))",
                         border: "1px solid rgb(var(--error) / 0.3)",
                         borderRadius: "var(--radius)",
-                        cursor: isDeactivating ? "not-allowed" : "pointer",
+                        cursor: isTogglingActive ? "not-allowed" : "pointer",
                         fontSize: "14px",
-                        opacity: isDeactivating ? 0.6 : 1,
+                        opacity: isTogglingActive ? 0.6 : 1,
                       }}
                     >
-                      {isDeactivating ? t('deactivating') : t('deactivate')}
+                      {isTogglingActive ? t('deactivating') : t('deactivate')}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleToggleActive(true)}
+                      disabled={isTogglingActive}
+                      style={{
+                        padding: "8px 16px",
+                        background: "rgb(var(--success) / 0.1)",
+                        color: "rgb(var(--success))",
+                        border: "1px solid rgb(var(--success) / 0.3)",
+                        borderRadius: "var(--radius)",
+                        cursor: isTogglingActive ? "not-allowed" : "pointer",
+                        fontSize: "14px",
+                        opacity: isTogglingActive ? 0.6 : 1,
+                      }}
+                    >
+                      {isTogglingActive ? t('reactivating') : t('reactivate')}
                     </button>
                   )}
                 </div>
@@ -721,18 +754,6 @@ export default function StaffMemberPage() {
                       resize: "vertical",
                     }}
                   />
-                </div>
-
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "14px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.active}
-                      onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                      style={{ cursor: "pointer" }}
-                    />
-                    {t('fields.active')}
-                  </label>
                 </div>
 
                 <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>

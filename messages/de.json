@@ -96,7 +96,10 @@
     "roleManager": "Manager",
     "roleCleaner": "Reinigung",
     "roleMechanical": "Technik",
-    "capabilityJoiner": " + "
+    "capabilityJoiner": " + ",
+    "sectionActive": "Aktiv",
+    "sectionInactive": "Inaktiv",
+    "addMember": "Teammitglied hinzufügen"
   },
   "staffMember": {
     "backToStaffTeam": "Zurück zum Mitarbeiterteam",
@@ -1014,63 +1017,74 @@
     },
     "loading": "Unternehmenseinstellungen werden geladen..."
   },
-  "staffTeamMember": {
-    "backToTeam": "← Zurück zum Team",
-    "loading": "Mitarbeiter wird geladen…",
-    "unnamedStaff": "Unbenannter Mitarbeiter",
-    "inactive": "Inaktiv",
-    "roleLabel": "Rolle:",
-    "edit": "Bearbeiten",
-    "deactivating": "Wird deaktiviert...",
-    "deactivate": "Mitarbeiter deaktivieren",
-    "capabilitiesLabel": "Fähigkeiten",
-    "contactLabel": "Kontakt",
-    "phoneLabel": "Telefon:",
-    "emailLabel": "E-Mail:",
-    "notesLabel": "Notizen",
-    "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
-    "joiner": " + ",
-    "uploading": "Wird hochgeladen…",
-    "saving": "Speichern...",
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "types": {
-      "manager": "Manager",
-      "cleaner": "Reinigungskraft",
-      "mechanical": "Mechaniker"
+"staffTeamMember": {
+  "backToTeam": "← Zurück zum Team",
+  "loading": "Mitarbeiter wird geladen…",
+  "unnamedStaff": "Unbenannter Mitarbeiter",
+  "inactive": "Inaktiv",
+  "roleLabel": "Rolle:",
+  "edit": "Bearbeiten",
+  "deactivating": "Wird deaktiviert...",
+  "deactivate": "Mitarbeiter deaktivieren",
+  "capabilitiesLabel": "Fähigkeiten",
+  "contactLabel": "Kontakt",
+  "phoneLabel": "Telefon:",
+  "emailLabel": "E-Mail:",
+  "notesLabel": "Notizen",
+  "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
+  "joiner": " + ",
+  "uploading": "Wird hochgeladen…",
+  "saving": "Speichern...",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "types": {
+    "manager": "Manager",
+    "cleaner": "Reinigungskraft",
+    "mechanical": "Mechaniker"
+  },
+  "capabilities": {
+    "cleaning": "Reinigung",
+    "mechanical": "Mechanik"
+  },
+  "roles": {
+    "staff": "Mitarbeiter",
+    "management": "Verwaltung"
+  },
+  "fields": {
+    "firstName": "Vorname *",
+    "lastName": "Nachname *",
+    "role": "Rolle",
+    "canManage": "Kann verwalten (automatisch durch Rolle gesetzt)",
+    "canClean": "Kann reinigen",
+    "canMechanical": "Kann mechanische Arbeiten",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "uploadPhoto": "Foto hochladen",
+    "photoUrl": "Foto-URL",
+    "notes": "Notizen",
+    "active": "Aktiv"
+  },
+  "errors": {
+    "profileNotFound": "Benutzerprofil nicht gefunden",
+    "memberNotFound": "Mitarbeiter nicht gefunden",
+    "loadFailed": "Mitarbeiter konnte nicht geladen werden",
+    "uploadFailed": "Upload fehlgeschlagen",
+    "uploadPhotoFailed": "Foto konnte nicht hochgeladen werden",
+    "nameRequired": "Vorname und Nachname sind erforderlich.",
+    "saveFailed": "Änderungen konnten nicht gespeichert werden",
+    "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
     },
-    "capabilities": {
-      "cleaning": "Reinigung",
-      "mechanical": "Mechanik"
-    },
-    "roles": {
-      "staff": "Mitarbeiter",
-      "management": "Verwaltung"
-    },
-    "fields": {
-      "firstName": "Vorname *",
-      "lastName": "Nachname *",
-      "role": "Rolle",
-      "canManage": "Kann verwalten (automatisch durch Rolle gesetzt)",
-      "canClean": "Kann reinigen",
-      "canMechanical": "Kann mechanische Arbeiten",
-      "phone": "Telefon",
-      "email": "E-Mail",
-      "uploadPhoto": "Foto hochladen",
-      "photoUrl": "Foto-URL",
-      "notes": "Notizen",
-      "active": "Aktiv"
-    },
-    "errors": {
-      "profileNotFound": "Benutzerprofil nicht gefunden",
-      "memberNotFound": "Mitarbeiter nicht gefunden",
-      "loadFailed": "Mitarbeiter konnte nicht geladen werden",
-      "uploadFailed": "Upload fehlgeschlagen",
-      "uploadPhotoFailed": "Foto konnte nicht hochgeladen werden",
-      "nameRequired": "Vorname und Nachname sind erforderlich.",
-      "saveFailed": "Änderungen konnten nicht gespeichert werden",
-      "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
-    }
+    "passwordRequired": "Bitte geben Sie ein neues Passwort ein und bestätigen Sie es.",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+    "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein.",
+    "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie das Passwort ändern.",
+    "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
+    "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "reactivate": "Reaktivieren",
+    "reactivating": "Wird reaktiviert...",
+    "reactivateConfirm": "Diesen Mitarbeiter reaktivieren?"
   },
   "staffVehicles": {
     "errors": {
@@ -1141,5 +1155,44 @@
     "loadFailed": "Fehler beim Laden des Fahrzeugs.",
     "saveFailed": "Fehler beim Speichern der Änderungen.",
     "deleteFailed": "Fehler beim Löschen des Fahrzeugs."
+  },
+ "staffTeamNew": {
+  "checkingPermissions": "Berechtigungen werden geprüft…",
+  "backToTeam": "Zurück zum Team",
+  "title": "Teammitglied hinzufügen",
+  "subtitle": "Erstellen Sie ein neues Mitarbeiterkonto für Ihr Unternehmen.",
+  "accessDenied": {
+    "title": "Zugriff verweigert",
+    "message": "Sie haben keine Berechtigung, das Team zu verwalten."
+  },
+  "comingSoon": {
+    "message": "Demnächst verfügbar",
+    "description": "Dieser Bildschirm ist fertig, aber das Anlegen von Teammitgliedern wird später aktiviert.",
+    "returnToList": "Zur Teamliste"
+  },
+  "errors": {
+    "profileNotFound": "Mitarbeiterprofil wurde nicht gefunden.",
+    "nameRequired": "Vorname und Nachname sind erforderlich.",
+    "noCompany": "Kein Unternehmen mit Ihrem Konto verknüpft.",
+    "photoUploadFailed": "Foto-Upload fehlgeschlagen.",
+    "createFailed": "Teammitglied konnte nicht erstellt werden."
+  },
+  "form": {
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "role": "Rolle",
+    "roleStaff": "Mitarbeiter",
+    "roleAdmin": "Administrator",
+    "capabilities": "Berechtigungen",
+    "canClean": "Kann Fahrzeuge reinigen",
+    "canMechanical": "Kann mechanische Arbeiten durchführen",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "photo": "Foto",
+    "notes": "Notizen",
+    "save": "Speichern",
+    "saving": "Speichert…",
+    "cancel": "Abbrechen"
   }
+}
 }

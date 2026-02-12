@@ -10,6 +10,7 @@ import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
 interface StaffProfile {
+  profile_id: string;
   id: string;
   auth_user_id: string;
   company_id: string;
@@ -19,6 +20,7 @@ interface StaffProfile {
   can_clean: boolean;
   can_mechanical: boolean;
   photo_url: string | null;
+  active: boolean;
 }
 
 export default function StaffTeamPage() {
@@ -32,6 +34,7 @@ export default function StaffTeamPage() {
   const [error, setError] = useState("");
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [currentAuthUserId, setCurrentAuthUserId] = useState<string | null>(null);
+  const [canManageTeam, setCanManageTeam] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -50,7 +53,7 @@ export default function StaffTeamPage() {
 
         const { data: currentProfile, error: profileErr } = await supabase
           .from("staff_profiles")
-          .select("company_id")
+          .select("company_id, role, can_manage")
           .eq("auth_user_id", user.id)
           .single();
 
@@ -60,10 +63,12 @@ export default function StaffTeamPage() {
           return;
         }
 
+        setCanManageTeam(currentProfile.role === "admin" || currentProfile.can_manage === true);
+
         const { data: staffProfiles, error: staffErr } = await supabase
           .from("staff_profiles")
           .select(
-            "id, auth_user_id, company_id, role, name, can_manage, can_clean, can_mechanical, photo_url"
+            "profile_id, id, auth_user_id, company_id, role, name, can_manage, can_clean, can_mechanical, photo_url, active"
           )
           .eq("company_id", currentProfile.company_id)
           .order("role", { ascending: false })
@@ -81,6 +86,9 @@ export default function StaffTeamPage() {
 
     run();
   }, [supabase, locale, router, t]);
+
+  const activeStaff = staff.filter((s) => s.active);
+  const inactiveStaff = staff.filter((s) => !s.active);
 
   return (
     <PageContainer maxWidth="1200px">
@@ -105,9 +113,34 @@ export default function StaffTeamPage() {
             >
               {t("backToDashboard")}
             </Link>
-            <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-              {t("title")}
-            </h1>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "var(--space-4)",
+              }}
+            >
+              <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
+                {t("title")}
+              </h1>
+              {canManageTeam && (
+                <Link
+                  href={`/${locale}/staff/team/new`}
+                  style={{
+                    background: "rgb(var(--brand))",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "var(--radius)",
+                    textDecoration: "none",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("addMember")}
+                </Link>
+              )}
+            </div>
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
               {staff.length} {t("memberCount", { count: staff.length })}
             </p>
@@ -141,23 +174,71 @@ export default function StaffTeamPage() {
           )}
 
           {!loading && !error && staff.length > 0 && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                gap: "var(--space-4)",
-              }}
-            >
-              {staff.map((member) => (
-                <StaffCard
-                  key={member.id}
-                  member={member}
-                  isCurrentUser={member.auth_user_id === currentAuthUserId}
-                  locale={locale}
-                  t={t}
-                />
-              ))}
-            </div>
+            <>
+              {activeStaff.length > 0 && (
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "rgb(var(--text))",
+                      marginBottom: "var(--space-4)",
+                    }}
+                  >
+                    {t("sectionActive")}
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                      gap: "var(--space-4)",
+                    }}
+                  >
+                    {activeStaff.map((member) => (
+                      <StaffCard
+                        key={member.profile_id}
+                        member={member}
+                        isCurrentUser={member.auth_user_id === currentAuthUserId}
+                        locale={locale}
+                        t={t}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {inactiveStaff.length > 0 && (
+                <div>
+                  <h2
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "rgb(var(--text))",
+                      marginBottom: "var(--space-4)",
+                    }}
+                  >
+                    {t("sectionInactive")}
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                      gap: "var(--space-4)",
+                    }}
+                  >
+                    {inactiveStaff.map((member) => (
+                      <StaffCard
+                        key={member.profile_id}
+                        member={member}
+                        isCurrentUser={member.auth_user_id === currentAuthUserId}
+                        locale={locale}
+                        t={t}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -285,7 +366,7 @@ function StaffCard({
 
   return (
     <Link
-      href={`/${locale}/staff/team/${member.id}`}
+      href={`/${locale}/staff/team/${member.profile_id}`}
       className="surface"
       style={{
         padding: "var(--space-5)",

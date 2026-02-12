@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SECRET_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,8 +37,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('staff_profiles')
       .select('role')
-      .eq('id', user.id)
-      .single();
+      .eq('auth_user_id', user.id)      .single();
 
     if (profileError || !profile || profile.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
@@ -50,6 +49,10 @@ export async function POST(request: NextRequest) {
 
     if (!file || !staffId) {
       return NextResponse.json({ error: 'Missing file or staffId' }, { status: 400 });
+    }
+
+    if (!supabaseServiceRoleKey) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
