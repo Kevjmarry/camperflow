@@ -1026,6 +1026,15 @@
   "edit": "Bearbeiten",
   "deactivating": "Wird deaktiviert...",
   "deactivate": "Mitarbeiter deaktivieren",
+
+  "delete": "Löschen",
+  "deleting": "Wird gelöscht...",
+  "deleteConfirm": "Möchten Sie dieses Teammitglied wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteConfirmLinked": "WARNUNG: Dieses Teammitglied hat ein verknüpftes Konto. Durch das Löschen dieses Profils wird der Zugriff entfernt und es kann sich auf den Login-Verlauf und zugehörige Daten auswirken.",
+  "deleteNotAllowed": "Nur Administratoren können Teammitglieder löschen.",
+  "deleteSelfNotAllowed": "Sie können Ihr eigenes Profil nicht löschen.",
+  "deleteFailed": "Teammitglied konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+
   "capabilitiesLabel": "Fähigkeiten",
   "contactLabel": "Kontakt",
   "phoneLabel": "Telefon:",
@@ -1073,19 +1082,19 @@
     "nameRequired": "Vorname und Nachname sind erforderlich.",
     "saveFailed": "Änderungen konnten nicht gespeichert werden",
     "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
-    },
-    "passwordRequired": "Bitte geben Sie ein neues Passwort ein und bestätigen Sie es.",
-    "passwordMismatch": "Die Passwörter stimmen nicht überein.",
-    "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein.",
-    "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie das Passwort ändern.",
-    "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
-    "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
-    "statusActive": "Aktiv",
-    "statusInactive": "Inaktiv",
-    "reactivate": "Reaktivieren",
-    "reactivating": "Wird reaktiviert...",
-    "reactivateConfirm": "Diesen Mitarbeiter reaktivieren?"
   },
+  "passwordRequired": "Bitte geben Sie ein neues Passwort ein und bestätigen Sie es.",
+  "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+  "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein.",
+  "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie das Passwort ändern.",
+  "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
+  "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
+  "statusActive": "Aktiv",
+  "statusInactive": "Inaktiv",
+  "reactivate": "Reaktivieren",
+  "reactivating": "Wird reaktiviert...",
+  "reactivateConfirm": "Diesen Mitarbeiter reaktivieren?"
+},
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Nicht authentifiziert",

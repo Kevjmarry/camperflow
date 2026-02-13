@@ -1022,74 +1022,84 @@
     "loading": "Loading company settings..."
   },
   "staffTeamMember": {
-    "backToTeam": "← Back to team",
-    "loading": "Loading staff member…",
-    "unnamedStaff": "Unnamed Staff",
-    "inactive": "Inactive",
-    "roleLabel": "Role:",
-    "edit": "Edit",
-    "deactivating": "Deactivating...",
-    "deactivate": "Deactivate staff",
-    "capabilitiesLabel": "Capabilities",
-    "contactLabel": "Contact",
-    "phoneLabel": "Phone:",
-    "emailLabel": "Email:",
-    "notesLabel": "Notes",
-    "confirmDeactivate": "Deactivate this staff member? They will no longer appear as active.",
-    "joiner": " + ",
-    "uploading": "Uploading…",
-    "saving": "Saving...",
-    "save": "Save",
-    "cancel": "Cancel",
-    "types": {
-      "manager": "Manager",
-      "cleaner": "Cleaner",
-      "mechanical": "Mechanical"
-    },
-    "capabilities": {
-      "cleaning": "Cleaning",
-      "mechanical": "Mechanical"
-    },
-    "roles": {
-      "staff": "Staff",
-      "management": "Management"
-    },
-    "fields": {
-      "firstName": "First name *",
-      "lastName": "Last name *",
-      "role": "Role",
-      "canManage": "Can manage (auto-set by role)",
-      "canClean": "Can clean",
-      "canMechanical": "Can mechanical",
-      "phone": "Phone",
-      "email": "Email",
-      "uploadPhoto": "Upload photo",
-      "photoUrl": "Photo URL",
-      "notes": "Notes",
-      "active": "Active"
-    },
-    "errors": {
-      "profileNotFound": "User profile not found",
-      "memberNotFound": "Staff member not found",
-      "loadFailed": "Failed to load staff member",
-      "uploadFailed": "Upload failed",
-      "uploadPhotoFailed": "Failed to upload photo",
-      "nameRequired": "First name and last name are required.",
-      "saveFailed": "Failed to save changes",
-      "deactivateFailed": "Failed to deactivate staff member"
-    },
-      "passwordRequired": "Please enter a new password and confirm it.",
-      "passwordMismatch": "Passwords do not match.",
-      "passwordTooShort": "Password must be at least 6 characters.",
-      "passwordRecentLoginRequired": "For security reasons, please sign out and sign back in before changing your password.",
-      "passwordUpdateSuccess": "Password updated successfully.",
-      "passwordUpdateFailed": "Failed to update password.",
-      "statusActive": "Active",
-      "statusInactive": "Inactive",
-      "reactivate": "Reactivate",
-      "reactivating": "Reactivating...",
-      "reactivateConfirm": "Reactivate this staff member?"
-    },
+  "backToTeam": "← Back to team",
+  "loading": "Loading staff member…",
+  "unnamedStaff": "Unnamed Staff",
+  "inactive": "Inactive",
+  "roleLabel": "Role:",
+  "edit": "Edit",
+  "deactivating": "Deactivating...",
+  "deactivate": "Deactivate staff",
+
+  "delete": "Delete",
+  "deleting": "Deleting...",
+  "deleteConfirm": "Are you sure you want to permanently delete this staff member? This action cannot be undone.",
+  "deleteConfirmLinked": "WARNING: This staff member has a linked account. Deleting this profile will remove their access and may affect login history and associated records.",
+  "deleteNotAllowed": "Only administrators can delete staff members.",
+  "deleteSelfNotAllowed": "You cannot delete your own profile.",
+  "deleteFailed": "Failed to delete staff member. Please try again.",
+
+  "capabilitiesLabel": "Capabilities",
+  "contactLabel": "Contact",
+  "phoneLabel": "Phone:",
+  "emailLabel": "Email:",
+  "notesLabel": "Notes",
+  "confirmDeactivate": "Deactivate this staff member? They will no longer appear as active.",
+  "joiner": " + ",
+  "uploading": "Uploading…",
+  "saving": "Saving...",
+  "save": "Save",
+  "cancel": "Cancel",
+  "types": {
+    "manager": "Manager",
+    "cleaner": "Cleaner",
+    "mechanical": "Mechanical"
+  },
+  "capabilities": {
+    "cleaning": "Cleaning",
+    "mechanical": "Mechanical"
+  },
+  "roles": {
+    "staff": "Staff",
+    "management": "Management"
+  },
+  "fields": {
+    "firstName": "First name *",
+    "lastName": "Last name *",
+    "role": "Role",
+    "canManage": "Can manage (auto-set by role)",
+    "canClean": "Can clean",
+    "canMechanical": "Can mechanical",
+    "phone": "Phone",
+    "email": "Email",
+    "uploadPhoto": "Upload photo",
+    "photoUrl": "Photo URL",
+    "notes": "Notes",
+    "active": "Active"
+  },
+  "errors": {
+    "profileNotFound": "User profile not found",
+    "memberNotFound": "Staff member not found",
+    "loadFailed": "Failed to load staff member",
+    "uploadFailed": "Upload failed",
+    "uploadPhotoFailed": "Failed to upload photo",
+    "nameRequired": "First name and last name are required.",
+    "saveFailed": "Failed to save changes",
+    "deactivateFailed": "Failed to deactivate staff member"
+  },
+  "passwordRequired": "Please enter a new password and confirm it.",
+  "passwordMismatch": "Passwords do not match.",
+  "passwordTooShort": "Password must be at least 6 characters.",
+  "passwordRecentLoginRequired": "For security reasons, please sign out and sign back in before changing your password.",
+  "passwordUpdateSuccess": "Password updated successfully.",
+  "passwordUpdateFailed": "Failed to update password.",
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+  "reactivate": "Reactivate",
+  "reactivating": "Reactivating...",
+  "reactivateConfirm": "Reactivate this staff member?"
+},
+
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Not authenticated",

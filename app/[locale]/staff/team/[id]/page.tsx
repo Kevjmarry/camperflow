@@ -44,7 +44,6 @@ interface StaffFormData {
 
 export default function StaffMemberPage() {
   const t = useTranslations('staffTeamMember');
-  const supabase = createClient();
   const router = useRouter();
   const { id: staffId, locale } = useParams<{ id: string; locale: string }>();
 
@@ -61,6 +60,8 @@ export default function StaffMemberPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [isTogglingActive, setIsTogglingActive] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const [formData, setFormData] = useState<StaffFormData>({
     first_name: "",
@@ -82,6 +83,8 @@ export default function StaffMemberPage() {
       try {
         setLoading(true);
         setError("");
+
+        const supabase = createClient();
 
         const { data: userRes } = await supabase.auth.getUser();
         if (!userRes?.user) {
@@ -142,7 +145,7 @@ export default function StaffMemberPage() {
     };
 
     run();
-  }, [supabase, staffId, locale, router, t]);
+  }, [staffId, locale, router, t]);
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -217,6 +220,8 @@ export default function StaffMemberPage() {
     setSaveError("");
 
     try {
+      const supabase = createClient();
+
       const firstName = formData.first_name.trim();
       const lastName = formData.last_name.trim();
 
@@ -288,6 +293,8 @@ export default function StaffMemberPage() {
     setIsTogglingActive(true);
 
     try {
+      const supabase = createClient();
+
       const { error } = await supabase
         .from("staff_profiles")
         .update({ active: newActiveState })
@@ -313,6 +320,51 @@ export default function StaffMemberPage() {
       alert(err?.message || errorMessage);
     } finally {
       setIsTogglingActive(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!companyId || !member) return;
+
+    if (!isAdmin) {
+      alert(t('deleteNotAllowed'));
+      return;
+    }
+
+    if (isViewingOwnProfile) {
+      alert(t('deleteSelfNotAllowed'));
+      return;
+    }
+
+    let confirmMessage = t('deleteConfirm');
+    
+    if (member.auth_user_id) {
+      confirmMessage += "\n\n" + t('deleteConfirmLinked');
+    }
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      const supabase = createClient();
+
+      const { error } = await supabase
+        .from("staff_profiles")
+        .delete()
+        .eq("profile_id", staffId)
+        .eq("company_id", companyId);
+
+      if (error) throw error;
+
+      router.push(`/${locale}/staff/team`);
+    } catch (err: any) {
+      setDeleteError(err?.message || t('deleteFailed'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -377,6 +429,21 @@ export default function StaffMemberPage() {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {deleteError && (
+          <div
+            style={{
+              padding: "var(--space-4)",
+              background: "rgb(var(--error) / 0.1)",
+              border: "1px solid rgb(var(--error) / 0.3)",
+              borderRadius: "var(--radius)",
+              color: "rgb(var(--error))",
+              marginTop: "var(--space-4)",
+            }}
+          >
+            {deleteError}
           </div>
         )}
 
@@ -475,6 +542,24 @@ export default function StaffMemberPage() {
                       }}
                     >
                       {isTogglingActive ? t('reactivating') : t('reactivate')}
+                    </button>
+                  )}
+                  {!isViewingOwnProfile && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      style={{
+                        padding: "8px 16px",
+                        background: "rgb(var(--error))",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "var(--radius)",
+                        cursor: isDeleting ? "not-allowed" : "pointer",
+                        fontSize: "14px",
+                        opacity: isDeleting ? 0.6 : 1,
+                      }}
+                    >
+                      {isDeleting ? t('deleting') : t('delete')}
                     </button>
                   )}
                 </div>
