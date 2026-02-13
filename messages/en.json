@@ -31,8 +31,9 @@
     "signIn": "Sign in",
     "signingIn": "Signing in...",
     "error": {
-      "accessDenied": "Access denied. This account does not have staff privileges.",
-      "unexpected": "An unexpected error occurred. Please try again."
+    "accessDenied": "Access denied. This account does not have staff privileges.",
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "accessDeniedError": "Access denied. Your account is not allowed to use staff mode."
     }
   },
   "pageContainer": {

@@ -31,7 +31,7 @@
     "signIn": "Anmelden",
     "signingIn": "Anmeldung...",
     "error": {
-      "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
+      "accessDeniedError": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
       "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
     }
   },
