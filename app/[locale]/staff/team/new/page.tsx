@@ -22,6 +22,7 @@ interface FormData {
   phone: string;
   email: string;
   notes: string;
+  enableLogin: boolean;
 }
 
 const getErrorMessage = (err: any): string => {
@@ -53,6 +54,7 @@ export default function NewTeamMemberPage() {
     phone: "",
     email: "",
     notes: "",
+    enableLogin: false,
   });
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -118,6 +120,16 @@ export default function NewTeamMemberPage() {
 
     if (!formData.first_name.trim() || !formData.last_name.trim()) {
       setSubmitError(t("errors.nameRequired"));
+      return;
+    }
+
+    if (formData.enableLogin && !formData.email.trim()) {
+      setSubmitError(t("errors.emailRequiredForLogin"));
+      return;
+    }
+
+    if (formData.enableLogin && !formData.email.includes("@")) {
+      setSubmitError(t("errors.invalidEmail"));
       return;
     }
 
@@ -187,6 +199,27 @@ export default function NewTeamMemberPage() {
 
         if (updateError) {
           throw updateError;
+        }
+      }
+
+      // Send invite if enableLogin is true
+      if (formData.enableLogin && newMember?.profile_id) {
+        const inviteRes = await fetch("/api/staff/invite", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            profile_id: newMember.profile_id,
+          }),
+        });
+
+        if (!inviteRes.ok) {
+          const errorData = await inviteRes.json();
+          throw new Error(
+            errorData.error || t("errors.inviteFailed")
+          );
         }
       }
 
@@ -531,7 +564,7 @@ export default function NewTeamMemberPage() {
                     color: "rgb(var(--text))",
                   }}
                 >
-                  {t("form.email")}
+                  {t("form.email")}{formData.enableLogin && " *"}
                 </label>
                 <input
                   type="email"
@@ -542,7 +575,63 @@ export default function NewTeamMemberPage() {
                   }
                   className="input"
                   disabled={submitting}
+                  required={formData.enableLogin}
                 />
+              </div>
+
+              <div
+                style={{
+                  padding: "var(--space-4)",
+                  background: "rgb(var(--surface))",
+                  border: "1px solid rgb(var(--border))",
+                  borderRadius: "var(--radius)",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "var(--space-3)",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.enableLogin}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        enableLogin: e.target.checked,
+                      })
+                    }
+                    disabled={submitting}
+                    style={{
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      marginTop: "2px",
+                    }}
+                  />
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgb(var(--text))",
+                        display: "block",
+                        marginBottom: "var(--space-1)",
+                      }}
+                    >
+                      {t("form.enableLogin")}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "rgb(var(--muted))",
+                      }}
+                    >
+                      {t("form.enableLoginDescription")}
+                    </span>
+                  </div>
+                </label>
               </div>
 
               <div>

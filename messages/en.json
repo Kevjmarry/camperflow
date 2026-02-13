@@ -1187,28 +1187,33 @@
     "returnToList": "Return to team list"
   },
   "errors": {
-  "profileNotFound": "Staff profile not found.",      
-  "nameRequired": "First name and last name are required.",
-  "noCompany": "No company is associated with your account.",
-  "photoUploadFailed": "Photo upload failed.",
-  "createFailed": "Failed to create team member."
+    "profileNotFound": "Staff profile not found.",
+    "nameRequired": "First name and last name are required.",
+    "noCompany": "No company is associated with your account.",
+    "photoUploadFailed": "Photo upload failed.",
+    "createFailed": "Failed to create team member.",
+    "emailRequiredForLogin": "Email is required when login is enabled",
+    "invalidEmail": "Please enter a valid email address",
+    "inviteFailed": "Failed to send login invitation"
   },
   "form": {
-  "firstName": "First name",
-  "lastName": "Last name",
-  "role": "Role",
-  "roleStaff": "Staff",
-  "roleAdmin": "Admin",
-  "capabilities": "Capabilities",
-  "canClean": "Can clean vehicles",
-  "canMechanical": "Can perform mechanical tasks",
-  "phone": "Phone",
-  "email": "Email",
-  "photo": "Photo",
-  "notes": "Notes",
-  "save": "Save",
-  "saving": "Saving...",
-  "cancel": "Cancel"
-} 
+    "firstName": "First name",
+    "lastName": "Last name",
+    "role": "Role",
+    "roleStaff": "Staff",
+    "roleAdmin": "Admin",
+    "capabilities": "Capabilities",
+    "canClean": "Can clean vehicles",
+    "canMechanical": "Can perform mechanical tasks",
+    "phone": "Phone",
+    "email": "Email",
+    "photo": "Photo",
+    "notes": "Notes",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "enableLogin": "Enable login (send invite)",
+    "enableLoginDescription": "Send an email invitation allowing this person to log in and set their password"
+  }
 }
 }

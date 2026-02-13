@@ -23,41 +23,48 @@ export default function StaffLoginPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-      if (error) {
-        setError(error.message);
+      if (signInError) {
+        setError(signInError.message);
         setLoading(false);
         return;
       }
 
-      if (data.user) {
-        const { data: staffProfile, error: profileError } = await supabase
-          .from("staff_profiles")
-          .select("id, role, active, company_id")
-          .eq("auth_user_id", data.user.id)
-          .maybeSingle();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
-        if (profileError || !staffProfile || staffProfile.active !== true) {
-          await supabase.auth.signOut();
-          setError(t("error.accessDeniedError"));
-          setLoading(false);
-          return;
-        }
-
-        if (staffProfile.role !== "staff" && staffProfile.role !== "admin") {
-          await supabase.auth.signOut();
-          setError(t("error.accessDeniedError"));
-          setLoading(false);
-          return;
-        }
-
-        router.push(`/${locale}/staff`);
-        router.refresh();
+      if (userError || !userData.user) {
+        await supabase.auth.signOut();
+        setError(t("error.accessDeniedError"));
+        setLoading(false);
+        return;
       }
+
+      const { data: staffProfile, error: profileError } = await supabase
+        .from("staff_profiles")
+        .select("id, role, active, company_id")
+        .eq("auth_user_id", userData.user.id)
+        .maybeSingle();
+
+      if (profileError || !staffProfile || staffProfile.active !== true) {
+        await supabase.auth.signOut();
+        setError(t("error.accessDeniedError"));
+        setLoading(false);
+        return;
+      }
+
+      if (staffProfile.role !== "staff" && staffProfile.role !== "admin") {
+        await supabase.auth.signOut();
+        setError(t("error.accessDeniedError"));
+        setLoading(false);
+        return;
+      }
+
+      router.push(`/${locale}/staff`);
+      router.refresh();
     } catch {
       setError(t("error.unexpected"));
       setLoading(false);

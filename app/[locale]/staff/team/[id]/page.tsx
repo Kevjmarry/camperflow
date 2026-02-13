@@ -312,6 +312,7 @@ export default function StaffMemberPage() {
 
       if (data) {
         setMember(data as StaffProfile);
+        setFormData(prev => ({ ...prev, active: data.active }));
       }
     } catch (err: any) {
       const errorMessage = newActiveState 
@@ -333,6 +334,11 @@ export default function StaffMemberPage() {
 
     if (isViewingOwnProfile) {
       alert(t('deleteSelfNotAllowed'));
+      return;
+    }
+
+    if (member.active === true) {
+      setDeleteError("You can only delete inactive staff members.");
       return;
     }
 
@@ -544,7 +550,7 @@ export default function StaffMemberPage() {
                       {isTogglingActive ? t('reactivating') : t('reactivate')}
                     </button>
                   )}
-                  {!isViewingOwnProfile && (
+                  {!isViewingOwnProfile && member.active === false && (
                     <button
                       onClick={handleDelete}
                       disabled={isDeleting}

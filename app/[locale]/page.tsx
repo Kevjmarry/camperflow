@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { createClient } from "@/lib/supabase/client";
 
 type Locale = "en" | "de";
 
@@ -12,10 +13,25 @@ export default function AppEntryPage() {
   const [bookingCode, setBookingCode] = useState("");
   const t = useTranslations("entry");
 
+  const supabase = createClient();
+
   const locale = useMemo<Locale>(() => {
     const raw = params?.locale;
     return raw === "de" ? "de" : "en";
   }, [params]);
+
+  useEffect(() => {
+    const handleInviteSession = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes("access_token")) {
+        await supabase.auth.getSession();
+        window.history.replaceState(null, "", `/${locale}`);
+        router.replace(`/${locale}/staff/login`);
+      }
+    };
+
+    handleInviteSession();
+  }, [locale, router, supabase]);
 
   const handleGuestSubmit = (e: FormEvent) => {
     e.preventDefault();
