@@ -7,6 +7,21 @@ import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
+type Booking = {
+  id: string;
+  booking_number: string;
+  return_at: string;
+  vehicle_id: string | null;
+  vehicle_name?: string;
+  vehicle_plate?: string;
+};
+
+type Vehicle = {
+  id: string;
+  name: string;
+  registration_plate: string;
+};
+
 export default function StaffPage() {
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
@@ -14,6 +29,11 @@ export default function StaffPage() {
   const t = useTranslations("staff.dashboard");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const [cleaningsToday, setCleaningsToday] = useState(0);
+  const [loadingCleanings, setLoadingCleanings] = useState(true);
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -40,10 +60,152 @@ export default function StaffPage() {
     checkAdminStatus();
   }, [supabase]);
 
+  useEffect(() => {
+    async function fetchCleaningsToday() {
+      setLoadingCleanings(true);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const { data, count } = await supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["confirmed", "on_rent"])
+        .gte("return_at", today.toISOString())
+        .lt("return_at", tomorrow.toISOString());
+
+      setCleaningsToday(count || 0);
+      setLoadingCleanings(false);
+    }
+
+    fetchCleaningsToday();
+  }, [supabase]);
+
+  useEffect(() => {
+    async function fetchUpcomingReturns() {
+      setLoadingBookings(true);
+
+      // Fetch bookings with upcoming returns
+      const { data: bookingsData } = await supabase
+        .from("bookings")
+        .select("id, booking_number, return_at, vehicle_id")
+        .in("status", ["confirmed", "on_rent"])
+        .gte("return_at", new Date().toISOString())
+        .order("return_at", { ascending: true });
+
+      if (!bookingsData || bookingsData.length === 0) {
+        setLoadingBookings(false);
+        return;
+      }
+
+      // Fetch vehicles to map names (filter out null vehicle_ids)
+      const vehicleIds = [...new Set(bookingsData.map(b => b.vehicle_id).filter((id): id is string => id !== null))];
+      
+      const vehicleMap = new Map<string, Vehicle>();
+      
+      if (vehicleIds.length > 0) {
+        const { data: vehiclesData } = await supabase
+          .from("vehicles")
+          .select("id, name, registration_plate")
+          .in("id", vehicleIds);
+
+        vehiclesData?.forEach(v => vehicleMap.set(v.id, v));
+      }
+
+      // Merge data
+      const enrichedBookings = bookingsData.map(b => ({
+        ...b,
+        vehicle_name: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.name : undefined,
+        vehicle_plate: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.registration_plate : undefined,
+      }));
+
+      setBookings(enrichedBookings);
+      setLoadingBookings(false);
+    }
+
+    fetchUpcomingReturns();
+  }, [supabase]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push(`/${locale}`);
     router.refresh();
+  };
+
+  const toggleMonth = (monthKey: string) => {
+    setExpandedMonths(prev => {
+      const next = new Set(prev);
+      if (next.has(monthKey)) {
+        next.delete(monthKey);
+      } else {
+        next.add(monthKey);
+      }
+      return next;
+    });
+  };
+
+  // Group bookings by date (next 14 days) and future months
+  const now = new Date();
+  const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const next14Days: Map<string, Booking[]> = new Map();
+  const futureMonths: Map<string, Booking[]> = new Map();
+
+  bookings.forEach(booking => {
+    const returnDate = new Date(booking.return_at);
+    
+    if (returnDate <= fourteenDaysFromNow) {
+      // Next 14 days - group by date
+      const dateKey = returnDate.toISOString().split('T')[0];
+      if (!next14Days.has(dateKey)) {
+        next14Days.set(dateKey, []);
+      }
+      next14Days.get(dateKey)!.push(booking);
+    } else {
+      // Future - group by month
+      const monthKey = `${returnDate.getFullYear()}-${String(returnDate.getMonth() + 1).padStart(2, '0')}`;
+      if (!futureMonths.has(monthKey)) {
+        futureMonths.set(monthKey, []);
+      }
+      futureMonths.get(monthKey)!.push(booking);
+    }
+  });
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const bookingDate = new Date(date);
+    bookingDate.setHours(0, 0, 0, 0);
+
+    if (bookingDate.getTime() === today.getTime()) {
+      return "Today";
+    } else if (bookingDate.getTime() === tomorrow.getTime()) {
+      return "Tomorrow";
+    }
+    
+    return date.toLocaleDateString(locale, { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString(locale, { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const formatMonthYear = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   };
 
   return (
@@ -104,6 +266,30 @@ export default function StaffPage() {
               </div>
             </Link>
 
+            <Link href={`/${locale}/staff/checklists?type=cleaning&range=today`} className="surface" style={cardStyle}>
+              {iconCleanings}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={cardTitle}>Cleanings Today</h3>
+                  <p style={cardText}>Vehicles returning today</p>
+                </div>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    color: "rgb(var(--brand))",
+                    backgroundColor: "rgb(var(--brand-light))",
+                    padding: "var(--space-2) var(--space-3)",
+                    borderRadius: "var(--radius-md)",
+                    minWidth: "48px",
+                    textAlign: "center",
+                  }}
+                >
+                  {loadingCleanings ? "…" : cleaningsToday}
+                </div>
+              </div>
+            </Link>
+
             <Link href={`/${locale}/staff/team`} className="surface" style={cardStyle}>
               {iconTeam}
               <div>
@@ -127,6 +313,273 @@ export default function StaffPage() {
                 <p style={cardText}>{t("cards.company.desc")}</p>
               </div>
             </Link>
+          </div>
+
+          {/* UPCOMING RETURNS SECTION */}
+          <div className="surface" style={{ padding: "var(--space-6)" }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              marginBottom: "var(--space-4)" 
+            }}>
+              <h2 style={{ fontSize: "18px", margin: 0 }}>
+                Upcoming Returns
+              </h2>
+              <Link 
+                href={`/${locale}/staff/bookings`}
+                style={{
+                  fontSize: "14px",
+                  color: "rgb(var(--brand))",
+                  textDecoration: "none"
+                }}
+              >
+                View all bookings
+              </Link>
+            </div>
+
+            {loadingBookings ? (
+              <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
+                Loading upcoming returns...
+              </p>
+            ) : bookings.length === 0 ? (
+              <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
+                No upcoming returns scheduled
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+                {/* NEXT 14 DAYS */}
+                {next14Days.size > 0 && (
+                  <div>
+                    <h3 style={{ 
+                      fontSize: "16px", 
+                      marginBottom: "var(--space-3)",
+                      color: "rgb(var(--text))"
+                    }}>
+                      Next 14 Days
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      {Array.from(next14Days.entries())
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([dateKey, dayBookings]) => (
+                          <div key={dateKey}>
+                            <div style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "var(--space-2)",
+                              marginBottom: "var(--space-2)",
+                              padding: "var(--space-2) 0",
+                              borderBottom: "1px solid rgb(var(--border))"
+                            }}>
+                              <span style={{ 
+                                fontSize: "14px", 
+                                fontWeight: 600,
+                                color: "rgb(var(--text))"
+                              }}>
+                                {formatDate(dateKey)}
+                              </span>
+                              <span style={{
+                                fontSize: "12px",
+                                color: "rgb(var(--muted))",
+                                backgroundColor: "rgb(var(--brand-light))",
+                                padding: "2px 8px",
+                                borderRadius: "var(--radius-sm)"
+                              }}>
+                                {dayBookings.length} {dayBookings.length === 1 ? 'return' : 'returns'}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                              {dayBookings.map(booking => (
+                                <Link
+                                  key={booking.id}
+                                  href={`/${locale}/staff/bookings/${booking.id}`}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    padding: "var(--space-3)",
+                                    backgroundColor: "rgb(var(--surface))",
+                                    borderRadius: "var(--radius-md)",
+                                    textDecoration: "none",
+                                    border: "1px solid rgb(var(--border))",
+                                    transition: "all 0.2s ease"
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "rgb(var(--brand-light))";
+                                    e.currentTarget.style.borderColor = "rgb(var(--brand))";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "rgb(var(--surface))";
+                                    e.currentTarget.style.borderColor = "rgb(var(--border))";
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ 
+                                      fontSize: "14px", 
+                                      fontWeight: 500,
+                                      color: "rgb(var(--text))"
+                                    }}>
+                                      {booking.vehicle_name || 'Unassigned'}
+                                    </div>
+                                    <div style={{ 
+                                      fontSize: "12px", 
+                                      color: "rgb(var(--muted))",
+                                      marginTop: "2px"
+                                    }}>
+                                      {booking.vehicle_plate || '—'} • {booking.booking_number}
+                                    </div>
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: "14px", 
+                                    fontWeight: 500,
+                                    color: "rgb(var(--brand))"
+                                  }}>
+                                    {formatTime(booking.return_at)}
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* FUTURE RETURNS */}
+                {futureMonths.size > 0 && (
+                  <div>
+                    <h3 style={{ 
+                      fontSize: "16px", 
+                      marginBottom: "var(--space-3)",
+                      color: "rgb(var(--text))"
+                    }}>
+                      Future Returns
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                      {Array.from(futureMonths.entries())
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([monthKey, monthBookings]) => {
+                          const isExpanded = expandedMonths.has(monthKey);
+                          return (
+                            <div key={monthKey}>
+                              <button
+                                onClick={() => toggleMonth(monthKey)}
+                                style={{
+                                  width: "100%",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "var(--space-3)",
+                                  backgroundColor: "rgb(var(--surface))",
+                                  border: "1px solid rgb(var(--border))",
+                                  borderRadius: "var(--radius-md)",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease"
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "rgb(var(--brand-light))";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "rgb(var(--surface))";
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                                  <span style={{ 
+                                    fontSize: "14px", 
+                                    fontWeight: 500,
+                                    color: "rgb(var(--text))"
+                                  }}>
+                                    {formatMonthYear(monthKey)}
+                                  </span>
+                                  <span style={{
+                                    fontSize: "12px",
+                                    color: "rgb(var(--muted))",
+                                    backgroundColor: "rgb(var(--brand-light))",
+                                    padding: "2px 8px",
+                                    borderRadius: "var(--radius-sm)"
+                                  }}>
+                                    {monthBookings.length}
+                                  </span>
+                                </div>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  stroke="currentColor"
+                                  fill="none"
+                                  style={{
+                                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                    transition: "transform 0.2s ease"
+                                  }}
+                                >
+                                  <path strokeWidth="2" d="M4 6l4 4 4-4" />
+                                </svg>
+                              </button>
+                              {isExpanded && (
+                                <div style={{ 
+                                  marginTop: "var(--space-2)",
+                                  display: "flex", 
+                                  flexDirection: "column", 
+                                  gap: "var(--space-2)",
+                                  paddingLeft: "var(--space-4)"
+                                }}>
+                                  {monthBookings.map(booking => (
+                                    <Link
+                                      key={booking.id}
+                                      href={`/${locale}/staff/bookings/${booking.id}`}
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        padding: "var(--space-3)",
+                                        backgroundColor: "rgb(var(--surface))",
+                                        borderRadius: "var(--radius-md)",
+                                        textDecoration: "none",
+                                        border: "1px solid rgb(var(--border))",
+                                        transition: "all 0.2s ease"
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = "rgb(var(--brand-light))";
+                                        e.currentTarget.style.borderColor = "rgb(var(--brand))";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = "rgb(var(--surface))";
+                                        e.currentTarget.style.borderColor = "rgb(var(--border))";
+                                      }}
+                                    >
+                                      <div>
+                                        <div style={{ 
+                                          fontSize: "14px", 
+                                          fontWeight: 500,
+                                          color: "rgb(var(--text))"
+                                        }}>
+                                          {booking.vehicle_name || 'Unassigned'}
+                                        </div>
+                                        <div style={{ 
+                                          fontSize: "12px", 
+                                          color: "rgb(var(--muted))",
+                                          marginTop: "2px"
+                                        }}>
+                                          {booking.vehicle_plate || '—'} • {booking.booking_number}
+                                        </div>
+                                      </div>
+                                      <div style={{ 
+                                        fontSize: "13px", 
+                                        color: "rgb(var(--text))"
+                                      }}>
+                                        {formatDate(booking.return_at)} {formatTime(booking.return_at)}
+                                      </div>
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {!loading && (
@@ -204,6 +657,14 @@ const iconVehicles = (
   <div style={iconWrap}>
     <svg width="24" height="24" stroke="currentColor" fill="none">
       <path strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  </div>
+);
+
+const iconCleanings = (
+  <div style={iconWrap}>
+    <svg width="24" height="24" stroke="currentColor" fill="none">
+      <path strokeWidth="2" d="M3 6h18M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m3 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6h14z" />
     </svg>
   </div>
 );
