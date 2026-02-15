@@ -1,12 +1,29 @@
 'use client';
 
-import { useState, useOptimistic } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import PageContainer from '@/components/PageContainer';
 
-interface ChecklistItem {
+type ChecklistInstanceType = {
+  id: string;
+  booking_id: string | null;
+  checklist_type: string;
+  status: string;
+  started_at: string | null;
+  started_by: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  bookings: {
+    id: string;
+    booking_number: string;
+    customer_name: string;
+  } | null;
+  vehicles: any;
+};
+
+type ChecklistItemType = {
   id: string;
   template_item_id: string;
   checked: boolean;
@@ -18,67 +35,94 @@ interface ChecklistItem {
     label: string;
     sort_order: number;
   };
-}
-
-interface ChecklistInstance {
-  id: string;
-  booking_id: string | null;
-  checklist_type: string;
-  status: string;
-  completed_at: string | null;
-  completed_by: string | null;
-  created_at: string;
-  bookings: {
-    id: string;
-    booking_number: string;
-    customer_name: string;
-  } | null;
-  vehicles?: {
-    id: string;
-    license_plate: string;
-    model: string;
-  } | null;
-}
-
-interface ChecklistDetailClientProps {
-  instance: ChecklistInstance;
-  items: ChecklistItem[];
-  locale: string;
-}
+};
 
 export default function ChecklistDetailClient({
   instance,
-  items,
+  items: initialItems,
   locale,
-}: ChecklistDetailClientProps) {
+}: {
+  instance: ChecklistInstanceType;
+  items: ChecklistItemType[];
+  locale: string;
+}) {
   const router = useRouter();
   const supabase = createClient();
-  const [error, setError] = useState<string | null>(null);
+  const [localItems, setLocalItems] = useState(initialItems);
+  const [localStatus, setLocalStatus] = useState(instance.status);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [initials, setInitials] = useState<string>('');
+  const [openNotesById, setOpenNotesById] = useState<Record<string, boolean>>({});
 
-  const [optimisticItems, setOptimisticItems] = useOptimistic(
-    items,
-    (state, { itemId, checked }: { itemId: string; checked: boolean }) => {
-      return state.map((item) =>
-        item.id === itemId ? { ...item, checked } : item
-      );
-    }
-  );
-
-  const handleToggle = async (itemId: string, currentChecked: boolean) => {
-    setError(null);
-    const newChecked = !currentChecked;
-
-    // Optimistic update
-    setOptimisticItems({ itemId, checked: newChecked });
-
-    try {
+  useEffect(() => {
+    const fetchUserProfile = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) return;
 
-      // Update the checklist item
-      const { error: updateError } = await supabase
+      setUserId(user.id);
+
+      const { data: profile } = await supabase
+        .from('staff_profiles')
+        .select('first_name,last_name,company_id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (profile) {
+        const firstInitial = profile.first_name?.charAt(0)?.toUpperCase() || '';
+        const lastInitial = profile.last_name?.charAt(0)?.toUpperCase() || '';
+        setInitials(firstInitial + lastInitial);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  const handleBackClick = () => {
+    if (typeof document !== 'undefined' && document.referrer.includes('/staff/checklists')) {
+      router.back();
+    } else {
+      router.push(`/${locale}/staff/checklists?type=cleaning&range=today`);
+    }
+  };
+
+  const handleToggle = async (itemId: string, currentChecked: boolean) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const newChecked = !currentChecked;
+
+    const nextItems = localItems.map((it) =>
+      it.id === itemId
+        ? {
+            ...it,
+            checked: newChecked,
+            checked_at: newChecked ? new Date().toISOString() : null,
+            checked_by: newChecked ? user.id : null,
+          }
+        : it
+    );
+
+    const anyChecked = nextItems.some((it) => it.checked);
+    const allChecked = nextItems.every((it) => it.checked);
+
+    let newStatus = 'not_started';
+    if (allChecked) {
+      newStatus = 'completed';
+    } else if (anyChecked) {
+      newStatus = 'in_progress';
+    }
+
+    const oldStatus = localStatus;
+
+    setLocalItems(nextItems);
+    setLocalStatus(newStatus);
+
+    try {
+      const { error: itemError } = await supabase
         .from('checklist_instance_items')
         .update({
           checked: newChecked,
@@ -87,226 +131,275 @@ export default function ChecklistDetailClient({
         })
         .eq('id', itemId);
 
-      if (updateError) throw updateError;
+      if (itemError) throw itemError;
 
-      // Compute new status from optimistic items
-      const updatedItems = optimisticItems.map((item) =>
-        item.id === itemId ? { ...item, checked: newChecked } : item
-      );
-      const totalItems = updatedItems.length;
-      const checkedCount = updatedItems.filter((item) => item.checked).length;
+      const updatePayload: any = { status: newStatus };
 
-      let newStatus: string;
-      if (checkedCount === 0) newStatus = 'not_started';
-      else if (checkedCount === totalItems) newStatus = 'completed';
-      else newStatus = 'in_progress';
+      if (newStatus === 'in_progress' && oldStatus === 'not_started') {
+        updatePayload.started_at = new Date().toISOString();
+        updatePayload.started_by = user.id;
+      }
 
-      // Update instance status
-      const { error: statusError } = await supabase
+      if (newStatus === 'completed' && oldStatus !== 'completed') {
+        updatePayload.completed_at = new Date().toISOString();
+        updatePayload.completed_by = user.id;
+      }
+
+      if (oldStatus === 'completed' && newStatus !== 'completed') {
+        updatePayload.completed_at = null;
+        updatePayload.completed_by = null;
+      }
+
+      const { error: instanceError } = await supabase
         .from('checklist_instances')
-        .update({
-          status: newStatus,
-          completed_at:
-            newStatus === 'completed' ? new Date().toISOString() : null,
-          completed_by: newStatus === 'completed' ? user.id : null,
-        })
+        .update(updatePayload)
         .eq('id', instance.id);
 
-      if (statusError) throw statusError;
-
-      router.refresh();
+      if (instanceError) throw instanceError;
     } catch (err) {
-      console.error('Error toggling checklist item:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to update checklist item'
-      );
+      console.error('Error updating checklist:', err);
+      setLocalItems(initialItems);
+      setLocalStatus(instance.status);
       router.refresh();
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'rgb(var(--success))';
-      case 'in_progress':
-        return 'rgb(var(--warning))';
-      case 'not_started':
-        return 'rgb(var(--muted))';
-      default:
-        return 'rgb(var(--muted))';
+  const handleNotesChange = (itemId: string, notes: string) => {
+    setLocalItems((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, notes } : it))
+    );
+  };
+
+  const handleNotesBlur = async (itemId: string, notes: string) => {
+    try {
+      await supabase
+        .from('checklist_instance_items')
+        .update({ notes })
+        .eq('id', itemId);
+    } catch (err) {
+      console.error('Error updating notes:', err);
+      router.refresh();
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'In Progress';
-      case 'not_started':
-        return 'Not Started';
-      default:
-        return status;
-    }
+  const toggleNotes = (itemId: string) => {
+    setOpenNotesById((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
   };
+
+  const sortedItems = [...localItems].sort(
+    (a, b) => a.template.sort_order - b.template.sort_order
+  );
 
   return (
-    <PageContainer maxWidth="800px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {instance.booking_id && instance.bookings && (
-            <Link
-              href={`/${locale}/staff/bookings/${instance.booking_id}`}
+    <PageContainer>
+      <div style={{ marginBottom: '24px' }}>
+        <button
+          onClick={handleBackClick}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            color: '#4B5563',
+            textDecoration: 'none',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <span>←</span>
+          Back to Checklists
+        </button>
+      </div>
+
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          padding: '24px',
+        }}
+      >
+        <div
+          style={{
+            marginBottom: '24px',
+            borderBottom: '1px solid #E5E7EB',
+            paddingBottom: '16px',
+          }}
+        >
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+            {instance.checklist_type === 'handover' ? 'Handover' : 'Return'} Checklist
+          </h1>
+          <p style={{ fontSize: '14px', color: '#6B7280' }}>
+            {instance.bookings
+              ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
+              : 'No booking linked'}
+          </p>
+          <div style={{ marginTop: '8px', fontSize: '14px', color: '#6B7280' }}>
+            <span
               style={{
-                fontSize: '14px',
-                color: 'rgb(var(--brand))',
-                textDecoration: 'none',
                 display: 'inline-block',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 500,
+                backgroundColor:
+                  localStatus === 'completed'
+                    ? '#D1FAE5'
+                    : localStatus === 'in_progress'
+                      ? '#DBEAFE'
+                      : '#F3F4F6',
+                color:
+                  localStatus === 'completed'
+                    ? '#065F46'
+                    : localStatus === 'in_progress'
+                      ? '#1E40AF'
+                      : '#374151',
               }}
             >
-              ← Back to booking {instance.bookings.booking_number}
-            </Link>
-          )}
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))', margin: 0 }}>
-                {instance.checklist_type.replace(/_/g, ' ').toUpperCase()} Checklist
-              </h1>
-
-              <span
-                style={{
-                  display: 'inline-block',
-                  padding: 'var(--space-1) var(--space-3)',
-                  borderRadius: 'var(--radius)',
-                  background: `${getStatusColor(instance.status)}15`,
-                  color: getStatusColor(instance.status),
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                {getStatusLabel(instance.status)}
-              </span>
-            </div>
-
-            {instance.bookings && (
-              <div style={{ marginTop: 'var(--space-2)', fontSize: '14px', color: 'rgb(var(--muted))' }}>
-                Booking: {instance.bookings.booking_number} • {instance.bookings.customer_name}
-              </div>
-            )}
-
-            {instance.vehicles && (
-              <div style={{ marginTop: 'var(--space-1)', fontSize: '14px', color: 'rgb(var(--muted))' }}>
-                Vehicle: {instance.vehicles.license_plate} • {instance.vehicles.model}
-              </div>
-            )}
+              {localStatus}
+            </span>
           </div>
+        </div>
 
-          {error && (
-            <div
-              style={{
-                padding: 'var(--space-4)',
-                background: 'rgb(var(--error) / 0.1)',
-                border: '1px solid rgb(var(--error) / 0.3)',
-                borderRadius: 'var(--radius)',
-                color: 'rgb(var(--error))',
-                fontSize: '14px',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <div>
-            <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-              Checklist Items
-            </h2>
-
-            {optimisticItems.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {sortedItems.map((item) => {
+            return (
               <div
+                key={item.id}
                 style={{
-                  padding: 'var(--space-4)',
-                  background: 'rgb(var(--border) / 0.3)',
-                  borderRadius: 'var(--radius)',
-                  color: 'rgb(var(--muted))',
-                  fontSize: '14px',
-                  textAlign: 'center',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  padding: '16px',
                 }}
               >
-                No items in this checklist
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {optimisticItems.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => handleToggle(item.id, item.checked)}
-                    style={{
-                      padding: 'var(--space-4)',
-                      background: 'rgb(var(--border) / 0.3)',
-                      borderRadius: 'var(--radius)',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 'var(--space-3)',
-                      cursor: 'pointer',
-                    }}
-                  >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <label htmlFor={`check-${item.id}`} style={{ marginTop: '4px', cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
+                    <input
+                      type="checkbox"
+                      id={`check-${item.id}`}
+                      checked={item.checked}
+                      onChange={() => handleToggle(item.id, item.checked)}
+                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                    />
                     <div
                       style={{
                         width: '20px',
                         height: '20px',
+                        border: item.checked ? '2px solid rgb(var(--brand))' : '2px solid #D1D5DB',
                         borderRadius: '4px',
-                        border: `2px solid ${
-                          item.checked ? 'rgb(var(--success))' : 'rgb(var(--border))'
-                        }`,
-                        background: item.checked ? 'rgb(var(--success))' : 'transparent',
-                        flexShrink: 0,
-                        marginTop: '2px',
+                        backgroundColor: '#FFFFFF',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
                       {item.checked && (
-                        <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>✓</span>
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M13.3332 4L5.99984 11.3333L2.6665 8"
+                            stroke="rgb(var(--brand))"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       )}
                     </div>
-
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: '15px',
-                          fontWeight: 500,
-                          color: 'rgb(var(--text))',
-                          textDecoration: item.checked ? 'line-through' : 'none',
-                          opacity: item.checked ? 0.6 : 1,
-                        }}
-                      >
-                        {item.template.label}
+                  </label>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                        <label htmlFor={`check-${item.id}`} style={{ fontWeight: 500, cursor: 'pointer' }}>
+                          {item.template.label}
+                        </label>
+                        {item.checked && item.checked_by && userId && item.checked_by === userId && initials && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              backgroundColor: '#F3F4F6',
+                              color: '#6B7280',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {initials}
+                          </span>
+                        )}
                       </div>
-
-                      {item.notes && (
-                        <div
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleNotes(item.id)}
                           style={{
-                            fontSize: '14px',
-                            color: 'rgb(var(--muted))',
-                            marginTop: 'var(--space-2)',
-                            fontStyle: 'italic',
+                            fontSize: '13px',
+                            color: '#2563EB',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '4px 8px',
+                            textDecoration: 'underline',
                           }}
                         >
-                          Note: {item.notes}
-                        </div>
-                      )}
+                          {item.notes ? 'Edit note' : 'Add note'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
 
-            <div style={{ marginTop: 'var(--space-6)', fontSize: '14px', color: 'rgb(var(--muted))' }}>
-              {optimisticItems.filter((i) => i.checked).length} of {optimisticItems.length} items completed
-            </div>
-          </div>
+                    {!openNotesById[item.id] && item.notes && (
+                      <div
+                        style={{
+                          marginTop: '8px',
+                          fontSize: '13px',
+                          color: '#6B7280',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {item.notes}
+                      </div>
+                    )}
+
+                    {openNotesById[item.id] && (
+                      <textarea
+                        placeholder="Notes..."
+                        value={item.notes ?? ''}
+                        onChange={(e) => handleNotesChange(item.id, e.target.value)}
+                        onBlur={(e) => handleNotesBlur(item.id, e.target.value)}
+                        rows={2}
+                        style={{
+                          marginTop: '8px',
+                          width: '100%',
+                          padding: '8px',
+                          border: '1px solid #D1D5DB',
+                          borderRadius: '4px',
+                          fontSize: '14px',
+                          fontFamily: 'inherit',
+                          resize: 'vertical',
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </PageContainer>
