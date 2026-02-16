@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import PageContainer from '@/components/PageContainer';
 
 type ChecklistScope = 'all' | 'booking' | 'vehicle';
 type ChecklistStatus = 'all' | 'not_started' | 'in_progress' | 'completed';
@@ -35,7 +36,6 @@ interface IssueItem {
   created_at: string;
 }
 
-// Map checklist type to display label
 function getChecklistTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     cleaning: 'Cleaning',
@@ -55,12 +55,22 @@ export default function ChecklistsPage() {
   const locale = params.locale as string;
 
   const [loading, setLoading] = useState(true);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [canManage, setCanManage] = useState<boolean>(false);
   const [bookingChecklists, setBookingChecklists] = useState<ChecklistItem[]>([]);
   const [openIssues, setOpenIssues] = useState<IssueItem[]>([]);
+  const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
-  const scope = (searchParams.get('scope') as ChecklistScope) || 'all';
-  const status = (searchParams.get('status') as ChecklistStatus) || 'all';
+  const [scopeFilter, setScopeFilter] = useState<ChecklistScope>('all');
+  const [statusFilter, setStatusFilter] = useState<ChecklistStatus>('all');
+
+  useEffect(() => {
+    const scope = (searchParams.get('scope') as ChecklistScope) || 'all';
+    const status = (searchParams.get('status') as ChecklistStatus) || 'all';
+    setScopeFilter(scope);
+    setStatusFilter(status);
+  }, [searchParams]);
+
+  const status = statusFilter;
 
   useEffect(() => {
     let cancelled = false;
@@ -68,7 +78,6 @@ export default function ChecklistsPage() {
     async function loadData() {
       const supabase = createClient();
 
-      // Check authentication
       const {
         data: { user },
         error: authError,
@@ -79,10 +88,9 @@ export default function ChecklistsPage() {
         return;
       }
 
-      // Get user's company
       const { data: profile, error: profileError } = await supabase
         .from('staff_profiles')
-        .select('company_id')
+        .select('company_id, can_manage, role')
         .eq('auth_user_id', user.id)
         .single();
 
@@ -93,16 +101,19 @@ export default function ChecklistsPage() {
       }
 
       if (cancelled) return;
-      setCompanyId(profile.company_id);
 
-      // -----------------------------
-      // Booking checklists (no joins)
-      // -----------------------------
+      // Check if user can manage (admin or can_manage flag)
+      const userCanManage = profile.can_manage === true || profile.role === 'admin';
+      setCanManage(userCanManage);
+
+      const companyId = profile.company_id;
+
+      // Booking checklists
       try {
         let ciQuery = supabase
           .from('checklist_instances')
           .select('id, checklist_type, status, created_at, booking_id')
-          .eq('company_id', profile.company_id)
+          .eq('company_id', companyId)
           .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn'])
           .not('booking_id', 'is', null)
           .order('created_at', { ascending: false });
@@ -180,9 +191,7 @@ export default function ChecklistsPage() {
         if (!cancelled) setBookingChecklists([]);
       }
 
-      // -----------------------------
-      // Open issues (no fragile joins)
-      // -----------------------------
+      // Open issues
       try {
         const { data: issueRows, error: issueError } = await supabase
           .from('issue_flags')
@@ -203,11 +212,10 @@ export default function ChecklistsPage() {
           const vehiclesById = new Map<string, any>();
 
           if (issueInstanceIds.length > 0) {
-            // Only instances for this company (server-side scope)
             const { data: instanceRows, error: instanceError } = await supabase
               .from('checklist_instances')
               .select('id, company_id, booking_id')
-              .eq('company_id', profile.company_id)
+              .eq('company_id', companyId)
               .in('id', issueInstanceIds);
 
             if (instanceError) {
@@ -251,7 +259,6 @@ export default function ChecklistsPage() {
             }
           }
 
-          // Filter to issues whose instance exists for this company (company scope enforced)
           const scopedIssues = (issueRows || []).filter((it: any) => {
             return it.checklist_instance_id && instancesById.has(it.checklist_instance_id);
           });
@@ -291,410 +298,464 @@ export default function ChecklistsPage() {
     };
   }, [locale, router, status]);
 
-  // Filter based on scope
   let displayBookingChecklists = bookingChecklists;
   let displayOpenIssues = openIssues;
 
-  if (scope === 'booking') {
+  if (scopeFilter === 'booking') {
     // Already filtered to booking types
-  } else if (scope === 'vehicle') {
-    // For now, show empty since vehicle_readiness would need separate handling
+  } else if (scopeFilter === 'vehicle') {
     displayBookingChecklists = [];
   }
 
+  const notStarted = displayBookingChecklists.filter((c) => c.status === 'not_started');
+  const inProgress = displayBookingChecklists.filter((c) => c.status === 'in_progress');
+  const completed = displayBookingChecklists.filter((c) => c.status === 'completed');
+
+  const handleScopeChange = (newScope: ChecklistScope) => {
+    setScopeFilter(newScope);
+    router.push(`/${locale}/staff/checklists?scope=${newScope}&status=${statusFilter}`);
+  };
+
+  const handleStatusChange = (newStatus: ChecklistStatus) => {
+    setStatusFilter(newStatus);
+    router.push(`/${locale}/staff/checklists?scope=${scopeFilter}&status=${newStatus}`);
+  };
+
   if (loading) {
     return (
-      <div className="page-container">
-        <p>Loading...</p>
-      </div>
+      <PageContainer maxWidth="1200px">
+        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+          <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>
+            Loading...
+          </div>
+        </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>Checklists</h1>
-        <Link href={`/${locale}/staff/checklists/new`} className="button-primary">
-          Create Checklist
-        </Link>
-      </div>
-
-      {/* Filters */}
-      <div className="filters">
-        <div className="filter-group">
-          <label>Scope:</label>
-          <div className="filter-buttons">
-            <Link
-              href={`/${locale}/staff/checklists?scope=all&status=${status}`}
-              className={scope === 'all' ? 'filter-button active' : 'filter-button'}
-            >
-              All
+    <PageContainer maxWidth="1200px">
+      <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        {/* Header */}
+        <div className="page-header">
+          <div>
+            <Link href={`/${locale}/staff`} className="back-link">
+              ← Back to Dashboard
             </Link>
-            <Link
-              href={`/${locale}/staff/checklists?scope=booking&status=${status}`}
-              className={scope === 'booking' ? 'filter-button active' : 'filter-button'}
-            >
-              Booking
-            </Link>
-            <Link
-              href={`/${locale}/staff/checklists?scope=vehicle&status=${status}`}
-              className={scope === 'vehicle' ? 'filter-button active' : 'filter-button'}
-            >
-              Vehicle
-            </Link>
+            <h1>Checklists</h1>
+            <p className="subtitle">Manage pickup, return, and cleaning checklists</p>
           </div>
-        </div>
-
-        <div className="filter-group">
-          <label>Status:</label>
-          <div className="filter-buttons">
-            <Link
-              href={`/${locale}/staff/checklists?scope=${scope}&status=all`}
-              className={status === 'all' ? 'filter-button active' : 'filter-button'}
-            >
-              All
+          {canManage && (
+            <Link href={`/${locale}/staff/checklists/templates`} className="btn btn-primary">
+              Manage Default Checklists
             </Link>
-            <Link
-              href={`/${locale}/staff/checklists?scope=${scope}&status=not_started`}
-              className={status === 'not_started' ? 'filter-button active' : 'filter-button'}
-            >
-              Not Started
-            </Link>
-            <Link
-              href={`/${locale}/staff/checklists?scope=${scope}&status=in_progress`}
-              className={status === 'in_progress' ? 'filter-button active' : 'filter-button'}
-            >
-              In Progress
-            </Link>
-            <Link
-              href={`/${locale}/staff/checklists?scope=${scope}&status=completed`}
-              className={status === 'completed' ? 'filter-button active' : 'filter-button'}
-            >
-              Completed
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Booking Checklists Section */}
-      {(scope === 'all' || scope === 'booking') && (
-        <section className="checklists-section">
-          <h2>Booking Checklists</h2>
-          {displayBookingChecklists.length === 0 ? (
-            <p className="empty-state">No booking checklists found.</p>
-          ) : (
-            <div className="checklist-grid">
-              {displayBookingChecklists.map((checklist) => (
-                <Link
-                  key={checklist.id}
-                  href={`/${locale}/staff/checklists/${checklist.id}`}
-                  className="checklist-card"
-                >
-                  <div className="checklist-header">
-                    <h3>{checklist.name}</h3>
-                    <span className={`status-badge status-${checklist.status}`}>
-                      {String(checklist.status || '').replace('_', ' ')}
-                    </span>
-                  </div>
-                  <div className="checklist-details">
-                    <p>
-                      <strong>Type:</strong> {checklist.type}
-                    </p>
-                    <p>
-                      <strong>Booking:</strong> {checklist.booking_number}
-                    </p>
-                    <p>
-                      <strong>Customer:</strong> {checklist.customer_name}
-                    </p>
-                    <p>
-                      <strong>Vehicle:</strong> {checklist.vehicle_name} ({checklist.vehicle_plate})
-                    </p>
-                    {checklist.pickup_at && (
-                      <p>
-                        <strong>Pickup:</strong> {new Date(checklist.pickup_at).toLocaleDateString()}
-                      </p>
-                    )}
-                    {checklist.return_at && (
-                      <p>
-                        <strong>Return:</strong> {new Date(checklist.return_at).toLocaleDateString()}
-                      </p>
-                    )}
-                    <p className="checklist-date">
-                      Created: {new Date(checklist.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
           )}
-        </section>
-      )}
+        </div>
 
-      {/* Vehicle Checklists Section */}
-      {(scope === 'all' || scope === 'vehicle') && (
-        <section className="checklists-section">
-          <h2>Vehicle Checklists</h2>
-          <div className="info-box">
-            <p>Vehicle readiness checklists are being updated. Check back soon.</p>
+        {/* Filters */}
+        <div className="filters">
+          <div className="filter-item">
+            <label htmlFor="scope-filter">Scope:</label>
+            <select
+              id="scope-filter"
+              className="input"
+              value={scopeFilter}
+              onChange={(e) => handleScopeChange(e.target.value as ChecklistScope)}
+            >
+              <option value="all">All</option>
+              <option value="booking">Booking</option>
+              <option value="vehicle">Vehicle</option>
+            </select>
           </div>
-        </section>
-      )}
 
-      {/* Open Issues Section */}
-      {scope === 'all' && (
-        <section className="checklists-section">
-          <h2>Open Issues</h2>
-          {displayOpenIssues.length === 0 ? (
-            <p className="empty-state">No open issues found.</p>
-          ) : (
-            <div className="checklist-grid">
+          <div className="filter-item">
+            <label htmlFor="status-filter">Status:</label>
+            <select
+              id="status-filter"
+              className="input"
+              value={statusFilter}
+              onChange={(e) => handleStatusChange(e.target.value as ChecklistStatus)}
+            >
+              <option value="all">All</option>
+              <option value="not_started">Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Results */}
+        {(scopeFilter === 'all' || scopeFilter === 'booking') && (
+          <div className="results-section">
+            {displayBookingChecklists.length === 0 ? (
+              <div className="empty-state">No booking checklists found.</div>
+            ) : (
+              <>
+                {notStarted.length > 0 && (
+                  <div className="group">
+                    <h2 className="group-heading">Not Started</h2>
+                    <div className="list-container">
+                      {notStarted.map((checklist) => (
+                        <Link
+                          key={checklist.id}
+                          href={`/${locale}/staff/checklists/${checklist.id}`}
+                          className="list-row"
+                        >
+                          <div className="row-header">
+                            <span className="row-title">
+                              {checklist.name} · {checklist.booking_number}
+                            </span>
+                            <span className="badge badge-not-started">Not Started</span>
+                          </div>
+                          <div className="row-line">{checklist.customer_name}</div>
+                          <div className="row-line row-muted">
+                            {checklist.vehicle_name} ({checklist.vehicle_plate})
+                          </div>
+                          {checklist.pickup_at && checklist.return_at && (
+                            <div className="row-line row-muted row-small">
+                              {new Date(checklist.pickup_at).toLocaleDateString()} →{' '}
+                              {new Date(checklist.return_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {inProgress.length > 0 && (
+                  <div className="group">
+                    <h2 className="group-heading">In Progress</h2>
+                    <div className="list-container">
+                      {inProgress.map((checklist) => (
+                        <Link
+                          key={checklist.id}
+                          href={`/${locale}/staff/checklists/${checklist.id}`}
+                          className="list-row"
+                        >
+                          <div className="row-header">
+                            <span className="row-title">
+                              {checklist.name} · {checklist.booking_number}
+                            </span>
+                            <span className="badge badge-in-progress">In Progress</span>
+                          </div>
+                          <div className="row-line">{checklist.customer_name}</div>
+                          <div className="row-line row-muted">
+                            {checklist.vehicle_name} ({checklist.vehicle_plate})
+                          </div>
+                          {checklist.pickup_at && checklist.return_at && (
+                            <div className="row-line row-muted row-small">
+                              {new Date(checklist.pickup_at).toLocaleDateString()} →{' '}
+                              {new Date(checklist.return_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {completed.length > 0 && (
+                  <div className="group">
+                    <h2
+                      className="group-heading group-heading-collapsible"
+                      onClick={() => setCompletedCollapsed(!completedCollapsed)}
+                    >
+                      Completed ({completed.length})
+                      <span className="collapse-icon">{completedCollapsed ? '▸' : '▾'}</span>
+                    </h2>
+                    {!completedCollapsed && (
+                      <div className="list-container">
+                        {completed.map((checklist) => (
+                          <Link
+                            key={checklist.id}
+                            href={`/${locale}/staff/checklists/${checklist.id}`}
+                            className="list-row"
+                          >
+                            <div className="row-header">
+                              <span className="row-title">
+                                {checklist.name} · {checklist.booking_number}
+                              </span>
+                              <span className="badge badge-completed">Completed</span>
+                            </div>
+                            <div className="row-line">{checklist.customer_name}</div>
+                            <div className="row-line row-muted">
+                              {checklist.vehicle_name} ({checklist.vehicle_plate})
+                            </div>
+                            {checklist.pickup_at && checklist.return_at && (
+                              <div className="row-line row-muted row-small">
+                                {new Date(checklist.pickup_at).toLocaleDateString()} →{' '}
+                                {new Date(checklist.return_at).toLocaleDateString()}
+                              </div>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {(scopeFilter === 'all' || scopeFilter === 'vehicle') && (
+          <div className="group">
+            <h2 className="group-heading">Vehicle Checklists</h2>
+            <div className="info-box">
+              <p>Vehicle readiness checklists are being updated. Check back soon.</p>
+            </div>
+          </div>
+        )}
+
+        {scopeFilter === 'all' && displayOpenIssues.length > 0 && (
+          <div className="group">
+            <h2 className="group-heading">Open Issues</h2>
+            <div className="list-container">
               {displayOpenIssues.map((issue) => (
                 <Link
                   key={issue.id}
                   href={`/${locale}/staff/checklists/${issue.checklist_instance_id}?from=list`}
-                  className="checklist-card issue-card"
+                  className="list-row list-row-issue"
                 >
-                  <div className="checklist-header">
-                    <h3>{issue.name}</h3>
-                    <span className={`severity-badge severity-${issue.severity}`}>{issue.severity}</span>
+                  <div className="row-header">
+                    <span className="row-title">{issue.name}</span>
+                    <span className={`badge badge-severity-${issue.severity}`}>
+                      {issue.severity}
+                    </span>
                   </div>
-                  <div className="checklist-details">
-                    {issue.booking_number !== 'N/A' && (
-                      <p>
-                        <strong>Booking:</strong> {issue.booking_number}
-                      </p>
-                    )}
-                    <p>
-                      <strong>Vehicle:</strong> {issue.vehicle_name} ({issue.vehicle_plate})
-                    </p>
-                    <p className="checklist-date">
-                      Created: {new Date(issue.created_at).toLocaleDateString()}
-                    </p>
+                  {issue.booking_number !== 'N/A' && (
+                    <div className="row-line">Booking {issue.booking_number}</div>
+                  )}
+                  <div className="row-line row-muted">
+                    {issue.vehicle_name} ({issue.vehicle_plate})
                   </div>
                 </Link>
               ))}
             </div>
-          )}
-        </section>
-      )}
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
-        .page-container {
-          max-width: 1400px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-
         .page-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
+          align-items: flex-start;
+          gap: var(--space-4);
+          margin-bottom: var(--space-6);
+          flex-wrap: wrap;
         }
 
-        .page-header h1 {
-          margin: 0;
-          font-size: 2rem;
-        }
-
-        .button-primary {
-          background-color: var(--primary-color);
-          color: white;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.5rem;
+        .back-link {
+          display: inline-block;
+          font-size: 14px;
+          color: rgb(var(--brand));
           text-decoration: none;
-          font-weight: 500;
-          transition: background-color 0.2s;
+          margin-bottom: var(--space-2);
         }
 
-        .button-primary:hover {
-          background-color: var(--primary-hover);
+        h1 {
+          font-size: 28px;
+          font-weight: 600;
+          color: rgb(var(--text));
+          margin: 0;
+        }
+
+        .subtitle {
+          margin: var(--space-2) 0 0 0;
+          color: rgb(var(--muted));
+          font-size: 14px;
         }
 
         .filters {
           display: flex;
-          gap: 2rem;
-          margin-bottom: 2rem;
-          padding: 1.5rem;
-          background: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-group {
-          display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: var(--space-3);
+          padding-bottom: var(--space-4);
+          border-bottom: 1px solid rgb(var(--border));
+          margin-bottom: var(--space-6);
         }
 
-        .filter-group label {
-          font-weight: 600;
-          font-size: 0.875rem;
-          color: var(--text-secondary);
+        @media (min-width: 640px) {
+          .filters {
+            flex-direction: row;
+          }
         }
 
-        .filter-buttons {
+        .filter-item {
           display: flex;
-          gap: 0.5rem;
+          align-items: center;
+          gap: var(--space-2);
         }
 
-        .filter-button {
-          padding: 0.5rem 1rem;
-          border: 1px solid var(--border-color);
-          border-radius: 0.375rem;
-          background: white;
-          color: var(--text-primary);
-          text-decoration: none;
-          font-size: 0.875rem;
-          transition: all 0.2s;
-        }
-
-        .filter-button:hover {
-          background: var(--background-secondary);
-        }
-
-        .filter-button.active {
-          background: var(--primary-color);
-          color: white;
-          border-color: var(--primary-color);
-        }
-
-        .checklists-section {
-          margin-bottom: 3rem;
-        }
-
-        .checklists-section h2 {
-          margin-bottom: 1rem;
-          font-size: 1.5rem;
-        }
-
-        .info-box {
-          padding: 1.5rem;
-          background: var(--background-secondary);
-          border-radius: 0.5rem;
-          border-left: 4px solid var(--primary-color);
-        }
-
-        .info-box p {
-          margin: 0;
-          color: var(--text-secondary);
-        }
-
-        .empty-state {
-          padding: 3rem;
-          text-align: center;
-          color: var(--text-secondary);
-          background: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .checklist-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1.5rem;
-        }
-
-        .checklist-card {
-          background: white;
-          border-radius: 0.5rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          text-decoration: none;
-          color: inherit;
-          transition: all 0.2s;
-        }
-
-        .checklist-card:hover {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          transform: translateY(-2px);
-        }
-
-        .issue-card {
-          border-left: 4px solid var(--warning-color);
-        }
-
-        .checklist-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: start;
-          margin-bottom: 1rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .checklist-header h3 {
-          margin: 0;
-          font-size: 1.125rem;
-          flex: 1;
-        }
-
-        .status-badge {
-          padding: 0.25rem 0.75rem;
-          border-radius: 1rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: capitalize;
+        .filter-item label {
+          font-size: 14px;
+          color: rgb(var(--muted));
           white-space: nowrap;
         }
 
-        .status-not_started {
+        .filter-item .input {
+          min-height: 36px;
+          padding: var(--space-2) var(--space-3);
+        }
+
+        .results-section {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-6);
+        }
+
+        .group {
+          margin-bottom: var(--space-6);
+        }
+
+        .group-heading {
+          font-size: 18px;
+          font-weight: 600;
+          color: rgb(var(--text));
+          margin: 0 0 var(--space-3) 0;
+        }
+
+        .group-heading-collapsible {
+          cursor: pointer;
+          user-select: none;
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .collapse-icon {
+          font-size: 12px;
+          color: rgb(var(--muted));
+        }
+
+        .list-container {
+          border: 1px solid rgb(var(--border));
+          border-radius: var(--radius);
+          overflow: hidden;
+        }
+
+        .list-row {
+          display: block;
+          padding: var(--space-4);
+          text-decoration: none;
+          color: rgb(var(--text));
+          border-bottom: 1px solid rgb(var(--border));
+          transition: background-color 0.15s ease;
+        }
+
+        .list-row:last-child {
+          border-bottom: none;
+        }
+
+        .list-row:hover {
+          background: rgb(var(--background) / 0.5);
+        }
+
+        .list-row-issue {
+          border-left: 3px solid #f59e0b;
+        }
+
+        .row-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: var(--space-2);
+          margin-bottom: var(--space-2);
+        }
+
+        .row-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: rgb(var(--text));
+          flex: 1;
+          min-width: 0;
+        }
+
+        .row-line {
+          font-size: 15px;
+          color: rgb(var(--text));
+          margin-bottom: var(--space-1);
+        }
+
+        .row-line:last-child {
+          margin-bottom: 0;
+        }
+
+        .row-muted {
+          color: rgb(var(--muted));
+          font-size: 14px;
+        }
+
+        .row-small {
+          font-size: 13px;
+        }
+
+        .badge {
+          display: inline-block;
+          padding: var(--space-1) var(--space-2);
+          border-radius: var(--radius);
+          font-size: 13px;
+          font-weight: 500;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .badge-not-started {
           background: #f3f4f6;
           color: #374151;
         }
 
-        .status-in_progress {
+        .badge-in-progress {
           background: #dbeafe;
           color: #1e40af;
         }
 
-        .status-completed {
+        .badge-completed {
           background: #d1fae5;
           color: #065f46;
         }
 
-        .severity-badge {
-          padding: 0.25rem 0.75rem;
-          border-radius: 1rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: capitalize;
-          white-space: nowrap;
-        }
-
-        .severity-low {
+        .badge-severity-low {
           background: #fef3c7;
           color: #92400e;
+          text-transform: capitalize;
         }
 
-        .severity-medium {
+        .badge-severity-medium {
           background: #fed7aa;
           color: #9a3412;
+          text-transform: capitalize;
         }
 
-        .severity-high {
+        .badge-severity-high {
           background: #fecaca;
           color: #991b1b;
+          text-transform: capitalize;
         }
 
-        .checklist-details p {
-          margin: 0.5rem 0;
-          font-size: 0.875rem;
+        .info-box {
+          padding: var(--space-4);
+          background: rgb(var(--background) / 0.5);
+          border: 1px solid rgb(var(--border));
+          border-left: 3px solid rgb(var(--brand));
+          border-radius: var(--radius);
         }
 
-        .checklist-details strong {
-          color: var(--text-secondary);
-          font-weight: 600;
+        .info-box p {
+          margin: 0;
+          color: rgb(var(--muted));
+          font-size: 14px;
         }
 
-        .checklist-date {
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid var(--border-color);
-          color: var(--text-secondary);
-          font-size: 0.8125rem;
+        .empty-state {
+          text-align: center;
+          padding: var(--space-8);
+          color: rgb(var(--muted));
+          font-size: 14px;
         }
       `}</style>
-    </div>
+    </PageContainer>
   );
 }

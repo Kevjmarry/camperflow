@@ -177,16 +177,35 @@ export default function BookingsPage() {
 
   return (
     <PageContainer maxWidth="1200px">
+      <style jsx>{`
+        .desktop-table {
+          display: block;
+        }
+        .mobile-cards {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .desktop-table {
+            display: none;
+          }
+          .mobile-cards {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+          }
+        }
+      `}</style>
+
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
-            alignItems: 'center',
+            alignItems: 'flex-start',
             flexWrap: 'wrap',
             gap: 'var(--space-4)'
           }}>
-            <div>
+            <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
               <Link 
                 href={`/${locale}/staff`}
                 style={{
@@ -210,6 +229,7 @@ export default function BookingsPage() {
               <Link 
                 href={`/${locale}/staff/bookings/new`}
                 className="btn btn-primary"
+                style={{ flexShrink: 0 }}
               >
                 {t("action.newBooking")}
               </Link>
@@ -223,8 +243,8 @@ export default function BookingsPage() {
             paddingBottom: 'var(--space-4)',
             borderBottom: '1px solid rgb(var(--border))'
           }}>
-            <div>
-              <label htmlFor="status-filter" style={{ fontSize: '14px', color: 'rgb(var(--muted))', marginRight: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <label htmlFor="status-filter" style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
                 {t("filter.statusLabel")}
               </label>
               <select
@@ -288,71 +308,157 @@ export default function BookingsPage() {
           )}
 
           {!loading && !error && bookings.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse',
-                fontSize: '14px'
-              }}>
-                <thead>
-                  <tr style={{ 
-                    borderBottom: '1px solid rgb(var(--border))',
-                    textAlign: 'left'
-                  }}>
-                    {canManage && (
-                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        {t("table.bookingNumber")}
-                      </th>
-                    )}
-                    {canManage && (
-                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        {t("table.customer")}
-                      </th>
-                    )}
-                    <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {t("table.vehicle")}
-                    </th>
-                    <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {t("table.pickup")}
-                    </th>
-                    <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {t("table.return")}
-                    </th>
-                    <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {t("table.status")}
-                    </th>
-                    <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {t("table.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((booking) => (
-                    <tr 
-                      key={booking.id}
-                      style={{ borderBottom: '1px solid rgb(var(--border))' }}
-                    >
+            <>
+              {/* Desktop Table View */}
+              <div className="desktop-table" style={{ overflowX: 'auto' }}>
+                <table style={{ 
+                  width: '100%', 
+                  borderCollapse: 'collapse',
+                  fontSize: '14px'
+                }}>
+                  <thead>
+                    <tr style={{ 
+                      borderBottom: '1px solid rgb(var(--border))',
+                      textAlign: 'left'
+                    }}>
                       {canManage && (
-                        <td style={{ padding: 'var(--space-3)', fontWeight: 500, color: 'rgb(var(--text))' }}>
-                          {booking.booking_number}
-                        </td>
+                        <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                          {t("table.bookingNumber")}
+                        </th>
                       )}
                       {canManage && (
+                        <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                          {t("table.customer")}
+                        </th>
+                      )}
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.vehicle")}
+                      </th>
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.pickup")}
+                      </th>
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.return")}
+                      </th>
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.status")}
+                      </th>
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.actions")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((booking) => (
+                      <tr 
+                        key={booking.id}
+                        style={{ borderBottom: '1px solid rgb(var(--border))' }}
+                      >
+                        {canManage && (
+                          <td style={{ padding: 'var(--space-3)', fontWeight: 500, color: 'rgb(var(--text))' }}>
+                            {booking.booking_number}
+                          </td>
+                        )}
+                        {canManage && (
+                          <td style={{ padding: 'var(--space-3)' }}>
+                            <div style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                            <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                          </td>
+                        )}
+                        <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
+                          {getVehicleName(booking)}
+                        </td>
+                        <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
+                          {formatDate(booking.pickup_at)}
+                        </td>
+                        <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
+                          {formatDate(booking.return_at)}
+                        </td>
                         <td style={{ padding: 'var(--space-3)' }}>
-                          <div style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
-                          <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                          <div style={{
+                            display: 'inline-block',
+                            padding: 'var(--space-1) var(--space-2)',
+                            borderRadius: 'var(--radius)',
+                            background: `${getStatusColor(booking.status)}15`,
+                            color: getStatusColor(booking.status),
+                            fontSize: '13px',
+                            fontWeight: 500
+                          }}>
+                            {getStatusLabel(booking.status)}
+                          </div>
                         </td>
-                      )}
-                      <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
-                        {getVehicleName(booking)}
-                      </td>
-                      <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
-                        {formatDate(booking.pickup_at)}
-                      </td>
-                      <td style={{ padding: 'var(--space-3)', color: 'rgb(var(--text))' }}>
-                        {formatDate(booking.return_at)}
-                      </td>
-                      <td style={{ padding: 'var(--space-3)' }}>
+                        <td style={{ padding: 'var(--space-3)' }}>
+                          <Link
+                            href={`/${locale}/staff/bookings/${booking.id}`}
+                            className="btn btn-secondary"
+                            style={{
+                              padding: 'var(--space-1) var(--space-3)',
+                              fontSize: '13px',
+                              minHeight: '32px'
+                            }}
+                          >
+                            {isAdmin ? t("action.edit") : t("action.view")}
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="mobile-cards">
+                {bookings.map((booking) => (
+                  <div 
+                    key={booking.id}
+                    style={{
+                      padding: 'var(--space-4)',
+                      border: '1px solid rgb(var(--border))',
+                      borderRadius: 'var(--radius)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--space-3)'
+                    }}
+                  >
+                    {canManage && (
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'flex-start',
+                        gap: 'var(--space-3)',
+                        paddingBottom: 'var(--space-3)',
+                        borderBottom: '1px solid rgb(var(--border))'
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
+                            {t("table.bookingNumber")}
+                          </div>
+                          <div style={{ fontWeight: 500, color: 'rgb(var(--text))' }}>
+                            {booking.booking_number}
+                          </div>
+                        </div>
+                        <div style={{
+                          display: 'inline-block',
+                          padding: 'var(--space-1) var(--space-2)',
+                          borderRadius: 'var(--radius)',
+                          background: `${getStatusColor(booking.status)}15`,
+                          color: getStatusColor(booking.status),
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {getStatusLabel(booking.status)}
+                        </div>
+                      </div>
+                    )}
+
+                    {!canManage && (
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'flex-end',
+                        paddingBottom: 'var(--space-3)',
+                        borderBottom: '1px solid rgb(var(--border))'
+                      }}>
                         <div style={{
                           display: 'inline-block',
                           padding: 'var(--space-1) var(--space-2)',
@@ -364,25 +470,68 @@ export default function BookingsPage() {
                         }}>
                           {getStatusLabel(booking.status)}
                         </div>
-                      </td>
-                      <td style={{ padding: 'var(--space-3)' }}>
-                        <Link
-                          href={`/${locale}/staff/bookings/${booking.id}`}
-                          className="btn btn-secondary"
-                          style={{
-                            padding: 'var(--space-1) var(--space-3)',
-                            fontSize: '13px',
-                            minHeight: '32px'
-                          }}
-                        >
-                          {isAdmin ? t("action.edit") : t("action.view")}
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    )}
+
+                    {canManage && (
+                      <div>
+                        <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
+                          {t("table.customer")}
+                        </div>
+                        <div style={{ color: 'rgb(var(--text))' }}>
+                          {booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginTop: 'var(--space-1)' }}>
+                          {booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
+                        {t("table.vehicle")}
+                      </div>
+                      <div style={{ color: 'rgb(var(--text))' }}>
+                        {getVehicleName(booking)}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
+                          {t("table.pickup")}
+                        </div>
+                        <div style={{ color: 'rgb(var(--text))' }}>
+                          {formatDate(booking.pickup_at)}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
+                          {t("table.return")}
+                        </div>
+                        <div style={{ color: 'rgb(var(--text))' }}>
+                          {formatDate(booking.return_at)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ paddingTop: 'var(--space-2)' }}>
+                      <Link
+                        href={`/${locale}/staff/bookings/${booking.id}`}
+                        className="btn btn-secondary"
+                        style={{
+                          width: '100%',
+                          textAlign: 'center',
+                          display: 'block'
+                        }}
+                      >
+                        {isAdmin ? t("action.edit") : t("action.view")}
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
