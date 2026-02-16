@@ -1,486 +1,700 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
-import PageContainer from "@/components/PageContainer";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
-type ChecklistInstance = {
-  id: string;
-  status: string;
-  booking_number?: string;
-  customer_name?: string;
-  return_at?: string;
-  vehicle_id?: string;
-  vehicle_name?: string;
-  vehicle_plate?: string;
-};
+type ChecklistScope = 'all' | 'booking' | 'vehicle';
+type ChecklistStatus = 'all' | 'not_started' | 'in_progress' | 'completed';
 
-type Vehicle = {
+interface ChecklistItem {
   id: string;
   name: string;
-  registration_plate: string;
-};
+  type: string;
+  status: string;
+  booking_number: string;
+  customer_name: string;
+  vehicle_name: string;
+  vehicle_plate: string;
+  pickup_at?: string;
+  return_at?: string;
+  created_at: string;
+}
 
-type IssueFlag = {
+interface IssueItem {
   id: string;
   checklist_instance_id: string;
-  checklist_instance_item_id: string;
+  name: string;
   severity: string;
-  note: string | null;
+  status: string;
+  booking_number: string;
+  vehicle_name: string;
+  vehicle_plate: string;
   created_at: string;
-};
+}
 
-type EnrichedIssue = IssueFlag & {
-  checklist_type?: string;
-  booking_number?: string;
-  customer_name?: string;
-  item_label?: string;
-};
+// Map checklist type to display label
+function getChecklistTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    cleaning: 'Cleaning',
+    pickup: 'Pickup',
+    return: 'Return',
+    guest_prereturn: 'Guest Pre-Return',
+    vehicle_readiness: 'Vehicle Readiness',
+    maintenance: 'Maintenance',
+  };
+  return labels[type] || type;
+}
 
 export default function ChecklistsPage() {
-  const { locale } = useParams<{ locale: string }>();
+  const router = useRouter();
+  const params = useParams();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const locale = params.locale as string;
 
-  const type = searchParams.get("type") || "";
-  const range = searchParams.get("range") || "";
-
-  const [checklistInstances, setChecklistInstances] = useState<ChecklistInstance[]>([]);
-  const [openIssues, setOpenIssues] = useState<EnrichedIssue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingIssues, setLoadingIssues] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [bookingChecklists, setBookingChecklists] = useState<ChecklistItem[]>([]);
+  const [openIssues, setOpenIssues] = useState<IssueItem[]>([]);
 
-  // Fetch open issues
+  const scope = (searchParams.get('scope') as ChecklistScope) || 'all';
+  const status = (searchParams.get('status') as ChecklistStatus) || 'all';
+
   useEffect(() => {
-    async function fetchOpenIssues() {
-      setLoadingIssues(true);
+    let cancelled = false;
 
-      const { data: issuesData } = await supabase
-        .from("issue_flags")
-        .select("id, checklist_instance_id, checklist_instance_item_id, severity, note, created_at")
-        .eq("status", "open")
-        .order("created_at", { ascending: false });
+    async function loadData() {
+      const supabase = createClient();
 
-      if (issuesData && issuesData.length > 0) {
-        const instanceIds = [...new Set(issuesData.map(i => i.checklist_instance_id))];
-        const instanceItemIds = [...new Set(issuesData.map(i => i.checklist_instance_item_id))];
+      // Check authentication
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-        // Fetch checklist instances
-        const { data: instancesData } = await supabase
-          .from("checklist_instances")
-          .select("id, checklist_type, booking_id")
-          .in("id", instanceIds);
-
-        const instanceMap = new Map(instancesData?.map(inst => [inst.id, inst]) || []);
-
-        // Fetch bookings
-        const bookingIds = [...new Set(instancesData?.map(inst => inst.booking_id).filter(Boolean) || [])];
-        const bookingMap = new Map();
-
-        if (bookingIds.length > 0) {
-          const { data: bookingsData } = await supabase
-            .from("bookings")
-            .select("id, booking_number, customer_name")
-            .in("id", bookingIds);
-
-          bookingsData?.forEach(b => bookingMap.set(b.id, b));
-        }
-
-        // Fetch checklist instance items
-        const { data: instanceItemsData } = await supabase
-          .from("checklist_instance_items")
-          .select("id, template_item_id")
-          .in("id", instanceItemIds);
-
-        const instanceItemMap = new Map(instanceItemsData?.map(item => [item.id, item]) || []);
-
-        // Fetch template items
-        const templateItemIds = [...new Set(instanceItemsData?.map(item => item.template_item_id).filter(Boolean) || [])];
-        const templateItemMap = new Map();
-
-        if (templateItemIds.length > 0) {
-          const { data: templateItemsData } = await supabase
-            .from("checklist_template_items")
-            .select("id, label")
-            .in("id", templateItemIds);
-
-          templateItemsData?.forEach(t => templateItemMap.set(t.id, t));
-        }
-
-        // Enrich issues
-        const enrichedIssues: EnrichedIssue[] = issuesData.map(issue => {
-          const instance = instanceMap.get(issue.checklist_instance_id);
-          const booking = instance?.booking_id ? bookingMap.get(instance.booking_id) : null;
-          const instanceItem = instanceItemMap.get(issue.checklist_instance_item_id);
-          const templateItem = instanceItem?.template_item_id ? templateItemMap.get(instanceItem.template_item_id) : null;
-
-          return {
-            ...issue,
-            checklist_type: instance?.checklist_type,
-            booking_number: booking?.booking_number,
-            customer_name: booking?.customer_name,
-            item_label: templateItem?.label,
-          };
-        });
-
-        setOpenIssues(enrichedIssues);
-      } else {
-        setOpenIssues([]);
+      if (authError || !user) {
+        router.push(`/${locale}/staff/login`);
+        return;
       }
 
-      setLoadingIssues(false);
-    }
+      // Get user's company
+      const { data: profile, error: profileError } = await supabase
+        .from('staff_profiles')
+        .select('company_id')
+        .eq('auth_user_id', user.id)
+        .single();
 
-    fetchOpenIssues();
-  }, []);
+      if (profileError || !profile?.company_id) {
+        console.error('Error fetching profile:', profileError);
+        router.push(`/${locale}/staff/login`);
+        return;
+      }
 
-  // Fetch cleaning checklists
-  useEffect(() => {
-    async function fetchChecklists() {
-      setLoading(true);
+      if (cancelled) return;
+      setCompanyId(profile.company_id);
 
-      if (type === "cleaning" && range === "today") {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+      // -----------------------------
+      // Booking checklists (no joins)
+      // -----------------------------
+      try {
+        let ciQuery = supabase
+          .from('checklist_instances')
+          .select('id, checklist_type, status, created_at, booking_id')
+          .eq('company_id', profile.company_id)
+          .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn'])
+          .not('booking_id', 'is', null)
+          .order('created_at', { ascending: false });
 
-        // Fetch checklist instances with booking join
-        const { data: instancesData } = await supabase
-          .from("checklist_instances")
-          .select(`
-            id,
-            status,
-            booking_id,
-            bookings!inner (
-              id,
-              booking_number,
-              customer_name,
-              return_at,
-              vehicle_id,
-              status
-            )
-          `)
-          .eq("checklist_type", "cleaning")
-          .in("bookings.status", ["confirmed", "on_rent"])
-          .gte("bookings.return_at", today.toISOString())
-          .lt("bookings.return_at", tomorrow.toISOString());
+        if (status !== 'all') {
+          ciQuery = ciQuery.eq('status', status);
+        }
 
-        if (instancesData && instancesData.length > 0) {
-          // Extract vehicle IDs
-          const vehicleIds = [...new Set(
-            instancesData
-              .map(inst => {
-                const booking = Array.isArray(inst.bookings) ? inst.bookings[0] : inst.bookings;
-                return booking?.vehicle_id;
-              })
-              .filter((id): id is string => id !== null && id !== undefined)
-          )];
+        const { data: ciRows, error: ciError } = await ciQuery;
 
-          const vehicleMap = new Map<string, Vehicle>();
+        if (ciError) {
+          console.error('Error fetching booking checklists:', ciError);
+          if (!cancelled) setBookingChecklists([]);
+        } else {
+          const bookingIds = Array.from(
+            new Set((ciRows || []).map((r: any) => r.booking_id).filter(Boolean))
+          );
 
-          if (vehicleIds.length > 0) {
-            const { data: vehiclesData } = await supabase
-              .from("vehicles")
-              .select("id, name, registration_plate")
-              .in("id", vehicleIds);
+          const bookingsById = new Map<string, any>();
+          const vehiclesById = new Map<string, any>();
 
-            vehiclesData?.forEach(v => vehicleMap.set(v.id, v));
+          if (bookingIds.length > 0) {
+            const { data: bookingRows, error: bookingError } = await supabase
+              .from('bookings')
+              .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_id')
+              .in('id', bookingIds);
+
+            if (bookingError) {
+              console.error('Error fetching bookings for checklists:', bookingError);
+            } else {
+              for (const b of bookingRows || []) bookingsById.set(b.id, b);
+
+              const vehicleIds = Array.from(
+                new Set((bookingRows || []).map((b: any) => b.vehicle_id).filter(Boolean))
+              );
+
+              if (vehicleIds.length > 0) {
+                const { data: vehicleRows, error: vehicleError } = await supabase
+                  .from('vehicles')
+                  .select('id, name, registration_plate')
+                  .in('id', vehicleIds);
+
+                if (vehicleError) {
+                  console.error('Error fetching vehicles for checklists:', vehicleError);
+                } else {
+                  for (const v of vehicleRows || []) vehiclesById.set(v.id, v);
+                }
+              }
+            }
           }
 
-          // Transform data
-          const enrichedInstances: ChecklistInstance[] = instancesData.map(inst => {
-            const booking = Array.isArray(inst.bookings) ? inst.bookings[0] : inst.bookings;
+          const formatted: ChecklistItem[] = (ciRows || []).map((item: any) => {
+            const booking = item.booking_id ? bookingsById.get(item.booking_id) : null;
+            const vehicle = booking?.vehicle_id ? vehiclesById.get(booking.vehicle_id) : null;
+
             return {
-              id: inst.id,
-              status: inst.status,
-              booking_number: booking?.booking_number,
-              customer_name: booking?.customer_name,
-              return_at: booking?.return_at,
-              vehicle_id: booking?.vehicle_id,
-              vehicle_name: booking?.vehicle_id ? vehicleMap.get(booking.vehicle_id)?.name : undefined,
-              vehicle_plate: booking?.vehicle_id ? vehicleMap.get(booking.vehicle_id)?.registration_plate : undefined,
+              id: item.id,
+              name: getChecklistTypeLabel(item.checklist_type),
+              type: item.checklist_type,
+              status: item.status,
+              booking_number: booking?.booking_number || 'N/A',
+              customer_name: booking?.customer_name || 'N/A',
+              vehicle_name: vehicle?.name || 'N/A',
+              vehicle_plate: vehicle?.registration_plate || 'N/A',
+              pickup_at: booking?.pickup_at || undefined,
+              return_at: booking?.return_at || undefined,
+              created_at: item.created_at,
             };
           });
 
-          // Sort by return_at ascending
-          enrichedInstances.sort((a, b) => {
-            if (!a.return_at) return 1;
-            if (!b.return_at) return -1;
-            return new Date(a.return_at).getTime() - new Date(b.return_at).getTime();
-          });
-
-          setChecklistInstances(enrichedInstances);
-        } else {
-          setChecklistInstances([]);
+          if (!cancelled) setBookingChecklists(formatted);
         }
-      } else {
-        setChecklistInstances([]);
+      } catch (e) {
+        console.error('Unexpected error fetching booking checklists:', e);
+        if (!cancelled) setBookingChecklists([]);
       }
 
-      setLoading(false);
+      // -----------------------------
+      // Open issues (no fragile joins)
+      // -----------------------------
+      try {
+        const { data: issueRows, error: issueError } = await supabase
+          .from('issue_flags')
+          .select('id, note, severity, status, created_at, checklist_instance_id')
+          .eq('status', 'open')
+          .order('created_at', { ascending: false });
+
+        if (issueError) {
+          console.error('Error fetching open issues:', issueError);
+          if (!cancelled) setOpenIssues([]);
+        } else {
+          const issueInstanceIds = Array.from(
+            new Set((issueRows || []).map((r: any) => r.checklist_instance_id).filter(Boolean))
+          );
+
+          const instancesById = new Map<string, any>();
+          const bookingsById = new Map<string, any>();
+          const vehiclesById = new Map<string, any>();
+
+          if (issueInstanceIds.length > 0) {
+            // Only instances for this company (server-side scope)
+            const { data: instanceRows, error: instanceError } = await supabase
+              .from('checklist_instances')
+              .select('id, company_id, booking_id')
+              .eq('company_id', profile.company_id)
+              .in('id', issueInstanceIds);
+
+            if (instanceError) {
+              console.error('Error fetching checklist instances for issues:', instanceError);
+            } else {
+              for (const ci of instanceRows || []) instancesById.set(ci.id, ci);
+
+              const bookingIds = Array.from(
+                new Set((instanceRows || []).map((ci: any) => ci.booking_id).filter(Boolean))
+              );
+
+              if (bookingIds.length > 0) {
+                const { data: bookingRows, error: bookingError } = await supabase
+                  .from('bookings')
+                  .select('id, booking_number, vehicle_id')
+                  .in('id', bookingIds);
+
+                if (bookingError) {
+                  console.error('Error fetching bookings for issues:', bookingError);
+                } else {
+                  for (const b of bookingRows || []) bookingsById.set(b.id, b);
+
+                  const vehicleIds = Array.from(
+                    new Set((bookingRows || []).map((b: any) => b.vehicle_id).filter(Boolean))
+                  );
+
+                  if (vehicleIds.length > 0) {
+                    const { data: vehicleRows, error: vehicleError } = await supabase
+                      .from('vehicles')
+                      .select('id, name, registration_plate')
+                      .in('id', vehicleIds);
+
+                    if (vehicleError) {
+                      console.error('Error fetching vehicles for issues:', vehicleError);
+                    } else {
+                      for (const v of vehicleRows || []) vehiclesById.set(v.id, v);
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Filter to issues whose instance exists for this company (company scope enforced)
+          const scopedIssues = (issueRows || []).filter((it: any) => {
+            return it.checklist_instance_id && instancesById.has(it.checklist_instance_id);
+          });
+
+          const formattedIssues: IssueItem[] = scopedIssues.map((item: any) => {
+            const instance = instancesById.get(item.checklist_instance_id);
+            const booking = instance?.booking_id ? bookingsById.get(instance.booking_id) : null;
+            const vehicle = booking?.vehicle_id ? vehiclesById.get(booking.vehicle_id) : null;
+
+            return {
+              id: item.id,
+              checklist_instance_id: item.checklist_instance_id,
+              name: item.note || 'Issue',
+              severity: item.severity,
+              status: item.status,
+              booking_number: booking?.booking_number || 'N/A',
+              vehicle_name: vehicle?.name || 'N/A',
+              vehicle_plate: vehicle?.registration_plate || 'N/A',
+              created_at: item.created_at,
+            };
+          });
+
+          if (!cancelled) setOpenIssues(formattedIssues);
+        }
+      } catch (e) {
+        console.error('Unexpected error fetching open issues:', e);
+        if (!cancelled) setOpenIssues([]);
+      }
+
+      if (!cancelled) setLoading(false);
     }
 
-    fetchChecklists();
-  }, [supabase, type, range]);
+    loadData();
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString(locale, {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, router, status]);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(locale, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // Filter based on scope
+  let displayBookingChecklists = bookingChecklists;
+  let displayOpenIssues = openIssues;
 
-  const getSeverityStyle = (severity: string) => {
-    switch (severity) {
-      case 'info':
-        return { backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc' };
-      case 'attention':
-        return { backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' };
-      case 'urgent':
-        return { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' };
-      default:
-        return { backgroundColor: 'rgb(var(--surface))', color: 'rgb(var(--muted))', border: '1px solid rgb(var(--border))' };
-    }
-  };
+  if (scope === 'booking') {
+    // Already filtered to booking types
+  } else if (scope === 'vehicle') {
+    // For now, show empty since vehicle_readiness would need separate handling
+    displayBookingChecklists = [];
+  }
 
-  const getTitle = () => {
-    if (type === "cleaning" && range === "today") {
-      return "Cleaning Checklists - Today";
-    }
-    return "Checklists";
-  };
-
-  const showUnsupportedMessage = type !== "cleaning" || range !== "today";
+  if (loading) {
+    return (
+      <div className="page-container">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
-    <PageContainer maxWidth="900px" showSignOut={false}>
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          {/* Header */}
-          <div>
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Checklists</h1>
+        <Link href={`/${locale}/staff/checklists/new`} className="button-primary">
+          Create Checklist
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="filters">
+        <div className="filter-group">
+          <label>Scope:</label>
+          <div className="filter-buttons">
             <Link
-              href={`/${locale}/staff`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-                marginBottom: "var(--space-4)",
-              }}
+              href={`/${locale}/staff/checklists?scope=all&status=${status}`}
+              className={scope === 'all' ? 'filter-button active' : 'filter-button'}
             >
-              <svg width="16" height="16" stroke="currentColor" fill="none">
-                <path strokeWidth="2" d="M10 6L6 10l4 4" />
-              </svg>
-              Back to Dashboard
+              All
             </Link>
-            <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-              {getTitle()}
-            </h1>
-            <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
-              {type === "cleaning" && range === "today"
-                ? "Vehicles returning today requiring cleaning"
-                : "View and manage checklists"}
-            </p>
-          </div>
-
-          {/* Open Issues Section */}
-          {!loadingIssues && openIssues.length > 0 && (
-            <div className="surface" style={{ padding: "var(--space-6)" }}>
-              <h2 style={{ fontSize: "18px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
-                Open Issues ({openIssues.length})
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                {openIssues.map((issue) => (
-                  <Link
-                    key={issue.id}
-                    href={`/${locale}/staff/checklists/${issue.checklist_instance_id}`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "var(--space-2)",
-                      padding: "var(--space-4)",
-                      backgroundColor: "rgb(var(--surface))",
-                      borderRadius: "var(--radius-md)",
-                      textDecoration: "none",
-                      border: "1px solid rgb(var(--border))",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgb(var(--brand-light))";
-                      e.currentTarget.style.borderColor = "rgb(var(--brand))";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgb(var(--surface))";
-                      e.currentTarget.style.borderColor = "rgb(var(--border))";
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "var(--space-3)" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "16px", fontWeight: 500, color: "rgb(var(--text))", marginBottom: "var(--space-1)" }}>
-                          {issue.item_label || "Checklist Item"}
-                        </div>
-                        <div style={{ fontSize: "14px", color: "rgb(var(--muted))", display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                          <span>{issue.checklist_type || "Unknown"}</span>
-                          {issue.booking_number && (
-                            <>
-                              <span>•</span>
-                              <span>{issue.booking_number}</span>
-                            </>
-                          )}
-                          {issue.customer_name && (
-                            <>
-                              <span>•</span>
-                              <span>{issue.customer_name}</span>
-                            </>
-                          )}
-                          <span
-                            style={{
-                              ...getSeverityStyle(issue.severity),
-                              padding: "2px 8px",
-                              borderRadius: "var(--radius-sm)",
-                              fontSize: "12px",
-                              fontWeight: 500,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {issue.severity}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", textAlign: "right", whiteSpace: "nowrap" }}>
-                        {formatDate(issue.created_at)}
-                      </div>
-                    </div>
-                    {issue.note && (
-                      <div style={{ fontSize: "14px", color: "rgb(var(--text-secondary))", fontStyle: "italic", paddingTop: "var(--space-1)" }}>
-                        "{issue.note}"
-                      </div>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Unsupported params message */}
-          {showUnsupportedMessage && (
-            <div
-              style={{
-                padding: "var(--space-4)",
-                backgroundColor: "rgb(var(--surface))",
-                border: "1px solid rgb(var(--border))",
-                borderRadius: "var(--radius-md)",
-                fontSize: "14px",
-                color: "rgb(var(--muted))",
-              }}
+            <Link
+              href={`/${locale}/staff/checklists?scope=booking&status=${status}`}
+              className={scope === 'booking' ? 'filter-button active' : 'filter-button'}
             >
-              Currently supported: <code style={{ padding: "2px 6px", backgroundColor: "rgb(var(--brand-light))", borderRadius: "var(--radius-sm)" }}>?type=cleaning&range=today</code>
-            </div>
-          )}
+              Booking
+            </Link>
+            <Link
+              href={`/${locale}/staff/checklists?scope=vehicle&status=${status}`}
+              className={scope === 'vehicle' ? 'filter-button active' : 'filter-button'}
+            >
+              Vehicle
+            </Link>
+          </div>
+        </div>
 
-          {/* Checklists List */}
-          <div className="surface" style={{ padding: "var(--space-6)" }}>
-            <h2 style={{ fontSize: "18px", marginBottom: "var(--space-4)" }}>
-              {type === "cleaning" && range === "today" ? "Returns Today" : "Checklists"}
-            </h2>
-
-            {loading ? (
-              <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-                Loading checklists...
-              </p>
-            ) : checklistInstances.length === 0 ? (
-              <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-                {type === "cleaning" && range === "today"
-                  ? "No vehicles returning today"
-                  : "No checklists found"}
-              </p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                {checklistInstances.map((instance) => (
-                  <Link
-                    key={instance.id}
-                    href={`/${locale}/staff/checklists/${instance.id}`}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "var(--space-4)",
-                      backgroundColor: "rgb(var(--surface))",
-                      borderRadius: "var(--radius-md)",
-                      textDecoration: "none",
-                      border: "1px solid rgb(var(--border))",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgb(var(--brand-light))";
-                      e.currentTarget.style.borderColor = "rgb(var(--brand))";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "rgb(var(--surface))";
-                      e.currentTarget.style.borderColor = "rgb(var(--border))";
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgb(var(--text))",
-                        }}
-                      >
-                        {instance.vehicle_name || "Unassigned Vehicle"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          color: "rgb(var(--muted))",
-                          marginTop: "var(--space-1)",
-                        }}
-                      >
-                        {instance.vehicle_plate || "-"} • {instance.booking_number || "No booking"}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "rgb(var(--brand))",
-                        }}
-                      >
-                        {instance.return_at ? `Return: ${formatTime(instance.return_at)}` : "-"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "rgb(var(--muted))",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {instance.status}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+        <div className="filter-group">
+          <label>Status:</label>
+          <div className="filter-buttons">
+            <Link
+              href={`/${locale}/staff/checklists?scope=${scope}&status=all`}
+              className={status === 'all' ? 'filter-button active' : 'filter-button'}
+            >
+              All
+            </Link>
+            <Link
+              href={`/${locale}/staff/checklists?scope=${scope}&status=not_started`}
+              className={status === 'not_started' ? 'filter-button active' : 'filter-button'}
+            >
+              Not Started
+            </Link>
+            <Link
+              href={`/${locale}/staff/checklists?scope=${scope}&status=in_progress`}
+              className={status === 'in_progress' ? 'filter-button active' : 'filter-button'}
+            >
+              In Progress
+            </Link>
+            <Link
+              href={`/${locale}/staff/checklists?scope=${scope}&status=completed`}
+              className={status === 'completed' ? 'filter-button active' : 'filter-button'}
+            >
+              Completed
+            </Link>
           </div>
         </div>
       </div>
-    </PageContainer>
+
+      {/* Booking Checklists Section */}
+      {(scope === 'all' || scope === 'booking') && (
+        <section className="checklists-section">
+          <h2>Booking Checklists</h2>
+          {displayBookingChecklists.length === 0 ? (
+            <p className="empty-state">No booking checklists found.</p>
+          ) : (
+            <div className="checklist-grid">
+              {displayBookingChecklists.map((checklist) => (
+                <Link
+                  key={checklist.id}
+                  href={`/${locale}/staff/checklists/${checklist.id}`}
+                  className="checklist-card"
+                >
+                  <div className="checklist-header">
+                    <h3>{checklist.name}</h3>
+                    <span className={`status-badge status-${checklist.status}`}>
+                      {String(checklist.status || '').replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="checklist-details">
+                    <p>
+                      <strong>Type:</strong> {checklist.type}
+                    </p>
+                    <p>
+                      <strong>Booking:</strong> {checklist.booking_number}
+                    </p>
+                    <p>
+                      <strong>Customer:</strong> {checklist.customer_name}
+                    </p>
+                    <p>
+                      <strong>Vehicle:</strong> {checklist.vehicle_name} ({checklist.vehicle_plate})
+                    </p>
+                    {checklist.pickup_at && (
+                      <p>
+                        <strong>Pickup:</strong> {new Date(checklist.pickup_at).toLocaleDateString()}
+                      </p>
+                    )}
+                    {checklist.return_at && (
+                      <p>
+                        <strong>Return:</strong> {new Date(checklist.return_at).toLocaleDateString()}
+                      </p>
+                    )}
+                    <p className="checklist-date">
+                      Created: {new Date(checklist.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Vehicle Checklists Section */}
+      {(scope === 'all' || scope === 'vehicle') && (
+        <section className="checklists-section">
+          <h2>Vehicle Checklists</h2>
+          <div className="info-box">
+            <p>Vehicle readiness checklists are being updated. Check back soon.</p>
+          </div>
+        </section>
+      )}
+
+      {/* Open Issues Section */}
+      {scope === 'all' && (
+        <section className="checklists-section">
+          <h2>Open Issues</h2>
+          {displayOpenIssues.length === 0 ? (
+            <p className="empty-state">No open issues found.</p>
+          ) : (
+            <div className="checklist-grid">
+              {displayOpenIssues.map((issue) => (
+                <Link
+                  key={issue.id}
+                  href={`/${locale}/staff/checklists/${issue.checklist_instance_id}?from=list`}
+                  className="checklist-card issue-card"
+                >
+                  <div className="checklist-header">
+                    <h3>{issue.name}</h3>
+                    <span className={`severity-badge severity-${issue.severity}`}>{issue.severity}</span>
+                  </div>
+                  <div className="checklist-details">
+                    {issue.booking_number !== 'N/A' && (
+                      <p>
+                        <strong>Booking:</strong> {issue.booking_number}
+                      </p>
+                    )}
+                    <p>
+                      <strong>Vehicle:</strong> {issue.vehicle_name} ({issue.vehicle_plate})
+                    </p>
+                    <p className="checklist-date">
+                      Created: {new Date(issue.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      <style jsx>{`
+        .page-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 2rem;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+          margin: 0;
+          font-size: 2rem;
+        }
+
+        .button-primary {
+          background-color: var(--primary-color);
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          text-decoration: none;
+          font-weight: 500;
+          transition: background-color 0.2s;
+        }
+
+        .button-primary:hover {
+          background-color: var(--primary-hover);
+        }
+
+        .filters {
+          display: flex;
+          gap: 2rem;
+          margin-bottom: 2rem;
+          padding: 1.5rem;
+          background: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .filter-group label {
+          font-weight: 600;
+          font-size: 0.875rem;
+          color: var(--text-secondary);
+        }
+
+        .filter-buttons {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .filter-button {
+          padding: 0.5rem 1rem;
+          border: 1px solid var(--border-color);
+          border-radius: 0.375rem;
+          background: white;
+          color: var(--text-primary);
+          text-decoration: none;
+          font-size: 0.875rem;
+          transition: all 0.2s;
+        }
+
+        .filter-button:hover {
+          background: var(--background-secondary);
+        }
+
+        .filter-button.active {
+          background: var(--primary-color);
+          color: white;
+          border-color: var(--primary-color);
+        }
+
+        .checklists-section {
+          margin-bottom: 3rem;
+        }
+
+        .checklists-section h2 {
+          margin-bottom: 1rem;
+          font-size: 1.5rem;
+        }
+
+        .info-box {
+          padding: 1.5rem;
+          background: var(--background-secondary);
+          border-radius: 0.5rem;
+          border-left: 4px solid var(--primary-color);
+        }
+
+        .info-box p {
+          margin: 0;
+          color: var(--text-secondary);
+        }
+
+        .empty-state {
+          padding: 3rem;
+          text-align: center;
+          color: var(--text-secondary);
+          background: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .checklist-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .checklist-card {
+          background: white;
+          border-radius: 0.5rem;
+          padding: 1.5rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          text-decoration: none;
+          color: inherit;
+          transition: all 0.2s;
+        }
+
+        .checklist-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          transform: translateY(-2px);
+        }
+
+        .issue-card {
+          border-left: 4px solid var(--warning-color);
+        }
+
+        .checklist-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: start;
+          margin-bottom: 1rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .checklist-header h3 {
+          margin: 0;
+          font-size: 1.125rem;
+          flex: 1;
+        }
+
+        .status-badge {
+          padding: 0.25rem 0.75rem;
+          border-radius: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          white-space: nowrap;
+        }
+
+        .status-not_started {
+          background: #f3f4f6;
+          color: #374151;
+        }
+
+        .status-in_progress {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .status-completed {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .severity-badge {
+          padding: 0.25rem 0.75rem;
+          border-radius: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          white-space: nowrap;
+        }
+
+        .severity-low {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .severity-medium {
+          background: #fed7aa;
+          color: #9a3412;
+        }
+
+        .severity-high {
+          background: #fecaca;
+          color: #991b1b;
+        }
+
+        .checklist-details p {
+          margin: 0.5rem 0;
+          font-size: 0.875rem;
+        }
+
+        .checklist-details strong {
+          color: var(--text-secondary);
+          font-weight: 600;
+        }
+
+        .checklist-date {
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-color);
+          color: var(--text-secondary);
+          font-size: 0.8125rem;
+        }
+      `}</style>
+    </div>
   );
-} 
+}

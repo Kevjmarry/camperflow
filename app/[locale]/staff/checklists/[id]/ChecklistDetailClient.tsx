@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import PageContainer from '@/components/PageContainer';
 
@@ -37,6 +37,14 @@ type ChecklistItemType = {
   };
 };
 
+const CHECKLIST_TYPE_LABELS: Record<string, string> = {
+  pickup: 'Pickup checklist',
+  return: 'Return checklist',
+  cleaning: 'Cleaning checklist',
+  guest_prereturn: 'Guest pre-return checklist',
+  vehicle_readiness: 'Vehicle readiness checklist',
+};
+
 export default function ChecklistDetailClient({
   instance,
   items: initialItems,
@@ -47,6 +55,8 @@ export default function ChecklistDetailClient({
   locale: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
   const supabase = createClient();
   const [localItems, setLocalItems] = useState(initialItems);
   const [localStatus, setLocalStatus] = useState(instance.status);
@@ -80,10 +90,16 @@ export default function ChecklistDetailClient({
   }, []);
 
   const handleBackClick = () => {
-    if (typeof document !== 'undefined' && document.referrer.includes('/staff/checklists')) {
-      router.back();
+    if (from === 'booking' && instance.booking_id) {
+      router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
     } else {
-      router.push(`/${locale}/staff/checklists?type=cleaning&range=today`);
+      router.push(`/${locale}/staff/checklists?scope=all&status=not_started`);
+    }
+  };
+
+  const handleGoToBooking = () => {
+    if (instance.booking_id) {
+      router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
     }
   };
 
@@ -193,92 +209,127 @@ export default function ChecklistDetailClient({
     (a, b) => a.template.sort_order - b.template.sort_order
   );
 
+  const backButtonLabel = from === 'booking' && instance.booking_id ? 'Back to booking' : 'Back to checklists';
+  const checklistTitle = CHECKLIST_TYPE_LABELS[instance.checklist_type] || 'Checklist';
+
   return (
     <PageContainer>
-      <div style={{ marginBottom: '24px' }}>
-        <button
-          onClick={handleBackClick}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '14px',
-            color: '#4B5563',
-            textDecoration: 'none',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          <span>←</span>
-          Back to Checklists
-        </button>
-      </div>
-
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          padding: '24px',
-        }}
-      >
-        <div
-          style={{
-            marginBottom: '24px',
-            borderBottom: '1px solid #E5E7EB',
-            paddingBottom: '16px',
-          }}
-        >
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
-            {instance.checklist_type === 'handover' ? 'Handover' : 'Return'} Checklist
-          </h1>
-          <p style={{ fontSize: '14px', color: '#6B7280' }}>
-            {instance.bookings
-              ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
-              : 'No booking linked'}
-          </p>
-          <div style={{ marginTop: '8px', fontSize: '14px', color: '#6B7280' }}>
+      {/* Header Card */}
+      <div className="surface" style={{ borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <button
+              onClick={handleBackClick}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                color: 'rgb(var(--muted))',
+                textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                marginBottom: '8px',
+              }}
+            >
+              <span>←</span>
+              {backButtonLabel}
+            </button>
+            <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '4px', color: 'rgb(var(--text))' }}>
+              {checklistTitle}
+            </h1>
+            <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
+              {instance.bookings
+                ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
+                : 'No booking linked'}
+            </p>
+          </div>
+          <div style={{ flexShrink: 0 }}>
             <span
               style={{
                 display: 'inline-block',
-                padding: '4px 8px',
+                padding: '4px 10px',
                 borderRadius: '4px',
                 fontSize: '12px',
                 fontWeight: 500,
-                backgroundColor:
-                  localStatus === 'completed'
-                    ? '#D1FAE5'
-                    : localStatus === 'in_progress'
-                      ? '#DBEAFE'
-                      : '#F3F4F6',
-                color:
-                  localStatus === 'completed'
-                    ? '#065F46'
-                    : localStatus === 'in_progress'
-                      ? '#1E40AF'
-                      : '#374151',
+                border: '1px solid rgb(var(--border))',
+                backgroundColor: 'rgb(var(--surface))',
+                color: 'rgb(var(--text))',
               }}
             >
-              {localStatus}
+              {localStatus === 'not_started' ? 'Not started' : localStatus === 'in_progress' ? 'In progress' : 'Completed'}
             </span>
           </div>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Compact Success Notice */}
+      {localStatus === 'completed' && (
+        <div style={{ marginBottom: '16px' }}>
+          <div
+            className="surface"
+            style={{
+              padding: '10px 14px',
+              border: '1px solid rgb(var(--border))',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z"
+                  fill="rgb(var(--brand))"
+                />
+              </svg>
+              <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
+                Checklist completed
+              </span>
+            </div>
+            {instance.booking_id && (
+              <button
+                onClick={handleGoToBooking}
+                className="btn btn-primary"
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+              >
+                Go to booking
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Checklist Items */}
+      <div className="surface" style={{ borderRadius: '8px', padding: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {sortedItems.map((item) => {
             return (
               <div
                 key={item.id}
                 style={{
-                  border: '1px solid #E5E7EB',
+                  border: '1px solid rgb(var(--border))',
                   borderRadius: '6px',
-                  padding: '16px',
+                  padding: '12px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <label htmlFor={`check-${item.id}`} style={{ marginTop: '4px', cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <label htmlFor={`check-${item.id}`} style={{ marginTop: '2px', cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
                     <input
                       type="checkbox"
                       id={`check-${item.id}`}
@@ -290,9 +341,9 @@ export default function ChecklistDetailClient({
                       style={{
                         width: '20px',
                         height: '20px',
-                        border: item.checked ? '2px solid rgb(var(--brand))' : '2px solid #D1D5DB',
+                        border: item.checked ? '2px solid rgb(var(--brand))' : '2px solid rgb(var(--border))',
                         borderRadius: '4px',
-                        backgroundColor: '#FFFFFF',
+                        backgroundColor: 'rgb(var(--surface))',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -318,9 +369,9 @@ export default function ChecklistDetailClient({
                     </div>
                   </label>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                        <label htmlFor={`check-${item.id}`} style={{ fontWeight: 500, cursor: 'pointer' }}>
+                        <label htmlFor={`check-${item.id}`} className="label" style={{ fontWeight: 500, cursor: 'pointer', margin: 0 }}>
                           {item.template.label}
                         </label>
                         {item.checked && item.checked_by && userId && item.checked_by === userId && initials && (
@@ -329,47 +380,50 @@ export default function ChecklistDetailClient({
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              width: '22px',
-                              height: '22px',
+                              width: '20px',
+                              height: '20px',
                               borderRadius: '50%',
-                              backgroundColor: '#F3F4F6',
-                              color: '#6B7280',
-                              fontSize: '11px',
+                              border: '1px solid rgb(var(--border))',
+                              backgroundColor: 'rgb(var(--surface))',
+                              color: 'rgb(var(--muted))',
+                              fontSize: '10px',
                               fontWeight: 600,
+                              flexShrink: 0,
                             }}
                           >
                             {initials}
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => toggleNotes(item.id)}
-                          style={{
-                            fontSize: '13px',
-                            color: '#2563EB',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            textDecoration: 'underline',
-                          }}
-                        >
-                          {item.notes ? 'Edit note' : 'Add note'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleNotes(item.id)}
+                        style={{
+                          fontSize: '12px',
+                          color: 'rgb(var(--brand))',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '2px 6px',
+                          textDecoration: 'underline',
+                          flexShrink: 0,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {item.notes ? 'Edit note' : 'Add note'}
+                      </button>
                     </div>
 
                     {!openNotesById[item.id] && item.notes && (
                       <div
                         style={{
-                          marginTop: '8px',
                           fontSize: '13px',
-                          color: '#6B7280',
+                          color: 'rgb(var(--muted))',
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: '1.4',
                         }}
                       >
                         {item.notes}
@@ -383,15 +437,13 @@ export default function ChecklistDetailClient({
                         onChange={(e) => handleNotesChange(item.id, e.target.value)}
                         onBlur={(e) => handleNotesBlur(item.id, e.target.value)}
                         rows={2}
+                        className="input"
                         style={{
-                          marginTop: '8px',
+                          marginTop: '6px',
                           width: '100%',
-                          padding: '8px',
-                          border: '1px solid #D1D5DB',
-                          borderRadius: '4px',
+                          resize: 'vertical',
                           fontSize: '14px',
                           fontFamily: 'inherit',
-                          resize: 'vertical',
                         }}
                       />
                     )}

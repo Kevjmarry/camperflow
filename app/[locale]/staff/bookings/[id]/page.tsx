@@ -695,7 +695,7 @@ export default function BookingDetailPage() {
                         </div>
                       </div>
                       <Link
-                        href={`/${locale}/staff/checklists/${instance.id}`}
+                        href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
                         className="btn btn-secondary"
                         style={{
                           fontSize: '14px',
@@ -1078,7 +1078,7 @@ export default function BookingDetailPage() {
                       </div>
                     </div>
                     <Link
-                      href={`/${locale}/staff/checklists/${instance.id}`}
+                      href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
                       className="btn btn-secondary"
                       style={{
                         fontSize: '14px',
