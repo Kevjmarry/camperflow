@@ -699,7 +699,8 @@
     "contactUs": "Bitte kontaktieren Sie uns und geben Sie Ihren Buchungscode an.",
     "notFoundTitle": "Buchung nicht gefunden",
     "notFoundMessage": "Der Buchungscode",
-    "notFoundMessageEnd": "existiert nicht."
+    "notFoundMessageEnd": "existiert nicht.",
+    "back": "Zurück"
   },
   "guestBookings": {
     "redirecting": "Weiterleitung…",
@@ -969,6 +970,7 @@
       "viewer": "Unternehmensbranding und Erscheinungsbild anzeigen"
     },
     "sections": {
+      "emergencyContacts": "Notfallkontakte",
       "information": "Unternehmensinformationen",
       "logo": "Unternehmenslogo",
       "brandColors": "Markenfarben",
@@ -1203,5 +1205,42 @@
     "saving": "Speichert…",
     "cancel": "Abbrechen"
   }
-}
-}
+},
+"guestDashboard": {
+  "title": "Meine Buchung",
+  "subtitle": "Alles Wichtige rund um Ihre Miete.",
+  "summaryCode": "Buchungscode",
+  "guestAccess": "Gastzugang",
+  "comingSoon": "Demnächst",
+  "noCodeTitle": "Kein Buchungscode",
+  "noCodeMessage": "Bitte nutzen Sie den Link aus Ihrer Buchungsbestätigung.",
+  "cards": {
+    "bookingDetails": "Buchungsdetails",
+    "emergency": "Notfall & Pannenhilfe",
+    "pickupInfo": "Abholinformationen",
+    "returnInfo": "Rückgabeinformationen",
+    "rulesAndTips": "Regeln & Tipps",
+    "messages": "Nachrichten"
+  }
+},
+  "guestEmergency": {
+    "noCodeTitle": "Kein Buchungscode",
+    "noCodeMessage": "Es wurde kein Buchungscode gefunden. Bitte nutzen Sie den Link in Ihrer Bestätigungs-E-Mail.",
+    "back": "Zurück zur Übersicht",
+    "title": "Notfall & Pannenhilfe",
+    "subtitle": "Rund um die Uhr erreichbar — Hilfe ist nur einen Anruf entfernt",
+    "languageNote": "Unser Support ist auf Englisch und Deutsch (EN / DE) verfügbar. Rufen Sie uns einfach an – wir helfen Ihnen gerne in Ihrer bevorzugten Sprache.",
+    "accident": {
+      "title": "Unfall",
+      "instructions": "Bewahren Sie Ruhe und sorgen Sie für die Sicherheit aller Beteiligten. Fahren Sie wenn möglich aus dem Verkehr und schalten Sie die Warnblinkanlage ein. Rufen Sie bei Verletzungen den Notruf und kontaktieren Sie uns anschließend sofort unter den folgenden Nummern.",
+      "phone1Label": "Hauptkontakt Notfall",
+      "phone2Label": "Zweiter Kontakt / Bereitschaft"
+    },
+    "breakdown": {
+      "title": "Panne",
+      "instructions": "Fahren Sie sicher an den Straßenrand und schalten Sie die Warnblinkanlage ein. Stellen Sie das Warndreieck mindestens 50 m hinter dem Fahrzeug auf. Nehmen Sie auf Autobahnen keine Reparaturen vor. Rufen Sie uns an – wir koordinieren den Pannendienst oder ein Ersatzfahrzeug.",
+      "phone1Label": "Pannenhilfe-Hotline",
+      "phone2Label": "Pannendienst außerhalb der Geschäftszeiten"
+    }
+  }
+  }

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -182,6 +183,39 @@ try{
           <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         </>
       )}
+
+      <div style={{ marginBottom: "var(--space-4)" }}>
+        <Link
+          href={`/${locale}/guest?code=${encodeURIComponent(code)}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            fontSize: "14px",
+            fontWeight: "500",
+            color: "rgb(var(--text-secondary))",
+            textDecoration: "none",
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+            style={{ flexShrink: 0 }}
+          >
+            <path
+              d="M10 12L6 8L10 4"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {t("back")}
+        </Link>
+      </div>
 
       <div
         className="surface"

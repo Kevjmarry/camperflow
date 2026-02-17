@@ -20,6 +20,10 @@ export default function CompanySettingsPage() {
     logo_url: "",
     primary_color: "#368F8B",
     secondary_color: "#BC8235",
+    emergency_accident_phone_primary: "",
+    emergency_accident_phone_secondary: "",
+    emergency_breakdown_phone_primary: "",
+    emergency_breakdown_phone_secondary: "",
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -59,6 +63,10 @@ export default function CompanySettingsPage() {
         logo_url: company.logo_url || "",
         primary_color: company.primary_color,
         secondary_color: company.secondary_color,
+        emergency_accident_phone_primary:    (company as any).emergency_accident_phone_primary    ?? "",
+        emergency_accident_phone_secondary:  (company as any).emergency_accident_phone_secondary  ?? "",
+        emergency_breakdown_phone_primary:   (company as any).emergency_breakdown_phone_primary   ?? "",
+        emergency_breakdown_phone_secondary: (company as any).emergency_breakdown_phone_secondary ?? "",
       });
       setLogoPreview(company.logo_url);
       setLoading(false);
@@ -161,6 +169,10 @@ export default function CompanySettingsPage() {
           logo_url: finalLogoUrl || null,
           primary_color: formData.primary_color,
           secondary_color: formData.secondary_color,
+          emergency_accident_phone_primary:    formData.emergency_accident_phone_primary.trim()    || null,
+          emergency_accident_phone_secondary:  formData.emergency_accident_phone_secondary.trim()  || null,
+          emergency_breakdown_phone_primary:   formData.emergency_breakdown_phone_primary.trim()   || null,
+          emergency_breakdown_phone_secondary: formData.emergency_breakdown_phone_secondary.trim() || null,
         })
         .eq('id', company?.id);
 
@@ -224,6 +236,7 @@ export default function CompanySettingsPage() {
             flexDirection: 'column', 
             gap: 'var(--space-8)' 
           }}>
+            {/* Company Information */}
             <div>
               <h2 style={{ fontSize: '20px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
                 {t('sections.information')}
@@ -249,6 +262,7 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
+            {/* Logo */}
             <div>
               <h2 style={{ fontSize: '20px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
                 {t('sections.logo')}
@@ -293,6 +307,7 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
+            {/* Brand Colors */}
             <div>
               <h2 style={{ fontSize: '20px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
                 {t('sections.brandColors')}
@@ -366,6 +381,102 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
+            {/* Emergency Contacts */}
+            <div>
+              <h2 style={{ fontSize: '20px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                {t('sections.emergencyContacts')}
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+                {/* Accident */}
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: 'var(--space-3)', color: 'rgb(var(--text))' }}>
+                    {t('labels.accidentNumbers')}
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+                    <div>
+                      <label htmlFor="emergency_accident_phone_primary" className="label">
+                        {t('labels.primaryPhone')}
+                      </label>
+                      <input
+                        id="emergency_accident_phone_primary"
+                        name="emergency_accident_phone_primary"
+                        type="tel"
+                        className="input"
+                        placeholder={t('placeholders.phonePlaceholder')}
+                        value={formData.emergency_accident_phone_primary}
+                        onChange={handleChange}
+                        disabled={!isAdmin}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="emergency_accident_phone_secondary" className="label">
+                        {t('labels.secondaryPhone')}
+                      </label>
+                      <input
+                        id="emergency_accident_phone_secondary"
+                        name="emergency_accident_phone_secondary"
+                        type="tel"
+                        className="input"
+                        placeholder={t('placeholders.phonePlaceholder')}
+                        value={formData.emergency_accident_phone_secondary}
+                        onChange={handleChange}
+                        disabled={!isAdmin}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Breakdown */}
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: 'var(--space-3)', color: 'rgb(var(--text))' }}>
+                    {t('labels.breakdownNumbers')}
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+                    <div>
+                      <label htmlFor="emergency_breakdown_phone_primary" className="label">
+                        {t('labels.primaryPhone')}
+                      </label>
+                      <input
+                        id="emergency_breakdown_phone_primary"
+                        name="emergency_breakdown_phone_primary"
+                        type="tel"
+                        className="input"
+                        placeholder={t('placeholders.phonePlaceholder')}
+                        value={formData.emergency_breakdown_phone_primary}
+                        onChange={handleChange}
+                        disabled={!isAdmin}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="emergency_breakdown_phone_secondary" className="label">
+                        {t('labels.secondaryPhone')}
+                      </label>
+                      <input
+                        id="emergency_breakdown_phone_secondary"
+                        name="emergency_breakdown_phone_secondary"
+                        type="tel"
+                        className="input"
+                        placeholder={t('placeholders.phonePlaceholder')}
+                        value={formData.emergency_breakdown_phone_secondary}
+                        onChange={handleChange}
+                        disabled={!isAdmin}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  </div>
+                  <p className="helper-text" style={{ marginTop: 'var(--space-2)' }}>
+                    {t('helpers.emergencyPhoneUsage')}
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Preview */}
             <div>
               <h2 style={{ fontSize: '20px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
                 {t('sections.preview')}
