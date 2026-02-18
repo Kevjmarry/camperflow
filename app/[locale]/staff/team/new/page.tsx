@@ -212,6 +212,7 @@ export default function NewTeamMemberPage() {
           body: JSON.stringify({
             email: formData.email.trim(),
             profile_id: newMember.profile_id,
+            locale,
           }),
         });
 

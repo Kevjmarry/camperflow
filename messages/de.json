@@ -30,9 +30,11 @@
     "passwordPlaceholder": "Gib dein Passwort ein",
     "signIn": "Anmelden",
     "signingIn": "Anmeldung...",
+    "backToHome": "Zurück zur Startseite",
+    "inviteOnly": "Konten werden nur per Einladung erstellt. Bitte kontaktiere deinen Administrator.",
     "error": {
-      "accessDeniedError": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
-      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
+    "accessDeniedError": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
     }
   },
   "pageContainer": {
@@ -1031,11 +1033,11 @@
 
   "delete": "Löschen",
   "deleting": "Wird gelöscht...",
-  "deleteConfirm": "Möchten Sie dieses Teammitglied wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-  "deleteConfirmLinked": "WARNUNG: Dieses Teammitglied hat ein verknüpftes Konto. Durch das Löschen dieses Profils wird der Zugriff entfernt und es kann sich auf den Login-Verlauf und zugehörige Daten auswirken.",
-  "deleteNotAllowed": "Nur Administratoren können Teammitglieder löschen.",
+  "deleteConfirm": "Möchten Sie diesen Mitarbeiter wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteConfirmLinked": "WARNUNG: Dieser Mitarbeiter hat ein verknüpftes Konto. Das Löschen dieses Profils entfernt seinen Zugriff und kann den Login-Verlauf sowie zugehörige Datensätze beeinflussen.",
+  "deleteNotAllowed": "Nur Administratoren können Mitarbeiter löschen.",
   "deleteSelfNotAllowed": "Sie können Ihr eigenes Profil nicht löschen.",
-  "deleteFailed": "Teammitglied konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+  "deleteFailed": "Mitarbeiter konnte nicht gelöscht werden. Bitte erneut versuchen.",
 
   "capabilitiesLabel": "Fähigkeiten",
   "contactLabel": "Kontakt",
@@ -1045,29 +1047,43 @@
   "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
   "joiner": " + ",
   "uploading": "Wird hochgeladen…",
-  "saving": "Speichern...",
+  "saving": "Wird gespeichert...",
   "save": "Speichern",
   "cancel": "Abbrechen",
+
+  "loginAccess": {
+    "title": "Login-Zugang",
+    "loginEnabled": "✓ Login aktiviert",
+    "noLoginYet": "Noch kein Login",
+    "inviteSent": "Einladung gesendet",
+    "enableLogin": "Login aktivieren / Einladung senden",
+    "resendAccess": "Zugang erneut senden",
+    "sending": "Senden…",
+    "recoveryLinkTitle": "Wiederherstellungslink",
+    "copyLink": "Link kopieren",
+    "copied": "Kopiert!"
+  },
+
   "types": {
     "manager": "Manager",
-    "cleaner": "Reinigungskraft",
-    "mechanical": "Mechaniker"
+    "cleaner": "Reinigung",
+    "mechanical": "Technik"
   },
   "capabilities": {
     "cleaning": "Reinigung",
-    "mechanical": "Mechanik"
+    "mechanical": "Technik"
   },
   "roles": {
     "staff": "Mitarbeiter",
-    "management": "Verwaltung"
+    "management": "Management"
   },
   "fields": {
     "firstName": "Vorname *",
     "lastName": "Nachname *",
     "role": "Rolle",
-    "canManage": "Kann verwalten (automatisch durch Rolle gesetzt)",
+    "canManage": "Kann verwalten (automatisch durch Rolle)",
     "canClean": "Kann reinigen",
-    "canMechanical": "Kann mechanische Arbeiten",
+    "canMechanical": "Kann Technik",
     "phone": "Telefon",
     "email": "E-Mail",
     "uploadPhoto": "Foto hochladen",
@@ -1085,10 +1101,10 @@
     "saveFailed": "Änderungen konnten nicht gespeichert werden",
     "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
   },
-  "passwordRequired": "Bitte geben Sie ein neues Passwort ein und bestätigen Sie es.",
-  "passwordMismatch": "Die Passwörter stimmen nicht überein.",
-  "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein.",
-  "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie das Passwort ändern.",
+  "passwordRequired": "Bitte neues Passwort eingeben und bestätigen.",
+  "passwordMismatch": "Passwörter stimmen nicht überein.",
+  "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein.",
+  "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie Ihr Passwort ändern.",
   "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
   "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
   "statusActive": "Aktiv",

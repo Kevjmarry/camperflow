@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/client";
 
 interface StaffProfile {
   profile_id: string;
-  id: string | null;
   auth_user_id: string | null;
   company_id: string;
   first_name: string | null;
@@ -62,6 +61,11 @@ export default function StaffMemberPage() {
   const [isTogglingActive, setIsTogglingActive] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [recoveryLink, setRecoveryLink] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const [formData, setFormData] = useState<StaffFormData>({
     first_name: "",
@@ -83,6 +87,11 @@ export default function StaffMemberPage() {
       try {
         setLoading(true);
         setError("");
+        // Clear invite/recovery state when switching members
+        setRecoveryLink(null);
+        setCopiedLink(false);
+        setInviteSuccess(false);
+        setInviteError("");
 
         const supabase = createClient();
 
@@ -110,7 +119,7 @@ export default function StaffMemberPage() {
 
         const { data, error } = await supabase
           .from("staff_profiles")
-          .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+          .select("profile_id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
           .eq("profile_id", staffId)
           .eq("company_id", currentUserProfile.company_id)
           .single();
@@ -122,7 +131,7 @@ export default function StaffMemberPage() {
 
         setMember(data as StaffProfile);
         setIsViewingOwnProfile(!!data.auth_user_id && data.auth_user_id === userRes.user.id);
-        
+
         setFormData({
           first_name: data.first_name || "",
           last_name: data.last_name || "",
@@ -146,6 +155,74 @@ export default function StaffMemberPage() {
 
     run();
   }, [staffId, locale, router, t]);
+
+  const refetchMember = async () => {
+    if (!companyId) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("staff_profiles")
+      .select("profile_id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+      .eq("profile_id", staffId)
+      .eq("company_id", companyId)
+      .single();
+    if (data) setMember(data as StaffProfile);
+  };
+
+  const handleInvite = async () => {
+    if (!member?.email) return;
+
+    setIsInviting(true);
+    setInviteError("");
+    setInviteSuccess(false);
+    setRecoveryLink(null);
+    setCopiedLink(false);
+
+    try {
+      const response = await fetch('/api/staff/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: member.email,
+          profile_id: member.profile_id,
+          locale,
+        }),
+      });
+
+      let json: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        json = await response.json();
+      }
+
+      if (!response.ok) {
+        throw new Error(json?.error || `Request failed (${response.status})`);
+      }
+
+      if (json?.mode === 'recovery_link') {
+        setRecoveryLink(json.action_link);
+      } else {
+        setInviteSuccess(true);
+      }
+
+      // Always refetch so member state stays fresh
+      await refetchMember();
+    } catch (err: any) {
+      setInviteError(err?.message || 'Failed to send invite.');
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!recoveryLink) return;
+    try {
+      await navigator.clipboard.writeText(recoveryLink);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      // clipboard API unavailable; user can copy manually
+    }
+  };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,6 +258,11 @@ export default function StaffMemberPage() {
   const handleEdit = () => {
     setIsEditing(true);
     setSaveError("");
+    // Clear invite/recovery state when entering edit mode
+    setRecoveryLink(null);
+    setCopiedLink(false);
+    setInviteSuccess(false);
+    setInviteError("");
   };
 
   const handleCancel = () => {
@@ -255,17 +337,7 @@ export default function StaffMemberPage() {
 
       if (error) throw error;
 
-      const { data } = await supabase
-        .from("staff_profiles")
-        .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
-        .eq("profile_id", staffId)
-        .eq("company_id", companyId)
-        .single();
-
-      if (data) {
-        setMember(data as StaffProfile);
-      }
-
+      await refetchMember();
       setIsEditing(false);
     } catch (err: any) {
       setSaveError(err?.message || t('errors.saveFailed'));
@@ -282,7 +354,7 @@ export default function StaffMemberPage() {
       return;
     }
 
-    const confirmMessage = newActiveState 
+    const confirmMessage = newActiveState
       ? t('reactivateConfirm')
       : t('confirmDeactivate');
 
@@ -305,7 +377,7 @@ export default function StaffMemberPage() {
 
       const { data } = await supabase
         .from("staff_profiles")
-        .select("profile_id, id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
+        .select("profile_id, auth_user_id, company_id, first_name, last_name, name, role, can_manage, can_clean, can_mechanical, photo_url, phone, email, notes, active")
         .eq("profile_id", staffId)
         .eq("company_id", companyId)
         .single();
@@ -315,7 +387,7 @@ export default function StaffMemberPage() {
         setFormData(prev => ({ ...prev, active: data.active }));
       }
     } catch (err: any) {
-      const errorMessage = newActiveState 
+      const errorMessage = newActiveState
         ? t('reactivateFailed')
         : t('errors.deactivateFailed');
       alert(err?.message || errorMessage);
@@ -343,7 +415,7 @@ export default function StaffMemberPage() {
     }
 
     let confirmMessage = t('deleteConfirm');
-    
+
     if (member.auth_user_id) {
       confirmMessage += "\n\n" + t('deleteConfirmLinked');
     }
@@ -378,15 +450,15 @@ export default function StaffMemberPage() {
     if (m.can_manage) {
       return t('types.manager');
     }
-    
+
     const capabilities: string[] = [];
     if (m.can_clean) capabilities.push(t('types.cleaner'));
     if (m.can_mechanical) capabilities.push(t('types.mechanical'));
-    
+
     if (capabilities.length > 0) {
       return capabilities.join(t('joiner'));
     }
-    
+
     return "";
   };
 
@@ -401,6 +473,8 @@ export default function StaffMemberPage() {
   if (member?.can_mechanical) capabilities.push(t('capabilities.mechanical'));
 
   const displayName = member ? getDisplayName(member) : "";
+
+  const showInviteSection = isAdmin && !isEditing && !!member?.email;
 
   return (
     <PageContainer maxWidth="700px">
@@ -632,6 +706,126 @@ export default function StaffMemberPage() {
                     }}>
                       {member.notes}
                     </div>
+                  </div>
+                )}
+
+                {showInviteSection && (
+                  <div style={{
+                    padding: "var(--space-4)",
+                    border: "1px solid rgb(var(--border))",
+                    borderRadius: "var(--radius)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-3)",
+                  }}>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>
+                      {t('loginAccess.title')}
+                    </div>
+
+                    {member.auth_user_id ? (
+                      <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>
+                        {t('loginAccess.loginEnabled')}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>
+                        {t('loginAccess.noLoginYet')}
+                      </div>
+                    )}
+
+                    {inviteSuccess ? (
+                      <div style={{
+                        padding: "var(--space-3)",
+                        background: "rgb(var(--success) / 0.1)",
+                        border: "1px solid rgb(var(--success) / 0.3)",
+                        borderRadius: "var(--radius)",
+                        color: "rgb(var(--success))",
+                        fontSize: "14px",
+                      }}>
+                        {t('loginAccess.inviteSent')}
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <button
+                            onClick={handleInvite}
+                            disabled={isInviting}
+                            style={{
+                              padding: "8px 16px",
+                              background: "rgb(var(--brand))",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "var(--radius)",
+                              cursor: isInviting ? "not-allowed" : "pointer",
+                              fontSize: "14px",
+                              opacity: isInviting ? 0.6 : 1,
+                            }}
+                          >
+                            {isInviting
+                              ? t('loginAccess.sending')
+                              : member.auth_user_id
+                              ? t('loginAccess.resendAccess')
+                              : t('loginAccess.enableLogin')}
+                          </button>
+                        </div>
+
+                        {recoveryLink && (
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "var(--space-2)",
+                            padding: "var(--space-3)",
+                            background: "rgb(var(--border) / 0.3)",
+                            borderRadius: "var(--radius)",
+                            border: "1px solid rgb(var(--border))",
+                          }}>
+                            <div style={{ fontSize: "13px", fontWeight: 500 }}>
+                              {t('loginAccess.recoveryLinkTitle')}
+                            </div>
+                            <code style={{
+                              fontSize: "12px",
+                              wordBreak: "break-all",
+                              color: "rgb(var(--text))",
+                              background: "rgb(var(--border) / 0.5)",
+                              padding: "var(--space-2)",
+                              borderRadius: "var(--radius)",
+                              display: "block",
+                            }}>
+                              {recoveryLink}
+                            </code>
+                            <button
+                              onClick={handleCopyLink}
+                              style={{
+                                alignSelf: "flex-start",
+                                padding: "6px 14px",
+                                background: copiedLink ? "rgb(var(--success) / 0.1)" : "rgb(var(--border))",
+                                color: copiedLink ? "rgb(var(--success))" : "rgb(var(--text))",
+                                border: copiedLink
+                                  ? "1px solid rgb(var(--success) / 0.3)"
+                                  : "1px solid rgb(var(--border))",
+                                borderRadius: "var(--radius)",
+                                cursor: "pointer",
+                                fontSize: "13px",
+                              }}
+                            >
+                              {copiedLink ? t('loginAccess.copied') : t('loginAccess.copyLink')}
+                            </button>
+                          </div>
+                        )}
+
+                        {inviteError && (
+                          <div style={{
+                            padding: "var(--space-3)",
+                            background: "rgb(var(--error) / 0.1)",
+                            border: "1px solid rgb(var(--error) / 0.3)",
+                            borderRadius: "var(--radius)",
+                            color: "rgb(var(--error))",
+                            fontSize: "14px",
+                          }}>
+                            {inviteError}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </>

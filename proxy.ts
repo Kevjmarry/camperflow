@@ -88,7 +88,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // Protect all staff routes except login
-  const isStaffRoute = basePath === "/staff" || basePath.startsWith("/staff/");
+  const isStaffRoute =
+  (basePath === "/staff" || basePath.startsWith("/staff/")) &&
+  basePath !== "/staff/login" &&
+  basePath !== "/staff/reset";
   if (isStaffRoute) {
     if (!user || !isStaff) {
       return NextResponse.redirect(new URL(`/${activeLocale}/`, request.url));

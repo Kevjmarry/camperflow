@@ -30,6 +30,8 @@
     "passwordPlaceholder": "Enter your password",
     "signIn": "Sign in",
     "signingIn": "Signing in...",
+    "backToHome": "Back to home",
+    "inviteOnly": "Accounts are created by invitation only. Contact your manager.",
     "error": {
     "accessDenied": "Access denied. This account does not have staff privileges.",
     "unexpected": "An unexpected error occurred. Please try again.",
@@ -965,7 +967,7 @@
       "deleteBooking": "Are you sure you want to delete this booking? This cannot be undone."
     }
   },
-  "staffTeamMember": {
+"staffTeamMember": {
   "backToTeam": "← Back to team",
   "loading": "Loading staff member…",
   "unnamedStaff": "Unnamed Staff",
@@ -994,6 +996,20 @@
   "saving": "Saving...",
   "save": "Save",
   "cancel": "Cancel",
+
+  "loginAccess": {
+    "title": "Login access",
+    "loginEnabled": "✓ Login enabled",
+    "noLoginYet": "No login yet",
+    "inviteSent": "Invite sent",
+    "enableLogin": "Enable login / Send invite",
+    "resendAccess": "Resend access",
+    "sending": "Sending…",
+    "recoveryLinkTitle": "Recovery link",
+    "copyLink": "Copy link",
+    "copied": "Copied!"
+  },
+
   "types": {
     "manager": "Manager",
     "cleaner": "Cleaner",
@@ -1043,7 +1059,6 @@
   "reactivating": "Reactivating...",
   "reactivateConfirm": "Reactivate this staff member?"
 },
-
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Not authenticated",
