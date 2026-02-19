@@ -953,7 +953,9 @@
       "statusUpdateFailed": "Failed to update booking status",
       "cancelFailed": "Failed to cancel booking",
       "deleteFailed": "Failed to delete booking",
-      "deletePermissionDenied": "Permission denied: You do not have access to delete this booking"
+      "deletePermissionDenied": "Permission denied: You do not have access to delete this booking",
+      "pickupChecklistRequired": "The pickup checklist must be completed before marking this booking as on rent.",
+      "returnChecklistRequired": "The return checklist must be completed before marking this booking as completed."
     },
     "warning": {
       "vehicleConflict": "Warning: Vehicle is already booked during this period (Booking {bookingNumber}). Please choose a different vehicle or dates."

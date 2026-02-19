@@ -948,7 +948,9 @@
       "statusUpdateFailed": "Buchungsstatus konnte nicht aktualisiert werden",
       "cancelFailed": "Buchung konnte nicht storniert werden",
       "deleteFailed": "Buchung konnte nicht gelöscht werden",
-      "deletePermissionDenied": "Zugriff verweigert: Sie haben keine Berechtigung, diese Buchung zu löschen"
+      "deletePermissionDenied": "Zugriff verweigert: Sie haben keine Berechtigung, diese Buchung zu löschen",
+      "pickupChecklistRequired": "Die Abhol-Checkliste muss abgeschlossen sein, bevor die Buchung als aktiv markiert werden kann.",
+      "returnChecklistRequired": "Die Rückgabe-Checkliste muss abgeschlossen sein, bevor die Buchung als abgeschlossen markiert werden kann."
     },
     "warning": {
       "vehicleConflict": "Warnung: Fahrzeug ist bereits für diesen Zeitraum gebucht (Buchung {bookingNumber}). Bitte wählen Sie ein anderes Fahrzeug oder andere Termine."

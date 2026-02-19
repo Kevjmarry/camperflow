@@ -133,7 +133,7 @@ export default function NewBookingPage() {
 
       if (conflictBooking) {
         setConflictWarning(
-          t("conflictWarning", { booking: conflictBooking.booking_number })
+          t("conflictWarning", { bookingNumber: conflictBooking.booking_number })
         );
         return false;
       }

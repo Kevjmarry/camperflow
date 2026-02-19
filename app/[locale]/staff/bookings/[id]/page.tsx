@@ -41,7 +41,7 @@ interface RedactedBooking {
 
 interface ChecklistInstance {
   id: string;
-  checklist_type: 'cleaning' | 'mechanical';
+  checklist_type: 'cleaning' | 'mechanical' | 'pickup' | 'return';
   status: 'not_started' | 'in_progress' | 'completed';
 }
 
@@ -227,7 +227,7 @@ export default function BookingDetailPage() {
     }
   };
 
-  const fetchChecklistInstances = async () => {
+  const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
     try {
       const { data, error } = await supabase
         .from('checklist_instances')
@@ -236,9 +236,12 @@ export default function BookingDetailPage() {
         .order('checklist_type');
 
       if (error) throw error;
-      setChecklistInstances(data || []);
+      const instances = data || [];
+      setChecklistInstances(instances);
+      return instances;
     } catch (err: any) {
       console.error('Failed to fetch checklist instances:', err);
+      return checklistInstances;
     }
   };
 
@@ -376,6 +379,29 @@ export default function BookingDetailPage() {
     try {
       setSaving(true);
       setError("");
+
+      // Fetch fresh checklist instances before evaluating
+      const freshInstances = await fetchChecklistInstances();
+
+      // Gate: confirmed -> on_rent requires pickup checklist completed
+      if (newStatus === 'on_rent') {
+        const pickupChecklist = freshInstances.find(c => c.checklist_type === 'pickup');
+        if (!pickupChecklist || pickupChecklist.status !== 'completed') {
+          setError(t("error.pickupChecklistRequired"));
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Gate: on_rent -> completed requires return checklist completed
+      if (newStatus === 'completed') {
+        const returnChecklist = freshInstances.find(c => c.checklist_type === 'return');
+        if (!returnChecklist || returnChecklist.status !== 'completed') {
+          setError(t("error.returnChecklistRequired"));
+          setSaving(false);
+          return;
+        }
+      }
 
       const { error } = await supabase
         .from('bookings')
