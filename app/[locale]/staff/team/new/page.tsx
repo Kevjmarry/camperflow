@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -59,8 +59,11 @@ export default function NewTeamMemberPage() {
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function checkAuth() {
@@ -106,6 +109,7 @@ export default function NewTeamMemberPage() {
     const file = e.target.files?.[0];
     if (file) {
       setPhotoFile(file);
+      setPhotoWarning(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result as string);
@@ -114,9 +118,19 @@ export default function NewTeamMemberPage() {
     }
   };
 
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoWarning(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+    setPhotoWarning(null);
 
     if (!formData.first_name.trim() || !formData.last_name.trim()) {
       setSubmitError(t("errors.nameRequired"));
@@ -138,9 +152,32 @@ export default function NewTeamMemberPage() {
       return;
     }
 
+    // Compute once here; used throughout the try block below
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
     setSubmitting(true);
 
     try {
+      // Duplicate email check — inside try so Supabase errors surface properly
+      if (formData.enableLogin && normalizedEmail) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("staff_profiles")
+          .select("profile_id")
+          .eq("company_id", staffProfile.company_id)
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+
+        if (lookupError) {
+          throw lookupError;
+        }
+
+        if (existing) {
+          setSubmitError(t("errors.duplicateEmail"));
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const name = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
       const can_manage = formData.role === "admin";
 
@@ -156,7 +193,7 @@ export default function NewTeamMemberPage() {
           can_clean: formData.can_clean,
           can_mechanical: formData.can_mechanical,
           phone: formData.phone.trim() || null,
-          email: formData.email.trim() || null,
+          email: normalizedEmail || null,
           notes: formData.notes.trim() || null,
           active: true,
         })
@@ -167,38 +204,45 @@ export default function NewTeamMemberPage() {
         throw insertError;
       }
 
+      // Non-blocking photo upload
       if (photoFile && newMember?.profile_id) {
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", photoFile);
-        uploadFormData.append("staffId", String(newMember.profile_id));
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append("file", photoFile);
+          uploadFormData.append("staffId", String(newMember.profile_id));
 
-        const uploadRes = await fetch("/api/staff/upload-photo", {
-          method: "POST",
-          body: uploadFormData,
-        });
+          const uploadRes = await fetch("/api/staff/upload-photo", {
+            method: "POST",
+            body: uploadFormData,
+          });
 
-        if (!uploadRes.ok) {
-          const bodyText = await uploadRes.text();
-          if (bodyText) {
-            throw new Error(`Photo upload failed: ${uploadRes.status} ${uploadRes.statusText} ${bodyText}`);
-          } else {
+          if (!uploadRes.ok) {
+            const bodyText = await uploadRes.text();
+            throw new Error(
+              bodyText
+                ? `Photo upload failed: ${uploadRes.status} ${uploadRes.statusText} ${bodyText}`
+                : t("errors.photoUploadFailed")
+            );
+          }
+
+          const { publicUrl } = await uploadRes.json();
+
+          if (!publicUrl) {
             throw new Error(t("errors.photoUploadFailed"));
           }
-        }
 
-        const { publicUrl } = await uploadRes.json();
+          const { error: updateError } = await supabase
+            .from("staff_profiles")
+            .update({ photo_url: publicUrl })
+            .eq("profile_id", newMember.profile_id);
 
-        if (!publicUrl) {
-          throw new Error(t("errors.photoUploadFailed"));
-        }
-
-        const { error: updateError } = await supabase
-          .from("staff_profiles")
-          .update({ photo_url: publicUrl })
-          .eq("profile_id", newMember.profile_id);
-
-        if (updateError) {
-          throw updateError;
+          if (updateError) {
+            throw updateError;
+          }
+        } catch (photoErr) {
+          console.error("Photo upload error (non-fatal):", photoErr);
+          setPhotoWarning(t("errors.photoUploadWarning"));
+          // Continue — do not re-throw
         }
       }
 
@@ -210,7 +254,7 @@ export default function NewTeamMemberPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email: formData.email.trim(),
+            email: normalizedEmail,
             profile_id: newMember.profile_id,
             locale,
           }),
@@ -218,9 +262,7 @@ export default function NewTeamMemberPage() {
 
         if (!inviteRes.ok) {
           const errorData = await inviteRes.json();
-          throw new Error(
-            errorData.error || t("errors.inviteFailed")
-          );
+          throw new Error(errorData.error || t("errors.inviteFailed"));
         }
       }
 
@@ -649,6 +691,7 @@ export default function NewTeamMemberPage() {
                   {t("form.photo")}
                 </label>
                 <input
+                  ref={photoInputRef}
                   type="file"
                   id="photo"
                   accept="image/*"
@@ -672,8 +715,41 @@ export default function NewTeamMemberPage() {
                         objectFit: "cover",
                         borderRadius: "var(--radius)",
                         border: "1px solid rgb(var(--border))",
+                        display: "block",
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      disabled={submitting}
+                      style={{
+                        marginTop: "var(--space-2)",
+                        fontSize: "13px",
+                        color: "rgb(var(--error))",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: submitting ? "not-allowed" : "pointer",
+                        opacity: submitting ? 0.5 : 1,
+                      }}
+                    >
+                      {t("form.removePhoto")}
+                    </button>
+                  </div>
+                )}
+                {photoWarning && (
+                  <div
+                    style={{
+                      marginTop: "var(--space-2)",
+                      padding: "var(--space-2) var(--space-3)",
+                      background: "rgb(var(--warning) / 0.1)",
+                      border: "1px solid rgb(var(--warning) / 0.3)",
+                      borderRadius: "var(--radius)",
+                      color: "rgb(var(--warning))",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {photoWarning}
                   </div>
                 )}
               </div>

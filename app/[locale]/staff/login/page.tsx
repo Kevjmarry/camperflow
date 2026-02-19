@@ -68,8 +68,7 @@ export default function StaffLoginPage() {
         return;
       }
 
-      const allowedRoles = ["admin", "cleaning", "mechanical"];
-      if (!allowedRoles.includes(staffProfile.role)) {
+      if (staffProfile.role !== "admin" && staffProfile.role !== "staff") {
         await supabase.auth.signOut();
         setError(t("error.accessDeniedError"));
         setLoading(false);
