@@ -45,7 +45,6 @@ interface ChecklistInstance {
   status: 'not_started' | 'in_progress' | 'completed';
 }
 
-const BOOKING_STATUSES: readonly BookingStatus[] = ['draft', 'confirmed', 'blocked', 'on_rent', 'completed', 'cancelled'] as const;
 const ACTIVE_BOOKING_STATUSES = ['draft', 'confirmed', 'blocked', 'on_rent'] as const;
 
 const isActiveStatus = (status: BookingStatus): status is typeof ACTIVE_BOOKING_STATUSES[number] => {
@@ -72,7 +71,6 @@ export default function BookingDetailPage() {
     customer_phone: "",
     customer_email: "",
     notes: "",
-    status: "draft" as BookingStatus,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -163,7 +161,6 @@ export default function BookingDetailPage() {
           customer_phone: data.customer_phone || "",
           customer_email: data.customer_email || "",
           notes: data.notes || "",
-          status: data.status,
         });
         fetchChecklistInstances();
       }
@@ -312,7 +309,7 @@ export default function BookingDetailPage() {
     setError("");
     setSaving(true);
 
-    const isBlocked = formData.status === 'blocked';
+    const isBlocked = booking?.status === 'blocked';
 
     if (!isBlocked && !formData.customer_name.trim()) {
       setError(t("error.customerNameRequired"));
@@ -326,7 +323,7 @@ export default function BookingDetailPage() {
       return;
     }
 
-    if (formData.vehicle_id && isActiveStatus(formData.status)) {
+    if (formData.vehicle_id && booking && isActiveStatus(booking.status)) {
       const isAvailable = await checkVehicleAvailability();
       if (!isAvailable) {
         setError(t("error.vehicleUnavailable"));
@@ -339,7 +336,6 @@ export default function BookingDetailPage() {
       const { data: updateData, error: updateError } = await supabase
         .from('bookings')
         .update({
-          status: formData.status,
           pickup_at: toISOString(formData.pickup_at),
           return_at: toISOString(formData.return_at),
           vehicle_id: formData.vehicle_id || null,
@@ -370,71 +366,6 @@ export default function BookingDetailPage() {
     } catch (err: any) {
       console.error('Update booking error:', err);
       setError(err.message || t("error.updateFailed"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleQuickStatusUpdate = async (newStatus: BookingStatus) => {
-    try {
-      setSaving(true);
-      setError("");
-
-      // Fetch fresh checklist instances before evaluating
-      const freshInstances = await fetchChecklistInstances();
-
-      // Gate: confirmed -> on_rent requires pickup checklist completed
-      if (newStatus === 'on_rent') {
-        const pickupChecklist = freshInstances.find(c => c.checklist_type === 'pickup');
-        if (!pickupChecklist || pickupChecklist.status !== 'completed') {
-          setError(t("error.pickupChecklistRequired"));
-          setSaving(false);
-          return;
-        }
-      }
-
-      // Gate: on_rent -> completed requires return checklist completed
-      if (newStatus === 'completed') {
-        const returnChecklist = freshInstances.find(c => c.checklist_type === 'return');
-        if (!returnChecklist || returnChecklist.status !== 'completed') {
-          setError(t("error.returnChecklistRequired"));
-          setSaving(false);
-          return;
-        }
-      }
-
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await fetchBooking();
-      alert(t("success.statusUpdated"));
-    } catch (err: any) {
-      setError(err.message || t("error.statusUpdateFailed"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancelBooking = async () => {
-    if (!confirm(t("confirm.cancelBooking"))) return;
-
-    try {
-      setSaving(true);
-      
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'cancelled' as BookingStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      await fetchBooking();
-    } catch (err: any) {
-      setError(err.message || t("error.cancelFailed"));
     } finally {
       setSaving(false);
     }
@@ -792,42 +723,6 @@ export default function BookingDetailPage() {
             </div>
           </div>
 
-          <div style={{
-            padding: 'var(--space-4)',
-            background: 'rgb(var(--border) / 0.3)',
-            borderRadius: 'var(--radius)',
-            display: 'flex',
-            gap: 'var(--space-3)',
-            flexWrap: 'wrap',
-            alignItems: 'center'
-          }}>
-            <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
-              {t("quickActions.label")}
-            </span>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              {booking.status === 'confirmed' && (
-                <button
-                  onClick={() => handleQuickStatusUpdate('on_rent')}
-                  className="btn btn-primary"
-                  style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px' }}
-                  disabled={saving}
-                >
-                  {t("quickActions.markOnRent")}
-                </button>
-              )}
-              {booking.status === 'on_rent' && (
-                <button
-                  onClick={() => handleQuickStatusUpdate('completed')}
-                  className="btn btn-primary"
-                  style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px' }}
-                  disabled={saving}
-                >
-                  {t("quickActions.markCompleted")}
-                </button>
-              )}
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -838,26 +733,6 @@ export default function BookingDetailPage() {
                 {t("section.bookingDetails")}
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
-                <div>
-                  <label htmlFor="status" className="label">
-                    {t("field.status")}
-                  </label>
-                  <select
-                    id="status"
-                    name="status"
-                    className="input"
-                    value={formData.status}
-                    onChange={handleChange}
-                    style={{ width: '100%' }}
-                  >
-                    {BOOKING_STATUSES.map(status => (
-                      <option key={status} value={status}>
-                        {getStatusLabel(status)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div>
                   <label htmlFor="pickup_at" className="label">
                     {t("field.pickupDateTime")}
@@ -920,7 +795,7 @@ export default function BookingDetailPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
                 <div>
                   <label htmlFor="customer_name" className="label">
-                    {t("field.customerName")} {formData.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
+                    {t("field.customerName")} {booking.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
                   </label>
                   <input
                     id="customer_name"
@@ -929,14 +804,14 @@ export default function BookingDetailPage() {
                     className="input"
                     value={formData.customer_name}
                     onChange={handleChange}
-                    required={formData.status !== 'blocked'}
+                    required={booking.status !== 'blocked'}
                     style={{ width: '100%' }}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="customer_phone" className="label">
-                    {t("field.phoneNumber")} {formData.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
+                    {t("field.phoneNumber")} {booking.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
                   </label>
                   <input
                     id="customer_phone"
@@ -945,7 +820,7 @@ export default function BookingDetailPage() {
                     className="input"
                     value={formData.customer_phone}
                     onChange={handleChange}
-                    required={formData.status !== 'blocked'}
+                    required={booking.status !== 'blocked'}
                     style={{ width: '100%' }}
                   />
                 </div>
@@ -1030,16 +905,6 @@ export default function BookingDetailPage() {
                 }}
               >
                 {saving ? t("action.saving") : t("action.saveChanges")}
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleCancelBooking}
-                className="btn btn-secondary"
-                disabled={saving}
-                style={{ minWidth: '120px' }}
-              >
-                {t("action.cancelBooking")}
               </button>
               
               <button

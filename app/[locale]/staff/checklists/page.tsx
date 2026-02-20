@@ -248,6 +248,7 @@ export default function ChecklistsPage() {
             const { data: bookingRows, error: bookingError } = await supabase
               .from('bookings')
               .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_id')
+              .eq('company_id', companyId)
               .in('id', bookingIds);
 
             if (bookingError) {
@@ -263,6 +264,7 @@ export default function ChecklistsPage() {
                 const { data: vehicleRows, error: vehicleError } = await supabase
                   .from('vehicles')
                   .select('id, name, registration_plate')
+                  .eq('company_id', companyId)
                   .in('id', vehicleIds);
 
                 if (vehicleError) {
@@ -278,6 +280,7 @@ export default function ChecklistsPage() {
             const booking = item.booking_id ? bookingsById.get(item.booking_id) : null;
             const vehicle = booking?.vehicle_id ? vehiclesById.get(booking.vehicle_id) : null;
 
+            console.log('CI STATUS RAW', item.id, item.status);
             return {
               id: item.id,
               name: getChecklistTypeLabel(item.checklist_type),
@@ -305,6 +308,7 @@ export default function ChecklistsPage() {
         const { data: issueRows, error: issueError } = await supabase
           .from('issue_flags')
           .select('id, note, severity, status, created_at, checklist_instance_id')
+          .eq('company_id', companyId)
           .eq('status', 'open')
           .order('created_at', { ascending: false });
 
@@ -340,6 +344,7 @@ export default function ChecklistsPage() {
                 const { data: bookingRows, error: bookingError } = await supabase
                   .from('bookings')
                   .select('id, booking_number, vehicle_id')
+                  .eq('company_id', companyId)
                   .in('id', bookingIds);
 
                 if (bookingError) {
@@ -355,6 +360,7 @@ export default function ChecklistsPage() {
                     const { data: vehicleRows, error: vehicleError } = await supabase
                       .from('vehicles')
                       .select('id, name, registration_plate')
+                      .eq('company_id', companyId)
                       .in('id', vehicleIds);
 
                     if (vehicleError) {
