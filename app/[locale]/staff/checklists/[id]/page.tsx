@@ -63,7 +63,8 @@ export default async function ChecklistDetailPage({
       created_at,
       template:checklist_template_items (
         label,
-        sort_order
+        sort_order,
+        section
       )
     `
     )
@@ -93,6 +94,7 @@ export default async function ChecklistDetailPage({
         template: {
           label: tpl?.label ?? 'Untitled item',
           sort_order: tpl?.sort_order ?? 0,
+          section: tpl?.section ?? null,
         },
       };
     }) ?? [];
