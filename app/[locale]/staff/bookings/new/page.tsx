@@ -14,6 +14,17 @@ interface Vehicle {
   status: string;
 }
 
+/** Normalize a raw status value to one that satisfies `bookings_status_check`. */
+function normalizeStatus(raw: string): "draft" | "confirmed" | "blocked" | "on_rent" | "completed" | "cancelled" {
+  const trimmed = raw.trim();
+  // Guard against the legacy label value "pending" leaking through
+  if (trimmed === "pending") return "draft";
+  if (["draft", "confirmed", "blocked", "on_rent", "completed", "cancelled"].includes(trimmed)) {
+    return trimmed as "draft" | "confirmed" | "blocked" | "on_rent" | "completed" | "cancelled";
+  }
+  return "confirmed";
+}
+
 export default function NewBookingPage() {
   const t = useTranslations("staff.bookings.new");
 
@@ -179,7 +190,9 @@ export default function NewBookingPage() {
       return;
     }
 
-    const isBlocked = formData.status === "blocked";
+    // Normalize status before any logic or DB write
+    const normalizedStatus = normalizeStatus(formData.status);
+    const isBlocked = normalizedStatus === "blocked";
 
     if (!isBlocked && !formData.customer_name.trim()) {
       setError(t("errors.customerNameRequired"));
@@ -220,7 +233,7 @@ export default function NewBookingPage() {
           {
             company_id: companyId,
             booking_number: bookingNumber,
-            status: formData.status,
+            status: normalizedStatus,
             pickup_at: formData.pickup_at,
             return_at: formData.return_at,
             vehicle_id: formData.vehicle_id || null,
@@ -284,7 +297,9 @@ export default function NewBookingPage() {
     );
   }
 
-  const isBlocked = formData.status === "blocked";
+  // Derive isBlocked for rendering from the normalized status so the UI
+  // always reflects what will actually be sent to the database.
+  const isBlocked = normalizeStatus(formData.status) === "blocked";
 
   return (
     <PageContainer maxWidth="800px">
@@ -388,6 +403,7 @@ export default function NewBookingPage() {
                   <label htmlFor="status" className="label">
                     {t("fields.status")}
                   </label>
+                  {/* Values are strictly the DB enum tokens: draft | confirmed | blocked */}
                   <select
                     id="status"
                     name="status"

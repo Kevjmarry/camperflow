@@ -359,7 +359,8 @@
     "action": {
       "newBooking": "New booking",
       "edit": "Edit",
-      "view": "View"
+      "view": "View",
+      "viewEdit": "View / Edit"
     },
     "filter": {
       "statusLabel": "Status:",

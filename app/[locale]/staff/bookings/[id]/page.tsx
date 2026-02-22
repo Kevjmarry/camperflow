@@ -51,6 +51,12 @@ const isActiveStatus = (status: BookingStatus): status is typeof ACTIVE_BOOKING_
   return (ACTIVE_BOOKING_STATUSES as readonly string[]).includes(status);
 };
 
+/** Mirrors the normalization used on the new-booking page. */
+const normalizeStatus = (raw: string): BookingStatus => {
+  const trimmed = raw?.trim() || "confirmed";
+  return (trimmed === "pending" ? "draft" : trimmed) as BookingStatus;
+};
+
 export default function BookingDetailPage() {
   const { locale, id } = useParams<{ locale: string; id: string }>();
   const router = useRouter();
@@ -64,6 +70,7 @@ export default function BookingDetailPage() {
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
   const [checklistInstances, setChecklistInstances] = useState<ChecklistInstance[]>([]);
   const [formData, setFormData] = useState({
+    status: "confirmed",
     pickup_at: "",
     return_at: "",
     vehicle_id: "",
@@ -77,6 +84,10 @@ export default function BookingDetailPage() {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [conflictWarning, setConflictWarning] = useState("");
+
+  // Derived from the currently selected status — drives UI validation and required markers reactively.
+  const selectedStatus = normalizeStatus(formData.status);
+  const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
 
   useEffect(() => {
     checkUserCapabilities();
@@ -154,6 +165,7 @@ export default function BookingDetailPage() {
       if (data) {
         setBooking(data);
         setFormData({
+          status: data.status,
           pickup_at: toDatetimeLocal(data.pickup_at),
           return_at: toDatetimeLocal(data.return_at),
           vehicle_id: data.vehicle_id || "",
@@ -195,7 +207,7 @@ export default function BookingDetailPage() {
           .select('id, name, registration_plate')
           .eq('id', bookingData.vehicle_id)
           .single();
-        
+
         if (vehicleData) {
           setVehicleInfo(vehicleData);
         }
@@ -264,7 +276,6 @@ export default function BookingDetailPage() {
       const hasConflict = data?.some(booking => {
         const existingPickup = new Date(booking.pickup_at);
         const existingReturn = new Date(booking.return_at);
-        
         return newPickup < existingReturn && newReturn > existingPickup;
       });
 
@@ -274,7 +285,7 @@ export default function BookingDetailPage() {
           const existingReturn = new Date(booking.return_at);
           return newPickup < existingReturn && newReturn > existingPickup;
         });
-        
+
         setConflictWarning(
           t("warning.vehicleConflict", { bookingNumber: conflictBooking?.booking_number })
         );
@@ -309,9 +320,10 @@ export default function BookingDetailPage() {
     setError("");
     setSaving(true);
 
-    const isBlocked = booking?.status === 'blocked';
+    const normalizedStatus = normalizeStatus(formData.status);
+    const isNoCustomerRequired = normalizedStatus === 'blocked' || normalizedStatus === 'cancelled';
 
-    if (!isBlocked && !formData.customer_name.trim()) {
+    if (!isNoCustomerRequired && !formData.customer_name.trim()) {
       setError(t("error.customerNameRequired"));
       setSaving(false);
       return;
@@ -336,6 +348,7 @@ export default function BookingDetailPage() {
       const { data: updateData, error: updateError } = await supabase
         .from('bookings')
         .update({
+          status: normalizedStatus,
           pickup_at: toISOString(formData.pickup_at),
           return_at: toISOString(formData.return_at),
           vehicle_id: formData.vehicle_id || null,
@@ -345,27 +358,36 @@ export default function BookingDetailPage() {
           notes: formData.notes.trim() || null,
         })
         .eq('id', id)
-        .select('id');
+        .select('id')
+        .single();
 
       if (updateError) {
-        console.error('Update booking error:', updateError);
-        setError(updateError.message || t("error.updateFailed"));
+        console.error('Update booking error:', 'message:', updateError.message, 'code:', updateError.code, 'details:', updateError.details, 'hint:', updateError.hint, 'JSON:', JSON.stringify(updateError));
+        const detail = [
+          updateError.code && `code: ${updateError.code}`,
+          updateError.message,
+          updateError.details,
+          updateError.hint && `hint: ${updateError.hint}`,
+        ]
+          .filter(Boolean)
+          .join('; ');
+        setError(detail || t("error.updateFailed"));
         setSaving(false);
         return;
       }
 
-      if (!updateData || updateData.length === 0) {
+      if (!updateData?.id) {
         setError(t("error.updatePermissionDenied"));
         setSaving(false);
         return;
       }
 
       await fetchBooking();
-      
+
       alert(t("success.bookingUpdated"));
     } catch (err: any) {
-      console.error('Update booking error:', err);
-      setError(err.message || t("error.updateFailed"));
+      console.error('Update booking error (catch):', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+      setError(err?.message || err?.toString() || t("error.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -486,7 +508,7 @@ export default function BookingDetailPage() {
     return (
       <PageContainer maxWidth="800px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
-          <div style={{ 
+          <div style={{
             padding: 'var(--space-4)',
             background: 'rgb(var(--error) / 0.1)',
             border: '1px solid rgb(var(--error) / 0.3)',
@@ -511,7 +533,7 @@ export default function BookingDetailPage() {
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div>
-              <Link 
+              <Link
                 href={`/${locale}/staff/bookings`}
                 style={{
                   fontSize: '14px',
@@ -525,13 +547,13 @@ export default function BookingDetailPage() {
               </Link>
             </div>
 
-            <div className="surface" style={{ 
+            <div className="surface" style={{
               padding: 'var(--space-6)',
               background: 'rgb(var(--border) / 0.2)'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'flex-start',
                 marginBottom: 'var(--space-4)',
                 flexWrap: 'wrap',
@@ -553,7 +575,7 @@ export default function BookingDetailPage() {
                 </div>
               </div>
 
-              <div style={{ 
+              <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: 'var(--space-4)',
@@ -588,16 +610,16 @@ export default function BookingDetailPage() {
             </div>
 
             {redactedBooking.notes && (
-              <div className="surface" style={{ 
+              <div className="surface" style={{
                 padding: 'var(--space-5)',
                 background: 'rgb(var(--border) / 0.15)'
               }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))', marginBottom: 'var(--space-3)' }}>
                   {t("field.notes")}
                 </h3>
-                <div style={{ 
-                  fontSize: '15px', 
-                  color: 'rgb(var(--text))', 
+                <div style={{
+                  fontSize: '15px',
+                  color: 'rgb(var(--text))',
                   lineHeight: '1.6',
                   whiteSpace: 'pre-wrap'
                 }}>
@@ -611,7 +633,7 @@ export default function BookingDetailPage() {
                 {t("checklists.title")}
               </h2>
               {checklistInstances.length === 0 ? (
-                <div style={{ 
+                <div style={{
                   padding: 'var(--space-4)',
                   background: 'rgb(var(--border) / 0.3)',
                   borderRadius: 'var(--radius)',
@@ -624,7 +646,7 @@ export default function BookingDetailPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {checklistInstances.map((instance) => (
-                    <div 
+                    <div
                       key={instance.id}
                       style={{
                         padding: 'var(--space-4)',
@@ -638,9 +660,9 @@ export default function BookingDetailPage() {
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <div style={{ 
-                          fontSize: '14px', 
-                          fontWeight: 500, 
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: 500,
                           color: 'rgb(var(--text))',
                           marginBottom: 'var(--space-1)',
                           textTransform: 'capitalize'
@@ -680,7 +702,7 @@ export default function BookingDetailPage() {
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div>
-            <Link 
+            <Link
               href={`/${locale}/staff/bookings`}
               style={{
                 fontSize: '14px',
@@ -708,7 +730,7 @@ export default function BookingDetailPage() {
                 {getStatusLabel(booking.status)}
               </div>
             </div>
-            <div style={{ 
+            <div style={{
               marginTop: 'var(--space-3)',
               display: 'flex',
               flexDirection: 'column',
@@ -723,16 +745,35 @@ export default function BookingDetailPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 'var(--space-6)' 
+          <form onSubmit={handleSubmit} style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-6)'
           }}>
             <div>
               <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
                 {t("section.bookingDetails")}
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
+                <div>
+                  <label htmlFor="status" className="label">
+                    {t("field.status")}
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    className="input"
+                    value={formData.status}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="draft">{t("status.pending")}</option>
+                    <option value="confirmed">{t("status.confirmed")}</option>
+                    <option value="blocked">{t("status.blocked")}</option>
+                    <option value="cancelled">{t("status.cancelled")}</option>
+                  </select>
+                </div>
+
                 <div>
                   <label htmlFor="pickup_at" className="label">
                     {t("field.pickupDateTime")}
@@ -795,7 +836,7 @@ export default function BookingDetailPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
                 <div>
                   <label htmlFor="customer_name" className="label">
-                    {t("field.customerName")} {booking.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
+                    {t("field.customerName")}{!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
                   </label>
                   <input
                     id="customer_name"
@@ -804,14 +845,14 @@ export default function BookingDetailPage() {
                     className="input"
                     value={formData.customer_name}
                     onChange={handleChange}
-                    required={booking.status !== 'blocked'}
+                    required={!isNoCustomerRequired}
                     style={{ width: '100%' }}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="customer_phone" className="label">
-                    {t("field.phoneNumber")} {booking.status !== 'blocked' && <span style={{ color: 'rgb(var(--error))' }}>*</span>}
+                    {t("field.phoneNumber")}{!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
                   </label>
                   <input
                     id="customer_phone"
@@ -820,7 +861,7 @@ export default function BookingDetailPage() {
                     className="input"
                     value={formData.customer_phone}
                     onChange={handleChange}
-                    required={booking.status !== 'blocked'}
+                    required={!isNoCustomerRequired}
                     style={{ width: '100%' }}
                   />
                 </div>
@@ -853,7 +894,7 @@ export default function BookingDetailPage() {
                 value={formData.notes}
                 onChange={handleChange}
                 rows={4}
-                style={{ 
+                style={{
                   width: '100%',
                   resize: 'vertical',
                   fontFamily: 'inherit'
@@ -862,7 +903,7 @@ export default function BookingDetailPage() {
             </div>
 
             {conflictWarning && (
-              <div style={{ 
+              <div style={{
                 padding: 'var(--space-3) var(--space-4)',
                 background: 'rgb(var(--warning) / 0.1)',
                 border: '1px solid rgb(var(--warning) / 0.3)',
@@ -875,7 +916,7 @@ export default function BookingDetailPage() {
             )}
 
             {error && (
-              <div style={{ 
+              <div style={{
                 padding: 'var(--space-3) var(--space-4)',
                 background: 'rgb(var(--error) / 0.1)',
                 border: '1px solid rgb(var(--error) / 0.3)',
@@ -887,17 +928,17 @@ export default function BookingDetailPage() {
               </div>
             )}
 
-            <div style={{ 
+            <div style={{
               display: 'flex',
               gap: 'var(--space-3)',
               paddingTop: 'var(--space-2)',
               flexWrap: 'wrap'
             }}>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn btn-primary"
                 disabled={saving || !!conflictWarning}
-                style={{ 
+                style={{
                   flex: 1,
                   minWidth: '120px',
                   opacity: (saving || conflictWarning) ? 0.6 : 1,
@@ -906,13 +947,13 @@ export default function BookingDetailPage() {
               >
                 {saving ? t("action.saving") : t("action.saveChanges")}
               </button>
-              
+
               <button
                 type="button"
                 onClick={handleDelete}
                 className="btn btn-secondary"
                 disabled={saving}
-                style={{ 
+                style={{
                   minWidth: '120px',
                   color: 'rgb(var(--error))',
                   borderColor: 'rgb(var(--error))'
@@ -928,7 +969,7 @@ export default function BookingDetailPage() {
               {t("checklists.title")}
             </h2>
             {checklistInstances.length === 0 ? (
-              <div style={{ 
+              <div style={{
                 padding: 'var(--space-4)',
                 background: 'rgb(var(--border) / 0.3)',
                 borderRadius: 'var(--radius)',
@@ -941,7 +982,7 @@ export default function BookingDetailPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {checklistInstances.map((instance) => (
-                  <div 
+                  <div
                     key={instance.id}
                     style={{
                       padding: 'var(--space-4)',
@@ -955,9 +996,9 @@ export default function BookingDetailPage() {
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 500, 
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
                         color: 'rgb(var(--text))',
                         marginBottom: 'var(--space-1)',
                         textTransform: 'capitalize'

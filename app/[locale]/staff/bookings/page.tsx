@@ -397,7 +397,7 @@ export default function BookingsPage() {
                               minHeight: '32px'
                             }}
                           >
-                            {isAdmin ? t("action.edit") : t("action.view")}
+                            {canManage ? t("action.viewEdit") : t("action.view")}
                           </Link>
                         </td>
                       </tr>
@@ -525,7 +525,7 @@ export default function BookingsPage() {
                           display: 'block'
                         }}
                       >
-                        {isAdmin ? t("action.edit") : t("action.view")}
+                        {canManage ? t("action.viewEdit") : t("action.view")}
                       </Link>
                     </div>
                   </div>

@@ -32,8 +32,8 @@ export default function StaffPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
-  const [cleaningsToday, setCleaningsToday] = useState(0);
-  const [loadingCleanings, setLoadingCleanings] = useState(true);
+  const [activeChecklists, setActiveChecklists] = useState(0);
+  const [loadingChecklists, setLoadingChecklists] = useState(true);
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -61,26 +61,19 @@ export default function StaffPage() {
   }, [supabase]);
 
   useEffect(() => {
-    async function fetchCleaningsToday() {
-      setLoadingCleanings(true);
+    async function fetchActiveChecklists() {
+      setLoadingChecklists(true);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const { data, count } = await supabase
-        .from("bookings")
+      const { count } = await supabase
+        .from("checklist_instances")
         .select("id", { count: "exact", head: true })
-        .in("status", ["confirmed", "on_rent"])
-        .gte("return_at", today.toISOString())
-        .lt("return_at", tomorrow.toISOString());
+        .neq("status", "completed");
 
-      setCleaningsToday(count || 0);
-      setLoadingCleanings(false);
+      setActiveChecklists(count || 0);
+      setLoadingChecklists(false);
     }
 
-    fetchCleaningsToday();
+    fetchActiveChecklists();
   }, [supabase]);
 
   useEffect(() => {
@@ -266,12 +259,12 @@ export default function StaffPage() {
               </div>
             </Link>
 
-            <Link href={`/${locale}/staff/checklists?type=cleaning&range=today`} className="surface" style={cardStyle}>
+            <Link href={`/${locale}/staff/checklists`} className="surface" style={cardStyle}>
               {iconCleanings}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={cardTitle}>Cleanings Today</h3>
-                  <p style={cardText}>Vehicles returning today</p>
+                  <h3 style={cardTitle}>Checklists</h3>
+                  <p style={cardText}>Operational tasks</p>
                 </div>
                 <div
                   style={{
@@ -285,7 +278,7 @@ export default function StaffPage() {
                     textAlign: "center",
                   }}
                 >
-                  {loadingCleanings ? "…" : cleaningsToday}
+                  {loadingChecklists ? "…" : activeChecklists}
                 </div>
               </div>
             </Link>
