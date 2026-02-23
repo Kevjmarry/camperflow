@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
+import { useTranslations } from 'next-intl';
 
 type TemplateScope = 'booking' | 'vehicle';
-type BookingType = 'pickup' | 'return' | 'cleaning' | 'mechanical';
-type VehicleType = 'pre_season' | 'post_season';
-type TemplateType = BookingType | VehicleType;
 
 interface ChecklistTemplate {
   id: string;
@@ -19,26 +17,11 @@ interface ChecklistTemplate {
   type: string;
   active: boolean;
   created_at: string;
+  is_system?: boolean;
 }
 
-const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
-  pickup: 'Pickup',
-  return: 'Return',
-  cleaning: 'Cleaning',
-  mechanical: 'Mechanical',
-};
-
-const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
-  pre_season: 'Pre-Season',
-  post_season: 'Post-Season',
-};
-
-function getTypeLabel(type: string): string {
-  return (
-    (BOOKING_TYPE_LABELS as Record<string, string>)[type] ||
-    (VEHICLE_TYPE_LABELS as Record<string, string>)[type] ||
-    type
-  );
+function isSystemTemplate(template: ChecklistTemplate): boolean {
+  return template.is_system === true;
 }
 
 // ─── Shared style tokens ─────────────────────────────────────────────────────
@@ -101,38 +84,71 @@ const INACTIVE_BADGE: CSSProperties = {
   color: 'rgb(var(--muted))',
 };
 
+const SYSTEM_BADGE: CSSProperties = {
+  display: 'inline-block',
+  padding: '2px 8px',
+  borderRadius: '12px',
+  fontSize: '11px',
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
+  background: 'rgb(var(--brand) / 0.12)',
+  color: 'rgb(var(--brand))',
+  marginLeft: '8px',
+  letterSpacing: '0.02em',
+};
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function ChecklistTemplatesPage() {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
+  const t = useTranslations('staffChecklistsTemplates');
+  const typeT = useTranslations('checklistTypeLabels');
 
   const [loading, setLoading] = useState(true);
-  const [companyId, setCompanyId] = useState<string | null>(null);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // New template form state
-  const [showForm, setShowForm] = useState(false);
-  const [formScope, setFormScope] = useState<TemplateScope>('booking');
-  const [formType, setFormType] = useState<TemplateType>('pickup');
-  const [formName, setFormName] = useState('');
-  const [formActive, setFormActive] = useState(true);
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  function getTypeLabel(type: string): string {
+    try {
+      return typeT(type as Parameters<typeof typeT>[0]);
+    } catch {
+      return type;
+    }
+  }
 
   // ─── Data loading ──────────────────────────────────────────────────────────
 
   async function loadTemplates(cid: string) {
     const supabase = createClient();
-    const { data, error } = await supabase
+
+    let data: ChecklistTemplate[] | null = null;
+    let error: { message: string } | null = null;
+
+    const withSystem = await supabase
       .from('checklist_templates')
-      .select('id, name, scope, type, active, created_at')
+      .select('id, name, scope, type, active, created_at, is_system')
       .eq('company_id', cid)
       .order('scope', { ascending: true })
       .order('type', { ascending: true })
       .order('created_at', { ascending: false });
+
+    if (withSystem.error) {
+      const fallback = await supabase
+        .from('checklist_templates')
+        .select('id, name, scope, type, active, created_at')
+        .eq('company_id', cid)
+        .order('scope', { ascending: true })
+        .order('type', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      data = (fallback.data as ChecklistTemplate[]) || [];
+      error = fallback.error;
+    } else {
+      data = (withSystem.data as ChecklistTemplate[]) || [];
+      error = withSystem.error;
+    }
 
     if (error) {
       setErrorMsg(error.message);
@@ -183,7 +199,6 @@ export default function ChecklistTemplatesPage() {
 
       if (cancelled) return;
 
-      setCompanyId(profile.company_id);
       await loadTemplates(profile.company_id);
 
       if (!cancelled) setLoading(false);
@@ -193,68 +208,12 @@ export default function ChecklistTemplatesPage() {
     return () => { cancelled = true; };
   }, [locale, router]);
 
-  // ─── Form helpers ──────────────────────────────────────────────────────────
-
-  // When scope changes, reset type to a sensible default
-  function handleScopeChange(newScope: TemplateScope) {
-    setFormScope(newScope);
-    setFormType(newScope === 'booking' ? 'pickup' : 'pre_season');
-  }
-
-  async function handleFormSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!formName.trim()) {
-      setFormError('Name is required.');
-      return;
-    }
-    if (!companyId) return;
-
-    setFormSubmitting(true);
-    setFormError(null);
-
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('checklist_templates')
-      .insert({
-        company_id: companyId,
-        name: formName.trim(),
-        scope: formScope,
-        type: formType,
-        active: formActive,
-        requires_signature: false,
-        visibility: 'staff',
-        applies_to: formScope,
-        audience: 'staff',
-        created_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      const msg = [error.message, error.details].filter(Boolean).join('; ');
-      setFormError(msg);
-      setFormSubmitting(false);
-      return;
-    }
-
-    // Refresh list then navigate to edit page
-    await loadTemplates(companyId);
-    setShowForm(false);
-    setFormName('');
-    setFormScope('booking');
-    setFormType('pickup');
-    setFormActive(true);
-    setFormSubmitting(false);
-
-    if (data?.id) {
-      router.push(`/${locale}/staff/checklists/templates/${data.id}`);
-    }
-  }
-
   // ─── Derived lists ─────────────────────────────────────────────────────────
 
   const bookingTemplates = templates.filter((t) => t.scope === 'booking');
-  const vehicleTemplates = templates.filter((t) => t.scope === 'vehicle');
+  const vehicleTemplates = templates.filter(
+    (t) => t.scope === 'vehicle' && (t.type === 'pre_season' || t.type === 'post_season'),
+  );
 
   // ─── Loading state ─────────────────────────────────────────────────────────
 
@@ -263,7 +222,7 @@ export default function ChecklistTemplatesPage() {
       <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>
-            Loading…
+            {t('loading')}
           </div>
         </div>
       </PageContainer>
@@ -273,26 +232,57 @@ export default function ChecklistTemplatesPage() {
   // ─── Template table row ────────────────────────────────────────────────────
 
   function TemplateRow({ template, isLast }: { template: ChecklistTemplate; isLast: boolean }) {
+    const isSystem = isSystemTemplate(template);
+    const displayName = isSystem
+      ? getTypeLabel(template.type)
+      : template.name;
+
     return (
-      <tr>
-        <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}>
-          <span style={{ fontWeight: 500 }}>{template.name}</span>
-        </td>
-        <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}>
-          {getTypeLabel(template.type)}
-        </td>
-        <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}>
-          <span style={template.active ? ACTIVE_BADGE : INACTIVE_BADGE}>
-            {template.active ? 'Active' : 'Inactive'}
+      <tr
+        className="cf-template-row"
+        style={isSystem ? { background: 'rgb(var(--brand) / 0.03)' } : undefined}
+      >
+        <td
+          className="cf-td cf-td-name"
+          data-label={t('colName')}
+          style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}
+        >
+          <span className="cf-td-value" style={{ fontWeight: 500, minWidth: 0, overflowWrap: 'anywhere' }}>
+            {displayName}
+            {isSystem && (
+              <span style={{ ...SYSTEM_BADGE, verticalAlign: 'middle' }}>{t('badgeSystem')}</span>
+            )}
           </span>
         </td>
-        <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom, textAlign: 'right' }}>
+        <td
+          className="cf-td"
+          data-label={t('colType')}
+          style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}
+        >
+          <span className="cf-td-value">{getTypeLabel(template.type)}</span>
+        </td>
+        <td
+          className="cf-td"
+          data-label={t('colStatus')}
+          style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}
+        >
+          <span className="cf-td-value">
+            <span style={template.active ? ACTIVE_BADGE : INACTIVE_BADGE}>
+              {template.active ? t('badgeActive') : t('badgeInactive')}
+            </span>
+          </span>
+        </td>
+        <td
+          className="cf-td cf-td-actions"
+          data-label={t('colActions')}
+          style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom, textAlign: 'right' }}
+        >
           <Link
             href={`/${locale}/staff/checklists/templates/${template.id}`}
-            className="btn btn-secondary"
+            className="btn btn-secondary cf-action-btn"
             style={{ fontSize: '13px', padding: 'var(--space-1) var(--space-3)' }}
           >
-            Edit
+            {t('actionViewEdit')}
           </Link>
         </td>
       </tr>
@@ -314,24 +304,32 @@ export default function ChecklistTemplatesPage() {
               borderRadius: 'var(--radius)',
             }}
           >
-            No templates yet.
+            {t('noTemplates')}
           </div>
         ) : (
-          <table style={TABLE_STYLE}>
-            <thead>
-              <tr>
-                <th style={TH}>Name</th>
-                <th style={TH}>Type</th>
-                <th style={TH}>Status</th>
-                <th style={{ ...TH, textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((t, idx) => (
-                <TemplateRow key={t.id} template={t} isLast={idx === items.length - 1} />
-              ))}
-            </tbody>
-          </table>
+          <div className="cf-table-wrapper">
+            <table className="cf-table" style={TABLE_STYLE}>
+              <colgroup className="cf-colgroup">
+                <col style={{ width: '45%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '17%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
+              <thead className="cf-thead">
+                <tr>
+                  <th style={TH}>{t('colName')}</th>
+                  <th style={TH}>{t('colType')}</th>
+                  <th style={TH}>{t('colStatus')}</th>
+                  <th style={{ ...TH, textAlign: 'right' }}>{t('colActions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((tmpl, idx) => (
+                  <TemplateRow key={tmpl.id} template={tmpl} isLast={idx === items.length - 1} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     );
@@ -340,226 +338,172 @@ export default function ChecklistTemplatesPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <PageContainer maxWidth="1200px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <>
+      {/* Mobile stacked-table styles */}
+      <style>{`
+        @media (max-width: 767px) {
+          .cf-colgroup { display: none; }
+          .cf-thead { display: none; }
 
-          {/* ── Page header ── */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 'var(--space-4)',
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
+          .cf-template-row {
+            display: block !important;
+            border: 1px solid rgb(var(--border));
+            border-radius: var(--radius);
+            margin-bottom: var(--space-3);
+            overflow: hidden;
+            background: inherit;
+          }
+
+          .cf-template-row .cf-td:last-child {
+            border-bottom: none !important;
+          }
+
+          .cf-td {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--space-3);
+            padding: var(--space-2) var(--space-3) !important;
+            border-bottom: 1px solid rgb(var(--border)) !important;
+            min-width: 0;
+          }
+
+          .cf-td::before {
+            content: attr(data-label);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgb(var(--muted));
+            flex-shrink: 0;
+            padding-top: 2px;
+            min-width: 60px;
+          }
+
+          .cf-td-value {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            text-align: right;
+          }
+
+          .cf-td-name {
+            display: block !important;
+            padding: var(--space-3) var(--space-3) var(--space-2) !important;
+            border-bottom: 1px solid rgb(var(--border)) !important;
+            background: rgb(var(--surface));
+          }
+
+          .cf-td-name::before {
+            display: none;
+          }
+
+          .cf-td-name .cf-td-value {
+            display: block;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 600;
+            color: rgb(var(--text));
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
+
+          .cf-td-actions {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            text-align: left !important;
+            border-bottom: none !important;
+          }
+
+          .cf-td-actions::before {
+            display: none;
+          }
+
+          .cf-action-btn {
+            width: 100% !important;
+            text-align: center !important;
+            box-sizing: border-box;
+          }
+
+          .cf-table {
+            border: none !important;
+          }
+
+          .cf-table-wrapper {
+            border: none;
+          }
+        }
+      `}</style>
+
+      <PageContainer maxWidth="1200px">
+        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+            {/* ── Page header ── */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: 'var(--space-4)',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <Link
+                  href={`/${locale}/staff/checklists`}
+                  style={{
+                    display: 'inline-block',
+                    fontSize: '14px',
+                    color: 'rgb(var(--brand))',
+                    textDecoration: 'none',
+                    marginBottom: 'var(--space-2)',
+                  }}
+                >
+                  {t('backToChecklists')}
+                </Link>
+                <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
+                  {t('pageTitle')}
+                </h1>
+                <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>
+                  {t('pageSubtitle')}
+                </p>
+              </div>
+
               <Link
-                href={`/${locale}/staff/checklists`}
+                href={`/${locale}/staff/checklists/templates/new`}
+                className="btn btn-primary"
+              >
+                {t('createTemplate')}
+              </Link>
+            </div>
+
+            {/* ── Global error ── */}
+            {errorMsg && (
+              <div
                 style={{
-                  display: 'inline-block',
+                  padding: 'var(--space-3) var(--space-4)',
+                  background: 'rgb(var(--error) / 0.08)',
+                  border: '1px solid rgb(var(--error) / 0.3)',
+                  borderRadius: 'var(--radius)',
+                  color: 'rgb(var(--error))',
                   fontSize: '14px',
-                  color: 'rgb(var(--brand))',
-                  textDecoration: 'none',
-                  marginBottom: 'var(--space-2)',
                 }}
               >
-                ← Back to Checklists
-              </Link>
-              <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
-                Manage Default Checklists
-              </h1>
-              <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>
-                Define checklist templates used when bookings are created or vehicles are prepared.
-              </p>
-            </div>
+                {errorMsg}
+              </div>
+            )}
 
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setShowForm((prev) => !prev);
-                setFormError(null);
-              }}
-            >
-              {showForm ? 'Cancel' : 'New Template'}
-            </button>
+            {/* ── Booking templates ── */}
+            <TemplateSection title={t('sectionBooking')} items={bookingTemplates} />
+
+            {/* ── Vehicle templates ── */}
+            <TemplateSection title={t('sectionVehicle')} items={vehicleTemplates} />
+
           </div>
-
-          {/* ── Global error ── */}
-          {errorMsg && (
-            <div
-              style={{
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'rgb(var(--error) / 0.08)',
-                border: '1px solid rgb(var(--error) / 0.3)',
-                borderRadius: 'var(--radius)',
-                color: 'rgb(var(--error))',
-                fontSize: '14px',
-              }}
-            >
-              {errorMsg}
-            </div>
-          )}
-
-          {/* ── Inline new template form ── */}
-          {showForm && (
-            <div
-              style={{
-                padding: 'var(--space-5)',
-                border: '1px solid rgb(var(--border))',
-                borderRadius: 'var(--radius)',
-                background: 'rgb(var(--background))',
-              }}
-            >
-              <h2 style={{ ...SECTION_HEADING, marginBottom: 'var(--space-4)' }}>New Template</h2>
-
-              {formError && (
-                <div
-                  style={{
-                    padding: 'var(--space-3) var(--space-4)',
-                    marginBottom: 'var(--space-4)',
-                    background: 'rgb(var(--error) / 0.08)',
-                    border: '1px solid rgb(var(--error) / 0.3)',
-                    borderRadius: 'var(--radius)',
-                    color: 'rgb(var(--error))',
-                    fontSize: '14px',
-                  }}
-                >
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleFormSubmit}>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: 'var(--space-4)',
-                    marginBottom: 'var(--space-4)',
-                  }}
-                >
-                  {/* Scope */}
-                  <div>
-                    <label
-                      htmlFor="form-scope"
-                      className="label"
-                      style={{ display: 'block', marginBottom: 'var(--space-1)', fontSize: '13px' }}
-                    >
-                      Scope
-                    </label>
-                    <select
-                      id="form-scope"
-                      className="input"
-                      value={formScope}
-                      onChange={(e) => handleScopeChange(e.target.value as TemplateScope)}
-                    >
-                      <option value="booking">Booking</option>
-                      <option value="vehicle">Vehicle</option>
-                    </select>
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <label
-                      htmlFor="form-type"
-                      className="label"
-                      style={{ display: 'block', marginBottom: 'var(--space-1)', fontSize: '13px' }}
-                    >
-                      Type
-                    </label>
-                    <select
-                      id="form-type"
-                      className="input"
-                      value={formType}
-                      onChange={(e) => setFormType(e.target.value as TemplateType)}
-                    >
-                      {formScope === 'booking' ? (
-                        <>
-                          <option value="pickup">Pickup</option>
-                          <option value="return">Return</option>
-                          <option value="cleaning">Cleaning</option>
-                          <option value="mechanical">Mechanical</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="pre_season">Pre-Season</option>
-                          <option value="post_season">Post-Season</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Name */}
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label
-                      htmlFor="form-name"
-                      className="label"
-                      style={{ display: 'block', marginBottom: 'var(--space-1)', fontSize: '13px' }}
-                    >
-                      Name <span style={{ color: 'rgb(var(--error))' }}>*</span>
-                    </label>
-                    <input
-                      id="form-name"
-                      className="input"
-                      type="text"
-                      placeholder="e.g. Standard Pickup Checklist"
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Active toggle */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', paddingTop: 'var(--space-5)' }}>
-                    <input
-                      id="form-active"
-                      type="checkbox"
-                      checked={formActive}
-                      onChange={(e) => setFormActive(e.target.checked)}
-                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                    />
-                    <label
-                      htmlFor="form-active"
-                      className="label"
-                      style={{ fontSize: '13px', cursor: 'pointer', margin: 0 }}
-                    >
-                      Active
-                    </label>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={formSubmitting}
-                  >
-                    {formSubmitting ? 'Creating…' : 'Create Template'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setShowForm(false);
-                      setFormError(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* ── Booking templates ── */}
-          <TemplateSection title="Booking Templates" items={bookingTemplates} />
-
-          {/* ── Vehicle templates ── */}
-          <TemplateSection title="Vehicle Templates" items={vehicleTemplates} />
-
         </div>
-      </div>
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 }

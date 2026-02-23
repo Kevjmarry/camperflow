@@ -1263,5 +1263,126 @@
       "phone1Label": "Pannenhilfe-Hotline",
       "phone2Label": "Pannendienst außerhalb der Geschäftszeiten"
     }
+  },
+  "staffChecklistsTemplates": {
+    "loading": "Wird geladen…",
+    "backToChecklists": "← Zurück zu Checklisten",
+    "pageTitle": "Standard-Checklisten verwalten",
+    "pageSubtitle": "Definieren Sie Checklistenvorlagen für neue Buchungen oder Fahrzeugvorbereitungen.",
+    "createTemplate": "+ Vorlage erstellen",
+    "sectionBooking": "Buchungsvorlagen",
+    "sectionVehicle": "Fahrzeugvorlagen",
+    "noTemplates": "Noch keine Vorlagen vorhanden.",
+    "colName": "Name",
+    "colType": "Typ",
+    "colStatus": "Status",
+    "colActions": "Aktionen",
+    "badgeActive": "Aktiv",
+    "badgeInactive": "Inaktiv",
+    "badgeSystem": "CF Standard",
+    "actionViewEdit": "Ansehen/Bearbeiten"
+  },
+  "newChecklistTemplate": {
+    "loading": "Wird geladen…",
+    "backToTemplates": "← Zurück zu Vorlagen",
+    "pageTitle": "Vorlage erstellen",
+    "pageSubtitle": "Definieren Sie eine neue Checklistenvorlage für Buchungen oder Fahrzeugwartung.",
+    "sectionTitle": "Vorlagendetails",
+    "fieldName": "Name",
+    "fieldNamePlaceholder": "z. B. Standard-Abholcheckliste",
+    "fieldAppliesTo": "Gilt für",
+    "scopeBookingLabel": "Buchung — verfolgt Aufgaben für eine bestimmte Miete",
+    "scopeVehicleLabel": "Fahrzeug — verfolgt Aufgaben für einen bestimmten Campervan",
+    "fieldWhenCreated": "Wann soll diese Checkliste erstellt werden?",
+    "fieldActive": "Aktiv",
+    "btnCreate": "Vorlage erstellen",
+    "btnCreating": "Wird erstellt…",
+    "btnCancel": "Abbrechen",
+    "errorNameRequired": "Name ist erforderlich.",
+    "errorCreateFailed": "Vorlage konnte nicht erstellt werden."
+  },
+  "checklistTypeLabels": {
+    "pickup": "Abholung",
+    "return": "Rückgabe",
+    "cleaning": "Reinigung",
+    "mechanical": "Mechanik",
+    "guest_prereturn": "Gäste-Vorrückgabe",
+    "pre_season": "Vorsaison",
+    "post_season": "Nachsaison",
+    "vehicle_readiness": "Fahrzeugbereitschaft"
+  },
+  "checklistTypeExplanations": {
+    "sectionCreatedWhen": "Wird automatisch erstellt, wenn",
+    "sectionVisibleTo": "Sichtbar für",
+    "sectionUsedFor": "Verwendet für",
+    "vehicleMaintenanceBadge": "🔧 Fahrzeugwartung",
+    "vehicleMaintenanceNote": "— läuft außerhalb des Buchungszyklus",
+    "swipeHint": "Wischen für den vollständigen Lebenszyklus →",
+    "pickup": {
+      "createdWhen": {
+        "0": "Eine Buchung wechselt in den Status \u201eBestätigt\u201c",
+        "1": "Das Fahrzeug wird dem Gast übergeben"
+      },
+      "visibleTo": {
+        "0": "Mietpersonal",
+        "1": "Administratoren"
+      },
+      "usedFor": "Überprüfung und Aufzeichnung des Fahrzeugzustands zu Beginn einer Miete."
+    },
+    "return": {
+      "createdWhen": {
+        "0": "Der Gast gibt das Fahrzeug zurück",
+        "1": "Das Personal bearbeitet das Mietende"
+      },
+      "visibleTo": {
+        "0": "Mietpersonal",
+        "1": "Administratoren"
+      },
+      "usedFor": "Überprüfung von Fahrzeugzustand, Tankfüllstand und Kilometerstand bei der Rückgabe."
+    },
+    "cleaning": {
+      "createdWhen": {
+        "0": "Eine Rückgabecheckliste wird abgeschlossen",
+        "1": "Ein Fahrzeug wird als reinigungsbedürftig markiert"
+      },
+      "visibleTo": {
+        "0": "Reinigungspersonal",
+        "1": "Administratoren"
+      },
+      "usedFor": "Aufzeichnung der Reinigungsaufgaben vor der Wiederbereitstellung des Fahrzeugs."
+    },
+    "guest_prereturn": {
+      "createdWhen": {
+        "0": "Wird vor dem Rückgabedatum an den Gast gesendet",
+        "1": "Wird automatisch anhand des Rückgabeplans ausgelöst"
+      },
+      "visibleTo": {
+        "0": "Gäste",
+        "1": "Mietpersonal"
+      },
+      "usedFor": "Erinnerung der Gäste an Rückgabeanforderungen und Erfassung von Vorab-Zustandsnotizen."
+    },
+    "pre_season": {
+      "createdWhen": {
+        "0": "Wird vom Personal zu Beginn der Mietsaison erstellt",
+        "1": "Durch einen geplanten Saisoneröffnungs-Workflow ausgelöst"
+      },
+      "visibleTo": {
+        "0": "Mechanikpersonal",
+        "1": "Administratoren"
+      },
+      "usedFor": "Vorbereitung der Fahrzeuge auf die Mietsaison — Sicherheits-, Compliance- und Ausrüstungskontrollen."
+    },
+    "post_season": {
+      "createdWhen": {
+        "0": "Wird vom Personal am Ende der Mietsaison erstellt",
+        "1": "Durch einen geplanten Saisonsabschluss-Workflow ausgelöst"
+      },
+      "visibleTo": {
+        "0": "Mechanikpersonal",
+        "1": "Administratoren"
+      },
+      "usedFor": "Einwintern der Fahrzeuge und Dokumentation der Einlagerungsvorbereitung zum Saisonende."
+    }
   }
   }

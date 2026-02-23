@@ -1281,5 +1281,126 @@
     "phone1Label": "Roadside assistance hotline",
     "phone2Label": "After-hours breakdown line"
   }
-}
+},
+  "staffChecklistsTemplates": {
+    "loading": "Loading…",
+    "backToChecklists": "← Back to Checklists",
+    "pageTitle": "Manage Default Checklists",
+    "pageSubtitle": "Define checklist templates used when bookings are created or vehicles are prepared.",
+    "createTemplate": "+ Create Template",
+    "sectionBooking": "Booking Templates",
+    "sectionVehicle": "Vehicle Templates",
+    "noTemplates": "No templates yet.",
+    "colName": "Name",
+    "colType": "Type",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "badgeActive": "Active",
+    "badgeInactive": "Inactive",
+    "badgeSystem": "CF Default",
+    "actionViewEdit": "View/Edit"
+  },
+  "newChecklistTemplate": {
+    "loading": "Loading…",
+    "backToTemplates": "← Back to Templates",
+    "pageTitle": "Create Template",
+    "pageSubtitle": "Define a new checklist template for bookings or vehicle maintenance.",
+    "sectionTitle": "Template Details",
+    "fieldName": "Name",
+    "fieldNamePlaceholder": "e.g. Standard Pickup Checklist",
+    "fieldAppliesTo": "Applies to",
+    "scopeBookingLabel": "Booking — tracks tasks for a specific rental",
+    "scopeVehicleLabel": "Vehicle — tracks tasks for a specific van",
+    "fieldWhenCreated": "When should this checklist be created?",
+    "fieldActive": "Active",
+    "btnCreate": "Create Template",
+    "btnCreating": "Creating…",
+    "btnCancel": "Cancel",
+    "errorNameRequired": "Name is required.",
+    "errorCreateFailed": "Failed to create template."
+  },
+  "checklistTypeLabels": {
+    "pickup": "Pickup",
+    "return": "Return",
+    "cleaning": "Cleaning",
+    "mechanical": "Mechanical",
+    "guest_prereturn": "Guest Pre-Return",
+    "pre_season": "Pre-Season",
+    "post_season": "Post-Season",
+    "vehicle_readiness": "Vehicle Readiness"
+  },
+  "checklistTypeExplanations": {
+    "sectionCreatedWhen": "Automatically created when",
+    "sectionVisibleTo": "Visible to",
+    "sectionUsedFor": "Used for",
+    "vehicleMaintenanceBadge": "🔧 Vehicle Maintenance",
+    "vehicleMaintenanceNote": "— runs outside the booking cycle",
+    "swipeHint": "Swipe to see full lifecycle →",
+    "pickup": {
+      "createdWhen": {
+        "0": "A booking moves to \u201cConfirmed\u201d status",
+        "1": "The vehicle is checked out to the guest"
+      },
+      "visibleTo": {
+        "0": "Rental staff",
+        "1": "Administrators"
+      },
+      "usedFor": "Verifying and recording vehicle condition at the start of a rental."
+    },
+    "return": {
+      "createdWhen": {
+        "0": "The guest returns the vehicle",
+        "1": "Staff processes the end of a rental"
+      },
+      "visibleTo": {
+        "0": "Rental staff",
+        "1": "Administrators"
+      },
+      "usedFor": "Checking vehicle condition, fuel level, and mileage on return."
+    },
+    "cleaning": {
+      "createdWhen": {
+        "0": "A return checklist is completed",
+        "1": "A vehicle is marked as needing cleaning"
+      },
+      "visibleTo": {
+        "0": "Cleaning staff",
+        "1": "Administrators"
+      },
+      "usedFor": "Recording cleaning tasks completed before the vehicle is made ready again."
+    },
+    "guest_prereturn": {
+      "createdWhen": {
+        "0": "Sent to the guest before the return date",
+        "1": "Triggered automatically based on return schedule"
+      },
+      "visibleTo": {
+        "0": "Guests",
+        "1": "Rental staff"
+      },
+      "usedFor": "Reminding guests of return requirements and capturing pre-return condition notes."
+    },
+    "pre_season": {
+      "createdWhen": {
+        "0": "Staff creates it at the start of the rental season",
+        "1": "Triggered by a scheduled season-open workflow"
+      },
+      "visibleTo": {
+        "0": "Mechanical staff",
+        "1": "Administrators"
+      },
+      "usedFor": "Preparing vehicles for the rental season — safety, compliance, and equipment checks."
+    },
+    "post_season": {
+      "createdWhen": {
+        "0": "Staff creates it at the end of the rental season",
+        "1": "Triggered by a scheduled season-close workflow"
+      },
+      "visibleTo": {
+        "0": "Mechanical staff",
+        "1": "Administrators"
+      },
+      "usedFor": "Winterising vehicles and recording end-of-season storage preparation."
+    }
+  }
 }
