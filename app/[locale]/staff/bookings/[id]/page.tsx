@@ -41,8 +41,9 @@ interface RedactedBooking {
 
 interface ChecklistInstance {
   id: string;
-  checklist_type: 'cleaning' | 'mechanical' | 'pickup' | 'return';
-  status: 'not_started' | 'in_progress' | 'completed';
+  checklist_type: 'handover' | 'return';
+  status: 'pending' | 'in_progress' | 'completed';
+  template: { name: string | null; title: string | null }[] | null;
 }
 
 const ACTIVE_BOOKING_STATUSES = ['draft', 'confirmed', 'blocked', 'on_rent'] as const;
@@ -236,23 +237,31 @@ export default function BookingDetailPage() {
     }
   };
 
-  const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('checklist_instances')
-        .select('id, checklist_type, status')
-        .eq('booking_id', id)
-        .order('checklist_type');
+const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('checklist_instances')
+      .select(`
+        id,
+        checklist_type,
+        status,
+        template:checklist_templates (
+          name,
+          title
+        )
+      `)
+      .eq('booking_id', id)
+      .order('checklist_type');
 
-      if (error) throw error;
-      const instances = data || [];
-      setChecklistInstances(instances);
-      return instances;
-    } catch (err: any) {
-      console.error('Failed to fetch checklist instances:', err);
-      return checklistInstances;
-    }
-  };
+    if (error) throw error;
+    const instances = data || [];
+    setChecklistInstances(instances);
+    return instances;
+  } catch (err: any) {
+    console.error('Failed to fetch checklist instances:', err);
+    return checklistInstances;
+  }
+};
 
   const checkVehicleAvailability = async () => {
     if (!formData.vehicle_id || !formData.pickup_at || !formData.return_at) {
@@ -447,13 +456,15 @@ export default function BookingDetailPage() {
     }
   };
 
-  const getChecklistStatusLabel = (status: 'not_started' | 'in_progress' | 'completed') => {
-    switch (status) {
-      case 'not_started': return t("checklists.status.notStarted");
-      case 'in_progress': return t("checklists.status.inProgress");
-      case 'completed': return t("checklists.status.completed");
-    }
-  };
+  const getChecklistStatusLabel = (
+  status: 'pending' | 'in_progress' | 'completed'
+) => {
+  switch (status) {
+    case 'pending': return t("checklists.status.notStarted");
+    case 'in_progress': return t("checklists.status.inProgress");
+    case 'completed': return t("checklists.status.completed");
+  }
+};
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString(locale, {
@@ -664,10 +675,11 @@ export default function BookingDetailPage() {
                           fontSize: '14px',
                           fontWeight: 500,
                           color: 'rgb(var(--text))',
-                          marginBottom: 'var(--space-1)',
-                          textTransform: 'capitalize'
+                          marginBottom: 'var(--space-1)'
                         }}>
-                          {instance.checklist_type} {t("checklists.checklistSuffix")}
+                          {instance.template?.[0]?.name ||
+                           instance.template?.[0]?.title ||
+                           `${instance.checklist_type} ${t("checklists.checklistSuffix")}`}
                         </div>
                         <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                           {getChecklistStatusLabel(instance.status)}
@@ -1000,10 +1012,11 @@ export default function BookingDetailPage() {
                         fontSize: '14px',
                         fontWeight: 500,
                         color: 'rgb(var(--text))',
-                        marginBottom: 'var(--space-1)',
-                        textTransform: 'capitalize'
+                        marginBottom: 'var(--space-1)'
                       }}>
-                        {instance.checklist_type} {t("checklists.checklistSuffix")}
+                        {instance.template?.[0]?.name ||
+                         instance.template?.[0]?.title ||
+                         `${instance.checklist_type} ${t("checklists.checklistSuffix")}`}
                       </div>
                       <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                         {getChecklistStatusLabel(instance.status)}

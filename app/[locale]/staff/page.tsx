@@ -176,9 +176,9 @@ export default function StaffPage() {
     bookingDate.setHours(0, 0, 0, 0);
 
     if (bookingDate.getTime() === today.getTime()) {
-      return "Today";
+      return t("upcomingReturns.today");
     } else if (bookingDate.getTime() === tomorrow.getTime()) {
-      return "Tomorrow";
+      return t("upcomingReturns.tomorrow");
     }
     
     return date.toLocaleDateString(locale, { 
@@ -263,8 +263,8 @@ export default function StaffPage() {
               {iconCleanings}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={cardTitle}>Checklists</h3>
-                  <p style={cardText}>Operational tasks</p>
+                  <h3 style={cardTitle}>{t("cards.checklists.title")}</h3>
+                  <p style={cardText}>{t("cards.checklists.desc")}</p>
                 </div>
                 <div
                   style={{
@@ -317,9 +317,9 @@ export default function StaffPage() {
               marginBottom: "var(--space-4)" 
             }}>
               <h2 style={{ fontSize: "18px", margin: 0 }}>
-                Upcoming Returns
+                {t("upcomingReturns.title")}
               </h2>
-              <Link 
+              <Link
                 href={`/${locale}/staff/bookings`}
                 style={{
                   fontSize: "14px",
@@ -327,29 +327,29 @@ export default function StaffPage() {
                   textDecoration: "none"
                 }}
               >
-                View all bookings
+                {t("upcomingReturns.viewAll")}
               </Link>
             </div>
 
             {loadingBookings ? (
               <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-                Loading upcoming returns...
+                {t("upcomingReturns.loading")}
               </p>
             ) : bookings.length === 0 ? (
               <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-                No upcoming returns scheduled
+                {t("upcomingReturns.empty")}
               </p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
                 {/* NEXT 14 DAYS */}
                 {next14Days.size > 0 && (
                   <div>
-                    <h3 style={{ 
-                      fontSize: "16px", 
+                    <h3 style={{
+                      fontSize: "16px",
                       marginBottom: "var(--space-3)",
                       color: "rgb(var(--text))"
                     }}>
-                      Next 14 Days
+                      {t("upcomingReturns.next14Days")}
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                       {Array.from(next14Days.entries())
@@ -378,7 +378,7 @@ export default function StaffPage() {
                                 padding: "2px 8px",
                                 borderRadius: "var(--radius-sm)"
                               }}>
-                                {dayBookings.length} {dayBookings.length === 1 ? 'return' : 'returns'}
+                                {t("upcomingReturns.returnCount", { count: dayBookings.length })}
                               </span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -412,7 +412,7 @@ export default function StaffPage() {
                                       fontWeight: 500,
                                       color: "rgb(var(--text))"
                                     }}>
-                                      {booking.vehicle_name || 'Unassigned'}
+                                      {booking.vehicle_name || t("upcomingReturns.unassigned")}
                                     </div>
                                     <div style={{ 
                                       fontSize: "12px", 
@@ -441,12 +441,12 @@ export default function StaffPage() {
                 {/* FUTURE RETURNS */}
                 {futureMonths.size > 0 && (
                   <div>
-                    <h3 style={{ 
-                      fontSize: "16px", 
+                    <h3 style={{
+                      fontSize: "16px",
                       marginBottom: "var(--space-3)",
                       color: "rgb(var(--text))"
                     }}>
-                      Future Returns
+                      {t("upcomingReturns.futureReturns")}
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                       {Array.from(futureMonths.entries())
@@ -545,7 +545,7 @@ export default function StaffPage() {
                                           fontWeight: 500,
                                           color: "rgb(var(--text))"
                                         }}>
-                                          {booking.vehicle_name || 'Unassigned'}
+                                          {booking.vehicle_name || t("upcomingReturns.unassigned")}
                                         </div>
                                         <div style={{ 
                                           fontSize: "12px", 

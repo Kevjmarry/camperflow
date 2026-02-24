@@ -33,8 +33,9 @@
     "backToHome": "Zurück zur Startseite",
     "inviteOnly": "Konten werden nur per Einladung erstellt. Bitte kontaktiere deinen Administrator.",
     "error": {
-    "accessDeniedError": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
-    "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
+      "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
+      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+      "accessDeniedError": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte."
     }
   },
   "pageContainer": {
@@ -359,7 +360,7 @@
       "newBooking": "Neue Buchung",
       "edit": "Bearbeiten",
       "view": "Ansehen",
-      "viewEdit": "View / Edit"
+      "viewEdit": "Ansehen / Bearbeiten"
     },
     "filter": {
       "statusLabel": "Status:",
@@ -664,6 +665,10 @@
     }
   },
   "guest": {
+    "portal": {
+      "title": "Gastzugang",
+      "invalidCode": "Bitte geben Sie einen gültigen Buchungscode in der URL an."
+    },
     "title": "Gastzugang",
     "invalidCode": "Ungültiger oder fehlender Buchungscode. Bitte gehen Sie zurück und geben Sie Ihren Buchungscode erneut ein."
   },
@@ -763,7 +768,23 @@
         "company": {
           "title": "Firmeneinstellungen",
           "desc": "Branding und Erscheinungsbild"
+        },
+        "checklists": {
+          "title": "Checklisten",
+          "desc": "Betriebliche Aufgaben"
         }
+      },
+      "upcomingReturns": {
+        "title": "Bevorstehende Rückgaben",
+        "viewAll": "Alle Buchungen anzeigen",
+        "loading": "Bevorstehende Rückgaben werden geladen…",
+        "empty": "Keine bevorstehenden Rückgaben geplant",
+        "next14Days": "Nächste 14 Tage",
+        "futureReturns": "Zukünftige Rückgaben",
+        "returnCount": "{count, plural, one {# Rückgabe} other {# Rückgaben}}",
+        "unassigned": "Nicht zugewiesen",
+        "today": "Heute",
+        "tomorrow": "Morgen"
       },
       "quickActions": {
         "title": "Schnellaktionen",
@@ -771,6 +792,63 @@
         "addVehicle": "Fahrzeug hinzufügen",
         "nonAdminHint": "Deine Aufgaben erscheinen automatisch, sobald sie einer Buchung zugewiesen wurden."
       }
+    },
+    "checklistsPage": {
+      "loading": "Wird geladen…",
+      "backToDashboard": "← Zurück zum Dashboard",
+      "title": "Checklisten",
+      "subtitle": "Abnahme-, Rückgabe- und Reinigungschecklisten verwalten",
+      "manageTemplates": "Standard-Checklisten verwalten",
+      "filters": {
+        "scope": "Bereich:",
+        "status": "Status:"
+      },
+      "scope": {
+        "all": "Alle",
+        "booking": "Buchung",
+        "vehicle": "Fahrzeug"
+      },
+      "status": {
+        "all": "Alle",
+        "not_started": "Nicht begonnen",
+        "in_progress": "In Bearbeitung",
+        "completed": "Abgeschlossen"
+      },
+      "checklistTypes": {
+        "cleaning": "Reinigung",
+        "pickup": "Abnahme",
+        "return": "Rückgabe",
+        "guest_prereturn": "Gast-Vorabnahme",
+        "vehicle_readiness": "Fahrzeugbereitschaft",
+        "maintenance": "Wartung"
+      },
+      "severity": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      },
+      "table": {
+        "type": "Typ",
+        "booking": "Buchung",
+        "customer": "Kunde",
+        "vehicle": "Fahrzeug",
+        "dates": "Termine",
+        "status": "Status",
+        "issue": "Problem",
+        "severity": "Schwere"
+      },
+      "sections": {
+        "notStarted": "Nicht begonnen",
+        "inProgress": "In Bearbeitung",
+        "completed": "Abgeschlossen",
+        "vehicleChecklists": "Fahrzeug-Checklisten",
+        "openIssues": "Offene Probleme ({count})"
+      },
+      "empty": {
+        "bookingChecklists": "Keine Buchungs-Checklisten gefunden.",
+        "vehicleChecklists": "Fahrzeugbereitschafts-Checklisten werden aktualisiert. Schauen Sie bald wieder vorbei."
+      },
+      "bookingRef": "Buchung #{number}"
     },
     "bookings": {
       "new": {
@@ -920,7 +998,7 @@
     "checklists": {
       "title": "Checklisten",
       "empty": "Keine Checklisten für diese Buchung",
-      "checklistSuffix": "Checkliste",
+      "checklistSuffix": " Checkliste",
       "viewChecklist": "Checkliste anzeigen",
       "openChecklist": "Checkliste öffnen",
       "status": {
@@ -965,157 +1043,94 @@
       "deleteBooking": "Sind Sie sicher, dass Sie diese Buchung löschen möchten? Dies kann nicht rückgängig gemacht werden."
     }
   },
-  "staffCompany": {
-    "navigation": {
-      "backToDashboard": "← Zurück zum Dashboard"
+  "staffTeamMember": {
+    "backToTeam": "← Zurück zum Team",
+    "loading": "Mitarbeiter wird geladen…",
+    "unnamedStaff": "Unbenannter Mitarbeiter",
+    "inactive": "Inaktiv",
+    "roleLabel": "Rolle:",
+    "edit": "Bearbeiten",
+    "deactivating": "Wird deaktiviert...",
+    "deactivate": "Mitarbeiter deaktivieren",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht...",
+    "deleteConfirm": "Möchten Sie diesen Mitarbeiter wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteConfirmLinked": "WARNUNG: Dieser Mitarbeiter hat ein verknüpftes Konto. Das Löschen dieses Profils entfernt seinen Zugriff und kann den Login-Verlauf sowie zugehörige Datensätze beeinflussen.",
+    "deleteNotAllowed": "Nur Administratoren können Mitarbeiter löschen.",
+    "deleteSelfNotAllowed": "Sie können Ihr eigenes Profil nicht löschen.",
+    "deleteFailed": "Mitarbeiter konnte nicht gelöscht werden. Bitte erneut versuchen.",
+    "capabilitiesLabel": "Fähigkeiten",
+    "contactLabel": "Kontakt",
+    "phoneLabel": "Telefon:",
+    "emailLabel": "E-Mail:",
+    "notesLabel": "Notizen",
+    "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
+    "joiner": " + ",
+    "uploading": "Wird hochgeladen…",
+    "saving": "Wird gespeichert...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "loginAccess": {
+      "title": "Login-Zugang",
+      "loginEnabled": "✓ Login aktiviert",
+      "noLoginYet": "Noch kein Login",
+      "inviteSent": "Einladung gesendet",
+      "enableLogin": "Login aktivieren / Einladung senden",
+      "resendAccess": "Zugang erneut senden",
+      "sending": "Senden…",
+      "recoveryLinkTitle": "Wiederherstellungslink",
+      "copyLink": "Link kopieren",
+      "copied": "Kopiert!"
     },
-    "title": "Unternehmenseinstellungen",
-    "description": {
-      "admin": "Passen Sie Ihr Unternehmensbranding und Erscheinungsbild an",
-      "viewer": "Unternehmensbranding und Erscheinungsbild anzeigen"
+    "types": {
+      "manager": "Manager",
+      "cleaner": "Reinigung",
+      "mechanical": "Technik"
     },
-    "sections": {
-      "emergencyContacts": "Notfallkontakte",
-      "information": "Unternehmensinformationen",
-      "logo": "Unternehmenslogo",
-      "brandColors": "Markenfarben",
-      "preview": "Vorschau"
+    "capabilities": {
+      "cleaning": "Reinigung",
+      "mechanical": "Technik"
     },
-    "labels": {
-      "companyName": "Unternehmensname",
-      "primaryColor": "Primärfarbe",
-      "secondaryColor": "Sekundärfarbe"
+    "roles": {
+      "staff": "Mitarbeiter",
+      "management": "Management"
     },
-    "placeholders": {
-      "companyName": "Ihr Unternehmensname",
-      "yourCompany": "Ihr Unternehmen"
-    },
-    "helpers": {
-      "logoRequirements": "PNG, JPG oder SVG. Max. 2MB. Empfohlen: 200x80px",
-      "primaryColorUsage": "Wird für Schaltflächen und Links verwendet",
-      "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet"
-    },
-    "actions": {
-      "uploadLogo": "Logo hochladen",
-      "changeLogo": "Logo ändern",
-      "saveChanges": "Änderungen speichern",
-      "saving": "Speichern...",
-      "uploadingLogo": "Logo wird hochgeladen...",
-      "cancel": "Abbrechen"
-    },
-    "preview": {
-      "logoAlt": "Logo-Vorschau",
-      "logoInHeader": "Logo",
-      "primaryButton": "Primäre Schaltfläche",
-      "secondaryButton": "Sekundäre Schaltfläche",
-      "statusOnRent": "Vermietet",
-      "statusNeedsCleaning": "Muss gereinigt werden"
+    "fields": {
+      "firstName": "Vorname *",
+      "lastName": "Nachname *",
+      "role": "Rolle",
+      "canManage": "Kann verwalten (automatisch durch Rolle)",
+      "canClean": "Kann reinigen",
+      "canMechanical": "Kann Technik",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "uploadPhoto": "Foto hochladen",
+      "photoUrl": "Foto-URL",
+      "notes": "Notizen",
+      "active": "Aktiv"
     },
     "errors": {
-      "companyNameRequired": "Unternehmensname ist erforderlich",
-      "invalidFileType": "Bitte wählen Sie eine Bilddatei (PNG, JPG oder SVG)",
-      "fileTooLarge": "Logo-Datei muss kleiner als 2MB sein",
-      "loadFailed": "Unternehmenseinstellungen konnten nicht geladen werden. Bitte aktualisieren Sie die Seite.",
-      "uploadLogoFailed": "Logo konnte nicht hochgeladen werden",
-      "saveSettingsFailed": "Unternehmenseinstellungen konnten nicht gespeichert werden"
+      "profileNotFound": "Benutzerprofil nicht gefunden",
+      "memberNotFound": "Mitarbeiter nicht gefunden",
+      "loadFailed": "Mitarbeiter konnte nicht geladen werden",
+      "uploadFailed": "Upload fehlgeschlagen",
+      "uploadPhotoFailed": "Foto konnte nicht hochgeladen werden",
+      "nameRequired": "Vorname und Nachname sind erforderlich.",
+      "saveFailed": "Änderungen konnten nicht gespeichert werden",
+      "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
     },
-    "success": {
-      "saved": "Unternehmenseinstellungen erfolgreich gespeichert!"
-    },
-    "loading": "Unternehmenseinstellungen werden geladen..."
+    "passwordRequired": "Bitte neues Passwort eingeben und bestätigen.",
+    "passwordMismatch": "Passwörter stimmen nicht überein.",
+    "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein.",
+    "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie Ihr Passwort ändern.",
+    "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
+    "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "reactivate": "Reaktivieren",
+    "reactivating": "Wird reaktiviert...",
+    "reactivateConfirm": "Diesen Mitarbeiter reaktivieren?"
   },
-"staffTeamMember": {
-  "backToTeam": "← Zurück zum Team",
-  "loading": "Mitarbeiter wird geladen…",
-  "unnamedStaff": "Unbenannter Mitarbeiter",
-  "inactive": "Inaktiv",
-  "roleLabel": "Rolle:",
-  "edit": "Bearbeiten",
-  "deactivating": "Wird deaktiviert...",
-  "deactivate": "Mitarbeiter deaktivieren",
-
-  "delete": "Löschen",
-  "deleting": "Wird gelöscht...",
-  "deleteConfirm": "Möchten Sie diesen Mitarbeiter wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-  "deleteConfirmLinked": "WARNUNG: Dieser Mitarbeiter hat ein verknüpftes Konto. Das Löschen dieses Profils entfernt seinen Zugriff und kann den Login-Verlauf sowie zugehörige Datensätze beeinflussen.",
-  "deleteNotAllowed": "Nur Administratoren können Mitarbeiter löschen.",
-  "deleteSelfNotAllowed": "Sie können Ihr eigenes Profil nicht löschen.",
-  "deleteFailed": "Mitarbeiter konnte nicht gelöscht werden. Bitte erneut versuchen.",
-
-  "capabilitiesLabel": "Fähigkeiten",
-  "contactLabel": "Kontakt",
-  "phoneLabel": "Telefon:",
-  "emailLabel": "E-Mail:",
-  "notesLabel": "Notizen",
-  "confirmDeactivate": "Diesen Mitarbeiter deaktivieren? Er wird nicht mehr als aktiv angezeigt.",
-  "joiner": " + ",
-  "uploading": "Wird hochgeladen…",
-  "saving": "Wird gespeichert...",
-  "save": "Speichern",
-  "cancel": "Abbrechen",
-
-  "loginAccess": {
-    "title": "Login-Zugang",
-    "loginEnabled": "✓ Login aktiviert",
-    "noLoginYet": "Noch kein Login",
-    "inviteSent": "Einladung gesendet",
-    "enableLogin": "Login aktivieren / Einladung senden",
-    "resendAccess": "Zugang erneut senden",
-    "sending": "Senden…",
-    "recoveryLinkTitle": "Wiederherstellungslink",
-    "copyLink": "Link kopieren",
-    "copied": "Kopiert!"
-  },
-
-  "types": {
-    "manager": "Manager",
-    "cleaner": "Reinigung",
-    "mechanical": "Technik"
-  },
-  "capabilities": {
-    "cleaning": "Reinigung",
-    "mechanical": "Technik"
-  },
-  "roles": {
-    "staff": "Mitarbeiter",
-    "management": "Management"
-  },
-  "fields": {
-    "firstName": "Vorname *",
-    "lastName": "Nachname *",
-    "role": "Rolle",
-    "canManage": "Kann verwalten (automatisch durch Rolle)",
-    "canClean": "Kann reinigen",
-    "canMechanical": "Kann Technik",
-    "phone": "Telefon",
-    "email": "E-Mail",
-    "uploadPhoto": "Foto hochladen",
-    "photoUrl": "Foto-URL",
-    "notes": "Notizen",
-    "active": "Aktiv"
-  },
-  "errors": {
-    "profileNotFound": "Benutzerprofil nicht gefunden",
-    "memberNotFound": "Mitarbeiter nicht gefunden",
-    "loadFailed": "Mitarbeiter konnte nicht geladen werden",
-    "uploadFailed": "Upload fehlgeschlagen",
-    "uploadPhotoFailed": "Foto konnte nicht hochgeladen werden",
-    "nameRequired": "Vorname und Nachname sind erforderlich.",
-    "saveFailed": "Änderungen konnten nicht gespeichert werden",
-    "deactivateFailed": "Mitarbeiter konnte nicht deaktiviert werden"
-  },
-  "passwordRequired": "Bitte neues Passwort eingeben und bestätigen.",
-  "passwordMismatch": "Passwörter stimmen nicht überein.",
-  "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein.",
-  "passwordRecentLoginRequired": "Aus Sicherheitsgründen bitte abmelden und erneut anmelden, bevor Sie Ihr Passwort ändern.",
-  "passwordUpdateSuccess": "Passwort wurde erfolgreich aktualisiert.",
-  "passwordUpdateFailed": "Passwort konnte nicht aktualisiert werden.",
-  "statusActive": "Aktiv",
-  "statusInactive": "Inaktiv",
-  "reactivate": "Reaktivieren",
-  "reactivating": "Wird reaktiviert...",
-  "reactivateConfirm": "Diesen Mitarbeiter reaktivieren?"
-},
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Nicht authentifiziert",
@@ -1186,64 +1201,134 @@
     "saveFailed": "Fehler beim Speichern der Änderungen.",
     "deleteFailed": "Fehler beim Löschen des Fahrzeugs."
   },
- "staffTeamNew": {
-  "checkingPermissions": "Berechtigungen werden geprüft…",
-  "backToTeam": "Zurück zum Team",
-  "title": "Teammitglied hinzufügen",
-  "subtitle": "Erstellen Sie ein neues Mitarbeiterkonto für Ihr Unternehmen.",
-  "accessDenied": {
-    "title": "Zugriff verweigert",
-    "message": "Sie haben keine Berechtigung, das Team zu verwalten."
+  "staffTeamNew": {
+    "checkingPermissions": "Berechtigungen werden geprüft…",
+    "backToTeam": "Zurück zum Team",
+    "title": "Teammitglied hinzufügen",
+    "subtitle": "Erstellen Sie ein neues Mitarbeiterkonto für Ihr Unternehmen.",
+    "accessDenied": {
+      "title": "Zugriff verweigert",
+      "message": "Sie haben keine Berechtigung, das Team zu verwalten."
+    },
+    "comingSoon": {
+      "message": "Demnächst verfügbar",
+      "description": "Dieser Bildschirm ist fertig, aber das Anlegen von Teammitgliedern wird später aktiviert.",
+      "returnToList": "Zur Teamliste"
+    },
+    "errors": {
+      "profileNotFound": "Mitarbeiterprofil wurde nicht gefunden.",
+      "nameRequired": "Vorname und Nachname sind erforderlich.",
+      "noCompany": "Kein Unternehmen mit Ihrem Konto verknüpft.",
+      "photoUploadFailed": "Foto-Upload fehlgeschlagen.",
+      "createFailed": "Teammitglied konnte nicht erstellt werden.",
+      "emailRequiredForLogin": "E-Mail ist erforderlich, wenn der Login aktiviert ist",
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "inviteFailed": "Einladung konnte nicht gesendet werden",
+      "duplicateEmail": "Ein Teammitglied mit dieser E-Mail-Adresse existiert bereits."
+    },
+    "form": {
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "role": "Rolle",
+      "roleStaff": "Mitarbeiter",
+      "roleAdmin": "Administrator",
+      "capabilities": "Berechtigungen",
+      "canClean": "Kann Fahrzeuge reinigen",
+      "canMechanical": "Kann mechanische Arbeiten durchführen",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "photo": "Foto",
+      "notes": "Notizen",
+      "save": "Speichern",
+      "saving": "Speichert…",
+      "cancel": "Abbrechen",
+      "enableLogin": "Login aktivieren (Einladung senden)",
+      "enableLoginDescription": "Eine E-Mail-Einladung senden, damit sich diese Person einloggen und ihr Passwort festlegen kann",
+      "removePhoto": "Foto entfernen"
+    }
   },
-  "comingSoon": {
-    "message": "Demnächst verfügbar",
-    "description": "Dieser Bildschirm ist fertig, aber das Anlegen von Teammitgliedern wird später aktiviert.",
-    "returnToList": "Zur Teamliste"
+  "guestDashboard": {
+    "title": "Meine Buchung",
+    "subtitle": "Alles Wichtige rund um Ihre Miete.",
+    "summaryCode": "Buchungscode",
+    "guestAccess": "Gastzugang",
+    "comingSoon": "Demnächst",
+    "noCodeTitle": "Kein Buchungscode",
+    "noCodeMessage": "Bitte nutzen Sie den Link aus Ihrer Buchungsbestätigung.",
+    "cards": {
+      "bookingDetails": "Buchungsdetails",
+      "emergency": "Notfall & Pannenhilfe",
+      "pickupInfo": "Abholinformationen",
+      "returnInfo": "Rückgabeinformationen",
+      "rulesAndTips": "Regeln & Tipps",
+      "messages": "Nachrichten"
+    }
   },
-  "errors": {
-    "profileNotFound": "Mitarbeiterprofil wurde nicht gefunden.",
-    "nameRequired": "Vorname und Nachname sind erforderlich.",
-    "noCompany": "Kein Unternehmen mit Ihrem Konto verknüpft.",
-    "photoUploadFailed": "Foto-Upload fehlgeschlagen.",
-    "createFailed": "Teammitglied konnte nicht erstellt werden.",
-    "duplicateEmail": "Ein Teammitglied mit dieser E-Mail-Adresse existiert bereits."
+  "staffCompany": {
+    "navigation": {
+      "backToDashboard": "← Zurück zum Dashboard"
+    },
+    "title": "Unternehmenseinstellungen",
+    "description": {
+      "admin": "Passen Sie Ihr Unternehmensbranding und Erscheinungsbild an",
+      "viewer": "Unternehmensbranding und Erscheinungsbild anzeigen"
+    },
+    "sections": {
+      "emergencyContacts": "Notfallkontakte",
+      "information": "Unternehmensinformationen",
+      "logo": "Unternehmenslogo",
+      "brandColors": "Markenfarben",
+      "preview": "Vorschau"
+    },
+    "labels": {
+      "companyName": "Unternehmensname",
+      "primaryColor": "Primärfarbe",
+      "secondaryColor": "Sekundärfarbe",
+      "accidentNumbers": "Unfall",
+      "breakdownNumbers": "Panne",
+      "primaryPhone": "Hauptnummer",
+      "secondaryPhone": "Zweite Nummer"
+    },
+    "placeholders": {
+      "companyName": "Ihr Unternehmensname",
+      "yourCompany": "Ihr Unternehmen",
+      "phonePlaceholder": "+43 123 456 789"
+    },
+    "helpers": {
+      "logoRequirements": "PNG, JPG oder SVG. Max. 2MB. Empfohlen: 200x80px",
+      "primaryColorUsage": "Wird für Schaltflächen und Links verwendet",
+      "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet",
+      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen."
+    },
+    "actions": {
+      "uploadLogo": "Logo hochladen",
+      "changeLogo": "Logo ändern",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichern...",
+      "uploadingLogo": "Logo wird hochgeladen...",
+      "cancel": "Abbrechen"
+    },
+    "preview": {
+      "logoAlt": "Logo-Vorschau",
+      "logoInHeader": "Logo",
+      "primaryButton": "Primäre Schaltfläche",
+      "secondaryButton": "Sekundäre Schaltfläche",
+      "statusOnRent": "Vermietet",
+      "statusNeedsCleaning": "Muss gereinigt werden"
+    },
+    "errors": {
+      "companyNameRequired": "Unternehmensname ist erforderlich",
+      "invalidFileType": "Bitte wählen Sie eine Bilddatei (PNG, JPG oder SVG)",
+      "fileTooLarge": "Logo-Datei muss kleiner als 2MB sein",
+      "loadFailed": "Unternehmenseinstellungen konnten nicht geladen werden. Bitte aktualisieren Sie die Seite.",
+      "uploadLogoFailed": "Logo konnte nicht hochgeladen werden",
+      "saveSettingsFailed": "Unternehmenseinstellungen konnten nicht gespeichert werden"
+    },
+    "success": {
+      "saved": "Unternehmenseinstellungen erfolgreich gespeichert!"
+    },
+    "loading": "Unternehmenseinstellungen werden geladen..."
   },
-  "form": {
-    "firstName": "Vorname",
-    "lastName": "Nachname",
-    "role": "Rolle",
-    "roleStaff": "Mitarbeiter",
-    "roleAdmin": "Administrator",
-    "capabilities": "Berechtigungen",
-    "canClean": "Kann Fahrzeuge reinigen",
-    "canMechanical": "Kann mechanische Arbeiten durchführen",
-    "phone": "Telefon",
-    "email": "E-Mail",
-    "photo": "Foto",
-    "notes": "Notizen",
-    "save": "Speichern",
-    "saving": "Speichert…",
-    "cancel": "Abbrechen",
-    "removePhoto": "Foto entfernen"
-  }
-},
-"guestDashboard": {
-  "title": "Meine Buchung",
-  "subtitle": "Alles Wichtige rund um Ihre Miete.",
-  "summaryCode": "Buchungscode",
-  "guestAccess": "Gastzugang",
-  "comingSoon": "Demnächst",
-  "noCodeTitle": "Kein Buchungscode",
-  "noCodeMessage": "Bitte nutzen Sie den Link aus Ihrer Buchungsbestätigung.",
-  "cards": {
-    "bookingDetails": "Buchungsdetails",
-    "emergency": "Notfall & Pannenhilfe",
-    "pickupInfo": "Abholinformationen",
-    "returnInfo": "Rückgabeinformationen",
-    "rulesAndTips": "Regeln & Tipps",
-    "messages": "Nachrichten"
-  }
-},
   "guestEmergency": {
     "noCodeTitle": "Kein Buchungscode",
     "noCodeMessage": "Es wurde kein Buchungscode gefunden. Bitte nutzen Sie den Link in Ihrer Bestätigungs-E-Mail.",
@@ -1316,11 +1401,11 @@
     "sectionVisibleTo": "Sichtbar für",
     "sectionUsedFor": "Verwendet für",
     "vehicleMaintenanceBadge": "🔧 Fahrzeugwartung",
-    "vehicleMaintenanceNote": "— läuft außerhalb des Buchungszyklus",
+    "vehicleMaintenanceNote": "läuft außerhalb des Buchungszyklus",
     "swipeHint": "Wischen für den vollständigen Lebenszyklus →",
     "pickup": {
       "createdWhen": {
-        "0": "Eine Buchung wechselt in den Status \u201eBestätigt\u201c",
+        "0": "Eine Buchung wechselt in den Status „Bestätigt“",
         "1": "Das Fahrzeug wird dem Gast übergeben"
       },
       "visibleTo": {
@@ -1383,6 +1468,87 @@
         "1": "Administratoren"
       },
       "usedFor": "Einwintern der Fahrzeuge und Dokumentation der Einlagerungsvorbereitung zum Saisonende."
+    },
+    "lifecycleStages": {
+      "bookingCreated": "Buchung erstellt",
+      "confirmed": "Bestätigt",
+      "pickup": "Abholung",
+      "return": "Rückgabe",
+      "cleaning": "Reinigung",
+      "ready": "Bereit"
     }
+  },
+  "staffChecklistTemplateDetail": {
+    "loading": "Wird geladen…",
+    "backToTemplates": "Zurück zu Vorlagen",
+    "globalErrorFallback": "Vorlage nicht gefunden.",
+    "notFoundError": "Vorlage nicht gefunden oder kein Zugriff darauf.",
+    "errorNoCompany": "Kein Unternehmen mit diesem Konto verknüpft.",
+    "errorLoadItemsFailed": "Checklisteneinträge konnten nicht geladen werden.",
+    "legacyTypeLabel": "{type} (veraltet)",
+    "errorNameRequired": "Name ist erforderlich.",
+    "errorSaveFailed": "Vorlage konnte nicht gespeichert werden.",
+    "errorSystemCannotDelete": "System-Checklistenvorlagen können nicht gelöscht werden.",
+    "deleteConfirm": "„{name}“ löschen? Dies kann nicht rückgängig gemacht werden.",
+    "errorDeleteFailed": "Vorlage konnte nicht gelöscht werden.",
+    "errorItemLabelRequired": "Bezeichnung ist erforderlich.",
+    "errorItemSaveFailed": "Eintrag konnte nicht gespeichert werden.",
+    "errorReorderStep1": "Reihenfolge konnte nicht gespeichert werden (Schritt 1).",
+    "errorReorderStep2": "Reihenfolge konnte nicht gespeichert werden (Schritt 2).",
+    "errorReorderStep3": "Reihenfolge konnte nicht gespeichert werden (Schritt 3).",
+    "errorMoveSectionTemp": "Abschnitt konnte nicht verschoben werden (Zwischenschritt {step}).",
+    "errorMoveSectionAssign": "Abschnitt konnte nicht verschoben werden (Zuweisungsschritt).",
+    "sectionDefault": "Allgemein",
+    "pageTitle": "Vorlage bearbeiten",
+    "pageSubtitle": "Vorlagendetails aktualisieren oder Vorlage löschen.",
+    "sectionTemplateDetails": "Vorlagendetails",
+    "saveSuccess": "Vorlage erfolgreich gespeichert.",
+    "fieldName": "Name",
+    "systemNameHint": "Namen von CF-Standardvorlagen können nicht geändert werden.",
+    "fieldAppliesTo": "Gilt für",
+    "scopeBookingValue": "Buchung — verfolgt Aufgaben für eine bestimmte Miete",
+    "scopeVehicleValue": "Fahrzeug — verfolgt Aufgaben für einen bestimmten Campervan",
+    "scopeReadOnlyHint": "Kann nach der Erstellung nicht mehr geändert werden.",
+    "fieldWhenCreated": "Wann soll diese Checkliste erstellt werden?",
+    "systemTypeHint": "Typen von CF-Standardvorlagen können nicht geändert werden.",
+    "fieldActive": "Aktiv",
+    "btnSaving": "Speichern…",
+    "btnSaveChanges": "Änderungen speichern",
+    "systemCannotDelete": "CF-Standardvorlagen können nicht gelöscht werden.",
+    "btnDeleting": "Wird gelöscht…",
+    "btnDeleteTemplate": "Vorlage löschen",
+    "desktopTip": "Tipp: Für schnelleres Umordnen und Massenbearbeitung bitte Desktop verwenden.",
+    "sectionItems": "Checklisteneinträge",
+    "searchPlaceholder": "Einträge suchen…",
+    "searchAriaLabel": "Checklisteneinträge suchen",
+    "filterShowRequired": "Nur Pflichtfelder anzeigen",
+    "btnExpandAll": "Alle aufklappen",
+    "btnCollapseAll": "Alle zuklappen",
+    "dismissError": "Schließen",
+    "loadingItems": "Einträge werden geladen…",
+    "emptyItems": "Noch keine Einträge. Fügen Sie Einträge zu dieser Vorlage hinzu.",
+    "emptyFiltered": "Keine Einträge entsprechen Ihren Filtern.",
+    "moveSectionUpTitle": "Abschnitt nach oben verschieben",
+    "moveSectionUpAria": "Abschnitt „{section}“ nach oben verschieben",
+    "moveSectionDownTitle": "Abschnitt nach unten verschieben",
+    "moveSectionDownAria": "Abschnitt „{section}“ nach unten verschieben",
+    "inputTypeBadgeNumber": "Zahl",
+    "itemRequiredBadge": "Pflicht",
+    "btnEdit": "Bearbeiten",
+    "itemFieldLabel": "Bezeichnung",
+    "itemFieldInputType": "Eingabetyp",
+    "inputTypeCheckbox": "Kontrollkästchen",
+    "inputTypeNumber": "Zahl",
+    "itemFieldRequired": "Erforderlich",
+    "reorderLabel": "Sortieren:",
+    "moveItemUpAria": "Eintrag nach oben verschieben",
+    "moveItemDownAria": "Eintrag nach unten verschieben",
+    "reorderSaving": "Speichern…",
+    "btnSavingItem": "Speichern…",
+    "btnSave": "Speichern",
+    "btnCancel": "Abbrechen",
+    "btnAddFirstItem": "+ Ersten Eintrag hinzufügen",
+    "defaultNewItemLabel": "Neuer Eintrag",
+    "errorAddFirstItemFailed": "Eintrag konnte nicht hinzugefügt werden."
   }
-  }
+}

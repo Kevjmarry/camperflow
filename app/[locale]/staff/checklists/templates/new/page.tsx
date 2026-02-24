@@ -20,26 +20,26 @@ function typeOptionsForScope(scope: TemplateScope) {
   return scope === 'booking' ? BOOKING_TYPE_VALUES : VEHICLE_TYPE_VALUES;
 }
 
-// ─── Lifecycle stage mapping ──────────────────────────────────────────────────
+// ─── Lifecycle stage key mapping ──────────────────────────────────────────────
 
-const TYPE_LIFECYCLE_STAGE: Record<string, string | null> = {
-  pickup: 'Pickup',
-  return: 'Return',
-  cleaning: 'Cleaning',
-  mechanical: 'Cleaning',
-  guest_prereturn: 'Return',
+const TYPE_LIFECYCLE_STAGE_KEY: Record<string, string | null> = {
+  pickup: 'pickup',
+  return: 'return',
+  cleaning: 'cleaning',
+  mechanical: 'cleaning',
+  guest_prereturn: 'return',
   pre_season: null,
   post_season: null,
 };
 
-const LIFECYCLE_STAGES = [
-  'Booking Created',
-  'Confirmed',
-  'Pickup',
-  'Return',
-  'Cleaning',
-  'Ready',
-];
+const LIFECYCLE_STAGE_KEYS = [
+  'bookingCreated',
+  'confirmed',
+  'pickup',
+  'return',
+  'cleaning',
+  'ready',
+] as const;
 
 // ─── TypeExplanationPanel ─────────────────────────────────────────────────────
 
@@ -62,14 +62,20 @@ function TypeExplanationPanel({
   isMobile: boolean;
   expT: ExpT;
 }) {
-  const lifecycleStage = TYPE_LIFECYCLE_STAGE[selectedType];
-  const isVehicleOnly = lifecycleStage === null;
+  const activeStageKey = TYPE_LIFECYCLE_STAGE_KEY[selectedType];
+  const isVehicleOnly = activeStageKey === null;
 
-  // For mechanical, reuse cleaning keys
   const expKey = selectedType === 'mechanical' ? 'cleaning' : selectedType;
 
-  // Only render for known types
-  const knownTypes = ['pickup', 'return', 'cleaning', 'mechanical', 'guest_prereturn', 'pre_season', 'post_season'];
+  const knownTypes = [
+    'pickup',
+    'return',
+    'cleaning',
+    'mechanical',
+    'guest_prereturn',
+    'pre_season',
+    'post_season',
+  ];
   if (!knownTypes.includes(selectedType)) return null;
 
   const createdWhen = [
@@ -91,19 +97,30 @@ function TypeExplanationPanel({
   const vehicleMaintenanceNote = safeExpT(expT, 'vehicleMaintenanceNote');
   const swipeHint = safeExpT(expT, 'swipeHint');
 
+  const SUBLABEL: CSSProperties = {
+    margin: '0 0 4px 0',
+    fontWeight: 600,
+    color: 'rgb(var(--text))',
+    fontSize: '11px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    opacity: 0.7,
+  };
+
   return (
     <div
       style={{
         marginTop: 'var(--space-3)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'var(--space-3)',
+        gap: 'var(--space-2)',
+        minWidth: 0,
       }}
     >
       {/* Explanation card */}
       <div
         style={{
-          padding: 'var(--space-3) var(--space-4)',
+          padding: 'var(--space-3)',
           background: 'rgb(var(--brand) / 0.04)',
           border: '1px solid rgb(var(--brand) / 0.15)',
           borderRadius: 'var(--radius)',
@@ -111,29 +128,17 @@ function TypeExplanationPanel({
           flexDirection: 'column',
           gap: 'var(--space-3)',
           fontSize: '13px',
-          lineHeight: '1.5',
+          lineHeight: '1.55',
+          minWidth: 0,
         }}
       >
         {createdWhen.length > 0 && (
           <div>
-            {sectionCreatedWhen && (
-              <p
-                style={{
-                  margin: '0 0 var(--space-1) 0',
-                  fontWeight: 600,
-                  color: 'rgb(var(--text))',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {sectionCreatedWhen}
-              </p>
-            )}
+            {sectionCreatedWhen && <p style={SUBLABEL}>{sectionCreatedWhen}</p>}
             <ul
               style={{
                 margin: 0,
-                paddingLeft: 'var(--space-4)',
+                paddingLeft: '1.25rem',
                 color: 'rgb(var(--text))',
                 display: 'flex',
                 flexDirection: 'column',
@@ -148,24 +153,11 @@ function TypeExplanationPanel({
         )}
         {visibleTo.length > 0 && (
           <div>
-            {sectionVisibleTo && (
-              <p
-                style={{
-                  margin: '0 0 var(--space-1) 0',
-                  fontWeight: 600,
-                  color: 'rgb(var(--text))',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {sectionVisibleTo}
-              </p>
-            )}
+            {sectionVisibleTo && <p style={SUBLABEL}>{sectionVisibleTo}</p>}
             <ul
               style={{
                 margin: 0,
-                paddingLeft: 'var(--space-4)',
+                paddingLeft: '1.25rem',
                 color: 'rgb(var(--text))',
                 display: 'flex',
                 flexDirection: 'column',
@@ -180,20 +172,7 @@ function TypeExplanationPanel({
         )}
         {usedFor && (
           <div>
-            {sectionUsedFor && (
-              <p
-                style={{
-                  margin: '0 0 2px 0',
-                  fontWeight: 600,
-                  color: 'rgb(var(--text))',
-                  fontSize: '12px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {sectionUsedFor}
-              </p>
-            )}
+            {sectionUsedFor && <p style={{ ...SUBLABEL, marginBottom: '2px' }}>{sectionUsedFor}</p>}
             <p style={{ margin: 0, color: 'rgb(var(--text))' }}>{usedFor}</p>
           </div>
         )}
@@ -213,6 +192,8 @@ function TypeExplanationPanel({
             fontSize: '12px',
             color: 'rgb(var(--muted))',
             flexWrap: 'wrap',
+            minHeight: '36px',
+            minWidth: 0,
           }}
         >
           {vehicleMaintenanceBadge && (
@@ -228,67 +209,74 @@ function TypeExplanationPanel({
                 color: 'rgb(var(--brand))',
                 fontWeight: 600,
                 fontSize: '12px',
+                lineHeight: 1.4,
               }}
             >
               {vehicleMaintenanceBadge}
             </span>
           )}
-          {vehicleMaintenanceNote && <span>— {vehicleMaintenanceNote}</span>}
+          {vehicleMaintenanceNote && (
+            <span style={{ color: 'rgb(var(--muted))' }}>{vehicleMaintenanceNote}</span>
+          )}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ minWidth: 0 }}>
+          {/* Scrollable pill row */}
           <div
             style={{
-              maxWidth: '100%',
               padding: 'var(--space-2) var(--space-3)',
               background: 'rgb(var(--surface))',
               border: '1px solid rgb(var(--border))',
               borderRadius: 'var(--radius)',
               overflowX: 'auto',
               WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              maxWidth: '100%',
             }}
           >
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '3px',
                 minWidth: 'max-content',
+                height: '28px',
               }}
             >
-              {LIFECYCLE_STAGES.map((stage, idx) => {
-                const isActive = stage === lifecycleStage;
+              {LIFECYCLE_STAGE_KEYS.map((stageKey, idx) => {
+                const isActive = stageKey === activeStageKey;
+                const label = safeExpT(expT, `lifecycleStages.${stageKey}`);
                 return (
-                  <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div key={stageKey} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                     {idx > 0 && (
                       <span
                         style={{
                           color: 'rgb(var(--muted))',
-                          fontSize: '11px',
-                          flexShrink: 0,
-                          opacity: 0.5,
+                          fontSize: '10px',
+                          opacity: 0.45,
+                          lineHeight: 1,
                         }}
                       >
-                        →
+                        {'>'}
                       </span>
                     )}
                     <span
                       style={{
-                        display: 'inline-block',
-                        padding: '3px 9px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '0 9px',
+                        height: '22px',
                         borderRadius: '999px',
                         fontSize: '11px',
                         fontWeight: isActive ? 700 : 400,
                         whiteSpace: 'nowrap',
                         background: isActive ? 'rgb(var(--brand))' : 'transparent',
                         color: isActive ? '#fff' : 'rgb(var(--muted))',
-                        border: isActive
-                          ? '1px solid rgb(var(--brand))'
-                          : '1px solid transparent',
-                        transition: 'all 0.15s',
+                        border: isActive ? '1px solid rgb(var(--brand))' : '1px solid transparent',
+                        transition: 'background 0.15s, color 0.15s',
                       }}
                     >
-                      {stage}
+                      {label}
                     </span>
                   </div>
                 );
@@ -296,11 +284,10 @@ function TypeExplanationPanel({
             </div>
           </div>
 
-          {/* Swipe hint: mobile only */}
           {isMobile && swipeHint && (
             <p
               style={{
-                margin: 0,
+                margin: '4px 0 0 0',
                 fontSize: '11px',
                 color: 'rgb(var(--muted))',
                 fontStyle: 'italic',
@@ -321,7 +308,7 @@ const SECTION_HEADING: CSSProperties = {
   fontSize: '16px',
   fontWeight: 600,
   color: 'rgb(var(--text))',
-  margin: '0 0 var(--space-3) 0',
+  margin: '0 0 var(--space-4) 0',
 };
 
 const FIELD_LABEL: CSSProperties = {
@@ -333,7 +320,7 @@ const FIELD_LABEL: CSSProperties = {
 const FIELD_WRAPPER: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 0,
+  minWidth: 0,
 };
 
 const ERROR_BOX: CSSProperties = {
@@ -359,27 +346,18 @@ export default function NewChecklistTemplatePage() {
   // ── Responsive breakpoints ──
   const [isMobile, setIsMobile] = useState(true);
   const [isTabletOrAbove, setIsTabletOrAbove] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
-    const mqTablet = window.matchMedia('(min-width: 768px)');
-    const mqDesktop = window.matchMedia('(min-width: 1024px)');
+    const mq = window.matchMedia('(min-width: 768px)');
 
-    const updateTablet = () => {
-      setIsTabletOrAbove(mqTablet.matches);
-      setIsMobile(!mqTablet.matches);
+    const update = () => {
+      setIsTabletOrAbove(mq.matches);
+      setIsMobile(!mq.matches);
     };
-    const updateDesktop = () => setIsDesktop(mqDesktop.matches);
 
-    updateTablet();
-    updateDesktop();
-
-    mqTablet.addEventListener('change', updateTablet);
-    mqDesktop.addEventListener('change', updateDesktop);
-    return () => {
-      mqTablet.removeEventListener('change', updateTablet);
-      mqDesktop.removeEventListener('change', updateDesktop);
-    };
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
   }, []);
 
   // ── Auth ──
@@ -444,7 +422,7 @@ export default function NewChecklistTemplatePage() {
     };
   }, [locale, router]);
 
-  // ─── Scope change: reset type to first option for new scope ───────────────
+  // ─── Scope change ──────────────────────────────────────────────────────────
 
   function handleScopeChange(newScope: TemplateScope) {
     setScope(newScope);
@@ -467,13 +445,7 @@ export default function NewChecklistTemplatePage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('checklist_templates')
-      .insert({
-        company_id: companyId,
-        name: name.trim(),
-        scope,
-        type,
-        active,
-      })
+      .insert({ company_id: companyId, name: name.trim(), scope, type, active })
       .select('id')
       .single();
 
@@ -494,7 +466,11 @@ export default function NewChecklistTemplatePage() {
       <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div
-            style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}
+            style={{
+              textAlign: 'center',
+              padding: 'var(--space-8)',
+              color: 'rgb(var(--muted))',
+            }}
           >
             {t('loading')}
           </div>
@@ -517,7 +493,7 @@ export default function NewChecklistTemplatePage() {
               marginBottom: 'var(--space-4)',
             }}
           >
-            ← {t('backToTemplates')}
+            {t('backToTemplates')}
           </Link>
           <div style={ERROR_BOX}>{globalError}</div>
         </div>
@@ -527,26 +503,28 @@ export default function NewChecklistTemplatePage() {
 
   const currentTypeValues = typeOptionsForScope(scope);
 
-  // ── Card sizing / alignment by breakpoint ──
-  const cardStyle: CSSProperties = {
-    padding: 'var(--space-5)',
-    border: '1px solid rgb(var(--border))',
-    borderRadius: 'var(--radius)',
-    background: 'rgb(var(--background))',
-    ...(isDesktop
-      ? { maxWidth: '480px' }
-      : isTabletOrAbove
-        ? { maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }
-        : {}),
-  };
-
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <PageContainer maxWidth="1200px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-
+      <div
+        className="surface"
+        style={{
+          padding: isMobile ? 'var(--space-4)' : 'var(--space-8)',
+          overflowX: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: isTabletOrAbove ? '960px' : undefined,
+            margin: isTabletOrAbove ? '0 auto' : undefined,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-6)',
+            minWidth: 0,
+          }}
+        >
           {/* ── Page header ── */}
           <div>
             <Link
@@ -559,26 +537,48 @@ export default function NewChecklistTemplatePage() {
                 marginBottom: 'var(--space-2)',
               }}
             >
-              ← {t('backToTemplates')}
+              {t('backToTemplates')}
             </Link>
-            <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
+            <h1
+              style={{
+                fontSize: isMobile ? '22px' : '28px',
+                fontWeight: 600,
+                color: 'rgb(var(--text))',
+                margin: 0,
+                lineHeight: 1.25,
+              }}
+            >
               {t('pageTitle')}
             </h1>
-            <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>
+            <p
+              style={{
+                margin: 'var(--space-2) 0 0 0',
+                color: 'rgb(var(--muted))',
+                fontSize: '14px',
+                lineHeight: 1.5,
+              }}
+            >
               {t('pageSubtitle')}
             </p>
           </div>
 
           {/* ── Form card ── */}
-          <div style={cardStyle}>
+          <div
+            style={{
+              padding: isMobile ? 'var(--space-4)' : 'var(--space-6)',
+              border: '1px solid rgb(var(--border))',
+              borderRadius: 'var(--radius)',
+              background: 'rgb(var(--background))',
+              width: '100%',
+              boxSizing: 'border-box',
+              minWidth: 0,
+            }}
+          >
             <h2 style={SECTION_HEADING}>{t('sectionTitle')}</h2>
 
-            {saveError && (
-              <div style={{ ...ERROR_BOX, marginBottom: 'var(--space-4)' }}>{saveError}</div>
-            )}
+            {saveError && <div style={{ ...ERROR_BOX, marginBottom: 'var(--space-4)' }}>{saveError}</div>}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0 }}>
               {/* Name */}
               <div style={FIELD_WRAPPER}>
                 <label htmlFor="tmpl-name" className="label" style={FIELD_LABEL}>
@@ -614,13 +614,7 @@ export default function NewChecklistTemplatePage() {
               </div>
 
               {/* When should this checklist be created? (Type) */}
-              <div
-                style={{
-                  ...FIELD_WRAPPER,
-                  paddingTop: 'var(--space-1)',
-                  paddingBottom: 'var(--space-1)',
-                }}
-              >
+              <div style={FIELD_WRAPPER}>
                 <label htmlFor="tmpl-type" className="label" style={FIELD_LABEL}>
                   {t('fieldWhenCreated')}
                 </label>
@@ -658,7 +652,7 @@ export default function NewChecklistTemplatePage() {
                   type="checkbox"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <label
                   htmlFor="tmpl-active"
@@ -676,7 +670,8 @@ export default function NewChecklistTemplatePage() {
                   flexDirection: isMobile ? 'column' : 'row',
                   alignItems: isMobile ? 'stretch' : 'center',
                   gap: 'var(--space-3)',
-                  paddingTop: 'var(--space-2)',
+                  paddingTop: 'var(--space-3)',
+                  marginTop: 'var(--space-1)',
                   borderTop: '1px solid rgb(var(--border))',
                 }}
               >
@@ -694,16 +689,15 @@ export default function NewChecklistTemplatePage() {
                   style={{
                     textDecoration: 'none',
                     textAlign: 'center',
-                    ...(isMobile ? { width: '100%', boxSizing: 'border-box' } : {}),
+                    boxSizing: 'border-box',
+                    ...(isMobile ? { width: '100%' } : {}),
                   }}
                 >
                   {t('btnCancel')}
                 </Link>
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
     </PageContainer>

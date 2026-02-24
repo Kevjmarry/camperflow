@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import PageContainer from '@/components/PageContainer';
 
 type ChecklistScope = 'all' | 'booking' | 'vehicle';
@@ -37,18 +38,6 @@ interface IssueItem {
   created_at: string;
 }
 
-function getChecklistTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    cleaning: 'Cleaning',
-    pickup: 'Pickup',
-    return: 'Return',
-    guest_prereturn: 'Guest Pre-Return',
-    vehicle_readiness: 'Vehicle Readiness',
-    maintenance: 'Maintenance',
-  };
-  return labels[type] || type;
-}
-
 // ─── Badge style maps ────────────────────────────────────────────────────────
 
 const STATUS_BADGE: Record<string, CSSProperties> = {
@@ -67,12 +56,6 @@ const STATUS_BADGE: Record<string, CSSProperties> = {
     fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap',
     background: '#d1fae5', color: '#065f46',
   },
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  not_started: 'Not Started',
-  in_progress: 'In Progress',
-  completed: 'Completed',
 };
 
 const SEVERITY_BADGE: Record<string, CSSProperties> = {
@@ -151,6 +134,8 @@ export default function ChecklistsPage() {
   const searchParams = useSearchParams();
   const locale = params.locale as string;
 
+  const t = useTranslations('staff.checklistsPage');
+
   const [loading, setLoading] = useState(true);
   const [canManage, setCanManage] = useState<boolean>(false);
   const [bookingChecklists, setBookingChecklists] = useState<ChecklistItem[]>([]);
@@ -160,6 +145,36 @@ export default function ChecklistsPage() {
 
   const [scopeFilter, setScopeFilter] = useState<ChecklistScope>('all');
   const [statusFilter, setStatusFilter] = useState<ChecklistStatus>('all');
+
+  const typeLabel = (type: string): string => {
+    const map: Record<string, string> = {
+      cleaning: t('checklistTypes.cleaning'),
+      pickup: t('checklistTypes.pickup'),
+      return: t('checklistTypes.return'),
+      guest_prereturn: t('checklistTypes.guest_prereturn'),
+      vehicle_readiness: t('checklistTypes.vehicle_readiness'),
+      maintenance: t('checklistTypes.maintenance'),
+    };
+    return map[type] ?? type;
+  };
+
+  const statusLabel = (s: string): string => {
+    const map: Record<string, string> = {
+      not_started: t('status.not_started'),
+      in_progress: t('status.in_progress'),
+      completed: t('status.completed'),
+    };
+    return map[s] ?? s;
+  };
+
+  const severityLabel = (s: string): string => {
+    const map: Record<string, string> = {
+      low: t('severity.low'),
+      medium: t('severity.medium'),
+      high: t('severity.high'),
+    };
+    return map[s] ?? s;
+  };
 
   // Sync filters from URL
   useEffect(() => {
@@ -283,7 +298,7 @@ export default function ChecklistsPage() {
             console.log('CI STATUS RAW', item.id, item.status);
             return {
               id: item.id,
-              name: getChecklistTypeLabel(item.checklist_type),
+              name: item.checklist_type,
               type: item.checklist_type,
               status: item.status,
               booking_number: booking?.booking_number || 'N/A',
@@ -448,7 +463,7 @@ export default function ChecklistsPage() {
       <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>
-            Loading…
+            {t('loading')}
           </div>
         </div>
       </PageContainer>
@@ -464,7 +479,7 @@ export default function ChecklistsPage() {
         onClick={() => router.push(`/${locale}/staff/checklists/${checklist.id}`)}
       >
         <td style={TD}>
-          <span style={{ fontWeight: 500 }}>{checklist.name}</span>
+          <span style={{ fontWeight: 500 }}>{typeLabel(checklist.name)}</span>
         </td>
         <td style={TD}>{checklist.booking_number}</td>
         <td style={TD}>{checklist.customer_name}</td>
@@ -479,7 +494,7 @@ export default function ChecklistsPage() {
         </td>
         <td style={TD}>
           <span style={STATUS_BADGE[checklist.status] ?? STATUS_BADGE.not_started}>
-            {STATUS_LABEL[checklist.status] ?? checklist.status}
+            {statusLabel(checklist.status)}
           </span>
         </td>
       </tr>
@@ -500,13 +515,13 @@ export default function ChecklistsPage() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
           <span style={{ fontWeight: 600, fontSize: '15px' }}>
-            {checklist.name}
+            {typeLabel(checklist.name)}
             <span style={{ fontWeight: 400, fontSize: '13px', color: 'rgb(var(--muted))', marginLeft: 'var(--space-2)' }}>
               #{checklist.booking_number}
             </span>
           </span>
           <span style={STATUS_BADGE[checklist.status] ?? STATUS_BADGE.not_started}>
-            {STATUS_LABEL[checklist.status] ?? checklist.status}
+            {statusLabel(checklist.status)}
           </span>
         </div>
         <div style={{ fontSize: '14px', marginBottom: '2px' }}>{checklist.customer_name}</div>
@@ -537,7 +552,7 @@ export default function ChecklistsPage() {
           <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{issue.vehicle_plate}</div>
         </td>
         <td style={TD}>
-          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{issue.severity}</span>
+          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{severityLabel(issue.severity)}</span>
         </td>
       </tr>
     );
@@ -558,10 +573,10 @@ export default function ChecklistsPage() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
           <span style={{ fontWeight: 600, fontSize: '15px' }}>{issue.name}</span>
-          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{issue.severity}</span>
+          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{severityLabel(issue.severity)}</span>
         </div>
         {issue.booking_number !== 'N/A' && (
-          <div style={{ fontSize: '14px', marginBottom: '2px' }}>Booking #{issue.booking_number}</div>
+          <div style={{ fontSize: '14px', marginBottom: '2px' }}>{t('bookingRef', { number: issue.booking_number })}</div>
         )}
         <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
           {issue.vehicle_name} · {issue.vehicle_plate}
@@ -612,12 +627,12 @@ export default function ChecklistsPage() {
               <table style={TABLE_STYLE}>
                 <thead>
                   <tr>
-                    <th style={TH}>Type</th>
-                    <th style={TH}>Booking</th>
-                    <th style={TH}>Customer</th>
-                    <th style={TH}>Vehicle</th>
-                    <th style={TH}>Dates</th>
-                    <th style={TH}>Status</th>
+                    <th style={TH}>{t('table.type')}</th>
+                    <th style={TH}>{t('table.booking')}</th>
+                    <th style={TH}>{t('table.customer')}</th>
+                    <th style={TH}>{t('table.vehicle')}</th>
+                    <th style={TH}>{t('table.dates')}</th>
+                    <th style={TH}>{t('table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -684,7 +699,7 @@ export default function ChecklistsPage() {
                   marginBottom: 'var(--space-2)',
                 }}
               >
-                ← Back to Dashboard
+                {t('backToDashboard')}
               </Link>
               <h1
                 style={{
@@ -694,7 +709,7 @@ export default function ChecklistsPage() {
                   margin: 0,
                 }}
               >
-                Checklists
+                {t('title')}
               </h1>
               <p
                 style={{
@@ -703,7 +718,7 @@ export default function ChecklistsPage() {
                   fontSize: '14px',
                 }}
               >
-                Manage pickup, return, and cleaning checklists
+                {t('subtitle')}
               </p>
             </div>
 
@@ -712,7 +727,7 @@ export default function ChecklistsPage() {
                 href={`/${locale}/staff/checklists/templates`}
                 className="btn btn-primary"
               >
-                Manage Default Checklists
+                {t('manageTemplates')}
               </Link>
             )}
           </div>
@@ -732,7 +747,7 @@ export default function ChecklistsPage() {
                 htmlFor="scope-filter"
                 style={{ fontSize: '14px', color: 'rgb(var(--muted))', whiteSpace: 'nowrap' }}
               >
-                Scope:
+                {t('filters.scope')}
               </label>
               <select
                 id="scope-filter"
@@ -741,9 +756,9 @@ export default function ChecklistsPage() {
                 value={scopeFilter}
                 onChange={(e) => handleScopeChange(e.target.value as ChecklistScope)}
               >
-                <option value="all">All</option>
-                <option value="booking">Booking</option>
-                <option value="vehicle">Vehicle</option>
+                <option value="all">{t('scope.all')}</option>
+                <option value="booking">{t('scope.booking')}</option>
+                <option value="vehicle">{t('scope.vehicle')}</option>
               </select>
             </div>
 
@@ -752,7 +767,7 @@ export default function ChecklistsPage() {
                 htmlFor="status-filter"
                 style={{ fontSize: '14px', color: 'rgb(var(--muted))', whiteSpace: 'nowrap' }}
               >
-                Status:
+                {t('filters.status')}
               </label>
               <select
                 id="status-filter"
@@ -761,10 +776,10 @@ export default function ChecklistsPage() {
                 value={statusFilter}
                 onChange={(e) => handleStatusChange(e.target.value as ChecklistStatus)}
               >
-                <option value="all">All</option>
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="all">{t('status.all')}</option>
+                <option value="not_started">{t('status.not_started')}</option>
+                <option value="in_progress">{t('status.in_progress')}</option>
+                <option value="completed">{t('status.completed')}</option>
               </select>
             </div>
           </div>
@@ -781,14 +796,14 @@ export default function ChecklistsPage() {
                     fontSize: '14px',
                   }}
                 >
-                  No booking checklists found.
+                  {t('empty.bookingChecklists')}
                 </div>
               ) : (
                 <>
-                  <ChecklistSection title="Not Started" items={notStarted} />
-                  <ChecklistSection title="In Progress"  items={inProgress} />
+                  <ChecklistSection title={t('sections.notStarted')} items={notStarted} />
+                  <ChecklistSection title={t('sections.inProgress')} items={inProgress} />
                   <ChecklistSection
-                    title="Completed"
+                    title={t('sections.completed')}
                     items={completed}
                     collapsible
                     collapsed={completedCollapsed}
@@ -802,7 +817,7 @@ export default function ChecklistsPage() {
           {/* ── Vehicle checklists placeholder ── */}
           {showVehicle && (
             <div>
-              <h2 style={SECTION_HEADING}>Vehicle Checklists</h2>
+              <h2 style={SECTION_HEADING}>{t('sections.vehicleChecklists')}</h2>
               <div
                 style={{
                   padding: 'var(--space-4)',
@@ -813,7 +828,7 @@ export default function ChecklistsPage() {
                 }}
               >
                 <p style={{ margin: 0, color: 'rgb(var(--muted))', fontSize: '14px' }}>
-                  Vehicle readiness checklists are being updated. Check back soon.
+                  {t('empty.vehicleChecklists')}
                 </p>
               </div>
             </div>
@@ -822,17 +837,17 @@ export default function ChecklistsPage() {
           {/* ── Open issues ── */}
           {showIssues && (
             <div>
-              <h2 style={SECTION_HEADING}>Open Issues ({displayOpenIssues.length})</h2>
+              <h2 style={SECTION_HEADING}>{t('sections.openIssues', { count: displayOpenIssues.length })}</h2>
 
               {/* Desktop: <table> */}
               {!isMobile && (
                 <table style={TABLE_STYLE}>
                   <thead>
                     <tr>
-                      <th style={TH}>Issue</th>
-                      <th style={TH}>Booking</th>
-                      <th style={TH}>Vehicle</th>
-                      <th style={TH}>Severity</th>
+                      <th style={TH}>{t('table.issue')}</th>
+                      <th style={TH}>{t('table.booking')}</th>
+                      <th style={TH}>{t('table.vehicle')}</th>
+                      <th style={TH}>{t('table.severity')}</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -33,9 +33,9 @@
     "backToHome": "Back to home",
     "inviteOnly": "Accounts are created by invitation only. Contact your manager.",
     "error": {
-    "accessDenied": "Access denied. This account does not have staff privileges.",
-    "unexpected": "An unexpected error occurred. Please try again.",
-    "accessDeniedError": "Access denied. Your account is not allowed to use staff mode."
+      "accessDenied": "Access denied. This account does not have staff privileges.",
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "accessDeniedError": "Access denied. Your account is not allowed to use staff mode."
     }
   },
   "pageContainer": {
@@ -768,7 +768,23 @@
         "company": {
           "title": "Company Settings",
           "desc": "Branding and appearance"
+        },
+        "checklists": {
+          "title": "Checklists",
+          "desc": "Operational tasks"
         }
+      },
+      "upcomingReturns": {
+        "title": "Upcoming Returns",
+        "viewAll": "View all bookings",
+        "loading": "Loading upcoming returns…",
+        "empty": "No upcoming returns scheduled",
+        "next14Days": "Next 14 Days",
+        "futureReturns": "Future Returns",
+        "returnCount": "{count, plural, one {# return} other {# returns}}",
+        "unassigned": "Unassigned",
+        "today": "Today",
+        "tomorrow": "Tomorrow"
       },
       "quickActions": {
         "title": "Quick actions",
@@ -776,6 +792,63 @@
         "addVehicle": "Add vehicle",
         "nonAdminHint": "Your tasks will appear automatically when assigned to a booking."
       }
+    },
+    "checklistsPage": {
+      "loading": "Loading…",
+      "backToDashboard": "← Back to Dashboard",
+      "title": "Checklists",
+      "subtitle": "Manage pickup, return, and cleaning checklists",
+      "manageTemplates": "Manage Default Checklists",
+      "filters": {
+        "scope": "Scope:",
+        "status": "Status:"
+      },
+      "scope": {
+        "all": "All",
+        "booking": "Booking",
+        "vehicle": "Vehicle"
+      },
+      "status": {
+        "all": "All",
+        "not_started": "Not Started",
+        "in_progress": "In Progress",
+        "completed": "Completed"
+      },
+      "checklistTypes": {
+        "cleaning": "Cleaning",
+        "pickup": "Pickup",
+        "return": "Return",
+        "guest_prereturn": "Guest Pre-Return",
+        "vehicle_readiness": "Vehicle Readiness",
+        "maintenance": "Maintenance"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "table": {
+        "type": "Type",
+        "booking": "Booking",
+        "customer": "Customer",
+        "vehicle": "Vehicle",
+        "dates": "Dates",
+        "status": "Status",
+        "issue": "Issue",
+        "severity": "Severity"
+      },
+      "sections": {
+        "notStarted": "Not Started",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "vehicleChecklists": "Vehicle Checklists",
+        "openIssues": "Open Issues ({count})"
+      },
+      "empty": {
+        "bookingChecklists": "No booking checklists found.",
+        "vehicleChecklists": "Vehicle readiness checklists are being updated. Check back soon."
+      },
+      "bookingRef": "Booking #{number}"
     },
     "bookings": {
       "new": {
@@ -970,98 +1043,94 @@
       "deleteBooking": "Are you sure you want to delete this booking? This cannot be undone."
     }
   },
-"staffTeamMember": {
-  "backToTeam": "← Back to team",
-  "loading": "Loading staff member…",
-  "unnamedStaff": "Unnamed Staff",
-  "inactive": "Inactive",
-  "roleLabel": "Role:",
-  "edit": "Edit",
-  "deactivating": "Deactivating...",
-  "deactivate": "Deactivate staff",
-
-  "delete": "Delete",
-  "deleting": "Deleting...",
-  "deleteConfirm": "Are you sure you want to permanently delete this staff member? This action cannot be undone.",
-  "deleteConfirmLinked": "WARNING: This staff member has a linked account. Deleting this profile will remove their access and may affect login history and associated records.",
-  "deleteNotAllowed": "Only administrators can delete staff members.",
-  "deleteSelfNotAllowed": "You cannot delete your own profile.",
-  "deleteFailed": "Failed to delete staff member. Please try again.",
-
-  "capabilitiesLabel": "Capabilities",
-  "contactLabel": "Contact",
-  "phoneLabel": "Phone:",
-  "emailLabel": "Email:",
-  "notesLabel": "Notes",
-  "confirmDeactivate": "Deactivate this staff member? They will no longer appear as active.",
-  "joiner": " + ",
-  "uploading": "Uploading…",
-  "saving": "Saving...",
-  "save": "Save",
-  "cancel": "Cancel",
-
-  "loginAccess": {
-    "title": "Login access",
-    "loginEnabled": "✓ Login enabled",
-    "noLoginYet": "No login yet",
-    "inviteSent": "Invite sent",
-    "enableLogin": "Enable login / Send invite",
-    "resendAccess": "Resend access",
-    "sending": "Sending…",
-    "recoveryLinkTitle": "Recovery link",
-    "copyLink": "Copy link",
-    "copied": "Copied!"
+  "staffTeamMember": {
+    "backToTeam": "← Back to team",
+    "loading": "Loading staff member…",
+    "unnamedStaff": "Unnamed Staff",
+    "inactive": "Inactive",
+    "roleLabel": "Role:",
+    "edit": "Edit",
+    "deactivating": "Deactivating...",
+    "deactivate": "Deactivate staff",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Are you sure you want to permanently delete this staff member? This action cannot be undone.",
+    "deleteConfirmLinked": "WARNING: This staff member has a linked account. Deleting this profile will remove their access and may affect login history and associated records.",
+    "deleteNotAllowed": "Only administrators can delete staff members.",
+    "deleteSelfNotAllowed": "You cannot delete your own profile.",
+    "deleteFailed": "Failed to delete staff member. Please try again.",
+    "capabilitiesLabel": "Capabilities",
+    "contactLabel": "Contact",
+    "phoneLabel": "Phone:",
+    "emailLabel": "Email:",
+    "notesLabel": "Notes",
+    "confirmDeactivate": "Deactivate this staff member? They will no longer appear as active.",
+    "joiner": " + ",
+    "uploading": "Uploading…",
+    "saving": "Saving...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loginAccess": {
+      "title": "Login access",
+      "loginEnabled": "✓ Login enabled",
+      "noLoginYet": "No login yet",
+      "inviteSent": "Invite sent",
+      "enableLogin": "Enable login / Send invite",
+      "resendAccess": "Resend access",
+      "sending": "Sending…",
+      "recoveryLinkTitle": "Recovery link",
+      "copyLink": "Copy link",
+      "copied": "Copied!"
+    },
+    "types": {
+      "manager": "Manager",
+      "cleaner": "Cleaner",
+      "mechanical": "Mechanical"
+    },
+    "capabilities": {
+      "cleaning": "Cleaning",
+      "mechanical": "Mechanical"
+    },
+    "roles": {
+      "staff": "Staff",
+      "management": "Management"
+    },
+    "fields": {
+      "firstName": "First name *",
+      "lastName": "Last name *",
+      "role": "Role",
+      "canManage": "Can manage (auto-set by role)",
+      "canClean": "Can clean",
+      "canMechanical": "Can mechanical",
+      "phone": "Phone",
+      "email": "Email",
+      "uploadPhoto": "Upload photo",
+      "photoUrl": "Photo URL",
+      "notes": "Notes",
+      "active": "Active"
+    },
+    "errors": {
+      "profileNotFound": "User profile not found",
+      "memberNotFound": "Staff member not found",
+      "loadFailed": "Failed to load staff member",
+      "uploadFailed": "Upload failed",
+      "uploadPhotoFailed": "Failed to upload photo",
+      "nameRequired": "First name and last name are required.",
+      "saveFailed": "Failed to save changes",
+      "deactivateFailed": "Failed to deactivate staff member"
+    },
+    "passwordRequired": "Please enter a new password and confirm it.",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordRecentLoginRequired": "For security reasons, please sign out and sign back in before changing your password.",
+    "passwordUpdateSuccess": "Password updated successfully.",
+    "passwordUpdateFailed": "Failed to update password.",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "reactivate": "Reactivate",
+    "reactivating": "Reactivating...",
+    "reactivateConfirm": "Reactivate this staff member?"
   },
-
-  "types": {
-    "manager": "Manager",
-    "cleaner": "Cleaner",
-    "mechanical": "Mechanical"
-  },
-  "capabilities": {
-    "cleaning": "Cleaning",
-    "mechanical": "Mechanical"
-  },
-  "roles": {
-    "staff": "Staff",
-    "management": "Management"
-  },
-  "fields": {
-    "firstName": "First name *",
-    "lastName": "Last name *",
-    "role": "Role",
-    "canManage": "Can manage (auto-set by role)",
-    "canClean": "Can clean",
-    "canMechanical": "Can mechanical",
-    "phone": "Phone",
-    "email": "Email",
-    "uploadPhoto": "Upload photo",
-    "photoUrl": "Photo URL",
-    "notes": "Notes",
-    "active": "Active"
-  },
-  "errors": {
-    "profileNotFound": "User profile not found",
-    "memberNotFound": "Staff member not found",
-    "loadFailed": "Failed to load staff member",
-    "uploadFailed": "Upload failed",
-    "uploadPhotoFailed": "Failed to upload photo",
-    "nameRequired": "First name and last name are required.",
-    "saveFailed": "Failed to save changes",
-    "deactivateFailed": "Failed to deactivate staff member"
-  },
-  "passwordRequired": "Please enter a new password and confirm it.",
-  "passwordMismatch": "Passwords do not match.",
-  "passwordTooShort": "Password must be at least 6 characters.",
-  "passwordRecentLoginRequired": "For security reasons, please sign out and sign back in before changing your password.",
-  "passwordUpdateSuccess": "Password updated successfully.",
-  "passwordUpdateFailed": "Failed to update password.",
-  "statusActive": "Active",
-  "statusInactive": "Inactive",
-  "reactivate": "Reactivate",
-  "reactivating": "Reactivating...",
-  "reactivateConfirm": "Reactivate this staff member?"
-},
   "staffVehicles": {
     "errors": {
       "notAuthenticated": "Not authenticated",
@@ -1091,197 +1160,195 @@
       "view": "View"
     }
   },
- "staffVehicleEdit": {
-  "title": "Edit vehicle",
-  "backToVehicles": "← Back to vehicles",
-  "loading": "Loading vehicle...",
-  "nameLabel": "Name",
-  "namePlaceholder": "Vehicle name",
-  "registrationPlateLabel": "Registration plate",
-  "registrationPlatePlaceholder": "e.g. AB-123-CD",
-  "makeLabel": "Make",
-  "makePlaceholder": "e.g. Mercedes-Benz",
-  "modelLabel": "Model",
-  "modelPlaceholder": "e.g. Sprinter",
-  "yearLabel": "Year",
-  "yearPlaceholder": "e.g. 2022",
-  "vinLabel": "VIN",
-  "vinPlaceholder": "Vehicle Identification Number",
-  "notesLabel": "Notes",
-  "notesPlaceholder": "Additional notes...",
-  "statusLabel": "Status",
-  "statusReady": "Ready",
-  "statusPreparing": "Preparing",
-  "statusOnRent": "On rent",
-
-  "photoLabel": "Vehicle photo",
-  "photoSelectedPrefix": "Selected",
-  "photoHint": "Upload a photo of the vehicle",
-  "photoUrlLabel": "Photo URL (optional)",
-  "photoUrlPlaceholder": "https://...",
-  "photoUploadFailed": "Failed to upload photo.",
-
-  "saveButton": "Save changes",
-  "saving": "Saving...",
-  "deleteButton": "Delete",
-  "deleting": "Deleting...",
-  "confirmDelete": "Are you sure you want to delete this vehicle? This action cannot be undone.",
-  "notAuthenticated": "You must be logged in to edit vehicles.",
-  "notAllowed": "You don't have permission to edit vehicles.",
-  "vehicleNotFound": "Vehicle not found.",
-  "loadFailed": "Failed to load vehicle.",
-  "saveFailed": "Failed to save changes.",
-  "deleteFailed": "Failed to delete vehicle."
-},
-"staffTeamNew": {
-  "checkingPermissions": "Checking permissions…",
-  "backToTeam": "Back to team",
-  "title": "Add team member",
-  "subtitle": "Create a new staff account for your company.",
-  "accessDenied": {
-    "title": "Access denied",
-    "message": "You don’t have permission to manage the team."
-  },
-  "comingSoon": {
-    "message": "Coming soon",
-    "description": "This screen is ready, but creating team members will be enabled later.",
-    "returnToList": "Return to team list"
-  },
-  "errors": {
-    "profileNotFound": "Staff profile not found.",
-    "nameRequired": "First name and last name are required.",
-    "noCompany": "No company is associated with your account.",
-    "photoUploadFailed": "Photo upload failed.",
-    "createFailed": "Failed to create team member.",
-    "emailRequiredForLogin": "Email is required when login is enabled",
-    "invalidEmail": "Please enter a valid email address",
-    "inviteFailed": "Failed to send login invitation",
-    "duplicateEmail": "A team member with this email already exists."
-  },
-  "form": {
-    "firstName": "First name",
-    "lastName": "Last name",
-    "role": "Role",
-    "roleStaff": "Staff",
-    "roleAdmin": "Admin",
-    "capabilities": "Capabilities",
-    "canClean": "Can clean vehicles",
-    "canMechanical": "Can perform mechanical tasks",
-    "phone": "Phone",
-    "email": "Email",
-    "photo": "Photo",
-    "notes": "Notes",
-    "save": "Save",
-    "saving": "Saving...",
-    "cancel": "Cancel",
-    "enableLogin": "Enable login (send invite)",
-    "enableLoginDescription": "Send an email invitation allowing this person to log in and set their password",
-    "removePhoto": "Remove photo"
-  }
- },
- "guestDashboard": {
-  "title": "My Booking",
-  "subtitle": "Everything you need for your rental.",
-  "summaryCode": "Booking code",
-  "guestAccess": "Guest access",
-  "comingSoon": "Coming soon",
-  "noCodeTitle": "No booking code",
-  "noCodeMessage": "Please use the link provided in your booking confirmation.",
-  "cards": {
-    "bookingDetails": "Booking details",
-    "emergency": "Emergency & assistance",
-    "pickupInfo": "Pickup info",
-    "returnInfo": "Return info",
-    "rulesAndTips": "Rules & tips",
-    "messages": "Messages"
-  }
-},
-"staffCompany": {
-  "navigation": {
-    "backToDashboard": "← Back to dashboard"
-  },
-  "title": "Company Settings",
-  "description": {
-    "admin": "Customize your company branding and appearance",
-    "viewer": "View company branding and appearance"
-  },
-  "sections": {
-    "information": "Company Information",
-    "logo": "Company Logo",
-    "brandColors": "Brand Colors",
-    "preview": "Preview",
-    "emergencyContacts": "Emergency Contacts"
-  },
-  "labels": {
-    "companyName": "Company name",
-    "primaryColor": "Primary color",
-    "secondaryColor": "Secondary color",
-    "accidentNumbers": "Accident",
-    "breakdownNumbers": "Breakdown",
-    "primaryPhone": "Primary number",
-    "secondaryPhone": "Secondary number"
-  },
-  "placeholders": {
-    "companyName": "Your company name",
-    "yourCompany": "Your Company",
-    "phonePlaceholder": "+43 123 456 789"
-  },
-  "helpers": {
-    "logoRequirements": "PNG, JPG, or SVG. Max 2MB. Recommended: 200x80px",
-    "primaryColorUsage": "Used for buttons and links",
-    "secondaryColorUsage": "Used for accents and highlights",
-    "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder."
-  },
-  "actions": {
-    "uploadLogo": "Upload logo",
-    "changeLogo": "Change logo",
-    "saveChanges": "Save changes",
-    "saving": "Saving...",
-    "uploadingLogo": "Uploading logo...",
-    "cancel": "Cancel"
-  },
-  "preview": {
-    "logoAlt": "Logo preview",
-    "logoInHeader": "Logo",
-    "primaryButton": "Primary Button",
-    "secondaryButton": "Secondary Button",
+  "staffVehicleEdit": {
+    "title": "Edit vehicle",
+    "backToVehicles": "← Back to vehicles",
+    "loading": "Loading vehicle...",
+    "nameLabel": "Name",
+    "namePlaceholder": "Vehicle name",
+    "registrationPlateLabel": "Registration plate",
+    "registrationPlatePlaceholder": "e.g. AB-123-CD",
+    "makeLabel": "Make",
+    "makePlaceholder": "e.g. Mercedes-Benz",
+    "modelLabel": "Model",
+    "modelPlaceholder": "e.g. Sprinter",
+    "yearLabel": "Year",
+    "yearPlaceholder": "e.g. 2022",
+    "vinLabel": "VIN",
+    "vinPlaceholder": "Vehicle Identification Number",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Additional notes...",
+    "statusLabel": "Status",
+    "statusReady": "Ready",
+    "statusPreparing": "Preparing",
     "statusOnRent": "On rent",
-    "statusNeedsCleaning": "Needs cleaning"
+    "photoLabel": "Vehicle photo",
+    "photoSelectedPrefix": "Selected",
+    "photoHint": "Upload a photo of the vehicle",
+    "photoUrlLabel": "Photo URL (optional)",
+    "photoUrlPlaceholder": "https://...",
+    "photoUploadFailed": "Failed to upload photo.",
+    "uploading": "Uploading...",
+    "saveButton": "Save changes",
+    "saving": "Saving...",
+    "deleteButton": "Delete",
+    "deleting": "Deleting...",
+    "confirmDelete": "Are you sure you want to delete this vehicle? This action cannot be undone.",
+    "notAuthenticated": "You must be logged in to edit vehicles.",
+    "notAllowed": "You don't have permission to edit vehicles.",
+    "vehicleNotFound": "Vehicle not found.",
+    "loadFailed": "Failed to load vehicle.",
+    "saveFailed": "Failed to save changes.",
+    "deleteFailed": "Failed to delete vehicle."
   },
-  "errors": {
-    "companyNameRequired": "Company name is required",
-    "invalidFileType": "Please select an image file (PNG, JPG, or SVG)",
-    "fileTooLarge": "Logo file must be less than 2MB",
-    "loadFailed": "Failed to load company settings. Please refresh the page.",
-    "uploadLogoFailed": "Failed to upload logo",
-    "saveSettingsFailed": "Failed to save company settings"
+  "staffTeamNew": {
+    "checkingPermissions": "Checking permissions…",
+    "backToTeam": "Back to team",
+    "title": "Add team member",
+    "subtitle": "Create a new staff account for your company.",
+    "accessDenied": {
+      "title": "Access denied",
+      "message": "You don't have permission to manage the team."
+    },
+    "comingSoon": {
+      "message": "Coming soon",
+      "description": "This screen is ready, but creating team members will be enabled later.",
+      "returnToList": "Return to team list"
+    },
+    "errors": {
+      "profileNotFound": "Staff profile not found.",
+      "nameRequired": "First name and last name are required.",
+      "noCompany": "No company is associated with your account.",
+      "photoUploadFailed": "Photo upload failed.",
+      "createFailed": "Failed to create team member.",
+      "emailRequiredForLogin": "Email is required when login is enabled",
+      "invalidEmail": "Please enter a valid email address",
+      "inviteFailed": "Failed to send login invitation",
+      "duplicateEmail": "A team member with this email already exists."
+    },
+    "form": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "role": "Role",
+      "roleStaff": "Staff",
+      "roleAdmin": "Admin",
+      "capabilities": "Capabilities",
+      "canClean": "Can clean vehicles",
+      "canMechanical": "Can perform mechanical tasks",
+      "phone": "Phone",
+      "email": "Email",
+      "photo": "Photo",
+      "notes": "Notes",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "enableLogin": "Enable login (send invite)",
+      "enableLoginDescription": "Send an email invitation allowing this person to log in and set their password",
+      "removePhoto": "Remove photo"
+    }
   },
-  "success": {
-    "saved": "Company settings saved successfully!"
+  "guestDashboard": {
+    "title": "My Booking",
+    "subtitle": "Everything you need for your rental.",
+    "summaryCode": "Booking code",
+    "guestAccess": "Guest access",
+    "comingSoon": "Coming soon",
+    "noCodeTitle": "No booking code",
+    "noCodeMessage": "Please use the link provided in your booking confirmation.",
+    "cards": {
+      "bookingDetails": "Booking details",
+      "emergency": "Emergency & assistance",
+      "pickupInfo": "Pickup info",
+      "returnInfo": "Return info",
+      "rulesAndTips": "Rules & tips",
+      "messages": "Messages"
+    }
   },
-  "loading": "Loading company settings..."
-},
- 
-"guestEmergency": {
-  "noCodeTitle": "No Booking Code",
-  "noCodeMessage": "No booking code was found. Please use the link from your confirmation email.",
-  "back": "Back to dashboard",
-  "title": "Emergency & Assistance",
-  "subtitle": "Available 24 / 7 — help is one call away",
-  "languageNote": "Support is available in English and German (EN / DE). Call us and we will assist you in your preferred language.",
-  "accident": {
-    "title": "Accident",
-    "instructions": "Stay calm and make sure everyone is safe. Move vehicles out of traffic if possible and switch on hazard lights. Call emergency services if there are injuries, then contact us immediately using the numbers below.",
-    "phone1Label": "Primary emergency contact",
-    "phone2Label": "Secondary / after-hours contact"
+  "staffCompany": {
+    "navigation": {
+      "backToDashboard": "← Back to dashboard"
+    },
+    "title": "Company Settings",
+    "description": {
+      "admin": "Customize your company branding and appearance",
+      "viewer": "View company branding and appearance"
+    },
+    "sections": {
+      "information": "Company Information",
+      "logo": "Company Logo",
+      "brandColors": "Brand Colors",
+      "preview": "Preview",
+      "emergencyContacts": "Emergency Contacts"
+    },
+    "labels": {
+      "companyName": "Company name",
+      "primaryColor": "Primary color",
+      "secondaryColor": "Secondary color",
+      "accidentNumbers": "Accident",
+      "breakdownNumbers": "Breakdown",
+      "primaryPhone": "Primary number",
+      "secondaryPhone": "Secondary number"
+    },
+    "placeholders": {
+      "companyName": "Your company name",
+      "yourCompany": "Your Company",
+      "phonePlaceholder": "+43 123 456 789"
+    },
+    "helpers": {
+      "logoRequirements": "PNG, JPG, or SVG. Max 2MB. Recommended: 200x80px",
+      "primaryColorUsage": "Used for buttons and links",
+      "secondaryColorUsage": "Used for accents and highlights",
+      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder."
+    },
+    "actions": {
+      "uploadLogo": "Upload logo",
+      "changeLogo": "Change logo",
+      "saveChanges": "Save changes",
+      "saving": "Saving...",
+      "uploadingLogo": "Uploading logo...",
+      "cancel": "Cancel"
+    },
+    "preview": {
+      "logoAlt": "Logo preview",
+      "logoInHeader": "Logo",
+      "primaryButton": "Primary Button",
+      "secondaryButton": "Secondary Button",
+      "statusOnRent": "On rent",
+      "statusNeedsCleaning": "Needs cleaning"
+    },
+    "errors": {
+      "companyNameRequired": "Company name is required",
+      "invalidFileType": "Please select an image file (PNG, JPG, or SVG)",
+      "fileTooLarge": "Logo file must be less than 2MB",
+      "loadFailed": "Failed to load company settings. Please refresh the page.",
+      "uploadLogoFailed": "Failed to upload logo",
+      "saveSettingsFailed": "Failed to save company settings"
+    },
+    "success": {
+      "saved": "Company settings saved successfully!"
+    },
+    "loading": "Loading company settings..."
   },
-  "breakdown": {
-    "title": "Breakdown",
-    "instructions": "Pull over safely and switch on your hazard lights. Place the warning triangle at least 50 m behind the vehicle. Do not attempt repairs on motorways. Call us and we will coordinate roadside assistance or a replacement vehicle.",
-    "phone1Label": "Roadside assistance hotline",
-    "phone2Label": "After-hours breakdown line"
-  }
-},
+  "guestEmergency": {
+    "noCodeTitle": "No Booking Code",
+    "noCodeMessage": "No booking code was found. Please use the link from your confirmation email.",
+    "back": "Back to dashboard",
+    "title": "Emergency & Assistance",
+    "subtitle": "Available 24 / 7 — help is one call away",
+    "languageNote": "Support is available in English and German (EN / DE). Call us and we will assist you in your preferred language.",
+    "accident": {
+      "title": "Accident",
+      "instructions": "Stay calm and make sure everyone is safe. Move vehicles out of traffic if possible and switch on hazard lights. Call emergency services if there are injuries, then contact us immediately using the numbers below.",
+      "phone1Label": "Primary emergency contact",
+      "phone2Label": "Secondary / after-hours contact"
+    },
+    "breakdown": {
+      "title": "Breakdown",
+      "instructions": "Pull over safely and switch on your hazard lights. Place the warning triangle at least 50 m behind the vehicle. Do not attempt repairs on motorways. Call us and we will coordinate roadside assistance or a replacement vehicle.",
+      "phone1Label": "Roadside assistance hotline",
+      "phone2Label": "After-hours breakdown line"
+    }
+  },
   "staffChecklistsTemplates": {
     "loading": "Loading…",
     "backToChecklists": "← Back to Checklists",
@@ -1334,11 +1401,11 @@
     "sectionVisibleTo": "Visible to",
     "sectionUsedFor": "Used for",
     "vehicleMaintenanceBadge": "🔧 Vehicle Maintenance",
-    "vehicleMaintenanceNote": "— runs outside the booking cycle",
+    "vehicleMaintenanceNote": "Runs outside the booking cycle",
     "swipeHint": "Swipe to see full lifecycle →",
     "pickup": {
       "createdWhen": {
-        "0": "A booking moves to \u201cConfirmed\u201d status",
+        "0": "A booking moves to \"Confirmed\" status",
         "1": "The vehicle is checked out to the guest"
       },
       "visibleTo": {
@@ -1401,6 +1468,87 @@
         "1": "Administrators"
       },
       "usedFor": "Winterising vehicles and recording end-of-season storage preparation."
+    },
+    "lifecycleStages": {
+      "bookingCreated": "Booking Created",
+      "confirmed": "Confirmed",
+      "pickup": "Pickup",
+      "return": "Return",
+      "cleaning": "Cleaning",
+      "ready": "Ready"
     }
+  },
+  "staffChecklistTemplateDetail": {
+    "loading": "Loading…",
+    "backToTemplates": "Back to Templates",
+    "globalErrorFallback": "Template not found.",
+    "notFoundError": "Template not found or you do not have access to it.",
+    "errorNoCompany": "No company associated with this account.",
+    "errorLoadItemsFailed": "Failed to load checklist items.",
+    "legacyTypeLabel": "{type} (legacy)",
+    "errorNameRequired": "Name is required.",
+    "errorSaveFailed": "Failed to save template.",
+    "errorSystemCannotDelete": "System checklist templates cannot be deleted.",
+    "deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
+    "errorDeleteFailed": "Failed to delete template.",
+    "errorItemLabelRequired": "Label is required.",
+    "errorItemSaveFailed": "Failed to save item.",
+    "errorReorderStep1": "Failed to save new order (step 1).",
+    "errorReorderStep2": "Failed to save new order (step 2).",
+    "errorReorderStep3": "Failed to save new order (step 3).",
+    "errorMoveSectionTemp": "Failed to move section (temp step {step}).",
+    "errorMoveSectionAssign": "Failed to move section (assign step).",
+    "sectionDefault": "General",
+    "pageTitle": "Edit Template",
+    "pageSubtitle": "Update the template details or delete it.",
+    "sectionTemplateDetails": "Template Details",
+    "saveSuccess": "Template saved successfully.",
+    "fieldName": "Name",
+    "systemNameHint": "CF default template names cannot be changed.",
+    "fieldAppliesTo": "Applies to",
+    "scopeBookingValue": "Booking — tracks tasks for a specific rental",
+    "scopeVehicleValue": "Vehicle — tracks tasks for a specific van",
+    "scopeReadOnlyHint": "Cannot be changed after creation.",
+    "fieldWhenCreated": "When should this checklist be created?",
+    "systemTypeHint": "CF default template types cannot be changed.",
+    "fieldActive": "Active",
+    "btnSaving": "Saving…",
+    "btnSaveChanges": "Save Changes",
+    "systemCannotDelete": "CF default templates cannot be deleted.",
+    "btnDeleting": "Deleting…",
+    "btnDeleteTemplate": "Delete Template",
+    "desktopTip": "Tip: For faster reordering and bulk edits, use a desktop.",
+    "sectionItems": "Checklist Items",
+    "searchPlaceholder": "Search items…",
+    "searchAriaLabel": "Search checklist items",
+    "filterShowRequired": "Show only required",
+    "btnExpandAll": "Expand all",
+    "btnCollapseAll": "Collapse all",
+    "dismissError": "Dismiss",
+    "loadingItems": "Loading items…",
+    "emptyItems": "No items yet. Add items to this template to get started.",
+    "emptyFiltered": "No items match your filters.",
+    "moveSectionUpTitle": "Move section up",
+    "moveSectionUpAria": "Move section \"{section}\" up",
+    "moveSectionDownTitle": "Move section down",
+    "moveSectionDownAria": "Move section \"{section}\" down",
+    "inputTypeBadgeNumber": "number",
+    "itemRequiredBadge": "req",
+    "btnEdit": "Edit",
+    "itemFieldLabel": "Label",
+    "itemFieldInputType": "Input type",
+    "inputTypeCheckbox": "Checkbox",
+    "inputTypeNumber": "Number",
+    "itemFieldRequired": "Required",
+    "reorderLabel": "Reorder:",
+    "moveItemUpAria": "Move item up",
+    "moveItemDownAria": "Move item down",
+    "reorderSaving": "Saving…",
+    "btnSavingItem": "Saving…",
+    "btnSave": "Save",
+    "btnCancel": "Cancel",
+    "btnAddFirstItem": "+ Add first item",
+    "defaultNewItemLabel": "New item",
+    "errorAddFirstItemFailed": "Failed to add item."
   }
 }

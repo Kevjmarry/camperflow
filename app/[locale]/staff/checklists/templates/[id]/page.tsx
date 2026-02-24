@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
+import { useTranslations } from 'next-intl';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,126 +42,82 @@ interface ItemEditState {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ALL_STANDARD_TYPES: { value: string; label: string }[] = [
-  { value: 'pickup', label: 'Pickup' },
-  { value: 'return', label: 'Return' },
-  { value: 'cleaning', label: 'Cleaning' },
-  { value: 'mechanical', label: 'Mechanical' },
-  { value: 'guest_prereturn', label: 'Guest Pre-Return' },
-  { value: 'vehicle_readiness', label: 'Vehicle Readiness' },
-  { value: 'pre_season', label: 'Pre-Season' },
-  { value: 'post_season', label: 'Post-Season' },
+const ALL_STANDARD_TYPE_VALUES = [
+  'pickup',
+  'return',
+  'cleaning',
+  'mechanical',
+  'guest_prereturn',
+  'vehicle_readiness',
+  'pre_season',
+  'post_season',
 ];
 
-const INPUT_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'checkbox', label: 'Checkbox' },
-  { value: 'number', label: 'Number' },
-];
+// Lifecycle stage keys (locale-neutral identifiers)
+const LIFECYCLE_STAGE_KEYS = [
+  'bookingCreated',
+  'confirmed',
+  'pickup',
+  'return',
+  'cleaning',
+  'ready',
+] as const;
+
+// Maps checklist type → lifecycle stage key (null = vehicle-only, outside booking cycle)
+const TYPE_LIFECYCLE_STAGE_KEY: Record<string, string | null> = {
+  pickup: 'pickup',
+  return: 'return',
+  cleaning: 'cleaning',
+  mechanical: 'cleaning',
+  guest_prereturn: 'return',
+  vehicle_readiness: 'ready',
+  pre_season: null,
+  post_season: null,
+};
 
 function normaliseInputType(raw: string): string {
   return raw === 'number' ? 'number' : 'checkbox';
 }
 
-// ─── Type explanation data ────────────────────────────────────────────────────
-
-interface TypeExplanation {
-  createdWhen: string[];
-  visibleTo: string[];
-  usedFor: string;
-  lifecycleStage: string | null;
-}
-
-const TYPE_EXPLANATIONS: Record<string, TypeExplanation> = {
-  pickup: {
-    createdWhen: [
-      'A booking moves to "Confirmed" status',
-      'The vehicle is checked out to the guest',
-    ],
-    visibleTo: ['Rental staff', 'Administrators'],
-    usedFor: 'Verifying and recording vehicle condition at the start of a rental.',
-    lifecycleStage: 'Pickup',
-  },
-  return: {
-    createdWhen: [
-      'The guest returns the vehicle',
-      'Staff processes the end of a rental',
-    ],
-    visibleTo: ['Rental staff', 'Administrators'],
-    usedFor: 'Checking vehicle condition, fuel level, and mileage on return.',
-    lifecycleStage: 'Return',
-  },
-  cleaning: {
-    createdWhen: [
-      'A return checklist is completed',
-      'A vehicle is marked as needing cleaning',
-    ],
-    visibleTo: ['Cleaning staff', 'Administrators'],
-    usedFor: 'Recording cleaning tasks completed before the vehicle is made ready again.',
-    lifecycleStage: 'Cleaning',
-  },
-  mechanical: {
-    createdWhen: [
-      'A return checklist is completed',
-      'A vehicle is marked as needing cleaning',
-    ],
-    visibleTo: ['Cleaning staff', 'Administrators'],
-    usedFor: 'Recording cleaning tasks completed before the vehicle is made ready again.',
-    lifecycleStage: 'Cleaning',
-  },
-  guest_prereturn: {
-    createdWhen: [
-      'Sent to the guest before the return date',
-      'Triggered automatically based on return schedule',
-    ],
-    visibleTo: ['Guests', 'Rental staff'],
-    usedFor: 'Reminding guests of return requirements and capturing pre-return condition notes.',
-    lifecycleStage: 'Return',
-  },
-  vehicle_readiness: {
-    createdWhen: [
-      'Cleaning is marked complete',
-      'Staff triggers a readiness check before the next booking',
-    ],
-    visibleTo: ['Rental staff', 'Administrators'],
-    usedFor: 'Confirming a vehicle is fully prepared and ready for the next rental.',
-    lifecycleStage: 'Ready',
-  },
-  pre_season: {
-    createdWhen: [
-      'Staff creates it at the start of the rental season',
-      'Triggered by a scheduled season-open workflow',
-    ],
-    visibleTo: ['Mechanical staff', 'Administrators'],
-    usedFor: 'Preparing vehicles for the rental season — safety, compliance, and equipment checks.',
-    lifecycleStage: null,
-  },
-  post_season: {
-    createdWhen: [
-      'Staff creates it at the end of the rental season',
-      'Triggered by a scheduled season-close workflow',
-    ],
-    visibleTo: ['Mechanical staff', 'Administrators'],
-    usedFor: 'Winterising vehicles and recording end-of-season storage preparation.',
-    lifecycleStage: null,
-  },
-};
-
-const LIFECYCLE_STAGES = [
-  'Booking Created',
-  'Confirmed',
-  'Pickup',
-  'Return',
-  'Cleaning',
-  'Ready',
-];
-
 // ─── TypeExplanationPanel ─────────────────────────────────────────────────────
 
 function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
-  const info = TYPE_EXPLANATIONS[selectedType];
-  if (!info) return null;
+  const expT = useTranslations('checklistTypeExplanations');
 
-  const isVehicleOnly = info.lifecycleStage === null;
+  // mechanical reuses cleaning's explanation text
+  const expKey = selectedType === 'mechanical' ? 'cleaning' : selectedType;
+
+  const knownTypes = Object.keys(TYPE_LIFECYCLE_STAGE_KEY);
+  if (!knownTypes.includes(selectedType)) return null;
+
+  function safeGet(key: string): string {
+    try {
+      return expT(key as Parameters<typeof expT>[0]);
+    } catch {
+      return '';
+    }
+  }
+
+  const createdWhen = [
+    safeGet(`${expKey}.createdWhen.0`),
+    safeGet(`${expKey}.createdWhen.1`),
+  ].filter(Boolean);
+
+  const visibleTo = [
+    safeGet(`${expKey}.visibleTo.0`),
+    safeGet(`${expKey}.visibleTo.1`),
+  ].filter(Boolean);
+
+  const usedFor = safeGet(`${expKey}.usedFor`);
+
+  const lifecycleStageKey = TYPE_LIFECYCLE_STAGE_KEY[selectedType];
+  const isVehicleOnly = lifecycleStageKey === null;
+
+  const sectionCreatedWhen = safeGet('sectionCreatedWhen');
+  const sectionVisibleTo = safeGet('sectionVisibleTo');
+  const sectionUsedFor = safeGet('sectionUsedFor');
+  const vehicleMaintenanceBadge = safeGet('vehicleMaintenanceBadge');
+  const vehicleMaintenanceNote = safeGet('vehicleMaintenanceNote');
 
   return (
     <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -177,28 +134,40 @@ function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
           lineHeight: '1.5',
         }}
       >
-        <div>
-          <p style={{ margin: '0 0 var(--space-1) 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Automatically created when
-          </p>
-          <ul style={{ margin: 0, paddingLeft: 'var(--space-4)', color: 'rgb(var(--text))', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {info.createdWhen.map((line, i) => <li key={i}>{line}</li>)}
-          </ul>
-        </div>
-        <div>
-          <p style={{ margin: '0 0 var(--space-1) 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Visible to
-          </p>
-          <ul style={{ margin: 0, paddingLeft: 'var(--space-4)', color: 'rgb(var(--text))', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {info.visibleTo.map((line, i) => <li key={i}>{line}</li>)}
-          </ul>
-        </div>
-        <div>
-          <p style={{ margin: '0 0 2px 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Used for
-          </p>
-          <p style={{ margin: 0, color: 'rgb(var(--text))' }}>{info.usedFor}</p>
-        </div>
+        {createdWhen.length > 0 && (
+          <div>
+            {sectionCreatedWhen && (
+              <p style={{ margin: '0 0 var(--space-1) 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {sectionCreatedWhen}
+              </p>
+            )}
+            <ul style={{ margin: 0, paddingLeft: 'var(--space-4)', color: 'rgb(var(--text))', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {createdWhen.map((line, i) => <li key={i}>{line}</li>)}
+            </ul>
+          </div>
+        )}
+        {visibleTo.length > 0 && (
+          <div>
+            {sectionVisibleTo && (
+              <p style={{ margin: '0 0 var(--space-1) 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {sectionVisibleTo}
+              </p>
+            )}
+            <ul style={{ margin: 0, paddingLeft: 'var(--space-4)', color: 'rgb(var(--text))', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {visibleTo.map((line, i) => <li key={i}>{line}</li>)}
+            </ul>
+          </div>
+        )}
+        {usedFor && (
+          <div>
+            {sectionUsedFor && (
+              <p style={{ margin: '0 0 2px 0', fontWeight: 600, color: 'rgb(var(--text))', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {sectionUsedFor}
+              </p>
+            )}
+            <p style={{ margin: 0, color: 'rgb(var(--text))' }}>{usedFor}</p>
+          </div>
+        )}
       </div>
 
       {isVehicleOnly ? (
@@ -215,21 +184,23 @@ function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
             color: 'rgb(var(--muted))',
           }}
         >
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '3px 10px',
-            borderRadius: '999px',
-            background: 'rgb(var(--brand) / 0.12)',
-            border: '1px solid rgb(var(--brand) / 0.35)',
-            color: 'rgb(var(--brand))',
-            fontWeight: 600,
-            fontSize: '12px',
-          }}>
-            🔧 Vehicle Maintenance
-          </span>
-          <span>— runs outside the booking cycle</span>
+          {vehicleMaintenanceBadge && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '3px 10px',
+              borderRadius: '999px',
+              background: 'rgb(var(--brand) / 0.12)',
+              border: '1px solid rgb(var(--brand) / 0.35)',
+              color: 'rgb(var(--brand))',
+              fontWeight: 600,
+              fontSize: '12px',
+            }}>
+              {vehicleMaintenanceBadge}
+            </span>
+          )}
+          {vehicleMaintenanceNote && <span>- {vehicleMaintenanceNote}</span>}
         </div>
       ) : (
         <div
@@ -243,10 +214,10 @@ function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 'max-content' }}>
-            {LIFECYCLE_STAGES.map((stage, idx) => {
-              const isActive = stage === info.lifecycleStage;
+            {LIFECYCLE_STAGE_KEYS.map((key, idx) => {
+              const isActive = key === lifecycleStageKey;
               return (
-                <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {idx > 0 && (
                     <span style={{ color: 'rgb(var(--muted))', fontSize: '11px', flexShrink: 0, opacity: 0.5 }}>→</span>
                   )}
@@ -264,7 +235,7 @@ function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
                       transition: 'all 0.15s',
                     }}
                   >
-                    {stage}
+                    {safeGet(`lifecycleStages.${key}`)}
                   </span>
                 </div>
               );
@@ -322,7 +293,6 @@ const READ_ONLY_INPUT: CSSProperties = {
 };
 
 // ─── System template detection ────────────────────────────────────────────────
-// Relies solely on the database column. No heuristics.
 
 function isSystemTemplate(template: ChecklistTemplate): boolean {
   return template.is_system === true;
@@ -331,7 +301,7 @@ function isSystemTemplate(template: ChecklistTemplate): boolean {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function sectionKey(item: ChecklistTemplateItem): string {
-  return item.section?.trim() || 'General';
+  return item.section?.trim() || '__general__';
 }
 
 function groupItemsBySection(
@@ -358,6 +328,9 @@ export default function ChecklistTemplateDetailPage() {
   const params = useParams();
   const locale = params.locale as string;
   const id = params.id as string;
+
+  const t = useTranslations('staffChecklistTemplateDetail');
+  const typeT = useTranslations('checklistTypeLabels');
 
   const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
@@ -403,6 +376,9 @@ export default function ChecklistTemplateDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const [addingFirstItem, setAddingFirstItem] = useState(false);
+  const [addFirstItemError, setAddFirstItemError] = useState<string | null>(null);
+
   // ─── Init ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -425,7 +401,7 @@ export default function ChecklistTemplateDetailPage() {
 
       if (profileError || !profile?.company_id) {
         if (!cancelled) {
-          setGlobalError(profileError?.message ?? 'No company associated with this account.');
+          setGlobalError(profileError?.message ?? t('errorNoCompany'));
           setLoading(false);
         }
         return;
@@ -464,7 +440,7 @@ export default function ChecklistTemplateDetailPage() {
       if (cancelled) return;
 
       if (tmplError || !tmpl) {
-        setGlobalError('Template not found or you do not have access to it.');
+        setGlobalError(t('notFoundError'));
         setLoading(false);
         return;
       }
@@ -485,7 +461,7 @@ export default function ChecklistTemplateDetailPage() {
       if (cancelled) return;
 
       if (itemsErr) {
-        setItemsError(itemsErr.message || 'Failed to load checklist items.');
+        setItemsError(itemsErr.message || t('errorLoadItemsFailed'));
       } else {
         const normalised = ((itemsData ?? []) as ChecklistTemplateItem[]).map((i) => ({
           ...i,
@@ -498,7 +474,7 @@ export default function ChecklistTemplateDetailPage() {
 
     init();
     return () => { cancelled = true; };
-  }, [id, locale, router]);
+  }, [id, locale, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -529,11 +505,21 @@ export default function ChecklistTemplateDetailPage() {
 
   const isSystem = template ? isSystemTemplate(template) : false;
 
+  // ─── Type options (translated labels) ─────────────────────────────────────
+
+  const isLegacyType = type && !ALL_STANDARD_TYPE_VALUES.includes(type);
+  const typeOptions = isLegacyType
+    ? [
+        ...ALL_STANDARD_TYPE_VALUES.map((v) => ({ value: v, label: typeT(v as Parameters<typeof typeT>[0]) })),
+        { value: type, label: t('legacyTypeLabel', { type }) },
+      ]
+    : ALL_STANDARD_TYPE_VALUES.map((v) => ({ value: v, label: typeT(v as Parameters<typeof typeT>[0]) }));
+
   // ─── Template save ─────────────────────────────────────────────────────────
 
   async function handleSave() {
     if (!template || !companyId) return;
-    if (!isSystem && !name.trim()) { setSaveError('Name is required.'); return; }
+    if (!isSystem && !name.trim()) { setSaveError(t('errorNameRequired')); return; }
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
@@ -551,7 +537,7 @@ export default function ChecklistTemplateDetailPage() {
       .eq('company_id', companyId);
     setSaving(false);
     if (error) {
-      setSaveError(error.message || 'Failed to save template.');
+      setSaveError(error.message || t('errorSaveFailed'));
     } else {
       setTemplate((prev) =>
         prev
@@ -569,10 +555,10 @@ export default function ChecklistTemplateDetailPage() {
   async function handleDelete() {
     if (!template || !companyId) return;
     if (isSystem) {
-      setDeleteError('System checklist templates cannot be deleted.');
+      setDeleteError(t('errorSystemCannotDelete'));
       return;
     }
-    if (!window.confirm(`Delete "${template.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t('deleteConfirm', { name: template.name }))) return;
     setDeleting(true);
     setDeleteError(null);
     setSaveError(null);
@@ -589,11 +575,53 @@ export default function ChecklistTemplateDetailPage() {
         msg.toLowerCase().includes('system checklist') ||
         msg.toLowerCase().includes('cannot be deleted') ||
         error.code === 'P0001';
-      setDeleteError(isSystemErr ? 'System checklist templates cannot be deleted.' : msg || 'Failed to delete template.');
+      setDeleteError(isSystemErr ? t('errorSystemCannotDelete') : msg || t('errorDeleteFailed'));
       setDeleting(false);
       return;
     }
     router.push(`/${locale}/staff/checklists/templates`);
+  }
+
+  // ─── Add first item ────────────────────────────────────────────────────────
+
+  async function handleAddFirstItem() {
+    if (!template) return;
+    setAddingFirstItem(true);
+    setAddFirstItemError(null);
+
+    const supabase = createClient();
+
+    // Determine the next sort_order (0 when no items exist, max+1 otherwise)
+    const nextSortOrder =
+      items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
+
+    // Insert using only the columns that exist on checklist_template_items
+    const { data, error: insertError } = await supabase
+      .from('checklist_template_items')
+      .insert({
+        template_id: template.id,
+        label: t('defaultNewItemLabel'),
+        section: t('sectionDefault'),
+        input_type: 'checkbox',
+        required: false,
+        sort_order: nextSortOrder,
+      })
+      .select('id, template_id, label, section, sort_order, required, input_type')
+      .single();
+
+    setAddingFirstItem(false);
+
+    if (insertError || !data) {
+      setAddFirstItemError(insertError?.message || t('errorAddFirstItemFailed'));
+      return;
+    }
+
+    const newItem: ChecklistTemplateItem = {
+      ...(data as ChecklistTemplateItem),
+      input_type: normaliseInputType((data as ChecklistTemplateItem).input_type),
+    };
+
+    setItems((prev) => [...prev, newItem]);
   }
 
   // ─── Inline edit ───────────────────────────────────────────────────────────
@@ -641,7 +669,7 @@ export default function ChecklistTemplateDetailPage() {
     const draft = itemEditStates.get(item.id);
     if (!draft) return;
     if (!draft.label.trim()) {
-      setItemEditStates((states) => new Map(states).set(item.id, { ...draft, error: 'Label is required.' }));
+      setItemEditStates((states) => new Map(states).set(item.id, { ...draft, error: t('errorItemLabelRequired') }));
       return;
     }
     setItemEditStates((states) => new Map(states).set(item.id, { ...draft, saving: true, error: null }));
@@ -652,7 +680,7 @@ export default function ChecklistTemplateDetailPage() {
       .eq('id', item.id)
       .eq('template_id', item.template_id);
     if (error) {
-      setItemEditStates((states) => new Map(states).set(item.id, { ...draft, saving: false, error: error.message || 'Failed to save item.' }));
+      setItemEditStates((states) => new Map(states).set(item.id, { ...draft, saving: false, error: error.message || t('errorItemSaveFailed') }));
     } else {
       setItems((prev) =>
         prev.map((i) => i.id === item.id ? { ...i, label: draft.label.trim(), required: draft.required, input_type: draft.input_type } : i),
@@ -700,16 +728,16 @@ export default function ChecklistTemplateDetailPage() {
     let persistError: string | null = null;
     const r1 = await supabase.from('checklist_template_items').update({ sort_order: tempOrder }).eq('id', current.id).eq('template_id', templateId);
     if (r1.error) {
-      persistError = r1.error.message || 'Failed to save new order (step 1).';
+      persistError = r1.error.message || t('errorReorderStep1');
     } else {
       const r2 = await supabase.from('checklist_template_items').update({ sort_order: finalNeighborOrder }).eq('id', neighbor.id).eq('template_id', templateId);
       if (r2.error) {
-        persistError = r2.error.message || 'Failed to save new order (step 2).';
+        persistError = r2.error.message || t('errorReorderStep2');
         await supabase.from('checklist_template_items').update({ sort_order: origCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
       } else {
         const r3 = await supabase.from('checklist_template_items').update({ sort_order: finalCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
         if (r3.error) {
-          persistError = r3.error.message || 'Failed to save new order (step 3).';
+          persistError = r3.error.message || t('errorReorderStep3');
           await supabase.from('checklist_template_items').update({ sort_order: origCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
           await supabase.from('checklist_template_items').update({ sort_order: origNeighborOrder }).eq('id', neighbor.id).eq('template_id', templateId);
         }
@@ -759,12 +787,12 @@ export default function ChecklistTemplateDetailPage() {
       const itemId = affectedIds[k];
       const tempVal = tempBase + k * 1_000 + Math.floor(Math.random() * 999);
       const { error } = await supabase.from('checklist_template_items').update({ sort_order: tempVal }).eq('id', itemId).eq('template_id', templateId);
-      if (error) { phaseError = error.message || `Failed to move section (temp step ${k + 1}).`; break; }
+      if (error) { phaseError = error.message || t('errorMoveSectionTemp', { step: k + 1 }); break; }
     }
     if (!phaseError) {
       for (const [itemId, newOrder] of updateMap) {
         const { error } = await supabase.from('checklist_template_items').update({ sort_order: newOrder }).eq('id', itemId).eq('template_id', templateId);
-        if (error) { phaseError = error.message || 'Failed to move section (assign step).'; break; }
+        if (error) { phaseError = error.message || t('errorMoveSectionAssign'); break; }
       }
     }
     setMovingSection(false);
@@ -790,11 +818,6 @@ export default function ChecklistTemplateDetailPage() {
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
-  const isLegacyType = type && !ALL_STANDARD_TYPES.some((o) => o.value === type);
-  const typeOptions = isLegacyType
-    ? [...ALL_STANDARD_TYPES, { value: type, label: `${type} (legacy)` }]
-    : ALL_STANDARD_TYPES;
-
   const allGrouped = groupItemsBySection(items);
   const sectionOrder = allGrouped.map((g) => g.section);
 
@@ -814,13 +837,18 @@ export default function ChecklistTemplateDetailPage() {
     }))
     .filter((g) => g.items.length > 0);
 
+  // Translate the internal '__general__' sentinel to a localised display label
+  function displaySection(section: string): string {
+    return section === '__general__' ? t('sectionDefault') : section;
+  }
+
   // ─── Early returns ─────────────────────────────────────────────────────────
 
   if (loading) {
     return (
       <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
-          <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>Loading…</div>
+          <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>{t('loading')}</div>
         </div>
       </PageContainer>
     );
@@ -831,9 +859,9 @@ export default function ChecklistTemplateDetailPage() {
       <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-4)' }}>
-            ← Back to Templates
+            ← {t('backToTemplates')}
           </Link>
-          <div style={ERROR_BOX}>{globalError ?? 'Template not found.'}</div>
+          <div style={ERROR_BOX}>{globalError ?? t('globalErrorFallback')}</div>
         </div>
       </PageContainer>
     );
@@ -866,10 +894,10 @@ export default function ChecklistTemplateDetailPage() {
             {/* ── Page header ── */}
             <div>
               <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-2)' }}>
-                ← Back to Templates
+                ← {t('backToTemplates')}
               </Link>
-              <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>Edit Template</h1>
-              <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>Update the template details or delete it.</p>
+              <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
+              <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('pageSubtitle')}</p>
             </div>
 
             {/* ── Two-column (stacks on mobile) ── */}
@@ -883,9 +911,9 @@ export default function ChecklistTemplateDetailPage() {
             >
               {/* ── Left: Template form ── */}
               <div style={{ padding: 'var(--space-5)', border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', background: 'rgb(var(--background))' }}>
-                <h2 style={SECTION_HEADING}>Template Details</h2>
+                <h2 style={SECTION_HEADING}>{t('sectionTemplateDetails')}</h2>
 
-                {saveSuccess && <div style={{ ...SUCCESS_BOX, marginBottom: 'var(--space-4)' }}>Template saved successfully.</div>}
+                {saveSuccess && <div style={{ ...SUCCESS_BOX, marginBottom: 'var(--space-4)' }}>{t('saveSuccess')}</div>}
                 {saveError && <div style={{ ...ERROR_BOX, marginBottom: 'var(--space-4)' }}>{saveError}</div>}
                 {deleteError && <div style={{ ...ERROR_BOX, marginBottom: 'var(--space-4)' }}>{deleteError}</div>}
 
@@ -894,7 +922,7 @@ export default function ChecklistTemplateDetailPage() {
                   {/* Name */}
                   <div style={FIELD_WRAPPER}>
                     <label htmlFor="tmpl-name" className="label" style={FIELD_LABEL}>
-                      Name <span style={{ color: 'rgb(var(--error))' }}>*</span>
+                      {t('fieldName')} <span style={{ color: 'rgb(var(--error))' }}>*</span>
                     </label>
                     <input
                       id="tmpl-name"
@@ -908,32 +936,32 @@ export default function ChecklistTemplateDetailPage() {
                     />
                     {isSystem && (
                       <span style={{ marginTop: 'var(--space-1)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                        CF default template names cannot be changed.
+                        {t('systemNameHint')}
                       </span>
                     )}
                   </div>
 
                   {/* Applies to (Scope — always read-only) */}
                   <div style={FIELD_WRAPPER}>
-                    <label htmlFor="tmpl-scope" className="label" style={FIELD_LABEL}>Applies to</label>
+                    <label htmlFor="tmpl-scope" className="label" style={FIELD_LABEL}>{t('fieldAppliesTo')}</label>
                     <input
                       id="tmpl-scope"
                       className="input"
                       type="text"
-                      value={template.scope === 'booking' ? 'Booking — tracks tasks for a specific rental' : 'Vehicle — tracks tasks for a specific van'}
+                      value={template.scope === 'booking' ? t('scopeBookingValue') : t('scopeVehicleValue')}
                       readOnly
                       style={READ_ONLY_INPUT}
                       tabIndex={-1}
                     />
                     <span style={{ marginTop: 'var(--space-1)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      Cannot be changed after creation.
+                      {t('scopeReadOnlyHint')}
                     </span>
                   </div>
 
                   {/* When should this checklist be created? (Type) */}
                   <div style={FIELD_WRAPPER}>
                     <label htmlFor="tmpl-type" className="label" style={FIELD_LABEL}>
-                      When should this checklist be created?
+                      {t('fieldWhenCreated')}
                     </label>
                     {isSystem ? (
                       <input
@@ -959,7 +987,7 @@ export default function ChecklistTemplateDetailPage() {
                     )}
                     {isSystem && (
                       <span style={{ marginTop: 'var(--space-1)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                        CF default template types cannot be changed.
+                        {t('systemTypeHint')}
                       </span>
                     )}
                     <TypeExplanationPanel selectedType={type} />
@@ -974,7 +1002,7 @@ export default function ChecklistTemplateDetailPage() {
                       onChange={(e) => { setActive(e.target.checked); setSaveSuccess(false); }}
                       style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                     />
-                    <label htmlFor="tmpl-active" className="label" style={{ fontSize: '13px', cursor: 'pointer', margin: 0 }}>Active</label>
+                    <label htmlFor="tmpl-active" className="label" style={{ fontSize: '13px', cursor: 'pointer', margin: 0 }}>{t('fieldActive')}</label>
                   </div>
 
                   {/* Actions */}
@@ -990,11 +1018,11 @@ export default function ChecklistTemplateDetailPage() {
                     }}
                   >
                     <button className="btn btn-primary" onClick={handleSave} disabled={saving || deleting}>
-                      {saving ? 'Saving…' : 'Save Changes'}
+                      {saving ? t('btnSaving') : t('btnSaveChanges')}
                     </button>
                     {isSystem ? (
                       <span style={{ fontSize: '13px', color: 'rgb(var(--muted))', fontStyle: 'italic' }}>
-                        CF default templates cannot be deleted.
+                        {t('systemCannotDelete')}
                       </span>
                     ) : (
                       <button
@@ -1003,14 +1031,14 @@ export default function ChecklistTemplateDetailPage() {
                         disabled={saving || deleting}
                         style={{ color: 'rgb(var(--error))', borderColor: 'rgb(var(--error) / 0.4)' }}
                       >
-                        {deleting ? 'Deleting…' : 'Delete Template'}
+                        {deleting ? t('btnDeleting') : t('btnDeleteTemplate')}
                       </button>
                     )}
                   </div>
 
                   {!isDesktop && (
                     <p style={{ margin: 0, fontSize: '12px', color: 'rgb(var(--muted))', fontStyle: 'italic' }}>
-                      Tip: For faster reordering and bulk edits, use a desktop.
+                      {t('desktopTip')}
                     </p>
                   )}
                 </div>
@@ -1029,7 +1057,7 @@ export default function ChecklistTemplateDetailPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                    <h2 style={{ ...SECTION_HEADING, margin: 0 }}>Checklist Items</h2>
+                    <h2 style={{ ...SECTION_HEADING, margin: 0 }}>{t('sectionItems')}</h2>
                     {!itemsLoading && !itemsError && (
                       <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{filteredItems.length}/{items.length}</span>
                     )}
@@ -1037,11 +1065,11 @@ export default function ChecklistTemplateDetailPage() {
                   <input
                     className="input"
                     type="search"
-                    placeholder="Search items…"
+                    placeholder={t('searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ fontSize: '14px' }}
-                    aria-label="Search checklist items"
+                    aria-label={t('searchAriaLabel')}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '13px', color: 'rgb(var(--muted))', cursor: 'pointer' }}>
@@ -1051,7 +1079,7 @@ export default function ChecklistTemplateDetailPage() {
                         onChange={(e) => setShowOnlyRequired(e.target.checked)}
                         style={{ width: '14px', height: '14px', cursor: 'pointer' }}
                       />
-                      Show only required
+                      {t('filterShowRequired')}
                     </label>
                     {!itemsLoading && groupedItems.length > 1 && (
                       <button
@@ -1062,7 +1090,7 @@ export default function ChecklistTemplateDetailPage() {
                           setCollapsedSections(allCollapsed ? new Set() : new Set(allSections));
                         }}
                       >
-                        {groupedItems.every((g) => collapsedSections.has(g.section)) ? 'Expand all' : 'Collapse all'}
+                        {groupedItems.every((g) => collapsedSections.has(g.section)) ? t('btnExpandAll') : t('btnCollapseAll')}
                       </button>
                     )}
                   </div>
@@ -1070,7 +1098,7 @@ export default function ChecklistTemplateDetailPage() {
                     <div style={{ ...ERROR_BOX, marginTop: 0 }}>
                       {sectionMoveError}
                       <button onClick={() => setSectionMoveError(null)} style={{ marginLeft: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '12px', textDecoration: 'underline', padding: 0 }}>
-                        Dismiss
+                        {t('dismissError')}
                       </button>
                     </div>
                   )}
@@ -1078,16 +1106,39 @@ export default function ChecklistTemplateDetailPage() {
 
                 {/* Body */}
                 <div style={{ padding: 'var(--space-4) var(--space-5)', flex: 1, overflowY: 'auto' }}>
-                  {itemsLoading && <div style={{ padding: 'var(--space-6) 0', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px' }}>Loading items…</div>}
+                  {itemsLoading && <div style={{ padding: 'var(--space-6) 0', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('loadingItems')}</div>}
                   {!itemsLoading && itemsError && <div style={ERROR_BOX}>{itemsError}</div>}
                   {!itemsLoading && !itemsError && items.length === 0 && (
-                    <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>
-                      No items yet. Add items to this template to get started.
+                    <div
+                      style={{
+                        padding: 'var(--space-6)',
+                        textAlign: 'center',
+                        color: 'rgb(var(--muted))',
+                        fontSize: '14px',
+                        border: '1px dashed rgb(var(--border))',
+                        borderRadius: 'var(--radius)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 'var(--space-4)',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>{t('emptyItems')}</span>
+                      {addFirstItemError && (
+                        <div style={{ ...ERROR_BOX, width: '100%', textAlign: 'left' }}>{addFirstItemError}</div>
+                      )}
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleAddFirstItem}
+                        disabled={addingFirstItem}
+                      >
+                        {addingFirstItem ? t('btnSaving') : t('btnAddFirstItem')}
+                      </button>
                     </div>
                   )}
                   {!itemsLoading && !itemsError && items.length > 0 && filteredItems.length === 0 && (
                     <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>
-                      No items match your filters.
+                      {t('emptyFiltered')}
                     </div>
                   )}
 
@@ -1098,6 +1149,7 @@ export default function ChecklistTemplateDetailPage() {
                         const isFirstSection = groupIdx === 0;
                         const isLastSection = groupIdx === groupedItems.length - 1;
                         const fullSectionItems = items.filter((i) => sectionKey(i) === section).sort((a, b) => a.sort_order - b.sort_order);
+                        const sectionLabel = displaySection(section);
 
                         return (
                           <div key={section} style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
@@ -1108,14 +1160,27 @@ export default function ChecklistTemplateDetailPage() {
                                 aria-expanded={!isCollapsed}
                                 style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', minWidth: 0 }}
                               >
-                                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--text))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{section}</span>
+                                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--text))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel}</span>
                                 <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.1)', color: 'rgb(var(--brand))', fontWeight: 600, flexShrink: 0 }}>{sectionItems.length}</span>
                                 <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0, display: 'inline-block', transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', marginLeft: 'auto' }}>▾</span>
                               </button>
                               {isDesktop && allGrouped.length > 1 && !searchQuery.trim() && !showOnlyRequired && (
                                 <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, borderLeft: '1px solid rgb(var(--border))' }}>
-                                  <button className="sec-move-btn" onClick={() => handleMoveSection(section, 'up')} disabled={isFirstSection || movingSection || reordering} title="Move section up" aria-label={`Move section "${section}" up`} style={{ borderBottom: '1px solid rgb(var(--border))' }}>▴</button>
-                                  <button className="sec-move-btn" onClick={() => handleMoveSection(section, 'down')} disabled={isLastSection || movingSection || reordering} title="Move section down" aria-label={`Move section "${section}" down`}>▾</button>
+                                  <button
+                                    className="sec-move-btn"
+                                    onClick={() => handleMoveSection(section, 'up')}
+                                    disabled={isFirstSection || movingSection || reordering}
+                                    title={t('moveSectionUpTitle')}
+                                    aria-label={t('moveSectionUpAria', { section: sectionLabel })}
+                                    style={{ borderBottom: '1px solid rgb(var(--border))' }}
+                                  >▴</button>
+                                  <button
+                                    className="sec-move-btn"
+                                    onClick={() => handleMoveSection(section, 'down')}
+                                    disabled={isLastSection || movingSection || reordering}
+                                    title={t('moveSectionDownTitle')}
+                                    aria-label={t('moveSectionDownAria', { section: sectionLabel })}
+                                  >▾</button>
                                 </div>
                               )}
                             </div>
@@ -1148,10 +1213,18 @@ export default function ChecklistTemplateDetailPage() {
                                           </span>
                                           <span style={{ flex: 1, fontSize: '14px', color: 'rgb(var(--text))', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexShrink: 0 }}>
-                                            {item.input_type === 'number' && <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>number</span>}
-                                            {item.required && <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--error) / 0.08)', color: 'rgb(var(--error))', fontWeight: 500, whiteSpace: 'nowrap' }}>req</span>}
+                                            {item.input_type === 'number' && (
+                                              <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                                {t('inputTypeBadgeNumber')}
+                                              </span>
+                                            )}
+                                            {item.required && (
+                                              <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--error) / 0.08)', color: 'rgb(var(--error))', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                                {t('itemRequiredBadge')}
+                                              </span>
+                                            )}
                                           </div>
-                                          <button className="btn btn-secondary" onClick={() => startEditing(item)} style={{ flexShrink: 0, fontSize: '12px', padding: '4px 10px', height: '28px' }}>Edit</button>
+                                          <button className="btn btn-secondary" onClick={() => startEditing(item)} style={{ flexShrink: 0, fontSize: '12px', padding: '4px 10px', height: '28px' }}>{t('btnEdit')}</button>
                                         </div>
                                       )}
 
@@ -1160,7 +1233,7 @@ export default function ChecklistTemplateDetailPage() {
                                         <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                                           <div style={FIELD_WRAPPER}>
                                             <label htmlFor={`item-label-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>
-                                              Label <span style={{ color: 'rgb(var(--error))' }}>*</span>
+                                              {t('itemFieldLabel')} <span style={{ color: 'rgb(var(--error))' }}>*</span>
                                             </label>
                                             <input
                                               id={`item-label-${item.id}`}
@@ -1176,29 +1249,37 @@ export default function ChecklistTemplateDetailPage() {
                                           </div>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                             <div style={{ ...FIELD_WRAPPER, flex: '1 1 120px', minWidth: 0 }}>
-                                              <label htmlFor={`item-inputtype-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>Input type</label>
-                                              <select id={`item-inputtype-${item.id}`} className="input" value={editState.input_type} onChange={(e) => updateEditField(item.id, 'input_type', e.target.value)} disabled={editState.saving || reordering} style={{ fontSize: '14px' }}>
-                                                {INPUT_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                              <label htmlFor={`item-inputtype-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>{t('itemFieldInputType')}</label>
+                                              <select
+                                                id={`item-inputtype-${item.id}`}
+                                                className="input"
+                                                value={editState.input_type}
+                                                onChange={(e) => updateEditField(item.id, 'input_type', e.target.value)}
+                                                disabled={editState.saving || reordering}
+                                                style={{ fontSize: '14px' }}
+                                              >
+                                                <option value="checkbox">{t('inputTypeCheckbox')}</option>
+                                                <option value="number">{t('inputTypeNumber')}</option>
                                               </select>
                                             </div>
                                             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '13px', cursor: editState.saving ? 'not-allowed' : 'pointer', paddingTop: '18px', flexShrink: 0 }}>
                                               <input type="checkbox" checked={editState.required} onChange={(e) => updateEditField(item.id, 'required', e.target.checked)} disabled={editState.saving || reordering} style={{ width: '15px', height: '15px', cursor: editState.saving ? 'not-allowed' : 'pointer' }} />
-                                              Required
+                                              {t('itemFieldRequired')}
                                             </label>
                                           </div>
                                           {isDesktop && fullSectionItems.length > 1 && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                              <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>Reorder:</span>
-                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'up')} disabled={isFirstInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label="Move item up">↑</button>
-                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'down')} disabled={isLastInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label="Move item down">↓</button>
-                                              {reordering && <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>Saving…</span>}
+                                              <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>{t('reorderLabel')}</span>
+                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'up')} disabled={isFirstInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label={t('moveItemUpAria')}>↑</button>
+                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'down')} disabled={isLastInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label={t('moveItemDownAria')}>↓</button>
+                                              {reordering && <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t('reorderSaving')}</span>}
                                             </div>
                                           )}
                                           {reorderError && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{reorderError}</div>}
                                           {editState.error && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{editState.error}</div>}
                                           <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                            <button className="btn btn-primary" onClick={() => handleSaveItem(item)} disabled={editState.saving || reordering} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{editState.saving ? 'Saving…' : 'Save'}</button>
-                                            <button className="btn btn-secondary" onClick={cancelEditing} disabled={editState.saving} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>Cancel</button>
+                                            <button className="btn btn-primary" onClick={() => handleSaveItem(item)} disabled={editState.saving || reordering} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{editState.saving ? t('btnSavingItem') : t('btnSave')}</button>
+                                            <button className="btn btn-secondary" onClick={cancelEditing} disabled={editState.saving} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{t('btnCancel')}</button>
                                           </div>
                                         </div>
                                       )}
