@@ -43,7 +43,7 @@ interface ChecklistInstance {
   id: string;
   checklist_type: 'handover' | 'return';
   status: 'pending' | 'in_progress' | 'completed';
-  template: { name: string | null; title: string | null }[] | null;
+  template: { id: string; name: string | null; title: string | null; type: string | null; scope: string | null } | null;
 }
 
 const ACTIVE_BOOKING_STATUSES = ['draft', 'confirmed', 'blocked', 'on_rent'] as const;
@@ -237,31 +237,35 @@ export default function BookingDetailPage() {
     }
   };
 
-const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('checklist_instances')
-      .select(`
-        id,
-        checklist_type,
-        status,
-        template:checklist_templates (
-          name,
-          title
-        )
-      `)
-      .eq('booking_id', id)
-      .order('checklist_type');
+  const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('checklist_instances')
+        .select(`
+          id,
+          checklist_type,
+          status,
+          template_id,
+          template:checklist_templates!checklist_instances_template_id_fkey (
+            id,
+            name,
+            title,
+            type,
+            scope
+          )
+        `)
+        .eq('booking_id', id)
+        .order('checklist_type');
 
-    if (error) throw error;
-    const instances = data || [];
-    setChecklistInstances(instances);
-    return instances;
-  } catch (err: any) {
-    console.error('Failed to fetch checklist instances:', err);
-    return checklistInstances;
-  }
-};
+      if (error) throw error;
+      const instances = (data || []) as unknown as ChecklistInstance[];
+      setChecklistInstances(instances);
+      return instances;
+    } catch (err: any) {
+      console.error('Failed to fetch checklist instances:', err);
+      return checklistInstances;
+    }
+  };
 
   const checkVehicleAvailability = async () => {
     if (!formData.vehicle_id || !formData.pickup_at || !formData.return_at) {
@@ -457,14 +461,14 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
   };
 
   const getChecklistStatusLabel = (
-  status: 'pending' | 'in_progress' | 'completed'
-) => {
-  switch (status) {
-    case 'pending': return t("checklists.status.notStarted");
-    case 'in_progress': return t("checklists.status.inProgress");
-    case 'completed': return t("checklists.status.completed");
-  }
-};
+    status: 'pending' | 'in_progress' | 'completed'
+  ) => {
+    switch (status) {
+      case 'pending': return t("checklists.status.notStarted");
+      case 'in_progress': return t("checklists.status.inProgress");
+      case 'completed': return t("checklists.status.completed");
+    }
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString(locale, {
@@ -489,7 +493,7 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
 
   if (notFound) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
           <h1 style={{ fontSize: '24px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
             {t("notFound.title")}
@@ -507,7 +511,7 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
           <p style={{ color: 'rgb(var(--muted))' }}>{t("loading")}</p>
         </div>
@@ -517,7 +521,7 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
 
   if (error && !booking && !redactedBooking) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{
             padding: 'var(--space-4)',
@@ -540,7 +544,7 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
 
   if (!canManage && redactedBooking) {
     return (
-      <PageContainer maxWidth="900px">
+      <PageContainer maxWidth="1200px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div>
@@ -677,9 +681,9 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
                           color: 'rgb(var(--text))',
                           marginBottom: 'var(--space-1)'
                         }}>
-                          {instance.template?.[0]?.name ||
-                           instance.template?.[0]?.title ||
-                           `${instance.checklist_type} ${t("checklists.checklistSuffix")}`}
+                          {instance.template?.name ||
+                           instance.template?.title ||
+                           `${instance.checklist_type.charAt(0).toUpperCase() + instance.checklist_type.slice(1)} ${t("checklists.checklistSuffix")}`}
                         </div>
                         <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                           {getChecklistStatusLabel(instance.status)}
@@ -710,7 +714,7 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
   if (!booking) return null;
 
   return (
-    <PageContainer maxWidth="800px">
+    <PageContainer maxWidth="1200px">
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div>
@@ -1014,9 +1018,9 @@ const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
                         color: 'rgb(var(--text))',
                         marginBottom: 'var(--space-1)'
                       }}>
-                        {instance.template?.[0]?.name ||
-                         instance.template?.[0]?.title ||
-                         `${instance.checklist_type} ${t("checklists.checklistSuffix")}`}
+                        {instance.template?.name ||
+                         instance.template?.title ||
+                         `${instance.checklist_type.charAt(0).toUpperCase() + instance.checklist_type.slice(1)} ${t("checklists.checklistSuffix")}`}
                       </div>
                       <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                         {getChecklistStatusLabel(instance.status)}

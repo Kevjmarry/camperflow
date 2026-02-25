@@ -37,6 +37,7 @@ export default function PageContainer({
     >
       <div
         style={{
+          width: '100%',
           maxWidth,
           margin: '0 auto',
           padding: 'var(--space-4)',
@@ -49,6 +50,8 @@ export default function PageContainer({
               alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: 'var(--space-6)',
+              flexWrap: 'wrap',
+              gap: 'var(--space-3)',
             }}
           >
             {title && (
@@ -57,19 +60,14 @@ export default function PageContainer({
                   fontSize: '1.5rem',
                   fontWeight: '600',
                   color: 'rgb(var(--text))',
+                  margin: 0,
                 }}
               >
                 {title}
               </h1>
             )}
             {showSignOut && (
-              <button
-                onClick={handleSignOut}
-                className="btn btn-secondary"
-                style={{
-                  marginLeft: 'auto',
-                }}
-              >
+              <button onClick={handleSignOut} className="btn btn-secondary">
                 {t('signOut')}
               </button>
             )}
