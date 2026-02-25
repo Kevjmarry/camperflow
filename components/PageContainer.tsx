@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 
@@ -15,16 +15,18 @@ interface PageContainerProps {
 export default function PageContainer({
   children,
   title,
-  maxWidth = '1200px',
+  maxWidth = '1400px',
   showSignOut = true,
 }: PageContainerProps) {
   const router = useRouter()
+  const params = useParams()
   const t = useTranslations('pageContainer')
 
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/')
+    const locale = params.locale as string
+    router.push(`/${locale}`)
   }
 
   return (
@@ -54,7 +56,7 @@ export default function PageContainer({
               gap: 'var(--space-3)',
             }}
           >
-            {title && (
+            {title ? (
               <h1
                 style={{
                   fontSize: '1.5rem',
@@ -65,7 +67,10 @@ export default function PageContainer({
               >
                 {title}
               </h1>
+            ) : (
+              <div />
             )}
+
             {showSignOut && (
               <button onClick={handleSignOut} className="btn btn-secondary">
                 {t('signOut')}
@@ -73,6 +78,7 @@ export default function PageContainer({
             )}
           </div>
         )}
+
         {children}
       </div>
     </div>

@@ -563,22 +563,24 @@ export default function ChecklistTemplateDetailPage() {
     setDeleteError(null);
     setSaveError(null);
     setSaveSuccess(false);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('checklist_templates')
-      .delete()
-      .eq('id', template.id)
-      .eq('company_id', companyId);
-    if (error) {
-      const msg = error.message ?? '';
-      const isSystemErr =
-        msg.toLowerCase().includes('system checklist') ||
-        msg.toLowerCase().includes('cannot be deleted') ||
-        error.code === 'P0001';
-      setDeleteError(isSystemErr ? t('errorSystemCannotDelete') : msg || t('errorDeleteFailed'));
+
+    const res = await fetch(`/api/staff/checklists/templates/${template.id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      let errorMessage = t('errorDeleteFailed');
+      try {
+        const body = await res.json();
+        if (body?.error) errorMessage = body.error;
+      } catch {
+        // ignore JSON parse failures — keep the fallback message
+      }
+      setDeleteError(errorMessage);
       setDeleting(false);
       return;
     }
+
     router.push(`/${locale}/staff/checklists/templates`);
   }
 
@@ -846,7 +848,7 @@ export default function ChecklistTemplateDetailPage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>{t('loading')}</div>
         </div>
@@ -856,7 +858,7 @@ export default function ChecklistTemplateDetailPage() {
 
   if (globalError || !template) {
     return (
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-4)' }}>
             ← {t('backToTemplates')}
@@ -887,7 +889,7 @@ export default function ChecklistTemplateDetailPage() {
           .sec-move-btn { width: 44px; min-height: 44px; font-size: 15px; }
         }
       `}</style>
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 

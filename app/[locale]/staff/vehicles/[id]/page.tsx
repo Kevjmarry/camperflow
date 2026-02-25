@@ -127,7 +127,7 @@ export default function VehicleDetailPage({
 
   if (notFound) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
@@ -151,7 +151,7 @@ export default function VehicleDetailPage({
 
   if (loading) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             Loading vehicle...
@@ -163,7 +163,7 @@ export default function VehicleDetailPage({
 
   if (error || !vehicle) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <div>
@@ -203,7 +203,7 @@ export default function VehicleDetailPage({
   }
 
   return (
-    <PageContainer maxWidth="900px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div

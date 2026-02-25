@@ -243,6 +243,9 @@ export default function ChecklistDetailClient({
 
     const now = new Date().toISOString();
     const uncheckedIds = uncheckedItems.map((it) => it.id);
+    if (!uncheckedIds || uncheckedIds.length === 0) {
+  return;
+}
 
     const nextItems = localItems.map((it) =>
       uncheckedIds.includes(it.id)
@@ -474,7 +477,7 @@ export default function ChecklistDetailClient({
   };
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth="1400px">
       {/* Header Card */}
       <div className="surface" style={{ borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>

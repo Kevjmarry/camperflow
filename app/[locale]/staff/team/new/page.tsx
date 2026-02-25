@@ -315,7 +315,7 @@ export default function NewTeamMemberPage() {
               textDecoration: "none",
             }}
           >
-            {t("backToTeam")}
+            ← {t("backToTeam")}
           </Link>
         </div>
       </PageContainer>
@@ -349,7 +349,7 @@ export default function NewTeamMemberPage() {
             {t("accessDenied.message")}
           </div>
           <Link href={`/${locale}/staff/team`} className="btn btn-secondary">
-            {t("backToTeam")}
+            ← {t("backToTeam")}
           </Link>
         </div>
       </PageContainer>
@@ -377,7 +377,7 @@ export default function NewTeamMemberPage() {
                 display: "inline-block",
               }}
             >
-              {t("backToTeam")}
+              ← {t("backToTeam")}
             </Link>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               {t("title")}

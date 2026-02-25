@@ -91,7 +91,7 @@ export default function StaffTeamPage() {
   const inactiveStaff = staff.filter((s) => !s.active);
 
   return (
-    <PageContainer maxWidth="1200px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div
           style={{
@@ -111,7 +111,7 @@ export default function StaffTeamPage() {
                 display: "inline-block",
               }}
             >
-              {t("backToDashboard")}
+              ← {t("backToDashboard")}
             </Link>
             <div
               style={{

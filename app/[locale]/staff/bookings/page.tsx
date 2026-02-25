@@ -176,7 +176,7 @@ export default function BookingsPage() {
   };
 
   return (
-    <PageContainer maxWidth="1200px">
+    <PageContainer maxWidth="1400px">
       <style jsx>{`
         .desktop-table {
           display: block;

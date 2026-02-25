@@ -463,7 +463,7 @@ export default function NewChecklistTemplatePage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div
             style={{
@@ -481,7 +481,7 @@ export default function NewChecklistTemplatePage() {
 
   if (globalError) {
     return (
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <Link
             href={`/${locale}/staff/checklists/templates`}
@@ -506,7 +506,7 @@ export default function NewChecklistTemplatePage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <PageContainer maxWidth="1200px">
+    <PageContainer maxWidth="1400px">
       <div
         className="surface"
         style={{

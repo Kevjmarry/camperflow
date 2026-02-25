@@ -477,7 +477,7 @@ export default function StaffMemberPage() {
   const showInviteSection = isAdmin && !isEditing && !!member?.email;
 
   return (
-    <PageContainer maxWidth="700px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <Link
           href={`/${locale}/staff/team`}

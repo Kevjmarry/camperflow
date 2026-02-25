@@ -8,7 +8,7 @@ export default function CustomersPage() {
   const { locale } = useParams<{ locale: string }>();
 
   return (
-    <PageContainer maxWidth="900px" showSignOut={false}>
+    <PageContainer maxWidth="1400px" showSignOut={false}>
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>

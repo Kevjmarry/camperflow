@@ -8,6 +8,24 @@ import PageContainer from '@/components/PageContainer';
 import { createClient } from '@/lib/supabase/client';
 import { useTranslations } from 'next-intl';
 
+function withLocale(locale: string, path: string) {
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `/${locale}/${cleanPath}`;
+}
+
+function withArrow(label: string): string {
+  const trimmed = label.trimStart();
+  if (trimmed.startsWith('←') || trimmed.startsWith('&larr;') || trimmed.startsWith('\u2190')) {
+    return label;
+  }
+  return `← ${label}`;
+}
+
+function withRequired(label: string): string {
+  if (label.includes('*')) return label;
+  return `${label} *`;
+}
+
 export default function NewVehiclePage() {
   const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
@@ -37,7 +55,7 @@ export default function NewVehiclePage() {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          router.replace(`/${locale}/staff/login`);
+          router.replace(withLocale(locale, '/staff/login'));
           return;
         }
 
@@ -54,7 +72,7 @@ export default function NewVehiclePage() {
         }
 
         if (!(staffData.role === 'admin' || staffData.can_manage)) {
-          router.replace(`/${locale}/staff`);
+          router.replace(withLocale(locale, '/staff'));
           return;
         }
 
@@ -138,7 +156,7 @@ export default function NewVehiclePage() {
         }
       }
 
-      router.push(`/${locale}/staff/vehicles`);
+      router.push(withLocale(locale, '/staff/vehicles'));
     } catch (err) {
       setError(`${t('error.unexpectedPrefix')}${err instanceof Error ? err.message : String(err)}`);
       setSubmitting(false);
@@ -147,7 +165,7 @@ export default function NewVehiclePage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="900px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{
             textAlign: 'center',
@@ -163,12 +181,12 @@ export default function NewVehiclePage() {
 
   if (error && !companyId) {
     return (
-      <PageContainer maxWidth="900px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div>
               <Link
-                href={`/${locale}/staff/vehicles`}
+                href={withLocale(locale, '/staff/vehicles')}
                 style={{
                   fontSize: '14px',
                   color: 'rgb(var(--brand))',
@@ -177,7 +195,7 @@ export default function NewVehiclePage() {
                   display: 'inline-block'
                 }}
               >
-                ← {t('back')}
+                {withArrow(t('back'))}
               </Link>
               <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
                 {t('title')}
@@ -200,12 +218,12 @@ export default function NewVehiclePage() {
   }
 
   return (
-    <PageContainer maxWidth="900px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div>
             <Link
-              href={`/${locale}/staff/vehicles`}
+              href={withLocale(locale, '/staff/vehicles')}
               style={{
                 fontSize: '14px',
                 color: 'rgb(var(--brand))',
@@ -214,7 +232,7 @@ export default function NewVehiclePage() {
                 display: 'inline-block'
               }}
             >
-              ← {t('back')}
+              {withArrow(t('back'))}
             </Link>
             <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
               {t('title')}
@@ -285,7 +303,7 @@ export default function NewVehiclePage() {
                   marginBottom: 'var(--space-2)'
                 }}
               >
-                {t('field.name')} *
+                {withRequired(t('field.name'))}
               </label>
               <input
                 type="text"
@@ -317,7 +335,7 @@ export default function NewVehiclePage() {
                   marginBottom: 'var(--space-2)'
                 }}
               >
-                {t('field.registrationPlate')} *
+                {withRequired(t('field.registrationPlate'))}
               </label>
               <input
                 type="text"
@@ -350,7 +368,7 @@ export default function NewVehiclePage() {
                     marginBottom: 'var(--space-2)'
                   }}
                 >
-                  {t('field.make')} *
+                  {withRequired(t('field.make'))}
                 </label>
                 <input
                   type="text"
@@ -382,7 +400,7 @@ export default function NewVehiclePage() {
                     marginBottom: 'var(--space-2)'
                   }}
                 >
-                  {t('field.model')} *
+                  {withRequired(t('field.model'))}
                 </label>
                 <input
                   type="text"
@@ -415,7 +433,7 @@ export default function NewVehiclePage() {
                   marginBottom: 'var(--space-2)'
                 }}
               >
-                {t('field.year')} *
+                {withRequired(t('field.year'))}
               </label>
               <input
                 type="number"
@@ -550,7 +568,7 @@ export default function NewVehiclePage() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push(`/${locale}/staff/vehicles`)}
+                onClick={() => router.push(withLocale(locale, '/staff/vehicles'))}
                 disabled={submitting}
                 className="btn btn-secondary"
               >

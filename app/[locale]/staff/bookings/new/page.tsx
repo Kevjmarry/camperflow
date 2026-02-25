@@ -284,7 +284,7 @@ export default function NewBookingPage() {
 
   if (!permissionCheckComplete) {
     return (
-      <PageContainer maxWidth="800px">
+      <PageContainer maxWidth="1400px">
         <div
           className="surface"
           style={{ padding: "var(--space-8)", textAlign: "center" }}
@@ -302,7 +302,7 @@ export default function NewBookingPage() {
   const isBlocked = normalizeStatus(formData.status) === "blocked";
 
   return (
-    <PageContainer maxWidth="800px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>

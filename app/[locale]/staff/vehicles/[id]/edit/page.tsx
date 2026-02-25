@@ -213,7 +213,7 @@ export default function EditVehiclePage({
 
   if (loading) {
     return (
-      <PageContainer maxWidth="700px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             {t("loading")}
@@ -225,7 +225,7 @@ export default function EditVehiclePage({
 
   if (error || !vehicle) {
     return (
-      <PageContainer maxWidth="700px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
             <div>
@@ -265,7 +265,7 @@ export default function EditVehiclePage({
   }
 
   return (
-    <PageContainer maxWidth="700px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>

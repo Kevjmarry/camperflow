@@ -150,6 +150,7 @@ export default function ChecklistsPage() {
     const map: Record<string, string> = {
       cleaning: t('checklistTypes.cleaning'),
       pickup: t('checklistTypes.pickup'),
+      handover: t('checklistTypes.pickup'),
       return: t('checklistTypes.return'),
       guest_prereturn: t('checklistTypes.guest_prereturn'),
       vehicle_readiness: t('checklistTypes.vehicle_readiness'),
@@ -161,6 +162,7 @@ export default function ChecklistsPage() {
   const statusLabel = (s: string): string => {
     const map: Record<string, string> = {
       not_started: t('status.not_started'),
+      pending: t('status.not_started'),
       in_progress: t('status.in_progress'),
       completed: t('status.completed'),
     };
@@ -238,12 +240,16 @@ export default function ChecklistsPage() {
           .from('checklist_instances')
           .select('id, checklist_type, status, created_at, booking_id')
           .eq('company_id', companyId)
-          .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn'])
+          .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover'])
           .not('booking_id', 'is', null)
           .order('created_at', { ascending: false });
 
         if (status !== 'all') {
-          ciQuery = ciQuery.eq('status', status);
+          if (status === 'not_started') {
+            ciQuery = ciQuery.in('status', ['not_started', 'pending']);
+          } else {
+            ciQuery = ciQuery.eq('status', status);
+          }
         }
 
         const { data: ciRows, error: ciError } = await ciQuery;
@@ -295,12 +301,14 @@ export default function ChecklistsPage() {
             const booking = item.booking_id ? bookingsById.get(item.booking_id) : null;
             const vehicle = booking?.vehicle_id ? vehiclesById.get(booking.vehicle_id) : null;
 
+            const normalizedStatus = item.status === 'pending' ? 'not_started' : item.status;
+
             console.log('CI STATUS RAW', item.id, item.status);
             return {
               id: item.id,
               name: item.checklist_type,
               type: item.checklist_type,
-              status: item.status,
+              status: normalizedStatus,
               booking_number: booking?.booking_number || 'N/A',
               customer_name: booking?.customer_name || 'N/A',
               vehicle_name: vehicle?.name || 'N/A',
@@ -460,7 +468,7 @@ export default function ChecklistsPage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="1200px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>
             {t('loading')}
@@ -674,7 +682,7 @@ export default function ChecklistsPage() {
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <PageContainer maxWidth="1200px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 

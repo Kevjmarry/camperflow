@@ -197,7 +197,7 @@ export default function EditVehiclePage() {
 
   if (!authorized || loading) {
     return (
-      <PageContainer maxWidth="640px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             Loading...
@@ -209,7 +209,7 @@ export default function EditVehiclePage() {
 
   if (notFound) {
     return (
-      <PageContainer maxWidth="640px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
@@ -232,7 +232,7 @@ export default function EditVehiclePage() {
   }
 
   return (
-    <PageContainer maxWidth="640px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>

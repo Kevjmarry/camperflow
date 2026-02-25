@@ -392,7 +392,7 @@ export default function CompanySettingsPage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="900px">
+      <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             {t("loading")}
@@ -409,7 +409,7 @@ export default function CompanySettingsPage() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <PageContainer maxWidth="900px">
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 

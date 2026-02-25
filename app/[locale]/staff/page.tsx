@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
@@ -23,7 +23,6 @@ type Vehicle = {
 };
 
 export default function StaffPage() {
-  const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
   const supabase = createClient();
   const t = useTranslations("staff.dashboard");
@@ -64,9 +63,29 @@ export default function StaffPage() {
     async function fetchActiveChecklists() {
       setLoadingChecklists(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setActiveChecklists(0);
+        setLoadingChecklists(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("staff_profiles")
+        .select("company_id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        setActiveChecklists(0);
+        setLoadingChecklists(false);
+        return;
+      }
+
       const { count } = await supabase
         .from("checklist_instances")
         .select("id", { count: "exact", head: true })
+        .eq("company_id", profile.company_id)
         .neq("status", "completed");
 
       setActiveChecklists(count || 0);
@@ -120,12 +139,6 @@ export default function StaffPage() {
 
     fetchUpcomingReturns();
   }, [supabase]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push(`/${locale}`);
-    router.refresh();
-  };
 
   const toggleMonth = (monthKey: string) => {
     setExpandedMonths(prev => {
@@ -202,37 +215,16 @@ export default function StaffPage() {
   };
 
   return (
-    <PageContainer maxWidth="900px" showSignOut={false}>
+    <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: "var(--space-8)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "var(--space-4)",
-            }}
-          >
-            <div>
-              <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-                {t("title")}
-              </h1>
-              <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
-                {t("subtitle")}
-              </p>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="btn btn-ghost"
-              style={{
-                fontSize: "14px",
-                padding: "var(--space-2) var(--space-4)",
-                minHeight: "36px",
-              }}
-            >
-              {t("signOut")}
-            </button>
+          <div>
+            <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
+              {t("title")}
+            </h1>
+            <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
+              {t("subtitle")}
+            </p>
           </div>
 
           {/* DASHBOARD GRID */}
