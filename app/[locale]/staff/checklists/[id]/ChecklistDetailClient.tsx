@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import PageContainer from '@/components/PageContainer';
 
@@ -38,13 +39,70 @@ type ChecklistItemType = {
   };
 };
 
-const CHECKLIST_TYPE_LABELS: Record<string, string> = {
-  pickup: 'Pickup checklist',
-  return: 'Return checklist',
-  cleaning: 'Cleaning checklist',
-  guest_prereturn: 'Guest pre-return checklist',
-  vehicle_readiness: 'Vehicle readiness checklist',
+type InstanceStatusSnapshot = {
+  status: string;
+  started_at: string | null;
+  started_by: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
 };
+
+type InstanceUpdate = {
+  status: string;
+  started_at: string | null;
+  started_by: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+};
+
+/**
+ * Pure function — takes an explicit snapshot rather than closing over state,
+ * so it's safe to call from any async context without stale-closure risk.
+ */
+function computeInstanceUpdate(
+  items: ChecklistItemType[],
+  snapshot: InstanceStatusSnapshot,
+  userId: string,
+  now: string
+): InstanceUpdate {
+  const checkedCount = items.filter((it) => it.checked).length;
+  const totalCount = items.length;
+  const allChecked = checkedCount === totalCount;
+  const noneChecked = checkedCount === 0;
+
+  const isPending =
+    snapshot.status === 'pending' || snapshot.status === 'not_started';
+
+  if (allChecked) {
+    return {
+      status: 'completed',
+      started_at: snapshot.started_at ?? now,
+      started_by: snapshot.started_by ?? userId,
+      completed_at: now,
+      completed_by: userId,
+    };
+  }
+
+  if (noneChecked) {
+    // Back to pending — preserve existing started_* if already set, clear completed_*
+    return {
+      status: 'pending',
+      started_at: snapshot.started_at,
+      started_by: snapshot.started_by,
+      completed_at: null,
+      completed_by: null,
+    };
+  }
+
+  // Some checked — in_progress
+  return {
+    status: 'in_progress',
+    started_at: isPending ? now : (snapshot.started_at ?? now),
+    started_by: isPending ? userId : (snapshot.started_by ?? userId),
+    completed_at: null,
+    completed_by: null,
+  };
+}
 
 export default function ChecklistDetailClient({
   instance,
@@ -55,20 +113,31 @@ export default function ChecklistDetailClient({
   items: ChecklistItemType[];
   locale: string;
 }) {
+  const t = useTranslations('checklistDetail');
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from');
   const supabase = createClient();
+
   const [localItems, setLocalItems] = useState(initialItems);
-  const [localStatus, setLocalStatus] = useState(instance.status);
+  const [localInstance, setLocalInstance] = useState(instance);
   const [userId, setUserId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [openNotesById, setOpenNotesById] = useState<Record<string, boolean>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  // Map of auth_user_id -> initials string
   const [initialsByUserId, setInitialsByUserId] = useState<Record<string, string>>({});
 
-  // Fetch initials for a set of user ids not yet in the map
+  // Ref always holds the latest localInstance value — used in syncInstanceStatus
+  // to avoid stale closures when the callback is called after async item writes.
+  const localInstanceRef = useRef(localInstance);
+  useEffect(() => {
+    localInstanceRef.current = localInstance;
+  }, [localInstance]);
+
+  // Sync from server props after router.refresh()
+  useEffect(() => setLocalItems(initialItems), [initialItems]);
+  useEffect(() => setLocalInstance(instance), [instance]);
+
   const fetchInitialsForUsers = useCallback(
     async (userIds: string[]) => {
       if (userIds.length === 0) return;
@@ -78,7 +147,6 @@ export default function ChecklistDetailClient({
         .select('auth_user_id,first_name,last_name')
         .in('auth_user_id', userIds);
 
-      // Scope to company if we have it
       if (companyId) {
         query.eq('company_id', companyId);
       }
@@ -98,7 +166,6 @@ export default function ChecklistDetailClient({
     [supabase, companyId]
   );
 
-  // Whenever localItems change, look for checked_by ids we haven't fetched yet
   useEffect(() => {
     const checkedByIds = localItems
       .filter((it) => it.checked && it.checked_by)
@@ -139,6 +206,40 @@ export default function ChecklistDetailClient({
     fetchUserProfile();
   }, []);
 
+  /**
+   * Reads the latest instance snapshot via ref (never stale), computes the
+   * required status update, applies it optimistically, then persists to DB.
+   */
+  const syncInstanceStatus = useCallback(
+    async (nextItems: ChecklistItemType[], uid: string) => {
+      const now = new Date().toISOString();
+      const snapshot: InstanceStatusSnapshot = {
+        status: localInstanceRef.current.status,
+        started_at: localInstanceRef.current.started_at,
+        started_by: localInstanceRef.current.started_by,
+        completed_at: localInstanceRef.current.completed_at,
+        completed_by: localInstanceRef.current.completed_by,
+      };
+
+      const update = computeInstanceUpdate(nextItems, snapshot, uid, now);
+
+      // Optimistic local update
+      setLocalInstance((prev) => ({ ...prev, ...update }));
+
+      const { error } = await supabase
+        .from('checklist_instances')
+        .update(update)
+        .eq('id', instance.id);
+
+      if (error) {
+        console.error('Error syncing checklist instance status:', error);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [supabase, instance.id]
+    // Intentionally omit localInstance — localInstanceRef is used instead
+  );
+
   const handleBackClick = () => {
     if (from === 'booking' && instance.booking_id) {
       router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
@@ -153,14 +254,6 @@ export default function ChecklistDetailClient({
     }
   };
 
-  const computeStatus = (items: ChecklistItemType[]) => {
-    const anyChecked = items.some((it) => it.checked);
-    const allChecked = items.every((it) => it.checked);
-    if (allChecked) return 'completed';
-    if (anyChecked) return 'in_progress';
-    return 'not_started';
-  };
-
   const handleToggle = async (itemId: string, currentChecked: boolean) => {
     const {
       data: { user },
@@ -168,72 +261,52 @@ export default function ChecklistDetailClient({
     if (!user) return;
 
     const newChecked = !currentChecked;
+    const now = new Date().toISOString();
 
     const nextItems = localItems.map((it) =>
       it.id === itemId
         ? {
             ...it,
             checked: newChecked,
-            checked_at: newChecked ? new Date().toISOString() : null,
+            checked_at: newChecked ? now : null,
             checked_by: newChecked ? user.id : null,
           }
         : it
     );
 
-    const newStatus = computeStatus(nextItems);
-    const oldStatus = localStatus;
-
     setLocalItems(nextItems);
-    setLocalStatus(newStatus);
 
     try {
       const { error: itemError } = await supabase
         .from('checklist_instance_items')
         .update({
           checked: newChecked,
-          checked_at: newChecked ? new Date().toISOString() : null,
+          checked_at: newChecked ? now : null,
           checked_by: newChecked ? user.id : null,
         })
         .eq('id', itemId);
 
       if (itemError) throw itemError;
 
-      const updatePayload: any = { status: newStatus };
+      await syncInstanceStatus(nextItems, user.id);
 
-      if (newStatus === 'in_progress' && oldStatus === 'not_started') {
-        updatePayload.started_at = new Date().toISOString();
-        updatePayload.started_by = user.id;
-      }
-
-      if (newStatus === 'completed' && oldStatus !== 'completed') {
-        updatePayload.completed_at = new Date().toISOString();
-        updatePayload.completed_by = user.id;
-      }
-
-      if (oldStatus === 'completed' && newStatus !== 'completed') {
-        updatePayload.completed_at = null;
-        updatePayload.completed_by = null;
-      }
-
-      const { error: instanceError } = await supabase
-        .from('checklist_instances')
-        .update(updatePayload)
-        .eq('id', instance.id);
-
-      if (instanceError) throw instanceError;
+      router.refresh();
     } catch (err) {
       console.error('Error updating checklist:', err);
       setLocalItems(initialItems);
-      setLocalStatus(instance.status);
+      setLocalInstance(instance);
       router.refresh();
     }
   };
 
-  const handleCompleteSection = async (sectionName: string, sectionItems: ChecklistItemType[]) => {
+  const handleCompleteSection = async (
+    sectionName: string,
+    sectionItems: ChecklistItemType[]
+  ) => {
     const uncheckedItems = sectionItems.filter((it) => !it.checked);
     if (uncheckedItems.length === 0) return;
 
-    const confirmed = confirm(`Mark all items in "${sectionName}" as complete?`);
+    const confirmed = confirm(t('completeSectionConfirm', { section: sectionName }));
     if (!confirmed) return;
 
     const {
@@ -243,9 +316,7 @@ export default function ChecklistDetailClient({
 
     const now = new Date().toISOString();
     const uncheckedIds = uncheckedItems.map((it) => it.id);
-    if (!uncheckedIds || uncheckedIds.length === 0) {
-  return;
-}
+    if (uncheckedIds.length === 0) return;
 
     const nextItems = localItems.map((it) =>
       uncheckedIds.includes(it.id)
@@ -253,11 +324,7 @@ export default function ChecklistDetailClient({
         : it
     );
 
-    const newStatus = computeStatus(nextItems);
-    const oldStatus = localStatus;
-
     setLocalItems(nextItems);
-    setLocalStatus(newStatus);
 
     try {
       const { error: itemError } = await supabase
@@ -267,28 +334,13 @@ export default function ChecklistDetailClient({
 
       if (itemError) throw itemError;
 
-      const updatePayload: any = { status: newStatus };
+      await syncInstanceStatus(nextItems, user.id);
 
-      if (newStatus === 'in_progress' && oldStatus === 'not_started') {
-        updatePayload.started_at = now;
-        updatePayload.started_by = user.id;
-      }
-
-      if (newStatus === 'completed' && oldStatus !== 'completed') {
-        updatePayload.completed_at = now;
-        updatePayload.completed_by = user.id;
-      }
-
-      const { error: instanceError } = await supabase
-        .from('checklist_instances')
-        .update(updatePayload)
-        .eq('id', instance.id);
-
-      if (instanceError) throw instanceError;
+      router.refresh();
     } catch (err) {
       console.error('Error completing section:', err);
       setLocalItems(initialItems);
-      setLocalStatus(instance.status);
+      setLocalInstance(instance);
       router.refresh();
     }
   };
@@ -312,41 +364,57 @@ export default function ChecklistDetailClient({
   };
 
   const toggleNotes = (itemId: string) => {
-    setOpenNotesById((prev) => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
+    setOpenNotesById((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const toggleSection = (sectionName: string) => {
-    setCollapsedSections((prev) => ({
-      ...prev,
-      [sectionName]: !prev[sectionName],
-    }));
+    setCollapsedSections((prev) => ({ ...prev, [sectionName]: !prev[sectionName] }));
   };
 
   const sortedItems = [...localItems].sort(
     (a, b) => a.template.sort_order - b.template.sort_order
   );
 
-  // Group items by section
   const sections: { name: string; items: ChecklistItemType[] }[] = [];
   const sectionMap = new Map<string, ChecklistItemType[]>();
 
   for (const item of sortedItems) {
-    const sectionName = item.template.section ?? 'Other';
-    if (!sectionMap.has(sectionName)) {
-      sectionMap.set(sectionName, []);
-    }
+    const sectionName = item.template.section ?? t('sectionOther');
+    if (!sectionMap.has(sectionName)) sectionMap.set(sectionName, []);
     sectionMap.get(sectionName)!.push(item);
   }
 
-  sectionMap.forEach((items, name) => {
-    sections.push({ name, items });
-  });
+  sectionMap.forEach((items, name) => sections.push({ name, items }));
 
-  const backButtonLabel = from === 'booking' && instance.booking_id ? 'Back to booking' : 'Back to checklists';
-  const checklistTitle = CHECKLIST_TYPE_LABELS[instance.checklist_type] || 'Checklist';
+  const backButtonLabel =
+    from === 'booking' && instance.booking_id
+      ? t('backToBooking')
+      : t('backToChecklists');
+
+  // Build the map from translation keys so values are locale-aware.
+  // Add new checklist types here as the product grows.
+  const CHECKLIST_TYPE_LABELS: Record<string, string> = {
+    handover: t('type_handover'),
+    return: t('type_return'),
+    cleaning: t('type_cleaning'),
+    mechanical: t('type_mechanical'),
+  };
+
+  const checklistTitle = CHECKLIST_TYPE_LABELS[instance.checklist_type] ?? t('typeUnknown');
+
+  const statusLabel = (() => {
+    switch (localInstance.status) {
+      case 'pending':
+      case 'not_started':
+        return t('statusNotStarted');
+      case 'in_progress':
+        return t('statusInProgress');
+      case 'completed':
+        return t('statusCompleted');
+      default:
+        return localInstance.status;
+    }
+  })();
 
   const renderItem = (item: ChecklistItemType) => {
     const checkerInitials =
@@ -364,7 +432,16 @@ export default function ChecklistDetailClient({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-          <label htmlFor={`check-${item.id}`} style={{ marginTop: '2px', cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
+          <label
+            htmlFor={`check-${item.id}`}
+            style={{
+              marginTop: '2px',
+              cursor: 'pointer',
+              flexShrink: 0,
+              position: 'relative',
+              display: 'block',
+            }}
+          >
             <input
               type="checkbox"
               id={`check-${item.id}`}
@@ -376,7 +453,9 @@ export default function ChecklistDetailClient({
               style={{
                 width: '20px',
                 height: '20px',
-                border: item.checked ? '2px solid rgb(var(--brand))' : '2px solid rgb(var(--border))',
+                border: item.checked
+                  ? '2px solid rgb(var(--brand))'
+                  : '2px solid rgb(var(--border))',
                 borderRadius: '4px',
                 backgroundColor: 'rgb(var(--surface))',
                 display: 'flex',
@@ -385,16 +464,49 @@ export default function ChecklistDetailClient({
               }}
             >
               {item.checked && (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="rgb(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M13.3332 4L5.99984 11.3333L2.6665 8"
+                    stroke="rgb(var(--brand))"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               )}
             </div>
           </label>
+
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                <label htmlFor={`check-${item.id}`} className="label" style={{ fontWeight: 500, cursor: 'pointer', margin: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                marginBottom: '4px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <label
+                  htmlFor={`check-${item.id}`}
+                  className="label"
+                  style={{ fontWeight: 500, cursor: 'pointer', margin: 0 }}
+                >
                   {item.template.label}
                 </label>
                 {checkerInitials && (
@@ -433,7 +545,7 @@ export default function ChecklistDetailClient({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {item.notes ? 'Edit note' : 'Add note'}
+                {item.notes ? t('editNote') : t('addNote')}
               </button>
             </div>
 
@@ -455,7 +567,7 @@ export default function ChecklistDetailClient({
 
             {openNotesById[item.id] && (
               <textarea
-                placeholder="Notes..."
+                placeholder={t('notesPlaceholder')}
                 value={item.notes ?? ''}
                 onChange={(e) => handleNotesChange(item.id, e.target.value)}
                 onBlur={(e) => handleNotesBlur(item.id, e.target.value)}
@@ -479,8 +591,19 @@ export default function ChecklistDetailClient({
   return (
     <PageContainer maxWidth="1400px">
       {/* Header Card */}
-      <div className="surface" style={{ borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+      <div
+        className="surface"
+        style={{ borderRadius: '8px', padding: '16px', marginBottom: '16px' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
           <div style={{ flex: 1, minWidth: 0 }}>
             <button
               onClick={handleBackClick}
@@ -501,13 +624,20 @@ export default function ChecklistDetailClient({
               <span>←</span>
               {backButtonLabel}
             </button>
-            <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '4px', color: 'rgb(var(--text))' }}>
+            <h1
+              style={{
+                fontSize: '20px',
+                fontWeight: 600,
+                marginBottom: '4px',
+                color: 'rgb(var(--text))',
+              }}
+            >
               {checklistTitle}
             </h1>
             <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
               {instance.bookings
                 ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
-                : 'No booking linked'}
+                : t('noBookingLinked')}
             </p>
           </div>
           <div style={{ flexShrink: 0 }}>
@@ -523,14 +653,14 @@ export default function ChecklistDetailClient({
                 color: 'rgb(var(--text))',
               }}
             >
-              {localStatus === 'not_started' ? 'Not started' : localStatus === 'in_progress' ? 'In progress' : 'Completed'}
+              {statusLabel}
             </span>
           </div>
         </div>
       </div>
 
       {/* Compact Success Notice */}
-      {localStatus === 'completed' && (
+      {localInstance.status === 'completed' && (
         <div style={{ marginBottom: '16px' }}>
           <div
             className="surface"
@@ -546,11 +676,22 @@ export default function ChecklistDetailClient({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="rgb(var(--brand))" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z"
+                  fill="rgb(var(--brand))"
+                />
               </svg>
-              <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
-                Checklist completed
+              <span
+                style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}
+              >
+                {t('checklistCompleted')}
               </span>
             </div>
             {instance.booking_id && (
@@ -559,7 +700,7 @@ export default function ChecklistDetailClient({
                 className="btn btn-primary"
                 style={{ padding: '6px 14px', fontSize: '14px', fontWeight: 500 }}
               >
-                Go to booking
+                {t('goToBooking')}
               </button>
             )}
           </div>
@@ -575,7 +716,11 @@ export default function ChecklistDetailClient({
           const isCollapsed = !!collapsedSections[name];
 
           return (
-            <div key={name} className="surface" style={{ borderRadius: '8px', overflow: 'hidden' }}>
+            <div
+              key={name}
+              className="surface"
+              style={{ borderRadius: '8px', overflow: 'hidden' }}
+            >
               {/* Section Header */}
               <div
                 style={{
@@ -616,13 +761,27 @@ export default function ChecklistDetailClient({
                       color: 'rgb(var(--muted))',
                     }}
                   >
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M4 6L8 10L12 6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
-                  <span style={{ fontWeight: 600, fontSize: '14px', color: 'rgb(var(--text))' }}>
+                  <span
+                    style={{ fontWeight: 600, fontSize: '14px', color: 'rgb(var(--text))' }}
+                  >
                     {name}
                   </span>
-                  <span style={{ fontSize: '13px', color: allDone ? 'rgb(var(--brand))' : 'rgb(var(--muted))', flexShrink: 0 }}>
-                    {completedCount}/{totalCount} completed
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      color: allDone ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {t('sectionProgress', { completed: completedCount, total: totalCount })}
                   </span>
                 </button>
 
@@ -643,14 +802,21 @@ export default function ChecklistDetailClient({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Complete section
+                    {t('completeSection')}
                   </button>
                 )}
               </div>
 
               {/* Section Items */}
               {!isCollapsed && (
-                <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
                   {sectionItems.map((item) => renderItem(item))}
                 </div>
               )}

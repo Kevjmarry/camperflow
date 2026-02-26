@@ -1550,5 +1550,27 @@
     "btnAddFirstItem": "+ Add first item",
     "defaultNewItemLabel": "New item",
     "errorAddFirstItemFailed": "Failed to add item."
+  },
+  "checklistDetail": {
+    "backToBooking": "Back to booking",
+    "backToChecklists": "Back to checklists",
+    "noBookingLinked": "No booking linked",
+    "statusNotStarted": "Not started",
+    "statusInProgress": "In progress",
+    "statusCompleted": "Completed",
+    "checklistCompleted": "Checklist completed",
+    "goToBooking": "Go to booking",
+    "completeSection": "Complete section",
+    "completeSectionConfirm": "Mark all items in \"{section}\" as complete?",
+    "addNote": "Add note",
+    "editNote": "Edit note",
+    "notesPlaceholder": "Notes…",
+    "sectionOther": "Other",
+    "sectionProgress": "{completed}/{total} completed",
+    "typeUnknown": "Checklist",
+    "type_handover": "Handover checklist",
+    "type_return": "Return checklist",
+    "type_cleaning": "Cleaning checklist",
+    "type_mechanical": "Mechanical checklist"
   }
 }
