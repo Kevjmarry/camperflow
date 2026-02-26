@@ -1550,5 +1550,27 @@
     "btnAddFirstItem": "+ Ersten Eintrag hinzufügen",
     "defaultNewItemLabel": "Neuer Eintrag",
     "errorAddFirstItemFailed": "Eintrag konnte nicht hinzugefügt werden."
+  },
+  "checklistDetail": {
+    "backToBooking": "Zurück zur Buchung",
+    "backToChecklists": "Zurück zu den Checklisten",
+    "noBookingLinked": "Keine Buchung verknüpft",
+    "statusNotStarted": "Nicht begonnen",
+    "statusInProgress": "In Bearbeitung",
+    "statusCompleted": "Abgeschlossen",
+    "checklistCompleted": "Checkliste abgeschlossen",
+    "goToBooking": "Zur Buchung",
+    "completeSection": "Abschnitt abschließen",
+    "completeSectionConfirm": "Alle Punkte in „{section}“ als erledigt markieren?",
+    "addNote": "Notiz hinzufügen",
+    "editNote": "Notiz bearbeiten",
+    "notesPlaceholder": "Notizen…",
+    "sectionOther": "Sonstiges",
+    "sectionProgress": "{completed}/{total} abgeschlossen",
+    "typeUnknown": "Checkliste",
+    "type_handover": "Übergabe-Checkliste",
+    "type_return": "Rückgabe-Checkliste",
+    "type_cleaning": "Reinigungs-Checkliste",
+    "type_mechanical": "Technische Checkliste"
   }
 }
