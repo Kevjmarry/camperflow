@@ -4,11 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const url = new URL(request.url);
   const pathId = url.pathname.split('/').filter(Boolean).pop();
-  const templateId = String(params?.id ?? pathId ?? '').trim();
+  const templateId = String(id ?? pathId ?? '').trim();
 
   if (!templateId) {
     return NextResponse.json({ error: 'Missing template id' }, { status: 400 });

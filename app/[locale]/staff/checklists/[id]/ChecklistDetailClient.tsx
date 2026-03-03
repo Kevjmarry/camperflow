@@ -55,6 +55,14 @@ type InstanceUpdate = {
   completed_by: string | null;
 };
 
+type SyncError = {
+  message: string;
+  code: string | null;
+  details: string | null;
+  hint: string | null;
+  raw: string;
+};
+
 /**
  * Pure function — takes an explicit snapshot rather than closing over state,
  * so it's safe to call from any async context without stale-closure risk.
@@ -126,6 +134,8 @@ export default function ChecklistDetailClient({
   const [openNotesById, setOpenNotesById] = useState<Record<string, boolean>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [initialsByUserId, setInitialsByUserId] = useState<Record<string, string>>({});
+  const [syncError, setSyncError] = useState<SyncError | null>(null);
+  const [lockNotice, setLockNotice] = useState<string | null>(null);
 
   // Ref always holds the latest localInstance value — used in syncInstanceStatus
   // to avoid stale closures when the callback is called after async item writes.
@@ -207,11 +217,56 @@ export default function ChecklistDetailClient({
   }, []);
 
   /**
+   * Returns true if the Supabase error represents the expected "locked"
+   * case: booking completed + trying to edit handover/return checklist.
+   * Handles both the legacy bulk-update message and the newer per-type messages.
+   */
+  function isLockError(error: any): boolean {
+    if (
+      !(error?.code === 'P0001' || (error as any)?.code === 'P0001') ||
+      typeof error?.message !== 'string'
+    ) {
+      return false;
+    }
+    const msg: string = error.message;
+    return (
+      // Legacy message
+      msg.includes('Cannot modify handover/return checklists after booking is completed.') ||
+      // Newer per-type messages: "Cannot edit a handover checklist after..."
+      //                          "Cannot edit a return checklist after..."
+      (msg.includes('Cannot edit a') &&
+        (msg.includes('handover') || msg.includes('return')) &&
+        msg.includes('after'))
+    );
+  }
+
+  /**
+   * Returns true if the Supabase error is a P0001 lock error specifically for
+   * the return-checklist-after-completion case.
+   */
+  function isReturnAfterCompletionLockError(error: any): boolean {
+    return (
+      (error?.code === 'P0001' || (error as any)?.code === 'P0001') &&
+      typeof error?.message === 'string' &&
+      error.message.includes('Cannot edit a return checklist after the booking has been completed.')
+    );
+  }
+
+  type SyncResult = { ok: true } | { locked: true } | { error: SyncError };
+
+  /**
    * Reads the latest instance snapshot via ref (never stale), computes the
    * required status update, applies it optimistically, then persists to DB.
+   * Returns { ok } on success, { locked } for the expected lock case, or { error }.
+   * Callers must NOT call router.refresh() on { locked }.
    */
   const syncInstanceStatus = useCallback(
-    async (nextItems: ChecklistItemType[], uid: string) => {
+    async (
+      nextItems: ChecklistItemType[],
+      uid: string,
+      prevItems: ChecklistItemType[],
+      prevInstance: ChecklistInstanceType
+    ): Promise<SyncResult> => {
       const now = new Date().toISOString();
       const snapshot: InstanceStatusSnapshot = {
         status: localInstanceRef.current.status,
@@ -223,8 +278,14 @@ export default function ChecklistDetailClient({
 
       const update = computeInstanceUpdate(nextItems, snapshot, uid, now);
 
+      console.log('[syncInstanceStatus] snapshot:', snapshot);
+      console.log('[syncInstanceStatus] computed update:', update);
+      console.log('[syncInstanceStatus] instance.id:', instance.id);
+
       // Optimistic local update
       setLocalInstance((prev) => ({ ...prev, ...update }));
+      setSyncError(null);
+      setLockNotice(null);
 
       const { error } = await supabase
         .from('checklist_instances')
@@ -232,7 +293,50 @@ export default function ChecklistDetailClient({
         .eq('id', instance.id);
 
       if (error) {
-        console.error('Error syncing checklist instance status:', error);
+        // P0001 lock error for return checklist after booking completed, AND the
+        // instance was already marked completed locally — treat as a successful no-op.
+        // The DB state is already consistent; no revert or notice is needed.
+        if (
+          isReturnAfterCompletionLockError(error) &&
+          localInstanceRef.current.status === 'completed'
+        ) {
+          console.log(
+            '[syncInstanceStatus] return-after-completion lock on already-completed instance — treating as no-op'
+          );
+          setSyncError(null);
+          setLockNotice(null);
+          return { ok: true };
+        }
+
+        if (isLockError(error)) {
+          // Expected lock case — revert optimistic UI, show inline notice, no error banner
+          setLocalItems(prevItems);
+          setLocalInstance(prevInstance);
+          setLockNotice('This checklist is locked because the booking is completed.');
+          // Do NOT call router.refresh(), do NOT console.error
+          return { locked: true };
+        } else {
+          const syncErr: SyncError = {
+            message: error.message,
+            code: (error as any).code ?? null,
+            details: (error as any).details ?? null,
+            hint: (error as any).hint ?? null,
+            raw: JSON.stringify(error, null, 2),
+          };
+
+          console.error('[syncInstanceStatus] Supabase error updating checklist_instances:');
+          console.error('  message:', syncErr.message);
+          console.error('  code:', syncErr.code);
+          console.error('  details:', syncErr.details);
+          console.error('  hint:', syncErr.hint);
+          console.error('  raw:', syncErr.raw);
+
+          setSyncError(syncErr);
+          return { error: syncErr };
+        }
+      } else {
+        console.log('[syncInstanceStatus] update succeeded, new status:', update.status);
+        return { ok: true };
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -263,6 +367,9 @@ export default function ChecklistDetailClient({
     const newChecked = !currentChecked;
     const now = new Date().toISOString();
 
+    const prevItems = localItems;
+    const prevInstance = localInstance;
+
     const nextItems = localItems.map((it) =>
       it.id === itemId
         ? {
@@ -288,7 +395,22 @@ export default function ChecklistDetailClient({
 
       if (itemError) throw itemError;
 
-      await syncInstanceStatus(nextItems, user.id);
+      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+
+      if ('locked' in result) {
+        // Revert the DB item change — restore exact previous row state from prevItems
+        const prevItem = prevItems.find((it) => it.id === itemId);
+        await supabase
+          .from('checklist_instance_items')
+          .update({
+            checked: prevItem ? prevItem.checked : currentChecked,
+            checked_at: prevItem ? prevItem.checked_at : null,
+            checked_by: prevItem ? prevItem.checked_by : null,
+          })
+          .eq('id', itemId);
+        // Do NOT router.refresh()
+        return;
+      }
 
       router.refresh();
     } catch (err) {
@@ -318,6 +440,9 @@ export default function ChecklistDetailClient({
     const uncheckedIds = uncheckedItems.map((it) => it.id);
     if (uncheckedIds.length === 0) return;
 
+    const prevItems = localItems;
+    const prevInstance = localInstance;
+
     const nextItems = localItems.map((it) =>
       uncheckedIds.includes(it.id)
         ? { ...it, checked: true, checked_at: now, checked_by: user.id }
@@ -334,7 +459,26 @@ export default function ChecklistDetailClient({
 
       if (itemError) throw itemError;
 
-      await syncInstanceStatus(nextItems, user.id);
+      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+
+      if ('locked' in result) {
+        // Revert the DB item changes — restore exact previous state for each item
+        await Promise.all(
+          uncheckedIds.map((id) => {
+            const prevItem = prevItems.find((it) => it.id === id);
+            return supabase
+              .from('checklist_instance_items')
+              .update({
+                checked: prevItem ? prevItem.checked : false,
+                checked_at: prevItem ? prevItem.checked_at : null,
+                checked_by: prevItem ? prevItem.checked_by : null,
+              })
+              .eq('id', id);
+          })
+        );
+        // Do NOT router.refresh()
+        return;
+      }
 
       router.refresh();
     } catch (err) {
@@ -658,6 +802,96 @@ export default function ChecklistDetailClient({
           </div>
         </div>
       </div>
+
+      {/* Lock Notice (inline, non-red) */}
+      {lockNotice && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            border: '1px solid rgb(var(--border))',
+            backgroundColor: 'rgb(var(--surface))',
+            color: 'rgb(var(--muted))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            fontSize: '13px',
+          }}
+        >
+          <span>🔒 {lockNotice}</span>
+          <button
+            type="button"
+            onClick={() => setLockNotice(null)}
+            style={{
+              fontSize: '11px',
+              color: 'rgb(var(--muted))',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Status Sync Error Banner */}
+      {syncError && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            borderRadius: '6px',
+            border: '1px solid #f87171',
+            backgroundColor: '#fef2f2',
+            color: '#991b1b',
+          }}
+        >
+          <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px' }}>
+            ⚠️ Status sync failed — checklist items were saved but the overall status could not be updated.
+          </div>
+          <div style={{ fontSize: '12px', lineHeight: '1.6', fontFamily: 'monospace' }}>
+            <div><strong>message:</strong> {syncError.message}</div>
+            {syncError.code && <div><strong>code:</strong> {syncError.code}</div>}
+            {syncError.details && <div><strong>details:</strong> {syncError.details}</div>}
+            {syncError.hint && <div><strong>hint:</strong> {syncError.hint}</div>}
+            <details style={{ marginTop: '6px' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '11px' }}>Raw error JSON</summary>
+              <pre
+                style={{
+                  marginTop: '4px',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  fontSize: '11px',
+                }}
+              >
+                {syncError.raw}
+              </pre>
+            </details>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncError(null)}
+            style={{
+              marginTop: '8px',
+              fontSize: '11px',
+              color: '#991b1b',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              padding: 0,
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Compact Success Notice */}
       {localInstance.status === 'completed' && (

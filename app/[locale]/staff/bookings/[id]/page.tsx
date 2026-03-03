@@ -8,6 +8,7 @@ import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
+type ChecklistType = 'handover' | 'return' | 'cleaning' | 'mechanical';
 
 interface Vehicle {
   id: string;
@@ -41,9 +42,16 @@ interface RedactedBooking {
 
 interface ChecklistInstance {
   id: string;
-  checklist_type: 'handover' | 'return';
+  checklist_type: ChecklistType;
   status: 'pending' | 'in_progress' | 'completed';
-  template: { id: string; name: string | null; title: string | null; type: string | null; scope: string | null } | null;
+  template: {
+    id: string;
+    name: string | null;
+    title: string | null;
+    type: string | null;
+    scope: string | null;
+    is_system: boolean;
+  } | null;
 }
 
 const ACTIVE_BOOKING_STATUSES = ['draft', 'confirmed', 'blocked', 'on_rent'] as const;
@@ -89,6 +97,24 @@ export default function BookingDetailPage() {
   // Derived from the currently selected status — drives UI validation and required markers reactively.
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
+
+  const SYSTEM_CHECKLIST_LABELS: Record<string, string> = {
+    handover: 'Pickup Checklist',
+    return: 'Return Checklist',
+    cleaning: 'Cleaning Checklist',
+    mechanical: 'Mechanical Checklist',
+  };
+
+  const getChecklistDisplayName = (instance: ChecklistInstance): string => {
+    if (instance.template?.is_system) {
+      return SYSTEM_CHECKLIST_LABELS[instance.checklist_type] ?? instance.checklist_type;
+    }
+    return (
+      instance.template?.name ??
+      instance.template?.title ??
+      instance.checklist_type
+    );
+  };
 
   useEffect(() => {
     checkUserCapabilities();
@@ -251,7 +277,8 @@ export default function BookingDetailPage() {
             name,
             title,
             type,
-            scope
+            scope,
+            is_system
           )
         `)
         .eq('booking_id', id)
@@ -681,9 +708,7 @@ export default function BookingDetailPage() {
                           color: 'rgb(var(--text))',
                           marginBottom: 'var(--space-1)'
                         }}>
-                          {instance.template?.name ||
-                           instance.template?.title ||
-                           `${instance.checklist_type.charAt(0).toUpperCase() + instance.checklist_type.slice(1)} ${t("checklists.checklistSuffix")}`}
+                          {getChecklistDisplayName(instance)}
                         </div>
                         <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                           {getChecklistStatusLabel(instance.status)}
@@ -1020,9 +1045,7 @@ export default function BookingDetailPage() {
                         color: 'rgb(var(--text))',
                         marginBottom: 'var(--space-1)'
                       }}>
-                        {instance.template?.name ||
-                         instance.template?.title ||
-                         `${instance.checklist_type.charAt(0).toUpperCase() + instance.checklist_type.slice(1)} ${t("checklists.checklistSuffix")}`}
+                        {getChecklistDisplayName(instance)}
                       </div>
                       <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                         {getChecklistStatusLabel(instance.status)}

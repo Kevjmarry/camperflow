@@ -564,6 +564,23 @@ export default function ChecklistTemplateDetailPage() {
     setSaveError(null);
     setSaveSuccess(false);
 
+    // If the UI has active=false but the persisted template is still active,
+    // deactivate it in the database first before attempting deletion.
+    if (!active && template.active === true) {
+      const supabase = createClient();
+      const { error: deactivateError } = await supabase
+        .from('checklist_templates')
+        .update({ active: false })
+        .eq('id', template.id)
+        .eq('company_id', companyId);
+      if (deactivateError) {
+        setDeleteError(deactivateError.message || t('errorSaveFailed'));
+        setDeleting(false);
+        return;
+      }
+      setTemplate((prev) => prev ? { ...prev, active: false } : prev);
+    }
+
     const res = await fetch(`/api/staff/checklists/templates/${template.id}`, {
       method: 'DELETE',
     });
