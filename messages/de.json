@@ -1547,9 +1547,14 @@
     "btnSavingItem": "Speichern…",
     "btnSave": "Speichern",
     "btnCancel": "Abbrechen",
+    "btnAddItem": "Element hinzufügen",
     "btnAddFirstItem": "+ Ersten Eintrag hinzufügen",
     "defaultNewItemLabel": "Neuer Eintrag",
-    "errorAddFirstItemFailed": "Eintrag konnte nicht hinzugefügt werden."
+    "errorAddFirstItemFailed": "Eintrag konnte nicht hinzugefügt werden.",
+    "addItemSectionLabel": "Abschnitt",
+    "sectionOptionNewSection": "Neuer Abschnitt…",
+    "newSectionNamePlaceholder": "Abschnittsname",
+    "itemFieldSection": "Abschnitt"
   },
   "checklistDetail": {
     "backToBooking": "Zurück zur Buchung",

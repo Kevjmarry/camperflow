@@ -26,8 +26,9 @@ interface ChecklistTemplateItem {
   id: string;
   template_id: string;
   label: string;
-  section: string | null;
-  sort_order: number;
+  section: string | null;   // null = General; stored as-is in DB (never localised)
+  sort_order: number;       // global cross-section ordering
+  position: number;         // per-section ordering (unique per section)
   required: boolean;
   input_type: string;
 }
@@ -36,6 +37,9 @@ interface ItemEditState {
   label: string;
   required: boolean;
   input_type: string;
+  // null = General (DB null), any string = named section, NEW_SECTION_SENTINEL = user typing a new name
+  section: string | null;
+  newSectionName: string;
   saving: boolean;
   error: string | null;
 }
@@ -75,6 +79,11 @@ const TYPE_LIFECYCLE_STAGE_KEY: Record<string, string | null> = {
   post_season: null,
 };
 
+// Sentinel used in local state/UI only — never written to DB
+const GENERAL_SENTINEL = '__general__';
+// Sentinel used in section dropdowns to represent "type a new section name"
+const NEW_SECTION_SENTINEL = '__new__';
+
 function normaliseInputType(raw: string): string {
   return raw === 'number' ? 'number' : 'checkbox';
 }
@@ -84,7 +93,6 @@ function normaliseInputType(raw: string): string {
 function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
   const expT = useTranslations('checklistTypeExplanations');
 
-  // mechanical reuses cleaning's explanation text
   const expKey = selectedType === 'mechanical' ? 'cleaning' : selectedType;
 
   const knownTypes = Object.keys(TYPE_LIFECYCLE_STAGE_KEY);
@@ -300,8 +308,9 @@ function isSystemTemplate(template: ChecklistTemplate): boolean {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Returns the local grouping key for an item. null DB section → GENERAL_SENTINEL. */
 function sectionKey(item: ChecklistTemplateItem): string {
-  return item.section?.trim() || '__general__';
+  return item.section?.trim() || GENERAL_SENTINEL;
 }
 
 function groupItemsBySection(
@@ -316,9 +325,15 @@ function groupItemsBySection(
   return Array.from(map.entries())
     .map(([section, sectionItems]) => ({
       section,
-      items: [...sectionItems].sort((a, b) => a.sort_order - b.sort_order),
+      // Within a section, order by position (per-section unique field)
+      items: [...sectionItems].sort((a, b) => a.position - b.position),
     }))
-    .sort((a, b) => a.items[0].sort_order - b.items[0].sort_order);
+    // Cross-section order: minimum sort_order of items in each group
+    .sort((a, b) => {
+      const minA = Math.min(...a.items.map((i) => i.sort_order));
+      const minB = Math.min(...b.items.map((i) => i.sort_order));
+      return minA - minB;
+    });
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -376,8 +391,14 @@ export default function ChecklistTemplateDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [addingFirstItem, setAddingFirstItem] = useState(false);
-  const [addFirstItemError, setAddFirstItemError] = useState<string | null>(null);
+  // ── Add-item state ──────────────────────────────────────────────────────────
+  const [addingItem, setAddingItem] = useState(false);
+  const [addItemError, setAddItemError] = useState<string | null>(null);
+  // GENERAL_SENTINEL → DB null (General section)
+  // any string        → that named section
+  // NEW_SECTION_SENTINEL → user is typing a new section name
+  const [newItemSectionChoice, setNewItemSectionChoice] = useState<string>(GENERAL_SENTINEL);
+  const [newItemNewSectionName, setNewItemNewSectionName] = useState('');
 
   // ─── Init ──────────────────────────────────────────────────────────────────
 
@@ -454,7 +475,7 @@ export default function ChecklistTemplateDetailPage() {
 
       const { data: itemsData, error: itemsErr } = await supabase
         .from('checklist_template_items')
-        .select('id, template_id, label, section, sort_order, required, input_type')
+        .select('id, template_id, label, section, sort_order, position, required, input_type')
         .eq('template_id', tmpl.id)
         .order('sort_order', { ascending: true });
 
@@ -498,7 +519,7 @@ export default function ChecklistTemplateDetailPage() {
 
   useEffect(() => {
     const timers = reorderErrorTimers.current;
-    return () => { timers.forEach((id) => clearTimeout(id)); };
+    return () => { timers.forEach((timerId) => clearTimeout(timerId)); };
   }, []);
 
   // ─── Derived: system flag ──────────────────────────────────────────────────
@@ -514,6 +535,23 @@ export default function ChecklistTemplateDetailPage() {
         { value: type, label: t('legacyTypeLabel', { type }) },
       ]
     : ALL_STANDARD_TYPE_VALUES.map((v) => ({ value: v, label: typeT(v as Parameters<typeof typeT>[0]) }));
+
+  // ─── Derived: existing named sections ─────────────────────────────────────
+
+  const existingNamedSections: string[] = [];
+  for (const item of items) {
+    if (item.section && !existingNamedSections.includes(item.section)) {
+      existingNamedSections.push(item.section);
+    }
+  }
+
+  // ─── Utility: next position in a section (from local state) ───────────────
+
+  function nextPositionInSection(dbSection: string | null): number {
+    const sectionItems = items.filter((i) => i.section === dbSection);
+    if (sectionItems.length === 0) return 0;
+    return Math.max(...sectionItems.map((i) => i.position)) + 1;
+  }
 
   // ─── Template save ─────────────────────────────────────────────────────────
 
@@ -564,8 +602,6 @@ export default function ChecklistTemplateDetailPage() {
     setSaveError(null);
     setSaveSuccess(false);
 
-    // If the UI has active=false but the persisted template is still active,
-    // deactivate it in the database first before attempting deletion.
     if (!active && template.active === true) {
       const supabase = createClient();
       const { error: deactivateError } = await supabase
@@ -591,7 +627,7 @@ export default function ChecklistTemplateDetailPage() {
         const body = await res.json();
         if (body?.error) errorMessage = body.error;
       } catch {
-        // ignore JSON parse failures — keep the fallback message
+        // ignore JSON parse failures
       }
       setDeleteError(errorMessage);
       setDeleting(false);
@@ -601,37 +637,71 @@ export default function ChecklistTemplateDetailPage() {
     router.push(`/${locale}/staff/checklists/templates`);
   }
 
-  // ─── Add first item ────────────────────────────────────────────────────────
+  // ─── Add item ──────────────────────────────────────────────────────────────
 
-  async function handleAddFirstItem() {
+  async function handleAddItem() {
     if (!template) return;
-    setAddingFirstItem(true);
-    setAddFirstItemError(null);
+
+    // Resolve the target DB section value from UI choice
+    let targetDbSection: string | null;
+    if (newItemSectionChoice === GENERAL_SENTINEL) {
+      targetDbSection = null;
+    } else if (newItemSectionChoice === NEW_SECTION_SENTINEL) {
+      const trimmed = newItemNewSectionName.trim();
+      targetDbSection = (trimmed === '' || trimmed.toLowerCase() === 'general') ? null : trimmed;
+    } else {
+      targetDbSection = newItemSectionChoice;
+    }
+
+    setAddingItem(true);
+    setAddItemError(null);
 
     const supabase = createClient();
 
-    // Determine the next sort_order (0 when no items exist, max+1 otherwise)
+    // Fetch max position for the target section from DB to avoid constraint violations
+    // even if another session added items since we last loaded
+    let nextPosition = nextPositionInSection(targetDbSection); // local fallback
+    {
+      const baseQ = supabase
+        .from('checklist_template_items')
+        .select('position')
+        .eq('template_id', template.id)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const { data: maxPosData } = await (
+        targetDbSection === null
+          ? baseQ.is('section', null)
+          : baseQ.eq('section', targetDbSection)
+      ).maybeSingle();
+
+      if (maxPosData?.position != null) {
+        nextPosition = (maxPosData.position as number) + 1;
+      }
+    }
+
+    // Global sort_order: place at end of all items
     const nextSortOrder =
       items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
 
-    // Insert using only the columns that exist on checklist_template_items
     const { data, error: insertError } = await supabase
       .from('checklist_template_items')
       .insert({
         template_id: template.id,
         label: t('defaultNewItemLabel'),
-        section: t('sectionDefault'),
+        section: targetDbSection,        // null for General — never localised
         input_type: 'checkbox',
         required: false,
         sort_order: nextSortOrder,
+        position: nextPosition,
       })
-      .select('id, template_id, label, section, sort_order, required, input_type')
+      .select('id, template_id, label, section, sort_order, position, required, input_type')
       .single();
 
-    setAddingFirstItem(false);
+    setAddingItem(false);
 
     if (insertError || !data) {
-      setAddFirstItemError(insertError?.message || t('errorAddFirstItemFailed'));
+      setAddItemError(insertError?.message || t('errorAddFirstItemFailed'));
       return;
     }
 
@@ -641,6 +711,20 @@ export default function ChecklistTemplateDetailPage() {
     };
 
     setItems((prev) => [...prev, newItem]);
+
+    // Expand the target section so the new item is visible
+    const newSectionK = sectionKey(newItem);
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      next.delete(newSectionK);
+      return next;
+    });
+
+    // If a brand-new section was just created, switch the picker to that section
+    if (newItemSectionChoice === NEW_SECTION_SENTINEL && newItem.section) {
+      setNewItemSectionChoice(newItem.section);
+      setNewItemNewSectionName('');
+    }
   }
 
   // ─── Inline edit ───────────────────────────────────────────────────────────
@@ -659,6 +743,8 @@ export default function ChecklistTemplateDetailPage() {
           label: item.label,
           required: item.required,
           input_type: normaliseInputType(item.input_type),
+          section: item.section,   // raw DB value (null = General)
+          newSectionName: '',
           saving: false,
           error: null,
         });
@@ -691,19 +777,88 @@ export default function ChecklistTemplateDetailPage() {
       setItemEditStates((states) => new Map(states).set(item.id, { ...draft, error: t('errorItemLabelRequired') }));
       return;
     }
+
+    // Resolve target section DB value
+    let targetSection: string | null;
+    if (draft.section === NEW_SECTION_SENTINEL) {
+      const trimmed = draft.newSectionName.trim();
+      targetSection = (trimmed === '' || trimmed.toLowerCase() === 'general') ? null : trimmed;
+    } else {
+      targetSection = draft.section;
+    }
+
+    const sectionChanged = targetSection !== item.section;
+
     setItemEditStates((states) => new Map(states).set(item.id, { ...draft, saving: true, error: null }));
     const supabase = createClient();
+
+    let newPosition = item.position;
+
+    if (sectionChanged) {
+      // Compute position at end of target section (query DB to be safe)
+      const baseQ = supabase
+        .from('checklist_template_items')
+        .select('position')
+        .eq('template_id', item.template_id)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const { data: maxPosData } = await (
+        targetSection === null
+          ? baseQ.is('section', null)
+          : baseQ.eq('section', targetSection)
+      ).maybeSingle();
+
+      if (maxPosData?.position != null) {
+        newPosition = (maxPosData.position as number) + 1;
+      } else {
+        // Fallback: derive from local state (exclude the item being moved)
+        const localPeers = items.filter((i) => i.id !== item.id && i.section === targetSection);
+        newPosition = localPeers.length > 0 ? Math.max(...localPeers.map((i) => i.position)) + 1 : 0;
+      }
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      label: draft.label.trim(),
+      required: draft.required,
+      input_type: draft.input_type,
+    };
+    if (sectionChanged) {
+      updatePayload.section = targetSection;
+      updatePayload.position = newPosition;
+    }
+
     const { error } = await supabase
       .from('checklist_template_items')
-      .update({ label: draft.label.trim(), required: draft.required, input_type: draft.input_type })
+      .update(updatePayload)
       .eq('id', item.id)
       .eq('template_id', item.template_id);
+
     if (error) {
       setItemEditStates((states) => new Map(states).set(item.id, { ...draft, saving: false, error: error.message || t('errorItemSaveFailed') }));
     } else {
       setItems((prev) =>
-        prev.map((i) => i.id === item.id ? { ...i, label: draft.label.trim(), required: draft.required, input_type: draft.input_type } : i),
+        prev.map((i) =>
+          i.id === item.id
+            ? {
+                ...i,
+                label: draft.label.trim(),
+                required: draft.required,
+                input_type: draft.input_type,
+                ...(sectionChanged ? { section: targetSection, position: newPosition } : {}),
+              }
+            : i,
+        ),
       );
+      if (sectionChanged) {
+        // Ensure the destination section is expanded
+        const destKey = targetSection ?? GENERAL_SENTINEL;
+        setCollapsedSections((prev) => {
+          const next = new Set(prev);
+          next.delete(destKey);
+          return next;
+        });
+      }
       setEditingItemId(null);
       setItemEditStates((states) => { const next = new Map(states); next.delete(item.id); return next; });
     }
@@ -722,51 +877,74 @@ export default function ChecklistTemplateDetailPage() {
     reorderErrorTimers.current.set(itemId, timerId);
   }
 
+  // Items within a section are ordered by `position`. Swap position values with a safe temp.
   async function handleMoveItem(item: ChecklistTemplateItem, direction: 'up' | 'down') {
     if (reordering) return;
     const sec = sectionKey(item);
-    const secItems = items.filter((i) => sectionKey(i) === sec).sort((a, b) => a.sort_order - b.sort_order);
+    const secItems = items.filter((i) => sectionKey(i) === sec).sort((a, b) => a.position - b.position);
     const idx = secItems.findIndex((i) => i.id === item.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= secItems.length) return;
+
     const current = secItems[idx];
     const neighbor = secItems[swapIdx];
     const templateId = current.template_id;
-    const origCurrentOrder = current.sort_order;
-    const origNeighborOrder = neighbor.sort_order;
-    const finalCurrentOrder = origNeighborOrder;
-    const finalNeighborOrder = origCurrentOrder;
-    const tempOrder = 1_000_000_000 + Math.floor(Math.random() * 999_999_999);
+
+    const origCurrentPos = current.position;
+    const origNeighborPos = neighbor.position;
+    const finalCurrentPos = origNeighborPos;
+    const finalNeighborPos = origCurrentPos;
+    const tempPos = 1_000_000_000 + Math.floor(Math.random() * 999_999_999);
+
+    // Optimistic UI update
     setItems((prev) => prev.map((i) => {
-      if (i.id === current.id) return { ...i, sort_order: finalCurrentOrder };
-      if (i.id === neighbor.id) return { ...i, sort_order: finalNeighborOrder };
+      if (i.id === current.id) return { ...i, position: finalCurrentPos };
+      if (i.id === neighbor.id) return { ...i, position: finalNeighborPos };
       return i;
     }));
+
     setReordering(true);
     const supabase = createClient();
     let persistError: string | null = null;
-    const r1 = await supabase.from('checklist_template_items').update({ sort_order: tempOrder }).eq('id', current.id).eq('template_id', templateId);
+
+    // Phase 1: move current to temp position (avoids unique constraint collision)
+    const r1 = await supabase
+      .from('checklist_template_items')
+      .update({ position: tempPos })
+      .eq('id', current.id)
+      .eq('template_id', templateId);
     if (r1.error) {
       persistError = r1.error.message || t('errorReorderStep1');
     } else {
-      const r2 = await supabase.from('checklist_template_items').update({ sort_order: finalNeighborOrder }).eq('id', neighbor.id).eq('template_id', templateId);
+      // Phase 2: move neighbor into current's original position
+      const r2 = await supabase
+        .from('checklist_template_items')
+        .update({ position: finalNeighborPos })
+        .eq('id', neighbor.id)
+        .eq('template_id', templateId);
       if (r2.error) {
         persistError = r2.error.message || t('errorReorderStep2');
-        await supabase.from('checklist_template_items').update({ sort_order: origCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
+        await supabase.from('checklist_template_items').update({ position: origCurrentPos }).eq('id', current.id).eq('template_id', templateId);
       } else {
-        const r3 = await supabase.from('checklist_template_items').update({ sort_order: finalCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
+        // Phase 3: move current from temp to neighbor's original position
+        const r3 = await supabase
+          .from('checklist_template_items')
+          .update({ position: finalCurrentPos })
+          .eq('id', current.id)
+          .eq('template_id', templateId);
         if (r3.error) {
           persistError = r3.error.message || t('errorReorderStep3');
-          await supabase.from('checklist_template_items').update({ sort_order: origCurrentOrder }).eq('id', current.id).eq('template_id', templateId);
-          await supabase.from('checklist_template_items').update({ sort_order: origNeighborOrder }).eq('id', neighbor.id).eq('template_id', templateId);
+          await supabase.from('checklist_template_items').update({ position: origCurrentPos }).eq('id', current.id).eq('template_id', templateId);
+          await supabase.from('checklist_template_items').update({ position: origNeighborPos }).eq('id', neighbor.id).eq('template_id', templateId);
         }
       }
     }
+
     setReordering(false);
     if (persistError) {
       setItems((prev) => prev.map((i) => {
-        if (i.id === current.id) return { ...i, sort_order: origCurrentOrder };
-        if (i.id === neighbor.id) return { ...i, sort_order: origNeighborOrder };
+        if (i.id === current.id) return { ...i, position: origCurrentPos };
+        if (i.id === neighbor.id) return { ...i, position: origNeighborPos };
         return i;
       }));
       setReorderError(item.id, persistError);
@@ -789,13 +967,13 @@ export default function ChecklistTemplateDetailPage() {
     const firstNewOrders = poolOrders.slice(0, firstSection.items.length);
     const secondNewOrders = poolOrders.slice(firstSection.items.length);
     const updateMap = new Map<string, number>();
-    firstSection.items.forEach((item, i) => updateMap.set(item.id, firstNewOrders[i]));
-    secondSection.items.forEach((item, i) => updateMap.set(item.id, secondNewOrders[i]));
+    firstSection.items.forEach((itm, i) => updateMap.set(itm.id, firstNewOrders[i]));
+    secondSection.items.forEach((itm, i) => updateMap.set(itm.id, secondNewOrders[i]));
     const origMap = new Map<string, number>();
-    [...secA.items, ...secB.items].forEach((item) => origMap.set(item.id, item.sort_order));
-    setItems((prev) => prev.map((item) => {
-      const newOrder = updateMap.get(item.id);
-      return newOrder !== undefined ? { ...item, sort_order: newOrder } : item;
+    [...secA.items, ...secB.items].forEach((itm) => origMap.set(itm.id, itm.sort_order));
+    setItems((prev) => prev.map((itm) => {
+      const newOrder = updateMap.get(itm.id);
+      return newOrder !== undefined ? { ...itm, sort_order: newOrder } : itm;
     }));
     setMovingSection(true);
     const supabase = createClient();
@@ -819,9 +997,9 @@ export default function ChecklistTemplateDetailPage() {
       for (const [itemId, origOrder] of origMap) {
         await supabase.from('checklist_template_items').update({ sort_order: origOrder }).eq('id', itemId).eq('template_id', templateId);
       }
-      setItems((prev) => prev.map((item) => {
-        const orig = origMap.get(item.id);
-        return orig !== undefined ? { ...item, sort_order: orig } : item;
+      setItems((prev) => prev.map((itm) => {
+        const orig = origMap.get(itm.id);
+        return orig !== undefined ? { ...itm, sort_order: orig } : itm;
       }));
       setSectionMoveError(phaseError);
     }
@@ -852,13 +1030,31 @@ export default function ChecklistTemplateDetailPage() {
   const groupedItems = sectionOrder
     .map((section) => ({
       section,
-      items: filteredItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.sort_order - b.sort_order),
+      // Within a section, display order is by position
+      items: filteredItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position),
     }))
     .filter((g) => g.items.length > 0);
 
-  // Translate the internal '__general__' sentinel to a localised display label
+  /** Translate the local grouping key to a display label. Never stored in DB. */
   function displaySection(section: string): string {
-    return section === '__general__' ? t('sectionDefault') : section;
+    return section === GENERAL_SENTINEL ? t('sectionDefault') : section;
+  }
+
+  // ─── Section dropdown options (reused in header and inline edit) ──────────
+
+  function renderSectionOptions(generalLabel: string) {
+    return (
+      <>
+        <option value={GENERAL_SENTINEL}>{generalLabel}</option>
+        {existingNamedSections.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+        <option value={NEW_SECTION_SENTINEL}>
+          {/* i18n key: staffChecklistTemplateDetail.sectionOptionNewSection */}
+          {t('sectionOptionNewSection')}
+        </option>
+      </>
+    );
   }
 
   // ─── Early returns ─────────────────────────────────────────────────────────
@@ -1065,6 +1261,7 @@ export default function ChecklistTemplateDetailPage() {
 
               {/* ── Right: Items panel ── */}
               <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', background: 'rgb(var(--background))', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
                 {/* Sticky header */}
                 <div
                   style={{
@@ -1075,12 +1272,68 @@ export default function ChecklistTemplateDetailPage() {
                     display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  {/* Title row */}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', minWidth: 0 }}>
                     <h2 style={{ ...SECTION_HEADING, margin: 0 }}>{t('sectionItems')}</h2>
                     {!itemsLoading && !itemsError && (
-                      <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{filteredItems.length}/{items.length}</span>
+                      <span style={{ fontSize: '13px', color: 'rgb(var(--muted))', flexShrink: 0 }}>{filteredItems.length}/{items.length}</span>
                     )}
                   </div>
+
+                  {/* Section picker + Add button */}
+                  {!itemsLoading && !itemsError && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                        <label htmlFor="new-item-section" className="label" style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0, margin: 0 }}>
+                          {t('addItemSectionLabel')}
+                        </label>
+                        <select
+                          id="new-item-section"
+                          className="input"
+                          value={newItemSectionChoice}
+                          onChange={(e) => {
+                            setNewItemSectionChoice(e.target.value);
+                            if (e.target.value !== NEW_SECTION_SENTINEL) setNewItemNewSectionName('');
+                          }}
+                          disabled={addingItem}
+                          style={{ fontSize: '13px', flex: '1 1 140px', minWidth: 0 }}
+                        >
+                          {renderSectionOptions(t('sectionDefault'))}
+                        </select>
+                        <button
+                          className="btn btn-primary"
+                          onClick={handleAddItem}
+                          disabled={
+                            addingItem ||
+                            (newItemSectionChoice === NEW_SECTION_SENTINEL && !newItemNewSectionName.trim())
+                          }
+                          style={{ flexShrink: 0, fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}
+                        >
+                          {addingItem
+                            ? t('btnSaving')
+                            : items.length === 0
+                              ? t('btnAddFirstItem')
+                              : t('btnAddItem')}
+                        </button>
+                      </div>
+                      {/* New section name input — shown only when "New section…" is chosen */}
+                      {newItemSectionChoice === NEW_SECTION_SENTINEL && (
+                        <input
+                          className="input"
+                          type="text"
+                          placeholder={t('newSectionNamePlaceholder')}
+                          value={newItemNewSectionName}
+                          onChange={(e) => setNewItemNewSectionName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && newItemNewSectionName.trim()) handleAddItem(); }}
+                          disabled={addingItem}
+                          style={{ fontSize: '13px' }}
+                          autoFocus
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Search */}
                   <input
                     className="input"
                     type="search"
@@ -1090,6 +1343,8 @@ export default function ChecklistTemplateDetailPage() {
                     style={{ fontSize: '14px' }}
                     aria-label={t('searchAriaLabel')}
                   />
+
+                  {/* Filter + collapse-all row */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '13px', color: 'rgb(var(--muted))', cursor: 'pointer' }}>
                       <input
@@ -1113,6 +1368,8 @@ export default function ChecklistTemplateDetailPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Error banners */}
                   {sectionMoveError && (
                     <div style={{ ...ERROR_BOX, marginTop: 0 }}>
                       {sectionMoveError}
@@ -1121,11 +1378,21 @@ export default function ChecklistTemplateDetailPage() {
                       </button>
                     </div>
                   )}
+                  {addItemError && (
+                    <div style={{ ...ERROR_BOX, marginTop: 0 }}>
+                      {addItemError}
+                      <button onClick={() => setAddItemError(null)} style={{ marginLeft: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '12px', textDecoration: 'underline', padding: 0 }}>
+                        {t('dismissError')}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Body */}
                 <div style={{ padding: 'var(--space-4) var(--space-5)', flex: 1, overflowY: 'auto' }}>
-                  {itemsLoading && <div style={{ padding: 'var(--space-6) 0', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('loadingItems')}</div>}
+                  {itemsLoading && (
+                    <div style={{ padding: 'var(--space-6) 0', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('loadingItems')}</div>
+                  )}
                   {!itemsLoading && itemsError && <div style={ERROR_BOX}>{itemsError}</div>}
                   {!itemsLoading && !itemsError && items.length === 0 && (
                     <div
@@ -1136,23 +1403,9 @@ export default function ChecklistTemplateDetailPage() {
                         fontSize: '14px',
                         border: '1px dashed rgb(var(--border))',
                         borderRadius: 'var(--radius)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--space-4)',
-                        alignItems: 'center',
                       }}
                     >
-                      <span>{t('emptyItems')}</span>
-                      {addFirstItemError && (
-                        <div style={{ ...ERROR_BOX, width: '100%', textAlign: 'left' }}>{addFirstItemError}</div>
-                      )}
-                      <button
-                        className="btn btn-primary"
-                        onClick={handleAddFirstItem}
-                        disabled={addingFirstItem}
-                      >
-                        {addingFirstItem ? t('btnSaving') : t('btnAddFirstItem')}
-                      </button>
+                      {t('emptyItems')}
                     </div>
                   )}
                   {!itemsLoading && !itemsError && items.length > 0 && filteredItems.length === 0 && (
@@ -1167,7 +1420,10 @@ export default function ChecklistTemplateDetailPage() {
                         const isCollapsed = collapsedSections.has(section);
                         const isFirstSection = groupIdx === 0;
                         const isLastSection = groupIdx === groupedItems.length - 1;
-                        const fullSectionItems = items.filter((i) => sectionKey(i) === section).sort((a, b) => a.sort_order - b.sort_order);
+                        // Full (unfiltered) items in this section, ordered by position
+                        const fullSectionItems = items
+                          .filter((i) => sectionKey(i) === section)
+                          .sort((a, b) => a.position - b.position);
                         const sectionLabel = displaySection(section);
 
                         return (
@@ -1223,7 +1479,7 @@ export default function ChecklistTemplateDetailPage() {
                                       {/* View row */}
                                       {!isEditing && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-4)' }}>
-                                          <span style={{ flexShrink: 0, width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgb(var(--muted))', opacity: 0.5 }} aria-hidden="true" title={`sort_order: ${item.sort_order}`}>
+                                          <span style={{ flexShrink: 0, width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgb(var(--muted))', opacity: 0.5 }} aria-hidden="true" title={`pos: ${item.position}`}>
                                             <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                                               <rect x="1" y="1.5" width="10" height="1.5" rx="0.75"/>
                                               <rect x="1" y="6.25" width="10" height="1.5" rx="0.75"/>
@@ -1250,6 +1506,8 @@ export default function ChecklistTemplateDetailPage() {
                                       {/* Inline edit row */}
                                       {isEditing && editState && (
                                         <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+
+                                          {/* Label */}
                                           <div style={FIELD_WRAPPER}>
                                             <label htmlFor={`item-label-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>
                                               {t('itemFieldLabel')} <span style={{ color: 'rgb(var(--error))' }}>*</span>
@@ -1266,6 +1524,8 @@ export default function ChecklistTemplateDetailPage() {
                                               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveItem(item); }}
                                             />
                                           </div>
+
+                                          {/* Input type + Required */}
                                           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                                             <div style={{ ...FIELD_WRAPPER, flex: '1 1 120px', minWidth: 0 }}>
                                               <label htmlFor={`item-inputtype-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>{t('itemFieldInputType')}</label>
@@ -1286,6 +1546,49 @@ export default function ChecklistTemplateDetailPage() {
                                               {t('itemFieldRequired')}
                                             </label>
                                           </div>
+
+                                          {/* Section */}
+                                          <div style={FIELD_WRAPPER}>
+                                            <label htmlFor={`item-section-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>
+                                              {t('itemFieldSection')}
+                                            </label>
+                                            <select
+                                              id={`item-section-${item.id}`}
+                                              className="input"
+                                              value={
+                                                editState.section === null
+                                                  ? GENERAL_SENTINEL
+                                                  : editState.section === NEW_SECTION_SENTINEL
+                                                    ? NEW_SECTION_SENTINEL
+                                                    : editState.section
+                                              }
+                                              onChange={(e) => {
+                                                const val = e.target.value;
+                                                updateEditField(item.id, 'section', val === GENERAL_SENTINEL ? null : val);
+                                                if (val !== NEW_SECTION_SENTINEL) {
+                                                  updateEditField(item.id, 'newSectionName', '');
+                                                }
+                                              }}
+                                              disabled={editState.saving || reordering}
+                                              style={{ fontSize: '14px' }}
+                                            >
+                                              {renderSectionOptions(t('sectionDefault'))}
+                                            </select>
+                                            {editState.section === NEW_SECTION_SENTINEL && (
+                                              <input
+                                                className="input"
+                                                type="text"
+                                                placeholder={t('newSectionNamePlaceholder')}
+                                                value={editState.newSectionName}
+                                                onChange={(e) => updateEditField(item.id, 'newSectionName', e.target.value)}
+                                                disabled={editState.saving || reordering}
+                                                style={{ fontSize: '14px', marginTop: 'var(--space-2)' }}
+                                                autoFocus
+                                              />
+                                            )}
+                                          </div>
+
+                                          {/* Reorder within section */}
                                           {isDesktop && fullSectionItems.length > 1 && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                                               <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>{t('reorderLabel')}</span>
@@ -1294,10 +1597,23 @@ export default function ChecklistTemplateDetailPage() {
                                               {reordering && <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t('reorderSaving')}</span>}
                                             </div>
                                           )}
+
                                           {reorderError && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{reorderError}</div>}
                                           {editState.error && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{editState.error}</div>}
+
                                           <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                            <button className="btn btn-primary" onClick={() => handleSaveItem(item)} disabled={editState.saving || reordering} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{editState.saving ? t('btnSavingItem') : t('btnSave')}</button>
+                                            <button
+                                              className="btn btn-primary"
+                                              onClick={() => handleSaveItem(item)}
+                                              disabled={
+                                                editState.saving ||
+                                                reordering ||
+                                                (editState.section === NEW_SECTION_SENTINEL && !editState.newSectionName.trim())
+                                              }
+                                              style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}
+                                            >
+                                              {editState.saving ? t('btnSavingItem') : t('btnSave')}
+                                            </button>
                                             <button className="btn btn-secondary" onClick={cancelEditing} disabled={editState.saving} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{t('btnCancel')}</button>
                                           </div>
                                         </div>

@@ -1547,9 +1547,14 @@
     "btnSavingItem": "Saving…",
     "btnSave": "Save",
     "btnCancel": "Cancel",
+    "btnAddItem": "Add item",
     "btnAddFirstItem": "+ Add first item",
     "defaultNewItemLabel": "New item",
-    "errorAddFirstItemFailed": "Failed to add item."
+    "errorAddFirstItemFailed": "Failed to add item.",
+    "addItemSectionLabel": "Section",
+    "sectionOptionNewSection": "New section…",
+    "newSectionNamePlaceholder": "Section name",
+    "itemFieldSection": "Section"
   },
   "checklistDetail": {
     "backToBooking": "Back to booking",
