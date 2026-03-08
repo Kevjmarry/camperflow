@@ -56,6 +56,7 @@ type InstanceUpdate = {
 };
 
 type SyncError = {
+  kind: 'item_update_failed' | 'status_sync_failed';
   message: string;
   code: string | null;
   details: string | null;
@@ -92,7 +93,6 @@ function computeInstanceUpdate(
   }
 
   if (noneChecked) {
-    // Back to pending — preserve existing started_* if already set, clear completed_*
     return {
       status: 'pending',
       started_at: snapshot.started_at,
@@ -102,13 +102,26 @@ function computeInstanceUpdate(
     };
   }
 
-  // Some checked — in_progress
   return {
     status: 'in_progress',
     started_at: isPending ? now : (snapshot.started_at ?? now),
     started_by: isPending ? userId : (snapshot.started_by ?? userId),
     completed_at: null,
     completed_by: null,
+  };
+}
+
+/** Normalise any Supabase/PostgREST error object into a SyncError. */
+function parseSyncError(error: any, kind: SyncError['kind']): SyncError {
+  return {
+    kind,
+    message: typeof error?.message === 'string' && error.message.trim()
+      ? error.message
+      : JSON.stringify(error),
+    code: error?.code ?? null,
+    details: error?.details ?? null,
+    hint: error?.hint ?? null,
+    raw: JSON.stringify(error, null, 2),
   };
 }
 
@@ -125,6 +138,10 @@ export default function ChecklistDetailClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from');
+
+  const listScope = searchParams.get('listScope') ?? 'all';
+  const listStatus = searchParams.get('listStatus') ?? 'all';
+
   const supabase = createClient();
 
   const [localItems, setLocalItems] = useState(initialItems);
@@ -136,15 +153,14 @@ export default function ChecklistDetailClient({
   const [initialsByUserId, setInitialsByUserId] = useState<Record<string, string>>({});
   const [syncError, setSyncError] = useState<SyncError | null>(null);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
+  const [quickMode, setQuickMode] = useState(false);
+  const [quickCompleting, setQuickCompleting] = useState(false);
 
-  // Ref always holds the latest localInstance value — used in syncInstanceStatus
-  // to avoid stale closures when the callback is called after async item writes.
   const localInstanceRef = useRef(localInstance);
   useEffect(() => {
     localInstanceRef.current = localInstance;
   }, [localInstance]);
 
-  // Sync from server props after router.refresh()
   useEffect(() => setLocalItems(initialItems), [initialItems]);
   useEffect(() => setLocalInstance(instance), [instance]);
 
@@ -216,11 +232,6 @@ export default function ChecklistDetailClient({
     fetchUserProfile();
   }, []);
 
-  /**
-   * Returns true if the Supabase error represents the expected "locked"
-   * case: booking completed + trying to edit handover/return checklist.
-   * Handles both the legacy bulk-update message and the newer per-type messages.
-   */
   function isLockError(error: any): boolean {
     if (
       !(error?.code === 'P0001' || (error as any)?.code === 'P0001') ||
@@ -230,20 +241,18 @@ export default function ChecklistDetailClient({
     }
     const msg: string = error.message;
     return (
-      // Legacy message
       msg.includes('Cannot modify handover/return checklists after booking is completed.') ||
-      // Newer per-type messages: "Cannot edit a handover checklist after..."
-      //                          "Cannot edit a return checklist after..."
       (msg.includes('Cannot edit a') &&
         (msg.includes('handover') || msg.includes('return')) &&
-        msg.includes('after'))
+        msg.includes('after')) ||
+      (msg.includes('Cannot edit') &&
+        msg.includes('checklist item') &&
+        msg.includes('must be completed first')) ||
+      (msg.includes('Cannot') &&
+        (msg.includes('before pickup') || msg.includes('before handover')))
     );
   }
 
-  /**
-   * Returns true if the Supabase error is a P0001 lock error specifically for
-   * the return-checklist-after-completion case.
-   */
   function isReturnAfterCompletionLockError(error: any): boolean {
     return (
       (error?.code === 'P0001' || (error as any)?.code === 'P0001') &&
@@ -252,14 +261,15 @@ export default function ChecklistDetailClient({
     );
   }
 
+  function lockMessageFromError(error: any): string {
+    if (typeof error?.message === 'string' && error.message.trim()) {
+      return error.message;
+    }
+    return t('lockFallback');
+  }
+
   type SyncResult = { ok: true } | { locked: true } | { error: SyncError };
 
-  /**
-   * Reads the latest instance snapshot via ref (never stale), computes the
-   * required status update, applies it optimistically, then persists to DB.
-   * Returns { ok } on success, { locked } for the expected lock case, or { error }.
-   * Callers must NOT call router.refresh() on { locked }.
-   */
   const syncInstanceStatus = useCallback(
     async (
       nextItems: ChecklistItemType[],
@@ -282,7 +292,6 @@ export default function ChecklistDetailClient({
       console.log('[syncInstanceStatus] computed update:', update);
       console.log('[syncInstanceStatus] instance.id:', instance.id);
 
-      // Optimistic local update
       setLocalInstance((prev) => ({ ...prev, ...update }));
       setSyncError(null);
       setLockNotice(null);
@@ -293,9 +302,6 @@ export default function ChecklistDetailClient({
         .eq('id', instance.id);
 
       if (error) {
-        // P0001 lock error for return checklist after booking completed, AND the
-        // instance was already marked completed locally — treat as a successful no-op.
-        // The DB state is already consistent; no revert or notice is needed.
         if (
           isReturnAfterCompletionLockError(error) &&
           localInstanceRef.current.status === 'completed'
@@ -309,20 +315,12 @@ export default function ChecklistDetailClient({
         }
 
         if (isLockError(error)) {
-          // Expected lock case — revert optimistic UI, show inline notice, no error banner
           setLocalItems(prevItems);
           setLocalInstance(prevInstance);
-          setLockNotice('This checklist is locked because the booking is completed.');
-          // Do NOT call router.refresh(), do NOT console.error
+          setLockNotice(lockMessageFromError(error));
           return { locked: true };
         } else {
-          const syncErr: SyncError = {
-            message: error.message,
-            code: (error as any).code ?? null,
-            details: (error as any).details ?? null,
-            hint: (error as any).hint ?? null,
-            raw: JSON.stringify(error, null, 2),
-          };
+          const syncErr = parseSyncError(error, 'status_sync_failed');
 
           console.error('[syncInstanceStatus] Supabase error updating checklist_instances:');
           console.error('  message:', syncErr.message);
@@ -341,20 +339,111 @@ export default function ChecklistDetailClient({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [supabase, instance.id]
-    // Intentionally omit localInstance — localInstanceRef is used instead
   );
 
-  const handleBackClick = () => {
+  const navigateBack = useCallback(() => {
     if (from === 'booking' && instance.booking_id) {
       router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
     } else {
-      router.push(`/${locale}/staff/checklists?scope=all&status=not_started`);
+      router.push(
+        `/${locale}/staff/checklists?scope=${listScope}&status=${listStatus}`
+      );
     }
+  }, [from, instance.booking_id, locale, listScope, listStatus, router]);
+
+  const handleBackClick = () => {
+    navigateBack();
   };
 
   const handleGoToBooking = () => {
     if (instance.booking_id) {
       router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
+    }
+  };
+
+  /** Quick Mode: complete ALL remaining unchecked items across all sections. */
+  const handleQuickCompleteAll = async () => {
+    const uncheckedItems = localItems.filter((it) => !it.checked);
+    if (uncheckedItems.length === 0) {
+      // Already fully checked — just navigate back
+      navigateBack();
+      return;
+    }
+
+    const confirmed = confirm(
+      `Complete all ${uncheckedItems.length} remaining item${uncheckedItems.length === 1 ? '' : 's'} and finish this checklist?`
+    );
+    if (!confirmed) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setQuickCompleting(true);
+
+    const now = new Date().toISOString();
+    const uncheckedIds = uncheckedItems.map((it) => it.id);
+
+    const prevItems = localItems;
+    const prevInstance = localInstance;
+
+    const nextItems = localItems.map((it) =>
+      uncheckedIds.includes(it.id)
+        ? { ...it, checked: true, checked_at: now, checked_by: user.id }
+        : it
+    );
+
+    setLocalItems(nextItems);
+
+    const { error: itemError } = await supabase
+      .from('checklist_instance_items')
+      .update({ checked: true, checked_at: now, checked_by: user.id })
+      .in('id', uncheckedIds);
+
+    if (itemError) {
+      setLocalItems(prevItems);
+      setLocalInstance(prevInstance);
+      setQuickCompleting(false);
+
+      if (isLockError(itemError)) {
+        setSyncError(null);
+        setLockNotice(lockMessageFromError(itemError));
+      } else {
+        const syncErr = parseSyncError(itemError, 'item_update_failed');
+        console.error('[handleQuickCompleteAll] item update failed:', syncErr);
+        setLockNotice(null);
+        setSyncError(syncErr);
+      }
+      return;
+    }
+
+    try {
+      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+
+      if ('locked' in result) {
+        // Roll back item writes
+        await supabase
+          .from('checklist_instance_items')
+          .update({ checked: false, checked_at: null, checked_by: null })
+          .in('id', uncheckedIds);
+        setQuickCompleting(false);
+        return;
+      }
+
+      if ('error' in result) {
+        setQuickCompleting(false);
+        return;
+      }
+
+      // Success — navigate back
+      navigateBack();
+    } catch (err) {
+      console.error('Error in handleQuickCompleteAll:', err);
+      setLocalItems(initialItems);
+      setLocalInstance(instance);
+      setQuickCompleting(false);
+      router.refresh();
     }
   };
 
@@ -383,22 +472,39 @@ export default function ChecklistDetailClient({
 
     setLocalItems(nextItems);
 
+    const { error: itemError } = await supabase
+      .from('checklist_instance_items')
+      .update({
+        checked: newChecked,
+        checked_at: newChecked ? now : null,
+        checked_by: newChecked ? user.id : null,
+      })
+      .eq('id', itemId);
+
+    if (itemError) {
+      setLocalItems(prevItems);
+      setLocalInstance(prevInstance);
+
+      if (isLockError(itemError)) {
+        setSyncError(null);
+        setLockNotice(lockMessageFromError(itemError));
+      } else {
+        const syncErr = parseSyncError(itemError, 'item_update_failed');
+        console.error('[handleToggle] Supabase error updating checklist_instance_items:');
+        console.error('  message:', syncErr.message);
+        console.error('  code:', syncErr.code);
+        console.error('  details:', syncErr.details);
+        console.error('  hint:', syncErr.hint);
+        setLockNotice(null);
+        setSyncError(syncErr);
+      }
+      return;
+    }
+
     try {
-      const { error: itemError } = await supabase
-        .from('checklist_instance_items')
-        .update({
-          checked: newChecked,
-          checked_at: newChecked ? now : null,
-          checked_by: newChecked ? user.id : null,
-        })
-        .eq('id', itemId);
-
-      if (itemError) throw itemError;
-
       const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
 
       if ('locked' in result) {
-        // Revert the DB item change — restore exact previous row state from prevItems
         const prevItem = prevItems.find((it) => it.id === itemId);
         await supabase
           .from('checklist_instance_items')
@@ -408,13 +514,12 @@ export default function ChecklistDetailClient({
             checked_by: prevItem ? prevItem.checked_by : null,
           })
           .eq('id', itemId);
-        // Do NOT router.refresh()
         return;
       }
 
       router.refresh();
     } catch (err) {
-      console.error('Error updating checklist:', err);
+      console.error('Error syncing checklist instance status:', err);
       setLocalItems(initialItems);
       setLocalInstance(instance);
       router.refresh();
@@ -451,18 +556,35 @@ export default function ChecklistDetailClient({
 
     setLocalItems(nextItems);
 
+    const { error: itemError } = await supabase
+      .from('checklist_instance_items')
+      .update({ checked: true, checked_at: now, checked_by: user.id })
+      .in('id', uncheckedIds);
+
+    if (itemError) {
+      setLocalItems(prevItems);
+      setLocalInstance(prevInstance);
+
+      if (isLockError(itemError)) {
+        setSyncError(null);
+        setLockNotice(lockMessageFromError(itemError));
+      } else {
+        const syncErr = parseSyncError(itemError, 'item_update_failed');
+        console.error('[handleCompleteSection] Supabase error updating checklist_instance_items:');
+        console.error('  message:', syncErr.message);
+        console.error('  code:', syncErr.code);
+        console.error('  details:', syncErr.details);
+        console.error('  hint:', syncErr.hint);
+        setLockNotice(null);
+        setSyncError(syncErr);
+      }
+      return;
+    }
+
     try {
-      const { error: itemError } = await supabase
-        .from('checklist_instance_items')
-        .update({ checked: true, checked_at: now, checked_by: user.id })
-        .in('id', uncheckedIds);
-
-      if (itemError) throw itemError;
-
       const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
 
       if ('locked' in result) {
-        // Revert the DB item changes — restore exact previous state for each item
         await Promise.all(
           uncheckedIds.map((id) => {
             const prevItem = prevItems.find((it) => it.id === id);
@@ -476,7 +598,6 @@ export default function ChecklistDetailClient({
               .eq('id', id);
           })
         );
-        // Do NOT router.refresh()
         return;
       }
 
@@ -535,8 +656,6 @@ export default function ChecklistDetailClient({
       ? t('backToBooking')
       : t('backToChecklists');
 
-  // Build the map from translation keys so values are locale-aware.
-  // Add new checklist types here as the product grows.
   const CHECKLIST_TYPE_LABELS: Record<string, string> = {
     handover: t('type_handover'),
     return: t('type_return'),
@@ -560,12 +679,19 @@ export default function ChecklistDetailClient({
     }
   })();
 
+  const totalItems = localItems.length;
+  const checkedItems = localItems.filter((it) => it.checked).length;
+  const remainingCount = totalItems - checkedItems;
+  const allDoneAlready = remainingCount === 0;
+
   const renderItem = (item: ChecklistItemType) => {
     const checkerInitials =
       item.checked && item.checked_by
         ? initialsByUserId[item.checked_by] ?? null
         : null;
 
+    // Normal mode (unchanged) — Quick Mode hides per-item interaction in favour
+    // of the single top-level action, but items are still visible read-only.
     return (
       <div
         key={item.id}
@@ -573,26 +699,29 @@ export default function ChecklistDetailClient({
           border: '1px solid rgb(var(--border))',
           borderRadius: '6px',
           padding: '12px',
+          opacity: quickMode ? 0.75 : 1,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
           <label
-            htmlFor={`check-${item.id}`}
+            htmlFor={quickMode ? undefined : `check-${item.id}`}
             style={{
               marginTop: '2px',
-              cursor: 'pointer',
+              cursor: quickMode ? 'default' : 'pointer',
               flexShrink: 0,
               position: 'relative',
               display: 'block',
             }}
           >
-            <input
-              type="checkbox"
-              id={`check-${item.id}`}
-              checked={item.checked}
-              onChange={() => handleToggle(item.id, item.checked)}
-              style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-            />
+            {!quickMode && (
+              <input
+                type="checkbox"
+                id={`check-${item.id}`}
+                checked={item.checked}
+                onChange={() => handleToggle(item.id, item.checked)}
+                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+              />
+            )}
             <div
               style={{
                 width: '20px',
@@ -646,13 +775,12 @@ export default function ChecklistDetailClient({
                   minWidth: 0,
                 }}
               >
-                <label
-                  htmlFor={`check-${item.id}`}
+                <span
                   className="label"
-                  style={{ fontWeight: 500, cursor: 'pointer', margin: 0 }}
+                  style={{ fontWeight: 500, margin: 0 }}
                 >
                   {item.template.label}
-                </label>
+                </span>
                 {checkerInitials && (
                   <span
                     style={{
@@ -674,26 +802,28 @@ export default function ChecklistDetailClient({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => toggleNotes(item.id)}
-                style={{
-                  fontSize: '12px',
-                  color: 'rgb(var(--brand))',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '2px 6px',
-                  textDecoration: 'underline',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {item.notes ? t('editNote') : t('addNote')}
-              </button>
+              {!quickMode && (
+                <button
+                  type="button"
+                  onClick={() => toggleNotes(item.id)}
+                  style={{
+                    fontSize: '12px',
+                    color: 'rgb(var(--brand))',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 6px',
+                    textDecoration: 'underline',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.notes ? t('editNote') : t('addNote')}
+                </button>
+              )}
             </div>
 
-            {!openNotesById[item.id] && item.notes && (
+            {!quickMode && !openNotesById[item.id] && item.notes && (
               <div
                 style={{
                   fontSize: '13px',
@@ -709,7 +839,7 @@ export default function ChecklistDetailClient({
               </div>
             )}
 
-            {openNotesById[item.id] && (
+            {!quickMode && openNotesById[item.id] && (
               <textarea
                 placeholder={t('notesPlaceholder')}
                 value={item.notes ?? ''}
@@ -725,6 +855,23 @@ export default function ChecklistDetailClient({
                   fontFamily: 'inherit',
                 }}
               />
+            )}
+
+            {/* In Quick Mode, show note text inline (read-only) */}
+            {quickMode && item.notes && (
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: 'rgb(var(--muted))',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: 'vertical',
+                  lineHeight: '1.4',
+                }}
+              >
+                {item.notes}
+              </div>
             )}
           </div>
         </div>
@@ -784,7 +931,17 @@ export default function ChecklistDetailClient({
                 : t('noBookingLinked')}
             </p>
           </div>
-          <div style={{ flexShrink: 0 }}>
+
+          {/* Status badge + Quick Mode toggle */}
+          <div
+            style={{
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: '10px',
+            }}
+          >
             <span
               style={{
                 display: 'inline-block',
@@ -799,11 +956,131 @@ export default function ChecklistDetailClient({
             >
               {statusLabel}
             </span>
+
+            {/* Quick Mode toggle */}
+            <button
+              type="button"
+              onClick={() => setQuickMode((v) => !v)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: quickMode
+                  ? '2px solid rgb(var(--brand))'
+                  : '1px solid rgb(var(--border))',
+                backgroundColor: quickMode ? 'rgb(var(--brand))' : 'rgb(var(--surface))',
+                color: quickMode ? '#fff' : 'rgb(var(--text))',
+                transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ flexShrink: 0 }}
+              >
+                <path
+                  d="M9 1L2 9.5H7.5L7 15L14 6.5H8.5L9 1Z"
+                  fill={quickMode ? '#fff' : 'rgb(var(--brand))'}
+                  stroke={quickMode ? '#fff' : 'rgb(var(--brand))'}
+                  strokeWidth="0.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Quick Mode
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Lock Notice (inline, non-red) */}
+      {/* Quick Mode: single primary action banner */}
+      {quickMode && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '14px 16px',
+            borderRadius: '8px',
+            border: '2px solid rgb(var(--brand))',
+            backgroundColor: 'rgb(var(--surface))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'rgb(var(--text))',
+                marginBottom: '2px',
+              }}
+            >
+              {allDoneAlready
+                ? `All ${totalItems} items checked`
+                : `${checkedItems} of ${totalItems} items checked`}
+            </div>
+            <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
+              {allDoneAlready
+                ? 'Checklist is complete.'
+                : `${remainingCount} item${remainingCount === 1 ? '' : 's'} remaining.`}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleQuickCompleteAll}
+            disabled={quickCompleting}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: '10px 20px',
+              borderRadius: '8px',
+              fontSize: '15px',
+              fontWeight: 700,
+              cursor: quickCompleting ? 'not-allowed' : 'pointer',
+              border: '2px solid rgb(var(--brand))',
+              backgroundColor: quickCompleting ? 'rgb(var(--surface))' : 'rgb(var(--brand))',
+              color: quickCompleting ? 'rgb(var(--muted))' : '#fff',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              transition: 'opacity 0.15s ease',
+              opacity: quickCompleting ? 0.6 : 1,
+            }}
+          >
+            {quickCompleting ? (
+              'Completing…'
+            ) : allDoneAlready ? (
+              <>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 8.5L6 12.5L14 4.5" stroke="rgb(var(--brand))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Done — go back
+              </>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 1L2 9.5H7.5L7 15L14 6.5H8.5L9 1Z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round" />
+                </svg>
+                Complete checklist
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Lock Notice */}
       {lockNotice && (
         <div
           style={{
@@ -853,7 +1130,9 @@ export default function ChecklistDetailClient({
           }}
         >
           <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px' }}>
-            ⚠️ Status sync failed — checklist items were saved but the overall status could not be updated.
+            {syncError.kind === 'item_update_failed'
+              ? `⚠️ ${t('errorItemUpdateFailed')}`
+              : `⚠️ ${t('errorStatusSyncFailed')}`}
           </div>
           <div style={{ fontSize: '12px', lineHeight: '1.6', fontFamily: 'monospace' }}>
             <div><strong>message:</strong> {syncError.message}</div>
@@ -893,8 +1172,8 @@ export default function ChecklistDetailClient({
         </div>
       )}
 
-      {/* Compact Success Notice */}
-      {localInstance.status === 'completed' && (
+      {/* Compact Success Notice (normal mode only) */}
+      {!quickMode && localInstance.status === 'completed' && (
         <div style={{ marginBottom: '16px' }}>
           <div
             className="surface"
@@ -1019,7 +1298,8 @@ export default function ChecklistDetailClient({
                   </span>
                 </button>
 
-                {!allDone && (
+                {/* Per-section complete button — normal mode only */}
+                {!quickMode && !allDone && (
                   <button
                     type="button"
                     onClick={() => handleCompleteSection(name, sectionItems)}

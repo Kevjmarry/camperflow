@@ -6,14 +6,17 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import { getStatusChipStyle } from "@/lib/statusChip";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
 type ChecklistType = 'handover' | 'return' | 'cleaning' | 'mechanical';
+type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
 
 interface Vehicle {
   id: string;
   name: string;
   registration_plate: string;
+  status: VehicleStatus | null;
 }
 
 interface Booking {
@@ -71,6 +74,76 @@ export default function BookingDetailPage() {
   const router = useRouter();
   const t = useTranslations("bookingDetail");
   const supabase = createClient();
+
+  // Returns only the base "Name (Plate)" string — status is rendered separately as a chip.
+  const formatVehicleBaseName = (vehicle: Vehicle): string => {
+    return `${vehicle.name} (${vehicle.registration_plate})`;
+  };
+
+  const getVehicleStatusLabel = (status: VehicleStatus): string => {
+    switch (status) {
+      case 'ready':     return t("vehicle.status.ready");
+      case 'preparing': return t("vehicle.status.preparing");
+      case 'on_rent':   return t("vehicle.status.onRent");
+    }
+  };
+
+  // Renders vehicle base name plus, when a status is present, a status chip.
+  const VehicleWithChip = ({ vehicle }: { vehicle: Vehicle }) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+      <span style={{ color: 'rgb(var(--text))' }}>{formatVehicleBaseName(vehicle)}</span>
+      {vehicle.status && (
+        <span style={getStatusChipStyle(vehicle.status)}>
+          {getVehicleStatusLabel(vehicle.status)}
+        </span>
+      )}
+    </span>
+  );
+
+  // Renders a single checklist instance row.
+  const ChecklistRow = ({ instance }: { instance: ChecklistInstance }) => (
+    <div
+      style={{
+        padding: 'var(--space-4)',
+        background: 'rgb(var(--border) / 0.3)',
+        borderRadius: 'var(--radius)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 'var(--space-3)',
+        flexWrap: 'wrap'
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <div style={{
+          fontSize: '14px',
+          fontWeight: 500,
+          color: 'rgb(var(--text))',
+          marginBottom: 'var(--space-1)'
+        }}>
+          {getChecklistDisplayName(instance)}
+        </div>
+        <div>
+          <span style={getStatusChipStyle(instance.status)}>
+            {getChecklistStatusLabel(instance.status)}
+          </span>
+        </div>
+      </div>
+      <Link
+        href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
+        className="btn btn-secondary"
+        style={{
+          fontSize: '14px',
+          padding: 'var(--space-2) var(--space-4)',
+          minHeight: '36px'
+        }}
+      >
+        {instance.status === 'completed' ? t("checklists.viewChecklist") : t("checklists.openChecklist")}
+      </Link>
+    </div>
+  );
+
+  // ────────────────────────────────────────────────────────────────────────────
 
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -231,12 +304,12 @@ export default function BookingDetailPage() {
       if (bookingData.vehicle_id) {
         const { data: vehicleData } = await supabase
           .from('vehicles')
-          .select('id, name, registration_plate')
+          .select('id, name, registration_plate, status')
           .eq('id', bookingData.vehicle_id)
           .single();
 
         if (vehicleData) {
-          setVehicleInfo(vehicleData);
+          setVehicleInfo(vehicleData as Vehicle);
         }
       }
 
@@ -253,11 +326,11 @@ export default function BookingDetailPage() {
     try {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*')
+        .select('id, name, registration_plate, status')
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setVehicles(data || []);
+      setVehicles((data || []) as Vehicle[]);
     } catch (err: any) {
       console.error('Failed to fetch vehicles:', err);
     }
@@ -465,25 +538,14 @@ export default function BookingDetailPage() {
     }
   };
 
-  const getStatusColor = (status: BookingStatus) => {
-    switch (status) {
-      case 'draft': return 'rgb(var(--muted))';
-      case 'confirmed': return 'rgb(var(--brand))';
-      case 'blocked': return 'rgb(var(--error))';
-      case 'on_rent': return 'rgb(var(--success))';
-      case 'completed': return 'rgb(var(--accent))';
-      case 'cancelled': return 'rgb(var(--error))';
-    }
-  };
-
   const getStatusLabel = (status: BookingStatus) => {
     switch (status) {
-      case 'draft': return t("status.pending");
-      case 'confirmed': return t("status.confirmed");
-      case 'blocked': return t("status.blocked");
-      case 'on_rent': return t("status.onRent");
-      case 'completed': return t("status.completed");
-      case 'cancelled': return t("status.cancelled");
+      case 'draft':      return t("status.pending");
+      case 'confirmed':  return t("status.confirmed");
+      case 'blocked':    return t("status.blocked");
+      case 'on_rent':    return t("status.onRent");
+      case 'completed':  return t("status.completed");
+      case 'cancelled':  return t("status.cancelled");
     }
   };
 
@@ -491,9 +553,9 @@ export default function BookingDetailPage() {
     status: 'pending' | 'in_progress' | 'completed'
   ) => {
     switch (status) {
-      case 'pending': return t("checklists.status.notStarted");
+      case 'pending':     return t("checklists.status.notStarted");
       case 'in_progress': return t("checklists.status.inProgress");
-      case 'completed': return t("checklists.status.completed");
+      case 'completed':   return t("checklists.status.completed");
     }
   };
 
@@ -507,15 +569,13 @@ export default function BookingDetailPage() {
     });
   };
 
-  const getVehicleName = () => {
+  // Returns the Vehicle object currently selected/relevant, for inline chip rendering.
+  const getSelectedVehicle = (): Vehicle | null => {
     if (canManage) {
-      if (!formData.vehicle_id) return t("vehicle.unassigned");
-      const vehicle = vehicles.find(v => v.id === formData.vehicle_id);
-      return vehicle ? `${vehicle.name} (${vehicle.registration_plate})` : t("vehicle.unassigned");
-    } else {
-      if (!vehicleInfo) return t("vehicle.unassigned");
-      return `${vehicleInfo.name} (${vehicleInfo.registration_plate})`;
+      if (!formData.vehicle_id) return null;
+      return vehicles.find(v => v.id === formData.vehicle_id) ?? null;
     }
+    return vehicleInfo;
   };
 
   if (notFound) {
@@ -604,17 +664,9 @@ export default function BookingDetailPage() {
                 <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))', margin: 0 }}>
                   {t("title")}
                 </h1>
-                <div style={{
-                  display: 'inline-block',
-                  padding: 'var(--space-2) var(--space-3)',
-                  borderRadius: 'var(--radius)',
-                  background: `${getStatusColor(redactedBooking.status)}15`,
-                  color: getStatusColor(redactedBooking.status),
-                  fontSize: '14px',
-                  fontWeight: 600
-                }}>
+                <span style={getStatusChipStyle(redactedBooking.status)}>
                   {getStatusLabel(redactedBooking.status)}
-                </div>
+                </span>
               </div>
 
               <div style={{
@@ -628,8 +680,11 @@ export default function BookingDetailPage() {
                   <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
                     {t("field.vehicle")}
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: 500, color: vehicleInfo ? 'rgb(var(--text))' : 'rgb(var(--muted))' }}>
-                    {vehicleInfo ? `${vehicleInfo.name} (${vehicleInfo.registration_plate})` : t("vehicle.unassigned")}
+                  <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                    {vehicleInfo
+                      ? <VehicleWithChip vehicle={vehicleInfo} />
+                      : <span style={{ color: 'rgb(var(--muted))' }}>{t("vehicle.unassigned")}</span>
+                    }
                   </div>
                 </div>
                 <div>
@@ -688,44 +743,7 @@ export default function BookingDetailPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {checklistInstances.map((instance) => (
-                    <div
-                      key={instance.id}
-                      style={{
-                        padding: 'var(--space-4)',
-                        background: 'rgb(var(--border) / 0.3)',
-                        borderRadius: 'var(--radius)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 'var(--space-3)',
-                        flexWrap: 'wrap'
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: 'rgb(var(--text))',
-                          marginBottom: 'var(--space-1)'
-                        }}>
-                          {getChecklistDisplayName(instance)}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                          {getChecklistStatusLabel(instance.status)}
-                        </div>
-                      </div>
-                      <Link
-                        href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
-                        className="btn btn-secondary"
-                        style={{
-                          fontSize: '14px',
-                          padding: 'var(--space-2) var(--space-4)',
-                          minHeight: '36px'
-                        }}
-                      >
-                        {instance.status === 'completed' ? t("checklists.viewChecklist") : t("checklists.openChecklist")}
-                      </Link>
-                    </div>
+                    <ChecklistRow key={instance.id} instance={instance} />
                   ))}
                 </div>
               )}
@@ -737,6 +755,8 @@ export default function BookingDetailPage() {
   }
 
   if (!booking) return null;
+
+  const selectedVehicle = getSelectedVehicle();
 
   return (
     <PageContainer maxWidth="1400px">
@@ -759,17 +779,9 @@ export default function BookingDetailPage() {
               <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
                 {booking.booking_number}
               </h1>
-              <div style={{
-                display: 'inline-block',
-                padding: 'var(--space-1) var(--space-3)',
-                borderRadius: 'var(--radius)',
-                background: `${getStatusColor(booking.status)}15`,
-                color: getStatusColor(booking.status),
-                fontSize: '14px',
-                fontWeight: 500
-              }}>
+              <span style={getStatusChipStyle(booking.status)}>
                 {getStatusLabel(booking.status)}
-              </div>
+              </span>
             </div>
             <div style={{
               marginTop: 'var(--space-3)',
@@ -779,10 +791,25 @@ export default function BookingDetailPage() {
               color: 'rgb(var(--muted))',
               fontSize: '14px'
             }}>
-              <div>{t("summary.customer")}: <span style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || "-"}</span></div>
-              <div>{t("summary.vehicle")}: <span style={{ color: 'rgb(var(--text))' }}>{getVehicleName()}</span></div>
-              <div>{t("summary.pickup")}: <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.pickup_at)}</span></div>
-              <div>{t("summary.return")}: <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.return_at)}</span></div>
+              <div>
+                {t("summary.customer")}:{' '}
+                <span style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || "-"}</span>
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                <span>{t("summary.vehicle")}:</span>{' '}
+                {selectedVehicle
+                  ? <VehicleWithChip vehicle={selectedVehicle} />
+                  : <span style={{ color: 'rgb(var(--text))' }}>{t("vehicle.unassigned")}</span>
+                }
+              </div>
+              <div>
+                {t("summary.pickup")}:{' '}
+                <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.pickup_at)}</span>
+              </div>
+              <div>
+                {t("summary.return")}:{' '}
+                <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.return_at)}</span>
+              </div>
             </div>
           </div>
 
@@ -1025,44 +1052,7 @@ export default function BookingDetailPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {checklistInstances.map((instance) => (
-                  <div
-                    key={instance.id}
-                    style={{
-                      padding: 'var(--space-4)',
-                      background: 'rgb(var(--border) / 0.3)',
-                      borderRadius: 'var(--radius)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 'var(--space-3)',
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: 'rgb(var(--text))',
-                        marginBottom: 'var(--space-1)'
-                      }}>
-                        {getChecklistDisplayName(instance)}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                        {getChecklistStatusLabel(instance.status)}
-                      </div>
-                    </div>
-                    <Link
-                      href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
-                      className="btn btn-secondary"
-                      style={{
-                        fontSize: '14px',
-                        padding: 'var(--space-2) var(--space-4)',
-                        minHeight: '36px'
-                      }}
-                    >
-                      {instance.status === 'completed' ? t("checklists.viewChecklist") : t("checklists.openChecklist")}
-                    </Link>
-                  </div>
+                  <ChecklistRow key={instance.id} instance={instance} />
                 ))}
               </div>
             )}

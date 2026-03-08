@@ -963,7 +963,12 @@
       "cancelled": "Cancelled"
     },
     "vehicle": {
-      "unassigned": "Unassigned"
+      "unassigned": "Unassigned",
+      "status": {
+        "ready": "Ready",
+        "preparing": "Preparing",
+        "onRent": "On rent"
+      }
     },
     "placeholder": {
       "dash": "-"
@@ -1576,6 +1581,9 @@
     "type_handover": "Handover checklist",
     "type_return": "Return checklist",
     "type_cleaning": "Cleaning checklist",
-    "type_mechanical": "Mechanical checklist"
+    "type_mechanical": "Mechanical checklist",
+    "lockFallback": "This checklist is locked due to a business rule.",
+    "errorItemUpdateFailed": "Failed to save checklist item — the change was not recorded.",
+    "errorStatusSyncFailed": "Status sync failed — checklist items were saved but the overall status could not be updated."
   }
 }

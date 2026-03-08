@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
 import { useTranslations } from 'next-intl';
+import ChecklistItemsEditor from '@/components/checklists/ChecklistItemsEditor';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -217,38 +218,45 @@ function TypeExplanationPanel({ selectedType }: { selectedType: string }) {
             background: 'rgb(var(--surface))',
             border: '1px solid rgb(var(--border))',
             borderRadius: 'var(--radius)',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 'max-content' }}>
-            {LIFECYCLE_STAGE_KEYS.map((key, idx) => {
-              const isActive = key === lifecycleStageKey;
-              return (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {idx > 0 && (
-                    <span style={{ color: 'rgb(var(--muted))', fontSize: '11px', flexShrink: 0, opacity: 0.5 }}>→</span>
-                  )}
-                  <span
+          {LIFECYCLE_STAGE_KEYS.map((key, idx) => {
+            const isActive = key === lifecycleStageKey;
+            const isLast = idx === LIFECYCLE_STAGE_KEYS.length - 1;
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                {/* Track: dot + line */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: '16px' }}>
+                  <div
                     style={{
-                      display: 'inline-block',
-                      padding: '3px 9px',
-                      borderRadius: '999px',
-                      fontSize: '11px',
-                      fontWeight: isActive ? 700 : 400,
-                      whiteSpace: 'nowrap',
-                      background: isActive ? 'rgb(var(--brand))' : 'transparent',
-                      color: isActive ? '#fff' : 'rgb(var(--muted))',
-                      border: isActive ? '1px solid rgb(var(--brand))' : '1px solid transparent',
+                      width: isActive ? '10px' : '8px',
+                      height: isActive ? '10px' : '8px',
+                      borderRadius: '50%',
+                      marginTop: '3px',
+                      background: isActive ? 'rgb(var(--brand))' : 'rgb(var(--muted) / 0.35)',
+                      flexShrink: 0,
                       transition: 'all 0.15s',
                     }}
-                  >
-                    {safeGet(`lifecycleStages.${key}`)}
-                  </span>
+                  />
+                  {!isLast && (
+                    <div style={{ width: '1px', flex: 1, minHeight: '10px', background: 'rgb(var(--muted) / 0.2)', margin: '2px 0' }} />
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                {/* Label */}
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+                    paddingBottom: isLast ? 0 : 'var(--space-2)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {safeGet(`lifecycleStages.${key}`)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -334,6 +342,35 @@ function groupItemsBySection(
       const minB = Math.min(...b.items.map((i) => i.sort_order));
       return minA - minB;
     });
+}
+
+/**
+ * Given a desired section order (array of section keys), compute new sort_order
+ * values for every item so that:
+ *   - All items in section[0] get the globally lowest sort_orders (0, 1, 2, …)
+ *   - All items in section[1] get the next batch, etc.
+ *   - Within each section, per-item relative order (position) is preserved.
+ *
+ * Returns a Map<itemId, newSortOrder>.
+ */
+function computeSortOrdersForSectionReorder(
+  allItems: ChecklistTemplateItem[],
+  newSectionOrder: string[],
+): Map<string, number> {
+  // Build section → sorted items map
+  const grouped = groupItemsBySection(allItems);
+  const sectionItemsMap = new Map(grouped.map((g) => [g.section, g.items]));
+
+  const updateMap = new Map<string, number>();
+  let cursor = 0;
+  for (const sec of newSectionOrder) {
+    const secItems = sectionItemsMap.get(sec) ?? [];
+    // Items already sorted by position inside groupItemsBySection
+    for (const item of secItems) {
+      updateMap.set(item.id, cursor++);
+    }
+  }
+  return updateMap;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -720,10 +757,163 @@ export default function ChecklistTemplateDetailPage() {
       return next;
     });
 
-    // If a brand-new section was just created, switch the picker to that section
-    if (newItemSectionChoice === NEW_SECTION_SENTINEL && newItem.section) {
-      setNewItemSectionChoice(newItem.section);
+    // Close the add-section panel after creating
+    if (newItemSectionChoice === NEW_SECTION_SENTINEL) {
+      setNewItemSectionChoice(GENERAL_SENTINEL);
       setNewItemNewSectionName('');
+    }
+  }
+
+  // ─── Add item to a specific section (called from per-section button) ────────
+
+  async function handleAddItemToSection(targetDbSection: string | null) {
+    if (!template) return;
+    setAddingItem(true);
+    setAddItemError(null);
+    const supabase = createClient();
+
+    let nextPosition = nextPositionInSection(targetDbSection);
+    {
+      const baseQ = supabase
+        .from('checklist_template_items')
+        .select('position')
+        .eq('template_id', template.id)
+        .order('position', { ascending: false })
+        .limit(1);
+      const { data: maxPosData } = await (
+        targetDbSection === null ? baseQ.is('section', null) : baseQ.eq('section', targetDbSection)
+      ).maybeSingle();
+      if (maxPosData?.position != null) nextPosition = (maxPosData.position as number) + 1;
+    }
+
+    const nextSortOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
+
+    const { data, error: insertError } = await supabase
+      .from('checklist_template_items')
+      .insert({
+        template_id: template.id,
+        label: t('defaultNewItemLabel'),
+        section: targetDbSection,
+        input_type: 'checkbox',
+        required: false,
+        sort_order: nextSortOrder,
+        position: nextPosition,
+      })
+      .select('id, template_id, label, section, sort_order, position, required, input_type')
+      .single();
+
+    setAddingItem(false);
+
+    if (insertError || !data) {
+      setAddItemError(insertError?.message || t('errorAddFirstItemFailed'));
+      return;
+    }
+
+    const newItem: ChecklistTemplateItem = {
+      ...(data as ChecklistTemplateItem),
+      input_type: normaliseInputType((data as ChecklistTemplateItem).input_type),
+    };
+    setItems((prev) => [...prev, newItem]);
+    const newSectionK = sectionKey(newItem);
+    setCollapsedSections((prev) => { const next = new Set(prev); next.delete(newSectionK); return next; });
+    startEditing(newItem);
+  }
+
+  // ─── Section drag-and-drop reorder ────────────────────────────────────────
+  //
+  // FIX: We now reassign sort_order for ALL items across ALL sections in the
+  // new order, not just the two affected sections. This ensures that
+  // groupItemsBySection (which sorts by min sort_order per section) will always
+  // produce the dragged order — even when General is moved above other sections.
+  //
+  // Strategy:
+  //   1. Compute a complete updateMap<itemId → newSortOrder> using
+  //      computeSortOrdersForSectionReorder, which assigns sort_orders 0, 1, 2…
+  //      in section-major, position-minor order.
+  //   2. Optimistically apply to local state.
+  //   3. Persist: Phase 1 — move all changed items to safe temp values (> 1B)
+  //      to avoid unique constraint violations. Phase 2 — assign final values.
+  //   4. On any error: rollback local state and attempt DB rollback.
+
+  async function handleDndReorderSections(newSectionOrder: string[]) {
+    if (reordering || movingSection) return;
+    setSectionMoveError(null);
+
+    // Compute target sort_orders for every item
+    const updateMap = computeSortOrdersForSectionReorder(items, newSectionOrder);
+
+    // Only persist items whose sort_order actually changes
+    const changed = items.filter((i) => {
+      const newOrder = updateMap.get(i.id);
+      return newOrder !== undefined && newOrder !== i.sort_order;
+    });
+
+    if (changed.length === 0) return;
+
+    const origMap = new Map(items.map((i) => [i.id, i.sort_order]));
+    const templateId = items[0].template_id;
+
+    // Optimistic local update
+    setItems((prev) =>
+      prev.map((i) => {
+        const newOrder = updateMap.get(i.id);
+        return newOrder !== undefined ? { ...i, sort_order: newOrder } : i;
+      }),
+    );
+
+    setMovingSection(true);
+    const supabase = createClient();
+    const tempBase = 1_000_000_000;
+    let phaseError: string | null = null;
+
+    // Phase 1: move all changed items to unique temp positions
+    for (let k = 0; k < changed.length; k++) {
+      const tempVal = tempBase + k * 1_000 + Math.floor(Math.random() * 999);
+      const { error } = await supabase
+        .from('checklist_template_items')
+        .update({ sort_order: tempVal })
+        .eq('id', changed[k].id)
+        .eq('template_id', templateId);
+      if (error) {
+        phaseError = error.message || t('errorMoveSectionTemp', { step: k + 1 });
+        break;
+      }
+    }
+
+    // Phase 2: assign final sort_order values
+    if (!phaseError) {
+      for (const item of changed) {
+        const { error } = await supabase
+          .from('checklist_template_items')
+          .update({ sort_order: updateMap.get(item.id)! })
+          .eq('id', item.id)
+          .eq('template_id', templateId);
+        if (error) {
+          phaseError = error.message || t('errorMoveSectionAssign');
+          break;
+        }
+      }
+    }
+
+    setMovingSection(false);
+
+    if (phaseError) {
+      // Roll back local state
+      setItems((prev) =>
+        prev.map((i) => {
+          const orig = origMap.get(i.id);
+          return orig !== undefined ? { ...i, sort_order: orig } : i;
+        }),
+      );
+      // Best-effort DB rollback for items we successfully moved to temp
+      for (const item of changed) {
+        await supabase
+          .from('checklist_template_items')
+          .update({ sort_order: origMap.get(item.id)! })
+          .eq('id', item.id)
+          .eq('template_id', templateId);
+      }
+      setSectionMoveError(phaseError);
     }
   }
 
@@ -958,49 +1148,81 @@ export default function ChecklistTemplateDetailPage() {
     const secIdx = allGrouped.findIndex((g) => g.section === sectionName);
     const neighborIdx = direction === 'up' ? secIdx - 1 : secIdx + 1;
     if (neighborIdx < 0 || neighborIdx >= allGrouped.length) return;
-    const secA = allGrouped[secIdx];
-    const secB = allGrouped[neighborIdx];
-    const templateId = secA.items[0].template_id;
-    const poolOrders = [...secA.items, ...secB.items].map((i) => i.sort_order).sort((a, b) => a - b);
-    const firstSection = direction === 'up' ? secA : secB;
-    const secondSection = direction === 'up' ? secB : secA;
-    const firstNewOrders = poolOrders.slice(0, firstSection.items.length);
-    const secondNewOrders = poolOrders.slice(firstSection.items.length);
-    const updateMap = new Map<string, number>();
-    firstSection.items.forEach((itm, i) => updateMap.set(itm.id, firstNewOrders[i]));
-    secondSection.items.forEach((itm, i) => updateMap.set(itm.id, secondNewOrders[i]));
-    const origMap = new Map<string, number>();
-    [...secA.items, ...secB.items].forEach((itm) => origMap.set(itm.id, itm.sort_order));
-    setItems((prev) => prev.map((itm) => {
-      const newOrder = updateMap.get(itm.id);
-      return newOrder !== undefined ? { ...itm, sort_order: newOrder } : itm;
-    }));
-    setMovingSection(true);
+
+    // Build new section order by swapping the two sections
+    const newSectionOrder = allGrouped.map((g) => g.section);
+    [newSectionOrder[secIdx], newSectionOrder[neighborIdx]] = [newSectionOrder[neighborIdx], newSectionOrder[secIdx]];
+
+    // Delegate to the unified section reorder handler
+    await handleDndReorderSections(newSectionOrder);
+  }
+
+  // ─── Dnd-kit reorder handler (called by ChecklistItemsEditor) ────────────────
+  // Receives the full items array with updated positions, persists changes to DB
+  // using the same 3-phase swap pattern as handleMoveItem/handleMoveSection.
+
+  async function handleDndReorder(newItems: ChecklistTemplateItem[]) {
+    if (reordering || movingSection) return;
+
+    // Diff to find which items had their position changed
+    const oldById = new Map(items.map((i) => [i.id, i]));
+    const changed = newItems.filter((i) => {
+      const old = oldById.get(i.id);
+      return old && old.position !== i.position;
+    });
+
+    if (changed.length === 0) return;
+
+    // Optimistic local update
+    setItems(newItems);
+
+    const templateId = changed[0].template_id;
     const supabase = createClient();
-    const affectedIds = [...firstSection.items, ...secondSection.items].map((i) => i.id);
-    let phaseError: string | null = null;
     const tempBase = 1_000_000_000;
-    for (let k = 0; k < affectedIds.length; k++) {
-      const itemId = affectedIds[k];
+    let phaseError: string | null = null;
+
+    // Capture originals for rollback
+    const origPositions = new Map(changed.map((i) => [i.id, oldById.get(i.id)!.position]));
+    const finalPositions = new Map(changed.map((i) => [i.id, i.position]));
+
+    setReordering(true);
+
+    // Phase 1: move all changed items to unique temp positions (avoids unique constraint collisions)
+    for (let k = 0; k < changed.length; k++) {
       const tempVal = tempBase + k * 1_000 + Math.floor(Math.random() * 999);
-      const { error } = await supabase.from('checklist_template_items').update({ sort_order: tempVal }).eq('id', itemId).eq('template_id', templateId);
-      if (error) { phaseError = error.message || t('errorMoveSectionTemp', { step: k + 1 }); break; }
+      const { error } = await supabase
+        .from('checklist_template_items')
+        .update({ position: tempVal })
+        .eq('id', changed[k].id)
+        .eq('template_id', templateId);
+      if (error) { phaseError = error.message || t('errorReorderStep1'); break; }
     }
+
+    // Phase 2: assign final positions
     if (!phaseError) {
-      for (const [itemId, newOrder] of updateMap) {
-        const { error } = await supabase.from('checklist_template_items').update({ sort_order: newOrder }).eq('id', itemId).eq('template_id', templateId);
-        if (error) { phaseError = error.message || t('errorMoveSectionAssign'); break; }
+      for (const [itemId, finalPos] of finalPositions) {
+        const { error } = await supabase
+          .from('checklist_template_items')
+          .update({ position: finalPos })
+          .eq('id', itemId)
+          .eq('template_id', templateId);
+        if (error) { phaseError = error.message || t('errorReorderStep2'); break; }
       }
     }
-    setMovingSection(false);
+
+    setReordering(false);
+
     if (phaseError) {
-      for (const [itemId, origOrder] of origMap) {
-        await supabase.from('checklist_template_items').update({ sort_order: origOrder }).eq('id', itemId).eq('template_id', templateId);
+      // Roll back local state to pre-drag snapshot
+      setItems(items);
+      // Attempt DB rollback (best-effort)
+      for (const [itemId, origPos] of origPositions) {
+        await supabase
+          .from('checklist_template_items')
+          .update({ position: origPos })
+          .eq('id', itemId)
+          .eq('template_id', templateId);
       }
-      setItems((prev) => prev.map((itm) => {
-        const orig = origMap.get(itm.id);
-        return orig !== undefined ? { ...itm, sort_order: orig } : itm;
-      }));
       setSectionMoveError(phaseError);
     }
   }
@@ -1050,7 +1272,6 @@ export default function ChecklistTemplateDetailPage() {
           <option key={s} value={s}>{s}</option>
         ))}
         <option value={NEW_SECTION_SENTINEL}>
-          {/* i18n key: staffChecklistTemplateDetail.sectionOptionNewSection */}
           {t('sectionOptionNewSection')}
         </option>
       </>
@@ -1280,55 +1501,51 @@ export default function ChecklistTemplateDetailPage() {
                     )}
                   </div>
 
-                  {/* Section picker + Add button */}
+                  {/* Add section — available for all templates (system and company) */}
                   {!itemsLoading && !itemsError && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                        <label htmlFor="new-item-section" className="label" style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0, margin: 0 }}>
-                          {t('addItemSectionLabel')}
-                        </label>
-                        <select
-                          id="new-item-section"
-                          className="input"
-                          value={newItemSectionChoice}
-                          onChange={(e) => {
-                            setNewItemSectionChoice(e.target.value);
-                            if (e.target.value !== NEW_SECTION_SENTINEL) setNewItemNewSectionName('');
-                          }}
-                          disabled={addingItem}
-                          style={{ fontSize: '13px', flex: '1 1 140px', minWidth: 0 }}
-                        >
-                          {renderSectionOptions(t('sectionDefault'))}
-                        </select>
+                      {newItemSectionChoice !== NEW_SECTION_SENTINEL ? (
                         <button
-                          className="btn btn-primary"
-                          onClick={handleAddItem}
-                          disabled={
-                            addingItem ||
-                            (newItemSectionChoice === NEW_SECTION_SENTINEL && !newItemNewSectionName.trim())
-                          }
-                          style={{ flexShrink: 0, fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}
-                        >
-                          {addingItem
-                            ? t('btnSaving')
-                            : items.length === 0
-                              ? t('btnAddFirstItem')
-                              : t('btnAddItem')}
-                        </button>
-                      </div>
-                      {/* New section name input — shown only when "New section…" is chosen */}
-                      {newItemSectionChoice === NEW_SECTION_SENTINEL && (
-                        <input
-                          className="input"
-                          type="text"
-                          placeholder={t('newSectionNamePlaceholder')}
-                          value={newItemNewSectionName}
-                          onChange={(e) => setNewItemNewSectionName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' && newItemNewSectionName.trim()) handleAddItem(); }}
+                          className="btn"
+                          onClick={() => setNewItemSectionChoice(NEW_SECTION_SENTINEL)}
                           disabled={addingItem}
-                          style={{ fontSize: '13px' }}
-                          autoFocus
-                        />
+                          style={{ fontSize: '13px', padding: '5px 14px', height: '32px', alignSelf: 'flex-start', whiteSpace: 'nowrap' }}
+                        >
+                          + Add section
+                        </button>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input
+                            className="input"
+                            type="text"
+                            placeholder={t('newSectionNamePlaceholder')}
+                            value={newItemNewSectionName}
+                            onChange={(e) => setNewItemNewSectionName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newItemNewSectionName.trim()) handleAddItem();
+                              if (e.key === 'Escape') { setNewItemSectionChoice(GENERAL_SENTINEL); setNewItemNewSectionName(''); }
+                            }}
+                            disabled={addingItem}
+                            style={{ fontSize: '13px', flex: '1 1 160px', minWidth: 0 }}
+                            autoFocus
+                          />
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleAddItem}
+                            disabled={addingItem || !newItemNewSectionName.trim()}
+                            style={{ fontSize: '13px', padding: '5px 14px', height: '32px', flexShrink: 0, whiteSpace: 'nowrap' }}
+                          >
+                            {addingItem ? t('btnSaving') : 'Add section'}
+                          </button>
+                          <button
+                            className="btn"
+                            onClick={() => { setNewItemSectionChoice(GENERAL_SENTINEL); setNewItemNewSectionName(''); }}
+                            disabled={addingItem}
+                            style={{ fontSize: '13px', padding: '5px 14px', height: '32px', flexShrink: 0 }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
@@ -1415,222 +1632,26 @@ export default function ChecklistTemplateDetailPage() {
                   )}
 
                   {!itemsLoading && !itemsError && filteredItems.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                      {groupedItems.map(({ section, items: sectionItems }, groupIdx) => {
-                        const isCollapsed = collapsedSections.has(section);
-                        const isFirstSection = groupIdx === 0;
-                        const isLastSection = groupIdx === groupedItems.length - 1;
-                        // Full (unfiltered) items in this section, ordered by position
-                        const fullSectionItems = items
-                          .filter((i) => sectionKey(i) === section)
-                          .sort((a, b) => a.position - b.position);
-                        const sectionLabel = displaySection(section);
-
-                        return (
-                          <div key={section} style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-                            {/* Accordion header */}
-                            <div style={{ display: 'flex', alignItems: 'center', background: 'rgb(var(--surface))', borderBottom: isCollapsed ? 'none' : '1px solid rgb(var(--border))', minHeight: '40px' }}>
-                              <button
-                                onClick={() => toggleSection(section)}
-                                aria-expanded={!isCollapsed}
-                                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', minWidth: 0 }}
-                              >
-                                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--text))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sectionLabel}</span>
-                                <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.1)', color: 'rgb(var(--brand))', fontWeight: 600, flexShrink: 0 }}>{sectionItems.length}</span>
-                                <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0, display: 'inline-block', transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', marginLeft: 'auto' }}>▾</span>
-                              </button>
-                              {isDesktop && allGrouped.length > 1 && !searchQuery.trim() && !showOnlyRequired && (
-                                <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, borderLeft: '1px solid rgb(var(--border))' }}>
-                                  <button
-                                    className="sec-move-btn"
-                                    onClick={() => handleMoveSection(section, 'up')}
-                                    disabled={isFirstSection || movingSection || reordering}
-                                    title={t('moveSectionUpTitle')}
-                                    aria-label={t('moveSectionUpAria', { section: sectionLabel })}
-                                    style={{ borderBottom: '1px solid rgb(var(--border))' }}
-                                  >▴</button>
-                                  <button
-                                    className="sec-move-btn"
-                                    onClick={() => handleMoveSection(section, 'down')}
-                                    disabled={isLastSection || movingSection || reordering}
-                                    title={t('moveSectionDownTitle')}
-                                    aria-label={t('moveSectionDownAria', { section: sectionLabel })}
-                                  >▾</button>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Accordion body */}
-                            {!isCollapsed && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                                {sectionItems.map((item, idx) => {
-                                  const isEditing = editingItemId === item.id;
-                                  const editState = itemEditStates.get(item.id);
-                                  const reorderError = reorderErrors.get(item.id);
-                                  const posInSection = fullSectionItems.findIndex((i) => i.id === item.id);
-                                  const isFirstInSection = posInSection === 0;
-                                  const isLastInSection = posInSection === fullSectionItems.length - 1;
-
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      style={{ borderTop: idx > 0 ? '1px solid rgb(var(--border))' : undefined, background: isEditing ? 'rgb(var(--brand) / 0.03)' : 'rgb(var(--background))', transition: 'background 0.15s' }}
-                                    >
-                                      {/* View row */}
-                                      {!isEditing && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-4)' }}>
-                                          <span style={{ flexShrink: 0, width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgb(var(--muted))', opacity: 0.5 }} aria-hidden="true" title={`pos: ${item.position}`}>
-                                            <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                              <rect x="1" y="1.5" width="10" height="1.5" rx="0.75"/>
-                                              <rect x="1" y="6.25" width="10" height="1.5" rx="0.75"/>
-                                              <rect x="1" y="11" width="10" height="1.5" rx="0.75"/>
-                                            </svg>
-                                          </span>
-                                          <span style={{ flex: 1, fontSize: '14px', color: 'rgb(var(--text))', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexShrink: 0 }}>
-                                            {item.input_type === 'number' && (
-                                              <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                                {t('inputTypeBadgeNumber')}
-                                              </span>
-                                            )}
-                                            {item.required && (
-                                              <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--error) / 0.08)', color: 'rgb(var(--error))', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                                {t('itemRequiredBadge')}
-                                              </span>
-                                            )}
-                                          </div>
-                                          <button className="btn btn-secondary" onClick={() => startEditing(item)} style={{ flexShrink: 0, fontSize: '12px', padding: '4px 10px', height: '28px' }}>{t('btnEdit')}</button>
-                                        </div>
-                                      )}
-
-                                      {/* Inline edit row */}
-                                      {isEditing && editState && (
-                                        <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-
-                                          {/* Label */}
-                                          <div style={FIELD_WRAPPER}>
-                                            <label htmlFor={`item-label-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>
-                                              {t('itemFieldLabel')} <span style={{ color: 'rgb(var(--error))' }}>*</span>
-                                            </label>
-                                            <input
-                                              id={`item-label-${item.id}`}
-                                              className="input"
-                                              type="text"
-                                              value={editState.label}
-                                              ref={editingItemId === item.id ? labelInputRef : null}
-                                              onChange={(e) => updateEditField(item.id, 'label', e.target.value)}
-                                              disabled={editState.saving || reordering}
-                                              style={{ fontSize: '14px' }}
-                                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveItem(item); }}
-                                            />
-                                          </div>
-
-                                          {/* Input type + Required */}
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                                            <div style={{ ...FIELD_WRAPPER, flex: '1 1 120px', minWidth: 0 }}>
-                                              <label htmlFor={`item-inputtype-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>{t('itemFieldInputType')}</label>
-                                              <select
-                                                id={`item-inputtype-${item.id}`}
-                                                className="input"
-                                                value={editState.input_type}
-                                                onChange={(e) => updateEditField(item.id, 'input_type', e.target.value)}
-                                                disabled={editState.saving || reordering}
-                                                style={{ fontSize: '14px' }}
-                                              >
-                                                <option value="checkbox">{t('inputTypeCheckbox')}</option>
-                                                <option value="number">{t('inputTypeNumber')}</option>
-                                              </select>
-                                            </div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '13px', cursor: editState.saving ? 'not-allowed' : 'pointer', paddingTop: '18px', flexShrink: 0 }}>
-                                              <input type="checkbox" checked={editState.required} onChange={(e) => updateEditField(item.id, 'required', e.target.checked)} disabled={editState.saving || reordering} style={{ width: '15px', height: '15px', cursor: editState.saving ? 'not-allowed' : 'pointer' }} />
-                                              {t('itemFieldRequired')}
-                                            </label>
-                                          </div>
-
-                                          {/* Section */}
-                                          <div style={FIELD_WRAPPER}>
-                                            <label htmlFor={`item-section-${item.id}`} className="label" style={{ ...FIELD_LABEL, fontSize: '12px' }}>
-                                              {t('itemFieldSection')}
-                                            </label>
-                                            <select
-                                              id={`item-section-${item.id}`}
-                                              className="input"
-                                              value={
-                                                editState.section === null
-                                                  ? GENERAL_SENTINEL
-                                                  : editState.section === NEW_SECTION_SENTINEL
-                                                    ? NEW_SECTION_SENTINEL
-                                                    : editState.section
-                                              }
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                updateEditField(item.id, 'section', val === GENERAL_SENTINEL ? null : val);
-                                                if (val !== NEW_SECTION_SENTINEL) {
-                                                  updateEditField(item.id, 'newSectionName', '');
-                                                }
-                                              }}
-                                              disabled={editState.saving || reordering}
-                                              style={{ fontSize: '14px' }}
-                                            >
-                                              {renderSectionOptions(t('sectionDefault'))}
-                                            </select>
-                                            {editState.section === NEW_SECTION_SENTINEL && (
-                                              <input
-                                                className="input"
-                                                type="text"
-                                                placeholder={t('newSectionNamePlaceholder')}
-                                                value={editState.newSectionName}
-                                                onChange={(e) => updateEditField(item.id, 'newSectionName', e.target.value)}
-                                                disabled={editState.saving || reordering}
-                                                style={{ fontSize: '14px', marginTop: 'var(--space-2)' }}
-                                                autoFocus
-                                              />
-                                            )}
-                                          </div>
-
-                                          {/* Reorder within section */}
-                                          {isDesktop && fullSectionItems.length > 1 && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                              <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>{t('reorderLabel')}</span>
-                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'up')} disabled={isFirstInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label={t('moveItemUpAria')}>↑</button>
-                                              <button className="btn btn-secondary" onClick={() => handleMoveItem(item, 'down')} disabled={isLastInSection || reordering || editState.saving} style={{ fontSize: '12px', padding: '3px 8px', height: '26px' }} aria-label={t('moveItemDownAria')}>↓</button>
-                                              {reordering && <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t('reorderSaving')}</span>}
-                                            </div>
-                                          )}
-
-                                          {reorderError && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{reorderError}</div>}
-                                          {editState.error && <div style={{ ...ERROR_BOX, padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{editState.error}</div>}
-
-                                          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                            <button
-                                              className="btn btn-primary"
-                                              onClick={() => handleSaveItem(item)}
-                                              disabled={
-                                                editState.saving ||
-                                                reordering ||
-                                                (editState.section === NEW_SECTION_SENTINEL && !editState.newSectionName.trim())
-                                              }
-                                              style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}
-                                            >
-                                              {editState.saving ? t('btnSavingItem') : t('btnSave')}
-                                            </button>
-                                            <button className="btn btn-secondary" onClick={cancelEditing} disabled={editState.saving} style={{ fontSize: '13px', padding: '5px 14px', height: '30px' }}>{t('btnCancel')}</button>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {!isEditing && reorderError && (
-                                        <div style={{ ...ERROR_BOX, margin: '0 var(--space-4) var(--space-2)', padding: 'var(--space-2) var(--space-3)', fontSize: '13px' }}>{reorderError}</div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <ChecklistItemsEditor
+                      allItems={items}
+                      visibleItems={filteredItems}
+                      onReorder={handleDndReorder}
+                      collapsedSections={collapsedSections}
+                      onToggleSection={toggleSection}
+                      editingItemId={editingItemId}
+                      itemEditStates={itemEditStates}
+                      isSystem={isSystem}
+                      existingNamedSections={existingNamedSections}
+                      reordering={reordering}
+                      movingSection={movingSection}
+                      onStartEdit={startEditing}
+                      onCancelEdit={cancelEditing}
+                      onUpdateEditField={updateEditField}
+                      onSaveItem={handleSaveItem}
+                      addingItem={addingItem}
+                      onAddItemToSection={handleAddItemToSection}
+                      onReorderSections={handleDndReorderSections}
+                    />
                   )}
                 </div>
               </div>

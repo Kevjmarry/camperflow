@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import { getStatusChipStyle } from "@/lib/statusChip";
 
 interface Vehicle {
   id: string;
@@ -78,19 +79,6 @@ export default function VehiclesPage() {
       setError(err.message || t("errors.failedLoadVehicles"));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ready':
-        return 'rgb(var(--success))';
-      case 'preparing':
-        return 'rgb(var(--warning))';
-      case 'on_rent':
-        return 'rgb(var(--brand))';
-      default:
-        return 'rgb(var(--text))';
     }
   };
 
@@ -284,16 +272,9 @@ export default function VehiclesPage() {
                     gap: 'var(--space-3)',
                     flexWrap: 'wrap'
                   }}>
-                    <div style={{
-                      padding: 'var(--space-2) var(--space-3)',
-                      borderRadius: 'var(--radius)',
-                      background: `${getStatusColor(vehicle.status)}15`,
-                      color: getStatusColor(vehicle.status),
-                      fontSize: '14px',
-                      fontWeight: 500
-                    }}>
+                    <span style={getStatusChipStyle(vehicle.status)}>
                       {getStatusLabel(vehicle.status)}
-                    </div>
+                    </span>
                     
                     <Link
                       href={canManage ? `/${locale}/staff/vehicles/${vehicle.id}/edit` : `/${locale}/staff/vehicles/${vehicle.id}`}

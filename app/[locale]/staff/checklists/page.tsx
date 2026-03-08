@@ -38,42 +38,62 @@ interface IssueItem {
   created_at: string;
 }
 
-// ─── Badge style maps ────────────────────────────────────────────────────────
+// ─── Chip style helpers ───────────────────────────────────────────────────────
 
-const STATUS_BADGE: Record<string, CSSProperties> = {
-  not_started: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap',
-    background: '#f3f4f6', color: '#374151',
+type ChipColors = { color: string; background: string; border: string };
+
+const chipTokens: Record<string, ChipColors> = {
+  success: {
+    color: 'rgb(var(--success))',
+    background: 'rgb(var(--success) / 0.12)',
+    border: '1px solid rgb(var(--success) / 0.3)',
   },
-  in_progress: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap',
-    background: '#dbeafe', color: '#1e40af',
+  warning: {
+    color: 'rgb(var(--warning))',
+    background: 'rgb(var(--warning) / 0.12)',
+    border: '1px solid rgb(var(--warning) / 0.3)',
   },
-  completed: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap',
-    background: '#d1fae5', color: '#065f46',
+  error: {
+    color: 'rgb(var(--error))',
+    background: 'rgb(var(--error) / 0.12)',
+    border: '1px solid rgb(var(--error) / 0.3)',
+  },
+  muted: {
+    color: 'rgb(var(--muted))',
+    background: 'rgb(var(--muted) / 0.12)',
+    border: '1px solid rgb(var(--muted) / 0.3)',
   },
 };
 
-const SEVERITY_BADGE: Record<string, CSSProperties> = {
-  low: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', textTransform: 'capitalize',
-    background: '#fef3c7', color: '#92400e',
-  },
-  medium: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', textTransform: 'capitalize',
-    background: '#fed7aa', color: '#9a3412',
-  },
-  high: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: '12px',
-    fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', textTransform: 'capitalize',
-    background: '#fecaca', color: '#991b1b',
-  },
+const baseChip: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '3px 10px',
+  borderRadius: '9999px',
+  fontSize: '12px',
+  fontWeight: 500,
+  lineHeight: '1.5',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+};
+
+const getStatusChipStyle = (status: string): CSSProperties => {
+  const map: Record<string, ChipColors> = {
+    not_started: chipTokens.muted,
+    pending:     chipTokens.muted,
+    in_progress: chipTokens.warning,
+    completed:   chipTokens.success,
+  };
+  return { ...baseChip, ...(map[status] ?? chipTokens.muted) };
+};
+
+const getSeverityChipStyle = (severity: string): CSSProperties => {
+  const map: Record<string, ChipColors> = {
+    low:    chipTokens.muted,
+    medium: chipTokens.warning,
+    high:   chipTokens.error,
+  };
+  return { ...baseChip, ...(map[severity] ?? chipTokens.muted) };
 };
 
 // ─── Shared table style tokens ───────────────────────────────────────────────
@@ -126,6 +146,18 @@ const CARD_CONTAINER: CSSProperties = {
   overflow: 'hidden',
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseScopeParam(value: string | null): ChecklistScope {
+  if (value === 'booking' || value === 'vehicle') return value;
+  return 'all';
+}
+
+function parseStatusParam(value: string | null): ChecklistStatus {
+  if (value === 'not_started' || value === 'in_progress' || value === 'completed') return value;
+  return 'all';
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function ChecklistsPage() {
@@ -143,8 +175,15 @@ export default function ChecklistsPage() {
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  const [scopeFilter, setScopeFilter] = useState<ChecklistScope>('all');
-  const [statusFilter, setStatusFilter] = useState<ChecklistStatus>('all');
+  // Initialise directly from searchParams so the very first render uses the
+  // correct values. When no query params are present (e.g. after navigating
+  // back from a detail page via a plain href), the helpers fall back to 'all'.
+  const [scopeFilter, setScopeFilter] = useState<ChecklistScope>(() =>
+    parseScopeParam(searchParams.get('scope'))
+  );
+  const [statusFilter, setStatusFilter] = useState<ChecklistStatus>(() =>
+    parseStatusParam(searchParams.get('status'))
+  );
 
   const typeLabel = (type: string): string => {
     const map: Record<string, string> = {
@@ -178,15 +217,15 @@ export default function ChecklistsPage() {
     return map[s] ?? s;
   };
 
-  // Sync filters from URL
+  // Keep filters in sync with URL changes (e.g. browser back/forward).
+  // Using the same parse helpers guarantees missing params always resolve to
+  // 'all' rather than inheriting a previously active filter value.
   useEffect(() => {
-    const scope = (searchParams.get('scope') as ChecklistScope) || 'all';
-    const status = (searchParams.get('status') as ChecklistStatus) || 'all';
-    setScopeFilter(scope);
-    setStatusFilter(status);
+    setScopeFilter(parseScopeParam(searchParams.get('scope')));
+    setStatusFilter(parseStatusParam(searchParams.get('status')));
   }, [searchParams]);
 
-  // Responsive breakpoint detection (same approach as Bookings)
+  // Responsive breakpoint detection
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
     setIsMobile(mq.matches);
@@ -464,6 +503,14 @@ export default function ChecklistsPage() {
       day: '2-digit', month: 'short', year: 'numeric',
     });
 
+  // Builds the detail page URL, forwarding current filter state so the
+  // detail page can restore them when the user clicks "Back to checklists".
+  const detailHref = (instanceId: string) =>
+    `/${locale}/staff/checklists/${instanceId}?listScope=${scopeFilter}&listStatus=${statusFilter}`;
+
+  const issueDetailHref = (instanceId: string) =>
+    `/${locale}/staff/checklists/${instanceId}?from=list&listScope=${scopeFilter}&listStatus=${statusFilter}`;
+
   // ─── Loading state ───────────────────────────────────────────────────────────
 
   if (loading) {
@@ -484,7 +531,7 @@ export default function ChecklistsPage() {
     return (
       <tr
         style={{ cursor: 'pointer' }}
-        onClick={() => router.push(`/${locale}/staff/checklists/${checklist.id}`)}
+        onClick={() => router.push(detailHref(checklist.id))}
       >
         <td style={TD}>
           <span style={{ fontWeight: 500 }}>{typeLabel(checklist.name)}</span>
@@ -501,7 +548,7 @@ export default function ChecklistsPage() {
             : '—'}
         </td>
         <td style={TD}>
-          <span style={STATUS_BADGE[checklist.status] ?? STATUS_BADGE.not_started}>
+          <span style={getStatusChipStyle(checklist.status)}>
             {statusLabel(checklist.status)}
           </span>
         </td>
@@ -512,7 +559,7 @@ export default function ChecklistsPage() {
   function ChecklistMobileCard({ checklist, isLast }: { checklist: ChecklistItem; isLast: boolean }) {
     return (
       <Link
-        href={`/${locale}/staff/checklists/${checklist.id}`}
+        href={detailHref(checklist.id)}
         style={{
           display: 'block',
           padding: 'var(--space-4)',
@@ -528,7 +575,7 @@ export default function ChecklistsPage() {
               #{checklist.booking_number}
             </span>
           </span>
-          <span style={STATUS_BADGE[checklist.status] ?? STATUS_BADGE.not_started}>
+          <span style={getStatusChipStyle(checklist.status)}>
             {statusLabel(checklist.status)}
           </span>
         </div>
@@ -549,9 +596,9 @@ export default function ChecklistsPage() {
     return (
       <tr
         style={{ cursor: 'pointer' }}
-        onClick={() => router.push(`/${locale}/staff/checklists/${issue.checklist_instance_id}?from=list`)}
+        onClick={() => router.push(issueDetailHref(issue.checklist_instance_id))}
       >
-        <td style={{ ...TD, borderLeft: '3px solid #f59e0b' }}>
+        <td style={{ ...TD, borderLeft: '3px solid rgb(var(--warning))' }}>
           <span style={{ fontWeight: 500 }}>{issue.name}</span>
         </td>
         <td style={TD}>{issue.booking_number !== 'N/A' ? issue.booking_number : '—'}</td>
@@ -560,7 +607,7 @@ export default function ChecklistsPage() {
           <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{issue.vehicle_plate}</div>
         </td>
         <td style={TD}>
-          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{severityLabel(issue.severity)}</span>
+          <span style={getSeverityChipStyle(issue.severity)}>{severityLabel(issue.severity)}</span>
         </td>
       </tr>
     );
@@ -569,19 +616,19 @@ export default function ChecklistsPage() {
   function IssueMobileCard({ issue, isLast }: { issue: IssueItem; isLast: boolean }) {
     return (
       <Link
-        href={`/${locale}/staff/checklists/${issue.checklist_instance_id}?from=list`}
+        href={issueDetailHref(issue.checklist_instance_id)}
         style={{
           display: 'block',
           padding: 'var(--space-4)',
           borderBottom: isLast ? 'none' : '1px solid rgb(var(--border))',
-          borderLeft: '3px solid #f59e0b',
+          borderLeft: '3px solid rgb(var(--warning))',
           textDecoration: 'none',
           color: 'rgb(var(--text))',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
           <span style={{ fontWeight: 600, fontSize: '15px' }}>{issue.name}</span>
-          <span style={SEVERITY_BADGE[issue.severity] ?? SEVERITY_BADGE.low}>{severityLabel(issue.severity)}</span>
+          <span style={getSeverityChipStyle(issue.severity)}>{severityLabel(issue.severity)}</span>
         </div>
         {issue.booking_number !== 'N/A' && (
           <div style={{ fontSize: '14px', marginBottom: '2px' }}>{t('bookingRef', { number: issue.booking_number })}</div>

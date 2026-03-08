@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import { getStatusChipStyle } from "@/lib/statusChip";
 
 interface Booking {
   id: string;
@@ -132,18 +133,6 @@ export default function BookingsPage() {
       setError(err.message || t("error.loadFailed"));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'rgb(var(--muted))';
-      case 'confirmed': return 'rgb(var(--brand))';
-      case 'blocked': return 'rgb(var(--error))';
-      case 'on_rent': return 'rgb(var(--success))';
-      case 'completed': return 'rgb(var(--accent))';
-      case 'cancelled': return 'rgb(var(--error))';
-      default: return 'rgb(var(--text))';
     }
   };
 
@@ -375,17 +364,9 @@ export default function BookingsPage() {
                           {formatDate(booking.return_at)}
                         </td>
                         <td style={{ padding: 'var(--space-3)' }}>
-                          <div style={{
-                            display: 'inline-block',
-                            padding: 'var(--space-1) var(--space-2)',
-                            borderRadius: 'var(--radius)',
-                            background: `${getStatusColor(booking.status)}15`,
-                            color: getStatusColor(booking.status),
-                            fontSize: '13px',
-                            fontWeight: 500
-                          }}>
+                          <span style={getStatusChipStyle(booking.status)}>
                             {getStatusLabel(booking.status)}
-                          </div>
+                          </span>
                         </td>
                         <td style={{ padding: 'var(--space-3)' }}>
                           <Link
@@ -437,18 +418,9 @@ export default function BookingsPage() {
                             {booking.booking_number}
                           </div>
                         </div>
-                        <div style={{
-                          display: 'inline-block',
-                          padding: 'var(--space-1) var(--space-2)',
-                          borderRadius: 'var(--radius)',
-                          background: `${getStatusColor(booking.status)}15`,
-                          color: getStatusColor(booking.status),
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <span style={getStatusChipStyle(booking.status)}>
                           {getStatusLabel(booking.status)}
-                        </div>
+                        </span>
                       </div>
                     )}
 
@@ -459,17 +431,9 @@ export default function BookingsPage() {
                         paddingBottom: 'var(--space-3)',
                         borderBottom: '1px solid rgb(var(--border))'
                       }}>
-                        <div style={{
-                          display: 'inline-block',
-                          padding: 'var(--space-1) var(--space-2)',
-                          borderRadius: 'var(--radius)',
-                          background: `${getStatusColor(booking.status)}15`,
-                          color: getStatusColor(booking.status),
-                          fontSize: '13px',
-                          fontWeight: 500
-                        }}>
+                        <span style={getStatusChipStyle(booking.status)}>
                           {getStatusLabel(booking.status)}
-                        </div>
+                        </span>
                       </div>
                     )}
 
