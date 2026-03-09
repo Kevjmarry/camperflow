@@ -1006,6 +1006,8 @@
       "checklistSuffix": " Checklist",
       "viewChecklist": "View checklist",
       "openChecklist": "Open checklist",
+      "viewReport": "View report",
+      "continueChecklist": "Continue checklist",
       "status": {
         "notStarted": "Not started",
         "inProgress": "In progress",
@@ -1584,6 +1586,21 @@
     "type_mechanical": "Mechanical checklist",
     "lockFallback": "This checklist is locked due to a business rule.",
     "errorItemUpdateFailed": "Failed to save checklist item — the change was not recorded.",
-    "errorStatusSyncFailed": "Status sync failed — checklist items were saved but the overall status could not be updated."
+    "errorStatusSyncFailed": "Status sync failed — checklist items were saved but the overall status could not be updated.",
+    "flag": "Flag",
+    "flagged": "Flagged",
+    "severity": "Severity",
+    "severityInfo": "Info",
+    "severityAttention": "Attention",
+    "severityUrgent": "Urgent",
+    "issueNoteRequired": "Note is required.",
+    "issueNotePlaceholder": "Describe the issue… (required)",
+    "saveFlag": "Save flag",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "flagAlreadyOpen": "An open flag already exists for this item.",
+    "flagSaveFailed": "Save failed.",
+    "resolveFlag": "Resolve",
+    "resolving": "Resolving…"
   }
 }

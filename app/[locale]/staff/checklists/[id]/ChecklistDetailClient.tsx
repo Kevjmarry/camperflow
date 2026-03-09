@@ -64,6 +64,23 @@ type SyncError = {
   raw: string;
 };
 
+type IssueSeverity = 'attention' | 'urgent';
+
+type IssueFlag = {
+  id: string;
+  checklist_instance_item_id: string;
+  severity: IssueSeverity;
+  note: string;
+  status: string;
+};
+
+type FlagDraft = {
+  severity: IssueSeverity;
+  note: string;
+  saving: boolean;
+  error: string | null;
+};
+
 /**
  * Pure function — takes an explicit snapshot rather than closing over state,
  * so it's safe to call from any async context without stale-closure risk.
@@ -156,6 +173,12 @@ export default function ChecklistDetailClient({
   const [quickMode, setQuickMode] = useState(false);
   const [quickCompleting, setQuickCompleting] = useState(false);
 
+  // Issue flagging state
+  const [flagsByItemId, setFlagsByItemId] = useState<Record<string, IssueFlag>>({});
+  const [openFlagPanelById, setOpenFlagPanelById] = useState<Record<string, boolean>>({});
+  const [flagDraftById, setFlagDraftById] = useState<Record<string, FlagDraft>>({});
+  const [resolvingFlagById, setResolvingFlagById] = useState<Record<string, boolean>>({});
+
   const localInstanceRef = useRef(localInstance);
   useEffect(() => {
     localInstanceRef.current = localInstance;
@@ -163,6 +186,25 @@ export default function ChecklistDetailClient({
 
   useEffect(() => setLocalItems(initialItems), [initialItems]);
   useEffect(() => setLocalInstance(instance), [instance]);
+
+  // Load existing open flags for this checklist instance
+  useEffect(() => {
+    const fetchFlags = async () => {
+      const { data } = await supabase
+        .from('issue_flags')
+        .select('id,checklist_instance_item_id,severity,note,status')
+        .eq('checklist_instance_id', instance.id)
+        .eq('status', 'open');
+
+      if (!data) return;
+      const map: Record<string, IssueFlag> = {};
+      for (const flag of data) {
+        map[flag.checklist_instance_item_id] = flag as IssueFlag;
+      }
+      setFlagsByItemId(map);
+    };
+    fetchFlags();
+  }, [instance.id]);
 
   const fetchInitialsForUsers = useCallback(
     async (userIds: string[]) => {
@@ -341,6 +383,10 @@ export default function ChecklistDetailClient({
     [supabase, instance.id]
   );
 
+  /**
+   * Navigate back to the page the user came from (used by the back button,
+   * not by post-completion redirects).
+   */
   const navigateBack = useCallback(() => {
     if (from === 'booking' && instance.booking_id) {
       router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
@@ -350,6 +396,28 @@ export default function ChecklistDetailClient({
       );
     }
   }, [from, instance.booking_id, locale, listScope, listStatus, router]);
+
+  /**
+   * Navigate after checklist completion using entry-context awareness:
+   * - bookings flow  → /staff/bookings (list)
+   * - checklists flow → /staff/checklists (list)
+   * - unknown origin → /staff/bookings/:id when bookingId present, else /staff/bookings
+   *
+   * "bookings flow"  = arrived with from=booking
+   * "checklists flow" = arrived with explicit listScope or listStatus params
+   * "unknown"         = neither of the above
+   */
+  const navigateAfterCompletion = useCallback(() => {
+    if (from === 'booking') {
+      router.push(`/${locale}/staff/bookings`);
+    } else if (searchParams.has('listScope') || searchParams.has('listStatus')) {
+      router.push(`/${locale}/staff/checklists`);
+    } else if (instance.booking_id) {
+      router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
+    } else {
+      router.push(`/${locale}/staff/bookings`);
+    }
+  }, [from, locale, instance.booking_id, router, searchParams]);
 
   const handleBackClick = () => {
     navigateBack();
@@ -365,8 +433,8 @@ export default function ChecklistDetailClient({
   const handleQuickCompleteAll = async () => {
     const uncheckedItems = localItems.filter((it) => !it.checked);
     if (uncheckedItems.length === 0) {
-      // Already fully checked — just navigate back
-      navigateBack();
+      // Already fully checked — navigate using completion context
+      navigateAfterCompletion();
       return;
     }
 
@@ -436,8 +504,8 @@ export default function ChecklistDetailClient({
         return;
       }
 
-      // Success — navigate back
-      navigateBack();
+      // Success — navigate using completion context
+      navigateAfterCompletion();
     } catch (err) {
       console.error('Error in handleQuickCompleteAll:', err);
       setLocalItems(initialItems);
@@ -636,6 +704,144 @@ export default function ChecklistDetailClient({
     setCollapsedSections((prev) => ({ ...prev, [sectionName]: !prev[sectionName] }));
   };
 
+  // --- Flag panel helpers ---
+
+  const openFlagPanel = (itemId: string) => {
+    setFlagDraftById((prev) => ({
+      ...prev,
+      [itemId]: prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null },
+    }));
+    setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: true }));
+  };
+
+  const closeFlagPanel = (itemId: string) => {
+    setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: false }));
+    setFlagDraftById((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
+
+  const handleFlagDraftChange = (
+    itemId: string,
+    field: 'severity' | 'note',
+    value: string
+  ) => {
+    setFlagDraftById((prev) => ({
+      ...prev,
+      [itemId]: { ...(prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null }), [field]: value },
+    }));
+  };
+
+  const handleSaveFlag = async (itemId: string) => {
+    const draft = flagDraftById[itemId];
+    if (!draft) return;
+
+    if (!draft.note.trim()) {
+      setFlagDraftById((prev) => ({
+        ...prev,
+        [itemId]: { ...draft, error: t('issueNoteRequired') },
+      }));
+      return;
+    }
+
+    if (!companyId) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setFlagDraftById((prev) => ({
+      ...prev,
+      [itemId]: { ...draft, saving: true, error: null },
+    }));
+
+    const { data, error } = await supabase
+      .from('issue_flags')
+      .insert({
+        company_id: companyId,
+        checklist_instance_id: localInstance.id,
+        checklist_instance_item_id: itemId,
+        severity: draft.severity,
+        status: 'open',
+        note: draft.note.trim(),
+        created_by: user.id,
+      })
+      .select('id,checklist_instance_item_id,severity,note,status')
+      .single();
+
+    if (error) {
+      console.error('[handleSaveFlag] insert failed:', error);
+      setFlagDraftById((prev) => ({
+        ...prev,
+        [itemId]: { ...draft, saving: false, error: error.message ?? t('flagSaveFailed') },
+      }));
+      return;
+    }
+
+    if (data) {
+      setFlagsByItemId((prev) => ({ ...prev, [itemId]: data as IssueFlag }));
+    }
+
+    closeFlagPanel(itemId);
+    router.refresh();
+  };
+
+  const handleResolveFlag = async (itemId: string) => {
+    const existingFlag = flagsByItemId[itemId];
+    if (!existingFlag) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setResolvingFlagById((prev) => ({ ...prev, [itemId]: true }));
+
+    const { error } = await supabase.rpc('fn_resolve_issue_flag', {
+      p_flag_id: existingFlag.id,
+      p_user_id: user.id,
+    });
+
+    if (error) {
+      console.error('[handleResolveFlag] rpc failed:', error);
+      setResolvingFlagById((prev) => ({ ...prev, [itemId]: false }));
+      const syncErr = parseSyncError(error, 'status_sync_failed');
+      setSyncError(syncErr);
+      return;
+    }
+
+    setResolvingFlagById((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    setFlagsByItemId((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    router.refresh();
+  };
+
+  // --- Severity badge helpers ---
+
+  const severityBadgeStyles: Record<IssueSeverity, { bg: string; color: string; border: string }> = {
+    attention: { bg: '#fefce8', color: '#a16207', border: '#fbbf24' },
+    urgent: { bg: '#fef3c7', color: '#92400e', border: '#f59e0b' },
+  };
+
+  const severityLabel = (severity: IssueSeverity): string => {
+    switch (severity) {
+      case 'attention': return t('severityAttention');
+      case 'urgent': return t('severityUrgent');
+    }
+  };
+
+  // --- Render ---
+
   const sortedItems = [...localItems].sort(
     (a, b) => a.template.sort_order - b.template.sort_order
   );
@@ -690,13 +896,21 @@ export default function ChecklistDetailClient({
         ? initialsByUserId[item.checked_by] ?? null
         : null;
 
-    // Normal mode (unchanged) — Quick Mode hides per-item interaction in favour
-    // of the single top-level action, but items are still visible read-only.
+    const existingFlag = flagsByItemId[item.id] ?? null;
+    const isFlagged = !!existingFlag;
+    const isFlagPanelOpen = !quickMode && !!openFlagPanelById[item.id];
+    const draft = flagDraftById[item.id] ?? null;
+    const isResolvingFlag = !!resolvingFlagById[item.id];
+
+    const badgeStyle = isFlagged ? severityBadgeStyles[existingFlag.severity] : null;
+
     return (
       <div
         key={item.id}
         style={{
-          border: '1px solid rgb(var(--border))',
+          border: isFlagged
+            ? '1px solid #f59e0b'
+            : '1px solid rgb(var(--border))',
           borderRadius: '6px',
           padding: '12px',
           opacity: quickMode ? 0.75 : 1,
@@ -801,25 +1015,96 @@ export default function ChecklistDetailClient({
                     {checkerInitials}
                   </span>
                 )}
+                {/* Flagged badge */}
+                {isFlagged && badgeStyle && (
+                  <span
+                    title={t('flagAlreadyOpen')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor: badgeStyle.bg,
+                      color: badgeStyle.color,
+                      border: `1px solid ${badgeStyle.border}`,
+                      flexShrink: 0,
+                      cursor: 'default',
+                    }}
+                  >
+                    ⚑ {severityLabel(existingFlag.severity)}
+                  </span>
+                )}
               </div>
+
+              {/* Action buttons: notes + flag (normal mode only) */}
               {!quickMode && (
-                <button
-                  type="button"
-                  onClick={() => toggleNotes(item.id)}
-                  style={{
-                    fontSize: '12px',
-                    color: 'rgb(var(--brand))',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '2px 6px',
-                    textDecoration: 'underline',
-                    flexShrink: 0,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.notes ? t('editNote') : t('addNote')}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleNotes(item.id)}
+                    style={{
+                      fontSize: '12px',
+                      color: 'rgb(var(--brand))',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      textDecoration: 'underline',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.notes ? t('editNote') : t('addNote')}
+                  </button>
+
+                  {/* Flag button — hidden if already flagged */}
+                  {!isFlagged && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        isFlagPanelOpen ? closeFlagPanel(item.id) : openFlagPanel(item.id)
+                      }
+                      style={{
+                        fontSize: '12px',
+                        color: isFlagPanelOpen ? '#92400e' : 'rgb(var(--muted))',
+                        background: isFlagPanelOpen ? '#fef3c7' : 'none',
+                        border: isFlagPanelOpen ? '1px solid #fbbf24' : '1px solid rgb(var(--border))',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        padding: '2px 8px',
+                        whiteSpace: 'nowrap',
+                        fontWeight: 500,
+                      }}
+                    >
+                      ⚑ {t('flag')}
+                    </button>
+                  )}
+
+                  {/* Resolve button — shown only when item is flagged */}
+                  {isFlagged && (
+                    <button
+                      type="button"
+                      onClick={() => handleResolveFlag(item.id)}
+                      disabled={isResolvingFlag}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: isResolvingFlag ? 'rgb(var(--muted))' : '#166534',
+                        background: 'none',
+                        border: `1px solid ${isResolvingFlag ? 'rgb(var(--border))' : '#86efac'}`,
+                        borderRadius: '4px',
+                        cursor: isResolvingFlag ? 'not-allowed' : 'pointer',
+                        padding: '2px 8px',
+                        whiteSpace: 'nowrap',
+                        opacity: isResolvingFlag ? 0.6 : 1,
+                      }}
+                    >
+                      {isResolvingFlag ? t('resolving') : t('resolveFlag')}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -871,6 +1156,112 @@ export default function ChecklistDetailClient({
                 }}
               >
                 {item.notes}
+              </div>
+            )}
+
+            {/* Inline flag panel */}
+            {isFlagPanelOpen && draft && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #fbbf24',
+                  backgroundColor: '#fffbeb',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                {/* Severity */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label
+                    style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', flexShrink: 0 }}
+                  >
+                    {t('severity')}
+                  </label>
+                  <select
+                    value={draft.severity}
+                    onChange={(e) =>
+                      handleFlagDraftChange(item.id, 'severity', e.target.value)
+                    }
+                    style={{
+                      fontSize: '12px',
+                      padding: '3px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid #fbbf24',
+                      backgroundColor: '#fff',
+                      color: '#92400e',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="attention">{t('severityAttention')}</option>
+                    <option value="urgent">{t('severityUrgent')}</option>
+                  </select>
+                </div>
+
+                {/* Note */}
+                <textarea
+                  placeholder={t('issueNotePlaceholder')}
+                  value={draft.note}
+                  onChange={(e) =>
+                    handleFlagDraftChange(item.id, 'note', e.target.value)
+                  }
+                  rows={2}
+                  style={{
+                    fontSize: '13px',
+                    fontFamily: 'inherit',
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    border: draft.error ? '1px solid #ef4444' : '1px solid #fbbf24',
+                    backgroundColor: '#fff',
+                    resize: 'vertical',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                />
+
+                {draft.error && (
+                  <div style={{ fontSize: '12px', color: '#ef4444' }}>{draft.error}</div>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveFlag(item.id)}
+                    disabled={draft.saving || !userId || !companyId}
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      padding: '4px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid #f59e0b',
+                      backgroundColor: (draft.saving || !userId || !companyId) ? '#fef3c7' : '#f59e0b',
+                      color: (draft.saving || !userId || !companyId) ? '#92400e' : '#fff',
+                      cursor: (draft.saving || !userId || !companyId) ? 'not-allowed' : 'pointer',
+                      opacity: (draft.saving || !userId || !companyId) ? 0.7 : 1,
+                    }}
+                  >
+                    {draft.saving ? t('saving') : t('saveFlag')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => closeFlagPanel(item.id)}
+                    disabled={draft.saving}
+                    style={{
+                      fontSize: '12px',
+                      padding: '4px 10px',
+                      borderRadius: '4px',
+                      border: '1px solid rgb(var(--border))',
+                      backgroundColor: 'rgb(var(--surface))',
+                      color: 'rgb(var(--muted))',
+                      cursor: draft.saving ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
               </div>
             )}
           </div>

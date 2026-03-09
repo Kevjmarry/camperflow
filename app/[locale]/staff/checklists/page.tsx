@@ -194,6 +194,7 @@ export default function ChecklistsPage() {
       guest_prereturn: t('checklistTypes.guest_prereturn'),
       vehicle_readiness: t('checklistTypes.vehicle_readiness'),
       maintenance: t('checklistTypes.maintenance'),
+      mechanical: 'Mechanical Checklist',
     };
     return map[type] ?? type;
   };
@@ -279,7 +280,7 @@ export default function ChecklistsPage() {
           .from('checklist_instances')
           .select('id, checklist_type, status, created_at, booking_id')
           .eq('company_id', companyId)
-          .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover'])
+          .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover', 'mechanical'])
           .not('booking_id', 'is', null)
           .order('created_at', { ascending: false });
 

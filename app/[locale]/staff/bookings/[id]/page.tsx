@@ -100,6 +100,14 @@ export default function BookingDetailPage() {
     </span>
   );
 
+  const getChecklistActionLabel = (instance: ChecklistInstance): string => {
+    switch (instance.status) {
+      case 'completed':   return t("checklists.viewReport");
+      case 'in_progress': return t("checklists.continueChecklist");
+      default:            return t("checklists.openChecklist");
+    }
+  };
+
   // Renders a single checklist instance row.
   const ChecklistRow = ({ instance }: { instance: ChecklistInstance }) => (
     <div
@@ -138,7 +146,7 @@ export default function BookingDetailPage() {
           minHeight: '36px'
         }}
       >
-        {instance.status === 'completed' ? t("checklists.viewChecklist") : t("checklists.openChecklist")}
+        {getChecklistActionLabel(instance)}
       </Link>
     </div>
   );

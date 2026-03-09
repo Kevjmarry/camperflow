@@ -1006,6 +1006,8 @@
       "checklistSuffix": " Checkliste",
       "viewChecklist": "Checkliste anzeigen",
       "openChecklist": "Checkliste öffnen",
+      "viewReport": "Bericht ansehen",
+      "continueChecklist": "Checkliste fortsetzen",
       "status": {
         "notStarted": "Nicht gestartet",
         "inProgress": "In Bearbeitung",
@@ -1584,6 +1586,21 @@
     "type_mechanical": "Technische Checkliste",
     "lockFallback": "Diese Checkliste ist aufgrund einer Geschäftsregel gesperrt.",
     "errorItemUpdateFailed": "Checklistenpunkt konnte nicht gespeichert werden — die Änderung wurde nicht übernommen.",
-    "errorStatusSyncFailed": "Status-Synchronisierung fehlgeschlagen — die Punkte wurden gespeichert, aber der Gesamtstatus konnte nicht aktualisiert werden."
+    "errorStatusSyncFailed": "Status-Synchronisierung fehlgeschlagen — die Punkte wurden gespeichert, aber der Gesamtstatus konnte nicht aktualisiert werden.",
+    "flag": "Markieren",
+    "flagged": "Markiert",
+    "severity": "Schweregrad",
+    "severityInfo": "Info",
+    "severityAttention": "Achtung",
+    "severityUrgent": "Dringend",
+    "issueNoteRequired": "Hinweis ist erforderlich.",
+    "issueNotePlaceholder": "Problem beschreiben… (erforderlich)",
+    "saveFlag": "Markierung speichern",
+    "saving": "Wird gespeichert…",
+    "cancel": "Abbrechen",
+    "flagAlreadyOpen": "Für dieses Element existiert bereits eine offene Markierung.",
+    "flagSaveFailed": "Speichern fehlgeschlagen.",
+    "resolveFlag": "Abschließen",
+    "resolving": "Wird abgeschlossen…"
   }
 }

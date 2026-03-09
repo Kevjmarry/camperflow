@@ -23,26 +23,22 @@ const STATUS_CATEGORY: Record<string, StatusCategory> = {
   medium: "muted",
 };
 
-const CATEGORY_STYLES: Record<StatusCategory, { color: string; background: string; border: string }> = {
+const CATEGORY_STYLES: Record<StatusCategory, { color: string; background: string }> = {
   success: {
     color: "rgb(var(--success))",
     background: "rgb(var(--success) / 0.12)",
-    border: "1px solid rgb(var(--success) / 0.3)",
   },
   warning: {
     color: "rgb(var(--warning))",
     background: "rgb(var(--warning) / 0.12)",
-    border: "1px solid rgb(var(--warning) / 0.3)",
   },
   error: {
     color: "rgb(var(--error))",
     background: "rgb(var(--error) / 0.12)",
-    border: "1px solid rgb(var(--error) / 0.3)",
   },
   muted: {
     color: "rgb(var(--muted))",
     background: "rgb(var(--muted) / 0.12)",
-    border: "1px solid rgb(var(--muted) / 0.3)",
   },
 };
 
@@ -50,12 +46,13 @@ export function getStatusChipStyle(status: string): CSSProperties {
   const category = STATUS_CATEGORY[status] ?? "muted";
   const colorStyles = CATEGORY_STYLES[category];
   return {
-    display: "inline-flex",
+    display: "inline-block",
     alignItems: "center",
-    padding: "3px 12px",
-    borderRadius: "9999px",
-    fontSize: "13px",
+    padding: "2px 8px",
+    borderRadius: "999px",
+    fontSize: "12px",
     fontWeight: 500,
+    lineHeight: "18px",
     whiteSpace: "nowrap",
     ...colorStyles,
   };
