@@ -156,7 +156,8 @@ export default function NewVehiclePage() {
         }
       }
 
-      router.push(withLocale(locale, '/staff/vehicles'));
+      // Redirect to edit page with created flag so the user can add compliance
+      router.push(`/${locale}/staff/vehicles/${vehicleData.id}/edit?created=1`);
     } catch (err) {
       setError(`${t('error.unexpectedPrefix')}${err instanceof Error ? err.message : String(err)}`);
       setSubmitting(false);

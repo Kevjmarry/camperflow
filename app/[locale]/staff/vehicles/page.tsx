@@ -17,6 +17,7 @@ interface Vehicle {
   status: 'ready' | 'preparing' | 'on_rent';
   created_at: string;
   updated_at: string;
+  blockingReason?: string;
 }
 
 export default function VehiclesPage() {
@@ -70,11 +71,73 @@ export default function VehiclesPage() {
         .select('*')
         .order('name', { ascending: true });
 
-      if (error) {
-        throw error;
+      if (error) throw error;
+
+      const vehicleList: Vehicle[] = data || [];
+      const preparingIds = vehicleList.filter(v => v.status === 'preparing').map(v => v.id);
+
+      if (preparingIds.length === 0) {
+        setVehicles(vehicleList);
+        return;
       }
 
-      setVehicles(data || []);
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Open unresolved vehicle issues
+      const { data: issues } = await supabase
+        .from('vehicle_issues')
+        .select('vehicle_id')
+        .in('vehicle_id', preparingIds)
+        .eq('resolved', false);
+
+      // 2. Expired blocking compliance — join compliance_types for blocks_readiness and name
+      const { data: compliance } = await supabase
+        .from('vehicle_compliance')
+        .select('vehicle_id, compliance_types!inner(name, slug, is_system, blocks_readiness)')
+        .in('vehicle_id', preparingIds)
+        .eq('compliance_types.blocks_readiness', true)
+        .lte('expiry_date', today);
+
+      // 3. Incomplete checklist instances linked via bookings.vehicle_id
+      const { data: checklists } = await supabase
+        .from('checklist_instances')
+        .select('bookings!inner(vehicle_id)')
+        .in('bookings.vehicle_id', preparingIds)
+        .neq('status', 'completed');
+
+      const issueSet = new Set((issues || []).map((r: any) => r.vehicle_id));
+
+      // Map vehicle_id → first expired blocking compliance name
+      const complianceNameByVehicle = new Map<string, string>();
+      for (const r of (compliance || []) as any[]) {
+        if (r.vehicle_id && r.compliance_types?.name && !complianceNameByVehicle.has(r.vehicle_id)) {
+          complianceNameByVehicle.set(r.vehicle_id, r.compliance_types.name);
+        }
+      }
+
+      const checklistSet = new Set(
+        (checklists || [])
+          .map((r: any) => r.bookings?.vehicle_id)
+          .filter(Boolean)
+      );
+
+      const withReasons = vehicleList.map(v => {
+        if (v.status !== 'preparing') return v;
+        let blockingReason = '';
+        if (issueSet.has(v.id)) {
+          blockingReason = t("blockingReason.openIssue");
+        } else {
+          const complianceName = complianceNameByVehicle.get(v.id);
+          if (complianceName !== undefined) {
+            blockingReason = t("blockingReason.expiredComplianceWithName", { name: complianceName });
+          } else if (checklistSet.has(v.id)) {
+            blockingReason = t("blockingReason.checklistIncomplete");
+          }
+        }
+        return { ...v, blockingReason };
+      });
+
+      setVehicles(withReasons);
     } catch (err: any) {
       setError(err.message || t("errors.failedLoadVehicles"));
     } finally {
@@ -84,14 +147,10 @@ export default function VehiclesPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'ready':
-        return t("status.ready");
-      case 'preparing':
-        return t("status.preparing");
-      case 'on_rent':
-        return t("status.onRent");
-      default:
-        return status;
+      case 'ready': return t("status.ready");
+      case 'preparing': return t("status.preparing");
+      case 'on_rent': return t("status.onRent");
+      default: return status;
     }
   };
 
@@ -275,6 +334,16 @@ export default function VehiclesPage() {
                     <span style={getStatusChipStyle(vehicle.status)}>
                       {getStatusLabel(vehicle.status)}
                     </span>
+
+                    {vehicle.status === 'preparing' && vehicle.blockingReason && (
+                      <span style={{
+                        fontSize: '13px',
+                        color: 'rgb(var(--warning, var(--muted)))',
+                        fontStyle: 'italic'
+                      }}>
+                        {vehicle.blockingReason}
+                      </span>
+                    )}
                     
                     <Link
                       href={canManage ? `/${locale}/staff/vehicles/${vehicle.id}/edit` : `/${locale}/staff/vehicles/${vehicle.id}`}

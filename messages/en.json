@@ -178,11 +178,15 @@
     "notFound": {
       "title": "Vehicle not found",
       "description": "The vehicle you're looking for doesn't exist or has been deleted.",
-      "back": "Back to vehicles"
+      "back": "Back to vehicles",
+      "backButton": "Back to vehicles"
     },
     "loading": "Loading vehicle...",
     "backToVehicles": "Back to vehicles",
     "title": "Vehicle details",
+    "pageTitle": "Vehicle details",
+    "errorLoad": "Failed to load vehicle",
+    "editButton": "Edit vehicle",
     "error": {
       "notAuthenticated": "Not authenticated",
       "failedPrefix": "Failed to load vehicle: ",
@@ -200,12 +204,81 @@
       "make": "Make",
       "model": "Model"
     },
+    "fields": {
+      "photo": "Photo",
+      "noPhoto": "No photo",
+      "make": "Make",
+      "model": "Model",
+      "year": "Year",
+      "vin": "VIN",
+      "notes": "Notes",
+      "noNotes": "No notes"
+    },
     "section": {
       "photo": "Photo",
       "vin": "VIN",
       "notes": "Notes"
     },
-    "photoAlt": "Vehicle"
+    "photoAlt": "Vehicle",
+    "compliance": {
+      "title": "Compliance",
+      "addButton": "Add compliance",
+      "loading": "Loading compliance...",
+      "empty": "No compliance records found.",
+      "table": {
+        "type": "Type",
+        "expiryDate": "Expiry date",
+        "status": "Status",
+        "editButton": "Edit",
+        "deleteButton": "Delete",
+        "deleteCancel": "Cancel",
+        "deleteConfirm": "Confirm"
+      },
+      "status": {
+        "expired": "Expired",
+        "expiring": "Expiring soon",
+        "ok": "OK"
+      },
+      "editModal": {
+        "title": "Edit {name}",
+        "expiryDateLabel": "Expiry date",
+        "notesLabel": "Notes",
+        "errorExpiryRequired": "Expiry date is required",
+        "errorSaveFailed": "Failed to save changes",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "save": "Save",
+        "nameLabel": "Compliance name",
+        "errorNameRequired": "Please enter a name.",
+        "blocksReadinessLabel": "Blocks vehicle readiness"
+      },
+      "addModal": {
+        "title": "Add compliance",
+        "allTracked": "All compliance types are already being tracked for this vehicle.",
+        "close": "Close",
+        "typeLabel": "Compliance type",
+        "expiryDateLabel": "Expiry date",
+        "notesLabel": "Notes",
+        "errorTypeRequired": "Please select a compliance type",
+        "errorExpiryRequired": "Expiry date is required",
+        "errorSaveFailed": "Failed to add compliance",
+        "cancel": "Cancel",
+        "saving": "Adding...",
+        "add": "Add",
+        "customOption": "Custom compliance",
+        "customNameLabel": "Compliance name",
+        "customNamePlaceholder": "e.g. Fire extinguisher …",
+        "errorCustomNameRequired": "Please enter a name.",
+        "customBlocksReadinessLabel": "Blocks vehicle readiness"
+      },
+      "systemTypes": {
+        "technicalInspection": "Technical Inspection",
+        "insurance": "Insurance",
+        "gasInspection": "Gas Inspection",
+        "habitationService": "Habitation Service",
+        "generalService": "General Service"
+      }
+    }
   },
   "vehicleEdit": {
     "backToVehiclesArrow": "← Back to vehicles",
@@ -1165,6 +1238,12 @@
     "buttons": {
       "edit": "Edit",
       "view": "View"
+    },
+    "blockingReason": {
+      "openIssue": "Open issue",
+      "expiredCompliance": "Expired compliance",
+      "checklistIncomplete": "Checklist incomplete",
+      "expiredComplianceWithName": "Expired {name}"
     }
   },
   "staffVehicleEdit": {
@@ -1192,6 +1271,7 @@
     "photoLabel": "Vehicle photo",
     "photoSelectedPrefix": "Selected",
     "photoHint": "Upload a photo of the vehicle",
+    "photoPreviewAlt": "Vehicle photo",
     "photoUrlLabel": "Photo URL (optional)",
     "photoUrlPlaceholder": "https://...",
     "photoUploadFailed": "Failed to upload photo.",
@@ -1206,7 +1286,8 @@
     "vehicleNotFound": "Vehicle not found.",
     "loadFailed": "Failed to load vehicle.",
     "saveFailed": "Failed to save changes.",
-    "deleteFailed": "Failed to delete vehicle."
+    "deleteFailed": "Failed to delete vehicle.",
+    "createdBanner": "Vehicle created successfully. You can now add compliance records below."
   },
   "staffTeamNew": {
     "checkingPermissions": "Checking permissions…",
@@ -1601,6 +1682,22 @@
     "flagAlreadyOpen": "An open flag already exists for this item.",
     "flagSaveFailed": "Save failed.",
     "resolveFlag": "Resolve",
-    "resolving": "Resolving…"
+    "resolving": "Resolving…",
+    "lockedBookingCompleted": "This checklist is locked because the linked booking has been completed.",
+    "quickMode": "Quick Mode",
+    "dismiss": "Dismiss",
+    "completing": "Completing…",
+    "doneGoBack": "Done — go back",
+    "completeChecklist": "Complete checklist",
+    "allItemsChecked": "All {total} items checked",
+    "itemsCheckedOf": "{checked} of {total} items checked",
+    "checklistIsComplete": "Checklist is complete.",
+    "itemsRemaining": "{count, plural, one {# item remaining.} other {# items remaining.}}",
+    "quickCompleteConfirm": "Complete all {count, plural, one {# remaining item} other {# remaining items}} and finish this checklist?",
+    "errorDetailMessage": "message:",
+    "errorDetailCode": "code:",
+    "errorDetailDetails": "details:",
+    "errorDetailHint": "hint:",
+    "rawErrorJson": "Raw error JSON"
   }
 }

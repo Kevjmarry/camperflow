@@ -178,11 +178,15 @@
     "notFound": {
       "title": "Fahrzeug nicht gefunden",
       "description": "Das gesuchte Fahrzeug existiert nicht oder wurde gelöscht.",
-      "back": "Zurück zu den Fahrzeugen"
+      "back": "Zurück zu den Fahrzeugen",
+      "backButton": "Zurück zu den Fahrzeugen"
     },
     "loading": "Fahrzeug wird geladen...",
     "backToVehicles": "Zurück zu den Fahrzeugen",
     "title": "Fahrzeugdetails",
+    "pageTitle": "Fahrzeugdetails",
+    "errorLoad": "Fahrzeug konnte nicht geladen werden",
+    "editButton": "Fahrzeug bearbeiten",
     "error": {
       "notAuthenticated": "Nicht authentifiziert",
       "failedPrefix": "Fahrzeug konnte nicht geladen werden: ",
@@ -200,12 +204,81 @@
       "make": "Marke",
       "model": "Modell"
     },
+    "fields": {
+      "photo": "Foto",
+      "noPhoto": "Kein Foto",
+      "make": "Marke",
+      "model": "Modell",
+      "year": "Jahr",
+      "vin": "VIN",
+      "notes": "Notizen",
+      "noNotes": "Keine Notizen"
+    },
     "section": {
       "photo": "Foto",
       "vin": "VIN",
       "notes": "Notizen"
     },
-    "photoAlt": "Fahrzeug"
+    "photoAlt": "Fahrzeug",
+    "compliance": {
+      "title": "Compliance",
+      "addButton": "Compliance hinzufügen",
+      "loading": "Compliance wird geladen...",
+      "empty": "Keine Compliance-Einträge gefunden.",
+      "table": {
+        "type": "Typ",
+        "expiryDate": "Ablaufdatum",
+        "status": "Status",
+        "editButton": "Bearbeiten",
+        "deleteButton": "Löschen",
+        "deleteCancel": "Abbrechen",
+        "deleteConfirm": "Bestätigen"
+      },
+      "status": {
+        "expired": "Abgelaufen",
+        "expiring": "Läuft bald ab",
+        "ok": "OK"
+      },
+      "editModal": {
+        "title": "{name} bearbeiten",
+        "expiryDateLabel": "Ablaufdatum",
+        "notesLabel": "Notizen",
+        "errorExpiryRequired": "Ablaufdatum ist erforderlich",
+        "errorSaveFailed": "Änderungen konnten nicht gespeichert werden",
+        "cancel": "Abbrechen",
+        "saving": "Wird gespeichert...",
+        "save": "Speichern",
+        "nameLabel": "Bezeichnung",
+        "errorNameRequired": "Bitte einen Namen eingeben.",
+        "blocksReadinessLabel": "Blockiert Fahrzeugbereitschaft"
+      },
+      "addModal": {
+        "title": "Compliance hinzufügen",
+        "allTracked": "Alle Compliance-Typen werden für dieses Fahrzeug bereits erfasst.",
+        "close": "Schließen",
+        "typeLabel": "Compliance-Typ",
+        "expiryDateLabel": "Ablaufdatum",
+        "notesLabel": "Notizen",
+        "errorTypeRequired": "Bitte einen Compliance-Typ auswählen",
+        "errorExpiryRequired": "Ablaufdatum ist erforderlich",
+        "errorSaveFailed": "Compliance konnte nicht hinzugefügt werden",
+        "cancel": "Abbrechen",
+        "saving": "Wird hinzugefügt...",
+        "add": "Hinzufügen",
+        "customOption": "Benutzerdefiniert",
+        "customNameLabel": "Bezeichnung",
+        "customNamePlaceholder": "z.B. Feuerlöscher-Service",
+        "errorCustomNameRequired": "Bitte einen Namen eingeben.",
+        "customBlocksReadinessLabel": "Blockiert Fahrzeugbereitschaft"
+      },
+      "systemTypes": {
+        "technicalInspection": "Hauptuntersuchung",
+        "insurance": "Versicherung",
+        "gasInspection": "Gasprüfung",
+        "habitationService": "Wohnraumwartung",
+        "generalService": "Allgemeine Wartung"
+      }
+    }
   },
   "vehicleEdit": {
     "backToVehiclesArrow": "← Zurück zu den Fahrzeugen",
@@ -1165,6 +1238,12 @@
     "buttons": {
       "edit": "Bearbeiten",
       "view": "Ansehen"
+    },
+    "blockingReason": {
+      "openIssue": "Offenes Problem",
+      "expiredCompliance": "Abgelaufene Compliance",
+      "checklistIncomplete": "Checkliste unvollständig",
+      "expiredComplianceWithName": "Abgelaufen: {name}"
     }
   },
   "staffVehicleEdit": {
@@ -1192,6 +1271,7 @@
     "photoLabel": "Fahrzeugfoto",
     "photoSelectedPrefix": "Ausgewählt",
     "photoHint": "Laden Sie ein Foto des Fahrzeugs hoch",
+    "photoPreviewAlt": "Fahrzeugfoto",
     "photoUrlLabel": "Foto-URL (optional)",
     "photoUrlPlaceholder": "https://...",
     "photoUploadFailed": "Foto konnte nicht hochgeladen werden.",
@@ -1206,7 +1286,8 @@
     "vehicleNotFound": "Fahrzeug nicht gefunden.",
     "loadFailed": "Fehler beim Laden des Fahrzeugs.",
     "saveFailed": "Fehler beim Speichern der Änderungen.",
-    "deleteFailed": "Fehler beim Löschen des Fahrzeugs."
+    "deleteFailed": "Fehler beim Löschen des Fahrzeugs.",
+    "createdBanner": "Fahrzeug erfolgreich erstellt. Sie können nun unten Compliance-Einträge hinzufügen."
   },
   "staffTeamNew": {
     "checkingPermissions": "Berechtigungen werden geprüft…",
@@ -1601,6 +1682,22 @@
     "flagAlreadyOpen": "Für dieses Element existiert bereits eine offene Markierung.",
     "flagSaveFailed": "Speichern fehlgeschlagen.",
     "resolveFlag": "Abschließen",
-    "resolving": "Wird abgeschlossen…"
+    "resolving": "Wird abgeschlossen…",
+    "lockedBookingCompleted": "Diese Checkliste ist gesperrt, da die verknüpfte Buchung abgeschlossen wurde.",
+    "quickMode": "Schnellmodus",
+    "dismiss": "Schließen",
+    "completing": "Wird abgeschlossen…",
+    "doneGoBack": "Fertig — zurück",
+    "completeChecklist": "Checkliste abschließen",
+    "allItemsChecked": "Alle {total} Punkte erledigt",
+    "itemsCheckedOf": "{checked} von {total} Punkten erledigt",
+    "checklistIsComplete": "Checkliste ist vollständig.",
+    "itemsRemaining": "{count, plural, one {# Punkt verbleibend.} other {# Punkte verbleibend.}}",
+    "quickCompleteConfirm": "{count, plural, one {# verbleibenden Punkt} other {# verbleibende Punkte}} abschließen und Checkliste fertigstellen?",
+    "errorDetailMessage": "Meldung:",
+    "errorDetailCode": "Code:",
+    "errorDetailDetails": "Details:",
+    "errorDetailHint": "Hinweis:",
+    "rawErrorJson": "Fehler-JSON (Rohformat)"
   }
 }

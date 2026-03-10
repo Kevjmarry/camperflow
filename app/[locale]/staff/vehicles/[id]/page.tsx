@@ -4,6 +4,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
@@ -20,12 +21,432 @@ interface Vehicle {
   status: "ready" | "preparing" | "on_rent";
 }
 
+interface ComplianceTypeShape {
+  id: string;
+  name: string;
+  slug: string;
+  warning_days_before: number;
+  sort_order: number;
+  is_system: boolean;
+  company_id: string | null;
+}
+
+interface ComplianceRow {
+  id: string;
+  vehicle_id: string;
+  compliance_type_id: string;
+  expiry_date: string;
+  last_completed_at: string | null;
+  notes: string | null;
+  compliance_types: ComplianceTypeShape;
+}
+
+// Raw shape returned by Supabase — relation may come back as array or object
+interface ComplianceRowRaw {
+  id: string;
+  vehicle_id: string;
+  compliance_type_id: string;
+  expiry_date: string;
+  last_completed_at: string | null;
+  notes: string | null;
+  compliance_types: ComplianceTypeShape | ComplianceTypeShape[] | null;
+}
+
+interface ComplianceType {
+  id: string;
+  name: string;
+  slug: string;
+  warning_days_before: number;
+  sort_order: number;
+  is_system: boolean;
+  company_id: string | null;
+}
+
+type ComplianceStatus = "expired" | "expiring" | "ok";
+
+// Slugs that have translation keys in compliance.systemTypes.*
+const SYSTEM_SLUG_KEYS: Record<string, string> = {
+  "technical-inspection": "technicalInspection",
+  "insurance":            "insurance",
+  "gas-inspection":       "gasInspection",
+  "habitation-service":   "habitationService",
+  "general-service":      "generalService",
+};
+
 const isValidUUID = (id: string): boolean => {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 };
 
+/** Normalize the Supabase relation — could be object, array, or null */
+function normalizeComplianceType(
+  raw: ComplianceTypeShape | ComplianceTypeShape[] | null
+): ComplianceTypeShape | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) return raw[0] ?? null;
+  return raw;
+}
+
+/** Normalize a raw row into the typed ComplianceRow shape */
+function normalizeRow(raw: ComplianceRowRaw): ComplianceRow | null {
+  const ct = normalizeComplianceType(raw.compliance_types);
+  if (!ct) return null;
+  return { ...raw, compliance_types: ct };
+}
+
+function getComplianceStatus(
+  expiryDate: string,
+  warningDaysBefore: number
+): ComplianceStatus {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor(
+    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  if (diffDays < 0) return "expired";
+  if (diffDays <= warningDaysBefore) return "expiring";
+  return "ok";
+}
+
+function statusColor(s: ComplianceStatus): string {
+  if (s === "expired") return "rgb(var(--error))";
+  if (s === "expiring") return "rgb(var(--warning))";
+  return "rgb(var(--success))";
+}
+
+function statusBg(s: ComplianceStatus): string {
+  if (s === "expired") return "rgb(var(--error) / 0.1)";
+  if (s === "expiring") return "rgb(var(--warning) / 0.1)";
+  return "rgb(var(--success) / 0.1)";
+}
+
+// ------------------------------------------------------------
+// Edit modal
+// ------------------------------------------------------------
+function EditComplianceModal({
+  row,
+  locale,
+  onClose,
+  onSave,
+}: {
+  row: ComplianceRow;
+  locale: string;
+  onClose: () => void;
+  onSave: (id: string, expiryDate: string, notes: string) => Promise<void>;
+}) {
+  const t = useTranslations("vehicleDetail");
+  const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
+
+  const [expiryDate, setExpiryDate] = useState(row.expiry_date);
+  const [notes, setNotes] = useState(row.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const typeName =
+    row.compliance_types.is_system && SYSTEM_SLUG_KEYS[row.compliance_types.slug]
+      ? tSlug(SYSTEM_SLUG_KEYS[row.compliance_types.slug])
+      : row.compliance_types.name;
+
+  const handleSave = async () => {
+    if (!expiryDate) {
+      setError(t("compliance.editModal.errorExpiryRequired"));
+      return;
+    }
+    try {
+      setSaving(true);
+      setError("");
+      await onSave(row.id, expiryDate, notes);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || t("compliance.editModal.errorSaveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-4)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="surface"
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          padding: "var(--space-6)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-4)",
+        }}
+      >
+        <h2 style={{ fontSize: "18px", color: "rgb(var(--text))", margin: 0 }}>
+          {t("compliance.editModal.title", { name: typeName })}
+        </h2>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.editModal.expiryDateLabel")}
+          </label>
+          <input
+            type="date"
+            className="input"
+            value={expiryDate}
+            onChange={(e) => setExpiryDate(e.target.value)}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.editModal.notesLabel")}
+          </label>
+          <textarea
+            className="input"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            style={{ width: "100%", resize: "vertical" }}
+          />
+        </div>
+
+        {error && (
+          <div
+            style={{
+              padding: "var(--space-3)",
+              background: "rgb(var(--error) / 0.1)",
+              border: "1px solid rgb(var(--error) / 0.3)",
+              borderRadius: "var(--radius)",
+              color: "rgb(var(--error))",
+              fontSize: "13px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+          <button className="btn btn-secondary" onClick={onClose} disabled={saving}>
+            {t("compliance.editModal.cancel")}
+          </button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? t("compliance.editModal.saving") : t("compliance.editModal.save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------
+// Add modal
+// ------------------------------------------------------------
+function AddComplianceModal({
+  vehicleId,
+  availableTypes,
+  locale,
+  onClose,
+  onSave,
+}: {
+  vehicleId: string;
+  availableTypes: ComplianceType[];
+  locale: string;
+  onClose: () => void;
+  onSave: (vehicleId: string, complianceTypeId: string, expiryDate: string, notes: string) => Promise<void>;
+}) {
+  const t = useTranslations("vehicleDetail");
+  const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
+
+  const resolveTypeName = (ct: ComplianceType) =>
+    ct.is_system && SYSTEM_SLUG_KEYS[ct.slug]
+      ? tSlug(SYSTEM_SLUG_KEYS[ct.slug])
+      : ct.name;
+
+  const [typeId, setTypeId] = useState(availableTypes[0]?.id ?? "");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSave = async () => {
+    if (!typeId) {
+      setError(t("compliance.addModal.errorTypeRequired"));
+      return;
+    }
+    if (!expiryDate) {
+      setError(t("compliance.addModal.errorExpiryRequired"));
+      return;
+    }
+    try {
+      setSaving(true);
+      setError("");
+      await onSave(vehicleId, typeId, expiryDate, notes);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || t("compliance.addModal.errorSaveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (availableTypes.length === 0) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          zIndex: 50,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--space-4)",
+        }}
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div
+          className="surface"
+          style={{
+            width: "100%",
+            maxWidth: 400,
+            padding: "var(--space-6)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-4)",
+          }}
+        >
+          <h2 style={{ fontSize: "18px", color: "rgb(var(--text))", margin: 0 }}>
+            {t("compliance.addModal.title")}
+          </h2>
+          <p style={{ color: "rgb(var(--muted))", fontSize: "14px" }}>
+            {t("compliance.addModal.allTracked")}
+          </p>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button className="btn btn-secondary" onClick={onClose}>
+              {t("compliance.addModal.close")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-4)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="surface"
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          padding: "var(--space-6)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-4)",
+        }}
+      >
+        <h2 style={{ fontSize: "18px", color: "rgb(var(--text))", margin: 0 }}>
+          {t("compliance.addModal.title")}
+        </h2>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.addModal.typeLabel")}
+          </label>
+          <select
+            className="input"
+            value={typeId}
+            onChange={(e) => setTypeId(e.target.value)}
+            style={{ width: "100%" }}
+          >
+            {availableTypes.map((ct) => (
+              <option key={ct.id} value={ct.id}>
+                {resolveTypeName(ct)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.addModal.expiryDateLabel")}
+          </label>
+          <input
+            type="date"
+            className="input"
+            value={expiryDate}
+            onChange={(e) => setExpiryDate(e.target.value)}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.addModal.notesLabel")}
+          </label>
+          <textarea
+            className="input"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            style={{ width: "100%", resize: "vertical" }}
+          />
+        </div>
+
+        {error && (
+          <div
+            style={{
+              padding: "var(--space-3)",
+              background: "rgb(var(--error) / 0.1)",
+              border: "1px solid rgb(var(--error) / 0.3)",
+              borderRadius: "var(--radius)",
+              color: "rgb(var(--error))",
+              fontSize: "13px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+          <button className="btn btn-secondary" onClick={onClose} disabled={saving}>
+            {t("compliance.addModal.cancel")}
+          </button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? t("compliance.addModal.saving") : t("compliance.addModal.add")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------
+// Main page
+// ------------------------------------------------------------
 export default function VehicleDetailPage({
   params,
 }: {
@@ -34,12 +455,42 @@ export default function VehicleDetailPage({
   const { id, locale } = use(params);
   const router = useRouter();
   const supabase = createClient();
+  const t = useTranslations("vehicleDetail");
+  const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [canManage, setCanManage] = useState(false);
+
+  const [compliance, setCompliance] = useState<ComplianceRow[]>([]);
+  const [allTypes, setAllTypes] = useState<ComplianceType[]>([]);
+  const [complianceLoading, setComplianceLoading] = useState(true);
+
+  const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const formatDate = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const resolveTypeName = (ct: {
+    name: string;
+    slug: string;
+    is_system: boolean;
+    company_id: string | null;
+  }): string => {
+    if (ct.is_system && SYSTEM_SLUG_KEYS[ct.slug]) {
+      return tSlug(SYSTEM_SLUG_KEYS[ct.slug]);
+    }
+    return ct.name;
+  };
 
   useEffect(() => {
     if (!isValidUUID(id)) {
@@ -53,10 +504,7 @@ export default function VehicleDetailPage({
         setError("");
         setNotFound(false);
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError || !user) {
           router.replace(`/${locale}/staff/login`);
@@ -69,13 +517,13 @@ export default function VehicleDetailPage({
           .eq("auth_user_id", user.id)
           .maybeSingle();
 
-        setCanManage(profile ? profile.role === "admin" || profile.can_manage === true : false);
+        setCanManage(
+          profile ? profile.role === "admin" || profile.can_manage === true : false
+        );
 
         const { data: vehicleData, error: vehicleError } = await supabase
           .from("vehicles")
-          .select(
-            "id, name, registration_plate, make, model, year, vin, notes, photo_url, status"
-          )
+          .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status")
           .eq("id", id)
           .single();
 
@@ -84,13 +532,13 @@ export default function VehicleDetailPage({
             setNotFound(true);
             return;
           }
-          setError(vehicleError.message || "Failed to load vehicle");
+          setError(vehicleError.message || t("errorLoad"));
           return;
         }
 
         setVehicle(vehicleData as Vehicle);
       } catch (err: any) {
-        setError(err?.message || "Failed to load vehicle");
+        setError(err?.message || t("errorLoad"));
       } finally {
         setLoading(false);
       }
@@ -99,29 +547,114 @@ export default function VehicleDetailPage({
     run();
   }, [id, locale, router, supabase]);
 
-  const getStatusLabel = (status: string) => {
+  useEffect(() => {
+    if (!vehicle) return;
+
+    const fetchCompliance = async () => {
+      try {
+        setComplianceLoading(true);
+
+        const [{ data: complianceData }, { data: typesData }] = await Promise.all([
+          supabase
+            .from("vehicle_compliance")
+            .select(
+              "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id)"
+            )
+            .eq("vehicle_id", vehicle.id),
+          supabase
+            .from("compliance_types")
+            .select("id, name, slug, warning_days_before, sort_order, is_system, company_id")
+            .eq("is_active", true)
+            .order("sort_order", { ascending: true }),
+        ]);
+
+        const rows: ComplianceRow[] = ((complianceData ?? []) as ComplianceRowRaw[])
+          .map(normalizeRow)
+          .filter((r): r is ComplianceRow => r !== null);
+
+        rows.sort((a, b) => a.compliance_types.sort_order - b.compliance_types.sort_order);
+        setCompliance(rows);
+        setAllTypes((typesData ?? []) as ComplianceType[]);
+      } finally {
+        setComplianceLoading(false);
+      }
+    };
+
+    fetchCompliance();
+  }, [vehicle, supabase]);
+
+  const handleEditSave = async (rowId: string, expiryDate: string, notes: string) => {
+    const { error } = await supabase
+      .from("vehicle_compliance")
+      .update({ expiry_date: expiryDate, notes: notes || null })
+      .eq("id", rowId);
+
+    if (error) throw new Error(error.message);
+
+    setCompliance((prev) =>
+      prev.map((r) =>
+        r.id === rowId ? { ...r, expiry_date: expiryDate, notes: notes || null } : r
+      )
+    );
+  };
+
+  const handleAddSave = async (
+    vehicleId: string,
+    complianceTypeId: string,
+    expiryDate: string,
+    notes: string
+  ) => {
+    const { data, error } = await supabase
+      .from("vehicle_compliance")
+      .insert({
+        vehicle_id: vehicleId,
+        compliance_type_id: complianceTypeId,
+        expiry_date: expiryDate,
+        notes: notes || null,
+      })
+      .select(
+        "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id)"
+      )
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    const normalized = normalizeRow(data as ComplianceRowRaw);
+    if (!normalized) throw new Error("Failed to normalize compliance row");
+
+    setCompliance((prev) => {
+      const next = [...prev, normalized];
+      next.sort((a, b) => a.compliance_types.sort_order - b.compliance_types.sort_order);
+      return next;
+    });
+  };
+
+  const trackedTypeIds = new Set(compliance.map((r) => r.compliance_type_id));
+  const availableToAdd = allTypes.filter((ct) => !trackedTypeIds.has(ct.id));
+
+  const getVehicleStatusLabel = (status: string) => {
     switch (status) {
-      case "ready":
-        return "Ready";
-      case "preparing":
-        return "Preparing";
-      case "on_rent":
-        return "On rent";
-      default:
-        return status;
+      case "ready":     return t("status.ready");
+      case "preparing": return t("status.preparing");
+      case "on_rent":   return t("status.onRent");
+      default:          return status;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getVehicleStatusColor = (status: string) => {
     switch (status) {
-      case "ready":
-        return "rgb(var(--success))";
-      case "preparing":
-        return "rgb(var(--warning))";
-      case "on_rent":
-        return "rgb(var(--brand))";
-      default:
-        return "rgb(var(--text))";
+      case "ready":     return "rgb(var(--success))";
+      case "preparing": return "rgb(var(--warning))";
+      case "on_rent":   return "rgb(var(--brand))";
+      default:          return "rgb(var(--text))";
+    }
+  };
+
+  const getComplianceStatusLabel = (s: ComplianceStatus) => {
+    switch (s) {
+      case "expired":  return t("compliance.status.expired");
+      case "expiring": return t("compliance.status.expiring");
+      default:         return t("compliance.status.ok");
     }
   };
 
@@ -131,17 +664,17 @@ export default function VehicleDetailPage({
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-              Vehicle not found
+              {t("notFound.title")}
             </h1>
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
-              The vehicle you&apos;re looking for doesn&apos;t exist or has been deleted.
+              {t("notFound.description")}
             </p>
             <Link
               href={`/${locale}/staff/vehicles`}
               className="btn btn-primary"
               style={{ marginTop: "var(--space-6)" }}
             >
-              Back to vehicles
+              {t("notFound.backButton")}
             </Link>
           </div>
         </div>
@@ -154,7 +687,7 @@ export default function VehicleDetailPage({
       <PageContainer maxWidth="1400px">
         <div className="surface" style={{ padding: "var(--space-8)" }}>
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
-            Loading vehicle...
+            {t("loading")}
           </div>
         </div>
       </PageContainer>
@@ -177,13 +710,12 @@ export default function VehicleDetailPage({
                   display: "inline-block",
                 }}
               >
-                ← Back to vehicles
+                {t("backToVehicles")}
               </Link>
               <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-                Vehicle details
+                {t("pageTitle")}
               </h1>
             </div>
-
             <div
               style={{
                 padding: "var(--space-4)",
@@ -194,7 +726,7 @@ export default function VehicleDetailPage({
                 fontSize: "14px",
               }}
             >
-              {error || "Failed to load vehicle"}
+              {error || t("errorLoad")}
             </div>
           </div>
         </div>
@@ -203,127 +735,341 @@ export default function VehicleDetailPage({
   }
 
   return (
-    <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: "var(--space-4)",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <Link
-                href={`/${locale}/staff/vehicles`}
-                style={{
-                  fontSize: "14px",
-                  color: "rgb(var(--brand))",
-                  textDecoration: "none",
-                  marginBottom: "var(--space-2)",
-                  display: "inline-block",
-                }}
-              >
-                ← Back to vehicles
-              </Link>
+    <>
+      {editingRow && (
+        <EditComplianceModal
+          row={editingRow}
+          locale={locale}
+          onClose={() => setEditingRow(null)}
+          onSave={handleEditSave}
+        />
+      )}
 
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
-                <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-                  {vehicle.name}
-                </h1>
-                <span
+      {showAddModal && (
+        <AddComplianceModal
+          vehicleId={vehicle.id}
+          availableTypes={availableToAdd}
+          locale={locale}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddSave}
+        />
+      )}
+
+      <PageContainer maxWidth="1400px">
+        <div className="surface" style={{ padding: "var(--space-8)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "var(--space-4)",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <Link
+                  href={`/${locale}/staff/vehicles`}
                   style={{
-                    padding: "var(--space-2) var(--space-3)",
-                    borderRadius: "var(--radius)",
-                    background: `${getStatusColor(vehicle.status)}15`,
-                    color: getStatusColor(vehicle.status),
                     fontSize: "14px",
-                    fontWeight: 600,
+                    color: "rgb(var(--brand))",
+                    textDecoration: "none",
+                    marginBottom: "var(--space-2)",
+                    display: "inline-block",
                   }}
                 >
-                  {getStatusLabel(vehicle.status)}
-                </span>
-              </div>
-
-              <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
-                {vehicle.registration_plate}
-              </p>
-            </div>
-
-            {canManage && (
-              <Link href={`/${locale}/staff/vehicles/${vehicle.id}/edit`} className="btn btn-primary">
-                Edit
-              </Link>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: "var(--space-6)",
-            }}
-          >
-            <div className="surface" style={{ padding: "var(--space-6)" }}>
-              <div style={{ fontSize: "14px", color: "rgb(var(--muted))", marginBottom: "var(--space-2)" }}>
-                Photo
-              </div>
-
-              {vehicle.photo_url ? (
-                <img
-                  src={vehicle.photo_url}
-                  alt={vehicle.name}
-                  style={{
-                    width: "100%",
-                    height: 240,
-                    objectFit: "cover",
-                    borderRadius: "var(--radius)",
-                    border: "1px solid rgb(var(--border))",
-                  }}
-                />
-              ) : (
+                  {t("backToVehicles")}
+                </Link>
                 <div
                   style={{
-                    width: "100%",
-                    height: 240,
-                    borderRadius: "var(--radius)",
-                    border: "1px solid rgb(var(--border))",
-                    background: "rgb(var(--muted) / 0.12)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    color: "rgb(var(--muted))",
-                    fontSize: "14px",
+                    gap: "var(--space-3)",
+                    flexWrap: "wrap",
                   }}
                 >
-                  No photo
+                  <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
+                    {vehicle.name}
+                  </h1>
+                  <span
+                    style={{
+                      padding: "var(--space-2) var(--space-3)",
+                      borderRadius: "var(--radius)",
+                      background: `${getVehicleStatusColor(vehicle.status)}15`,
+                      color: getVehicleStatusColor(vehicle.status),
+                      fontSize: "14px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {getVehicleStatusLabel(vehicle.status)}
+                  </span>
                 </div>
+                <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
+                  {vehicle.registration_plate}
+                </p>
+              </div>
+
+              {canManage && (
+                <Link
+                  href={`/${locale}/staff/vehicles/${vehicle.id}/edit`}
+                  className="btn btn-primary"
+                >
+                  {t("editButton")}
+                </Link>
               )}
             </div>
 
-            <div className="surface" style={{ padding: "var(--space-6)" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                <Field label="Make" value={vehicle.make || "—"} />
-                <Field label="Model" value={vehicle.model || "—"} />
-                <Field label="Year" value={vehicle.year ? String(vehicle.year) : "—"} />
-                <Field label="VIN" value={vehicle.vin || "—"} />
+            {/* Photo + Fields */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: "var(--space-6)",
+              }}
+            >
+              <div className="surface" style={{ padding: "var(--space-6)" }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgb(var(--muted))",
+                    marginBottom: "var(--space-2)",
+                  }}
+                >
+                  {t("fields.photo")}
+                </div>
+                {vehicle.photo_url ? (
+                  <img
+                    src={vehicle.photo_url}
+                    alt={vehicle.name}
+                    style={{
+                      width: "100%",
+                      height: 240,
+                      objectFit: "cover",
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 240,
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
+                      background: "rgb(var(--muted) / 0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "rgb(var(--muted))",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {t("fields.noPhoto")}
+                  </div>
+                )}
+              </div>
+
+              <div className="surface" style={{ padding: "var(--space-6)" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <Field label={t("fields.make")}  value={vehicle.make  || "—"} />
+                  <Field label={t("fields.model")} value={vehicle.model || "—"} />
+                  <Field label={t("fields.year")}  value={vehicle.year ? String(vehicle.year) : "—"} />
+                  <Field label={t("fields.vin")}   value={vehicle.vin   || "—"} />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="surface" style={{ padding: "var(--space-6)" }}>
-            <div style={{ fontSize: "14px", color: "rgb(var(--muted))", marginBottom: "var(--space-2)" }}>
-              Notes
+            {/* Notes */}
+            <div className="surface" style={{ padding: "var(--space-6)" }}>
+              <div
+                style={{
+                  fontSize: "14px",
+                  color: "rgb(var(--muted))",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                {t("fields.notes")}
+              </div>
+              <div
+                style={{
+                  color: "rgb(var(--text))",
+                  whiteSpace: "pre-wrap",
+                  fontSize: "14px",
+                }}
+              >
+                {vehicle.notes && vehicle.notes.trim().length > 0
+                  ? vehicle.notes
+                  : t("fields.noNotes")}
+              </div>
             </div>
-            <div style={{ color: "rgb(var(--text))", whiteSpace: "pre-wrap", fontSize: "14px" }}>
-              {vehicle.notes && vehicle.notes.trim().length > 0 ? vehicle.notes : "No notes"}
+
+            {/* Compliance */}
+            <div className="surface" style={{ padding: "var(--space-6)" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "var(--space-4)",
+                  gap: "var(--space-3)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>
+                  {t("compliance.title")}
+                </div>
+                {canManage && (
+                  <button
+                    className="btn btn-secondary"
+                    style={{ fontSize: "13px", padding: "6px 14px" }}
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    {t("compliance.addButton")}
+                  </button>
+                )}
+              </div>
+
+              {complianceLoading ? (
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgb(var(--muted))",
+                    padding: "var(--space-4) 0",
+                  }}
+                >
+                  {t("compliance.loading")}
+                </div>
+              ) : compliance.length === 0 ? (
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgb(var(--muted))",
+                    padding: "var(--space-2) 0",
+                  }}
+                >
+                  {t("compliance.empty")}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  {/* Table header */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 140px 120px 80px",
+                      gap: "var(--space-3)",
+                      padding: "0 var(--space-3) var(--space-2)",
+                      borderBottom: "1px solid rgb(var(--border))",
+                    }}
+                  >
+                    {[
+                      t("compliance.table.type"),
+                      t("compliance.table.expiryDate"),
+                      t("compliance.table.status"),
+                      "",
+                    ].map((h, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "rgb(var(--muted))",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {h}
+                      </div>
+                    ))}
+                  </div>
+
+                  {compliance.map((row) => {
+                    const cs = getComplianceStatus(
+                      row.expiry_date,
+                      row.compliance_types.warning_days_before
+                    );
+                    return (
+                      <div
+                        key={row.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 140px 120px 80px",
+                          gap: "var(--space-3)",
+                          padding: "var(--space-3)",
+                          borderRadius: "var(--radius)",
+                          alignItems: "center",
+                          background:
+                            cs === "expired"
+                              ? "rgb(var(--error) / 0.04)"
+                              : cs === "expiring"
+                              ? "rgb(var(--warning) / 0.04)"
+                              : "transparent",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            color: "rgb(var(--text))",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {resolveTypeName(row.compliance_types)}
+                          {row.notes && (
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "rgb(var(--muted))",
+                                fontWeight: 400,
+                                marginTop: 2,
+                              }}
+                            >
+                              {row.notes}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
+                          {formatDate(row.expiry_date)}
+                        </div>
+
+                        <div>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "3px 10px",
+                              borderRadius: "var(--radius)",
+                              background: statusBg(cs),
+                              color: statusColor(cs),
+                              fontSize: "12px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {getComplianceStatusLabel(cs)}
+                          </span>
+                        </div>
+
+                        <div style={{ textAlign: "right" }}>
+                          {canManage && (
+                            <button
+                              className="btn btn-secondary"
+                              style={{ fontSize: "12px", padding: "4px 10px" }}
+                              onClick={() => setEditingRow(row)}
+                            >
+                              {t("compliance.table.editButton")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 }
 

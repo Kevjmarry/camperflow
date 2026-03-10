@@ -20,6 +20,7 @@ type ChecklistInstanceType = {
     id: string;
     booking_number: string;
     customer_name: string;
+    status: string;
   } | null;
   vehicles: any;
 };
@@ -186,6 +187,12 @@ export default function ChecklistDetailClient({
 
   useEffect(() => setLocalItems(initialItems), [initialItems]);
   useEffect(() => setLocalInstance(instance), [instance]);
+
+  // Derive UI lock: handover/return checklists linked to a completed booking are read-only.
+  const isChecklistLocked =
+    !!instance.booking_id &&
+    (instance.checklist_type === 'handover' || instance.checklist_type === 'return') &&
+    instance.bookings?.status === 'completed';
 
   // Load existing open flags for this checklist instance
   useEffect(() => {
@@ -398,14 +405,7 @@ export default function ChecklistDetailClient({
   }, [from, instance.booking_id, locale, listScope, listStatus, router]);
 
   /**
-   * Navigate after checklist completion using entry-context awareness:
-   * - bookings flow  → /staff/bookings (list)
-   * - checklists flow → /staff/checklists (list)
-   * - unknown origin → /staff/bookings/:id when bookingId present, else /staff/bookings
-   *
-   * "bookings flow"  = arrived with from=booking
-   * "checklists flow" = arrived with explicit listScope or listStatus params
-   * "unknown"         = neither of the above
+   * Navigate after checklist completion using entry-context awareness.
    */
   const navigateAfterCompletion = useCallback(() => {
     if (from === 'booking') {
@@ -431,9 +431,10 @@ export default function ChecklistDetailClient({
 
   /** Quick Mode: complete ALL remaining unchecked items across all sections. */
   const handleQuickCompleteAll = async () => {
+    if (isChecklistLocked) return;
+
     const uncheckedItems = localItems.filter((it) => !it.checked);
     if (uncheckedItems.length === 0) {
-      // Already fully checked — navigate using completion context
       navigateAfterCompletion();
       return;
     }
@@ -490,7 +491,6 @@ export default function ChecklistDetailClient({
       const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
 
       if ('locked' in result) {
-        // Roll back item writes
         await supabase
           .from('checklist_instance_items')
           .update({ checked: false, checked_at: null, checked_by: null })
@@ -504,7 +504,6 @@ export default function ChecklistDetailClient({
         return;
       }
 
-      // Success — navigate using completion context
       navigateAfterCompletion();
     } catch (err) {
       console.error('Error in handleQuickCompleteAll:', err);
@@ -516,6 +515,8 @@ export default function ChecklistDetailClient({
   };
 
   const handleToggle = async (itemId: string, currentChecked: boolean) => {
+    if (isChecklistLocked) return;
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -598,6 +599,8 @@ export default function ChecklistDetailClient({
     sectionName: string,
     sectionItems: ChecklistItemType[]
   ) => {
+    if (isChecklistLocked) return;
+
     const uncheckedItems = sectionItems.filter((it) => !it.checked);
     if (uncheckedItems.length === 0) return;
 
@@ -679,12 +682,14 @@ export default function ChecklistDetailClient({
   };
 
   const handleNotesChange = (itemId: string, notes: string) => {
+    if (isChecklistLocked) return;
     setLocalItems((prev) =>
       prev.map((it) => (it.id === itemId ? { ...it, notes } : it))
     );
   };
 
   const handleNotesBlur = async (itemId: string, notes: string) => {
+    if (isChecklistLocked) return;
     try {
       await supabase
         .from('checklist_instance_items')
@@ -707,6 +712,7 @@ export default function ChecklistDetailClient({
   // --- Flag panel helpers ---
 
   const openFlagPanel = (itemId: string) => {
+    if (isChecklistLocked) return;
     setFlagDraftById((prev) => ({
       ...prev,
       [itemId]: prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null },
@@ -735,6 +741,8 @@ export default function ChecklistDetailClient({
   };
 
   const handleSaveFlag = async (itemId: string) => {
+    if (isChecklistLocked) return;
+
     const draft = flagDraftById[itemId];
     if (!draft) return;
 
@@ -790,6 +798,8 @@ export default function ChecklistDetailClient({
   };
 
   const handleResolveFlag = async (itemId: string) => {
+    if (isChecklistLocked) return;
+
     const existingFlag = flagsByItemId[itemId];
     if (!existingFlag) return;
 
@@ -898,7 +908,7 @@ export default function ChecklistDetailClient({
 
     const existingFlag = flagsByItemId[item.id] ?? null;
     const isFlagged = !!existingFlag;
-    const isFlagPanelOpen = !quickMode && !!openFlagPanelById[item.id];
+    const isFlagPanelOpen = !quickMode && !isChecklistLocked && !!openFlagPanelById[item.id];
     const draft = flagDraftById[item.id] ?? null;
     const isResolvingFlag = !!resolvingFlagById[item.id];
 
@@ -913,21 +923,21 @@ export default function ChecklistDetailClient({
             : '1px solid rgb(var(--border))',
           borderRadius: '6px',
           padding: '12px',
-          opacity: quickMode ? 0.75 : 1,
+          opacity: quickMode || isChecklistLocked ? 0.75 : 1,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
           <label
-            htmlFor={quickMode ? undefined : `check-${item.id}`}
+            htmlFor={quickMode || isChecklistLocked ? undefined : `check-${item.id}`}
             style={{
               marginTop: '2px',
-              cursor: quickMode ? 'default' : 'pointer',
+              cursor: quickMode || isChecklistLocked ? 'default' : 'pointer',
               flexShrink: 0,
               position: 'relative',
               display: 'block',
             }}
           >
-            {!quickMode && (
+            {!quickMode && !isChecklistLocked && (
               <input
                 type="checkbox"
                 id={`check-${item.id}`}
@@ -1039,8 +1049,8 @@ export default function ChecklistDetailClient({
                 )}
               </div>
 
-              {/* Action buttons: notes + flag (normal mode only) */}
-              {!quickMode && (
+              {/* Action buttons: notes + flag (normal mode, unlocked only) */}
+              {!quickMode && !isChecklistLocked && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                   <button
                     type="button"
@@ -1108,7 +1118,8 @@ export default function ChecklistDetailClient({
               )}
             </div>
 
-            {!quickMode && !openNotesById[item.id] && item.notes && (
+            {/* Notes: read-only preview when locked */}
+            {(!quickMode && !isChecklistLocked && !openNotesById[item.id] && item.notes) && (
               <div
                 style={{
                   fontSize: '13px',
@@ -1124,7 +1135,7 @@ export default function ChecklistDetailClient({
               </div>
             )}
 
-            {!quickMode && openNotesById[item.id] && (
+            {(!quickMode && !isChecklistLocked && openNotesById[item.id]) && (
               <textarea
                 placeholder={t('notesPlaceholder')}
                 value={item.notes ?? ''}
@@ -1142,8 +1153,25 @@ export default function ChecklistDetailClient({
               />
             )}
 
-            {/* In Quick Mode, show note text inline (read-only) */}
-            {quickMode && item.notes && (
+            {/* Locked: show note as read-only text */}
+            {isChecklistLocked && item.notes && (
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: 'rgb(var(--muted))',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  lineHeight: '1.4',
+                }}
+              >
+                {item.notes}
+              </div>
+            )}
+
+            {/* In Quick Mode (unlocked), show note text inline (read-only) */}
+            {quickMode && !isChecklistLocked && item.notes && (
               <div
                 style={{
                   fontSize: '13px',
@@ -1348,10 +1376,11 @@ export default function ChecklistDetailClient({
               {statusLabel}
             </span>
 
-            {/* Quick Mode toggle */}
+            {/* Quick Mode toggle — disabled when locked */}
             <button
               type="button"
-              onClick={() => setQuickMode((v) => !v)}
+              onClick={() => { if (!isChecklistLocked) setQuickMode((v) => !v); }}
+              disabled={isChecklistLocked}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1360,7 +1389,7 @@ export default function ChecklistDetailClient({
                 borderRadius: '6px',
                 fontSize: '13px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: isChecklistLocked ? 'not-allowed' : 'pointer',
                 border: quickMode
                   ? '2px solid rgb(var(--brand))'
                   : '1px solid rgb(var(--border))',
@@ -1368,6 +1397,7 @@ export default function ChecklistDetailClient({
                 color: quickMode ? '#fff' : 'rgb(var(--text))',
                 transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                 whiteSpace: 'nowrap',
+                opacity: isChecklistLocked ? 0.45 : 1,
               }}
             >
               <svg
@@ -1392,8 +1422,34 @@ export default function ChecklistDetailClient({
         </div>
       </div>
 
+      {/* Booking-completed lock banner */}
+      {isChecklistLocked && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            border: '1px solid rgb(var(--border))',
+            backgroundColor: 'rgb(var(--surface))',
+            color: 'rgb(var(--muted))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+          }}
+        >
+          <span style={{ flexShrink: 0 }}>🔒</span>
+          <span>
+            {t('lockedBookingCompleted', {
+              defaultValue:
+                'This checklist is locked because the linked booking has been completed.',
+            })}
+          </span>
+        </div>
+      )}
+
       {/* Quick Mode: single primary action banner */}
-      {quickMode && (
+      {quickMode && !isChecklistLocked && (
         <div
           style={{
             marginBottom: '16px',
@@ -1471,7 +1527,7 @@ export default function ChecklistDetailClient({
         </div>
       )}
 
-      {/* Lock Notice */}
+      {/* Lock Notice (DB-triggered, fallback) */}
       {lockNotice && (
         <div
           style={{
@@ -1563,8 +1619,8 @@ export default function ChecklistDetailClient({
         </div>
       )}
 
-      {/* Compact Success Notice (normal mode only) */}
-      {!quickMode && localInstance.status === 'completed' && (
+      {/* Compact Success Notice (normal mode, unlocked only) */}
+      {!quickMode && !isChecklistLocked && localInstance.status === 'completed' && (
         <div style={{ marginBottom: '16px' }}>
           <div
             className="surface"
@@ -1689,8 +1745,8 @@ export default function ChecklistDetailClient({
                   </span>
                 </button>
 
-                {/* Per-section complete button — normal mode only */}
-                {!quickMode && !allDone && (
+                {/* Per-section complete button — normal mode, unlocked only */}
+                {!quickMode && !isChecklistLocked && !allDone && (
                   <button
                     type="button"
                     onClick={() => handleCompleteSection(name, sectionItems)}
