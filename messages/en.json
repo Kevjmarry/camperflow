@@ -995,7 +995,10 @@
           "year": "Year *",
           "vin": "VIN (optional)",
           "status": "Status",
-          "notes": "Notes (optional)"
+          "notes": "Notes (optional)",
+          "operationalHold": "Operational hold",
+          "holdReason": "Hold reason",
+          "holdReasonPlaceholder": "Reason for hold..."
         },
         "status": {
           "ready": "Ready",
@@ -1244,6 +1247,10 @@
       "expiredCompliance": "Expired compliance",
       "checklistIncomplete": "Checklist incomplete",
       "expiredComplianceWithName": "Expired {name}"
+    },
+    "holdStatus": {
+      "outOfService": "Out of service",
+      "outOfServiceWithReason": "Out of service: {reason}"
     }
   },
   "staffVehicleEdit": {
@@ -1287,7 +1294,10 @@
     "loadFailed": "Failed to load vehicle.",
     "saveFailed": "Failed to save changes.",
     "deleteFailed": "Failed to delete vehicle.",
-    "createdBanner": "Vehicle created successfully. You can now add compliance records below."
+    "createdBanner": "Vehicle created successfully. You can now add compliance records below.",
+    "operationalHoldLabel": "Operational hold",
+    "holdReasonLabel": "Hold reason",
+    "holdReasonPlaceholder": "Reason for hold..."
   },
   "staffTeamNew": {
     "checkingPermissions": "Checking permissions…",

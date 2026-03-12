@@ -15,6 +15,8 @@ interface Vehicle {
   registration_plate: string;
   photo_url: string | null;
   status: 'ready' | 'preparing' | 'on_rent';
+  operational_hold: boolean;
+  hold_reason: string | null;
   created_at: string;
   updated_at: string;
   blockingReason?: string;
@@ -259,7 +261,11 @@ export default function VehiclesPage() {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     gap: 'var(--space-4)',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    // Subtle tint for held vehicles
+                    background: vehicle.operational_hold
+                      ? 'rgb(var(--error) / 0.03)'
+                      : undefined,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flex: 1, minWidth: '200px' }}>
@@ -273,7 +279,8 @@ export default function VehiclesPage() {
                           height: '40px',
                           borderRadius: 'var(--radius)',
                           objectFit: 'cover',
-                          flexShrink: 0
+                          flexShrink: 0,
+                          opacity: vehicle.operational_hold ? 0.5 : 1,
                         }}
                       />
                     ) : (
@@ -331,11 +338,39 @@ export default function VehiclesPage() {
                     gap: 'var(--space-3)',
                     flexWrap: 'wrap'
                   }}>
+                    {/* Operational hold badge — shown prominently, before status chip */}
+                    {vehicle.operational_hold && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: 'var(--radius)',
+                        background: 'rgb(var(--error) / 0.12)',
+                        border: '1px solid rgb(var(--error) / 0.35)',
+                        color: 'rgb(var(--error))',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {/* Stop-sign icon */}
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/>
+                          <line x1="12" y1="8" x2="12" y2="12"/>
+                          <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {vehicle.hold_reason
+                          ? t("holdStatus.outOfServiceWithReason", { reason: vehicle.hold_reason })
+                          : t("holdStatus.outOfService")}
+                      </span>
+                    )}
+
                     <span style={getStatusChipStyle(vehicle.status)}>
                       {getStatusLabel(vehicle.status)}
                     </span>
 
-                    {vehicle.status === 'preparing' && vehicle.blockingReason && (
+                    {vehicle.status === 'preparing' && vehicle.blockingReason && !vehicle.operational_hold && (
                       <span style={{
                         fontSize: '13px',
                         color: 'rgb(var(--warning, var(--muted)))',

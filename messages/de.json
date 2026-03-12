@@ -995,7 +995,10 @@
           "year": "Baujahr *",
           "vin": "VIN (optional)",
           "status": "Status",
-          "notes": "Notizen (optional)"
+          "notes": "Notizen (optional)",
+          "operationalHold": "Betriebssperre",
+          "holdReason": "Grund der Sperre",
+          "holdReasonPlaceholder": "Grund für die Sperre..."
         },
         "status": {
           "ready": "Bereit",
@@ -1244,6 +1247,10 @@
       "expiredCompliance": "Abgelaufene Compliance",
       "checklistIncomplete": "Checkliste unvollständig",
       "expiredComplianceWithName": "Abgelaufen: {name}"
+    },
+    "holdStatus": {
+      "outOfService": "Außer Betrieb",
+      "outOfServiceWithReason": "Außer Betrieb: {reason}"
     }
   },
   "staffVehicleEdit": {
@@ -1287,7 +1294,10 @@
     "loadFailed": "Fehler beim Laden des Fahrzeugs.",
     "saveFailed": "Fehler beim Speichern der Änderungen.",
     "deleteFailed": "Fehler beim Löschen des Fahrzeugs.",
-    "createdBanner": "Fahrzeug erfolgreich erstellt. Sie können nun unten Compliance-Einträge hinzufügen."
+    "createdBanner": "Fahrzeug erfolgreich erstellt. Sie können nun unten Compliance-Einträge hinzufügen.",
+    "operationalHoldLabel": "Betriebssperre",
+    "holdReasonLabel": "Grund der Sperre",
+    "holdReasonPlaceholder": "Grund für die Sperre..."
   },
   "staffTeamNew": {
     "checkingPermissions": "Berechtigungen werden geprüft…",

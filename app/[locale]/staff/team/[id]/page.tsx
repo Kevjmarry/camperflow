@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import StaffMemberEditForm from "@/components/team/StaffMemberEditForm";
 
 interface StaffProfile {
   profile_id: string;
@@ -87,7 +88,6 @@ export default function StaffMemberPage() {
       try {
         setLoading(true);
         setError("");
-        // Clear invite/recovery state when switching members
         setRecoveryLink(null);
         setCopiedLink(false);
         setInviteSuccess(false);
@@ -204,7 +204,6 @@ export default function StaffMemberPage() {
         setInviteSuccess(true);
       }
 
-      // Always refetch so member state stays fresh
       await refetchMember();
     } catch (err: any) {
       setInviteError(err?.message || 'Failed to send invite.');
@@ -232,13 +231,13 @@ export default function StaffMemberPage() {
     setUploadError("");
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('staffId', staffId);
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('staffId', staffId);
 
       const response = await fetch('/api/staff/upload-photo', {
         method: 'POST',
-        body: formData,
+        body: fd,
       });
 
       const data = await response.json();
@@ -258,7 +257,6 @@ export default function StaffMemberPage() {
   const handleEdit = () => {
     setIsEditing(true);
     setSaveError("");
-    // Clear invite/recovery state when entering edit mode
     setRecoveryLink(null);
     setCopiedLink(false);
     setInviteSuccess(false);
@@ -832,249 +830,18 @@ export default function StaffMemberPage() {
             )}
 
             {isEditing && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                {saveError && (
-                  <div
-                    style={{
-                      padding: "var(--space-4)",
-                      background: "rgb(var(--error) / 0.1)",
-                      border: "1px solid rgb(var(--error) / 0.3)",
-                      borderRadius: "var(--radius)",
-                      color: "rgb(var(--error))",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {saveError}
-                  </div>
-                )}
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.firstName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.lastName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.role')}
-                  </label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => handleRoleChange(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  >
-                    <option value="staff">{t('roles.staff')}</option>
-                    <option value="admin">{t('roles.management')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "14px", cursor: "not-allowed", opacity: 0.6 }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.can_manage}
-                      disabled={true}
-                      style={{ cursor: "not-allowed" }}
-                    />
-                    {t('fields.canManage')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "14px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.can_clean}
-                      onChange={(e) => setFormData({ ...formData, can_clean: e.target.checked })}
-                      style={{ cursor: "pointer" }}
-                    />
-                    {t('fields.canClean')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "14px", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.can_mechanical}
-                      onChange={(e) => setFormData({ ...formData, can_mechanical: e.target.checked })}
-                      style={{ cursor: "pointer" }}
-                    />
-                    {t('fields.canMechanical')}
-                  </label>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.phone')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.email')}
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.uploadPhoto')}
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={isUploading}
-                    style={{
-                      fontSize: "14px",
-                      cursor: isUploading ? "not-allowed" : "pointer",
-                    }}
-                  />
-                  {isUploading && (
-                    <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 4 }}>
-                      {t('uploading')}
-                    </div>
-                  )}
-                  {uploadError && (
-                    <div style={{ fontSize: "12px", color: "rgb(var(--error))", marginTop: 4 }}>
-                      {uploadError}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.photoUrl')}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.photo_url}
-                    onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "14px", marginBottom: 6 }}>
-                    {t('fields.notes')}
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={4}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                      resize: "vertical",
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    style={{
-                      padding: "10px 20px",
-                      background: "rgb(var(--brand))",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--radius)",
-                      cursor: isSaving ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      opacity: isSaving ? 0.6 : 1,
-                    }}
-                  >
-                    {isSaving ? t('saving') : t('save')}
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                    style={{
-                      padding: "10px 20px",
-                      background: "rgb(var(--border))",
-                      color: "rgb(var(--text))",
-                      border: "none",
-                      borderRadius: "var(--radius)",
-                      cursor: isSaving ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {t('cancel')}
-                  </button>
-                </div>
-              </div>
+              <StaffMemberEditForm
+                formData={formData}
+                setFormData={setFormData}
+                isSaving={isSaving}
+                saveError={saveError}
+                isUploading={isUploading}
+                uploadError={uploadError}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                onRoleChange={handleRoleChange}
+                onFileUpload={handleFileUpload}
+              />
             )}
           </div>
         )}

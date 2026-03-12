@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusChipStyle } from "@/lib/statusChip";
+import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
+import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
+import { BookingEditForm, BookingFormData } from "@/components/bookings/BookingEditForm";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
-type ChecklistType = 'handover' | 'return' | 'cleaning' | 'mechanical';
 type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
 
 interface Vehicle {
@@ -43,25 +45,10 @@ interface RedactedBooking {
   notes: string | null;
 }
 
-interface ChecklistInstance {
-  id: string;
-  checklist_type: ChecklistType;
-  status: 'pending' | 'in_progress' | 'completed';
-  template: {
-    id: string;
-    name: string | null;
-    title: string | null;
-    type: string | null;
-    scope: string | null;
-    is_system: boolean;
-  } | null;
-}
-
 const ACTIVE_BOOKING_STATUSES = ['draft', 'confirmed', 'blocked', 'on_rent'] as const;
 
-const isActiveStatus = (status: BookingStatus): status is typeof ACTIVE_BOOKING_STATUSES[number] => {
-  return (ACTIVE_BOOKING_STATUSES as readonly string[]).includes(status);
-};
+const isActiveStatus = (status: BookingStatus): status is typeof ACTIVE_BOOKING_STATUSES[number] =>
+  (ACTIVE_BOOKING_STATUSES as readonly string[]).includes(status);
 
 /** Mirrors the normalization used on the new-booking page. */
 const normalizeStatus = (raw: string): BookingStatus => {
@@ -75,91 +62,13 @@ export default function BookingDetailPage() {
   const t = useTranslations("bookingDetail");
   const supabase = createClient();
 
-  // Returns only the base "Name (Plate)" string — status is rendered separately as a chip.
-  const formatVehicleBaseName = (vehicle: Vehicle): string => {
-    return `${vehicle.name} (${vehicle.registration_plate})`;
-  };
-
-  const getVehicleStatusLabel = (status: VehicleStatus): string => {
-    switch (status) {
-      case 'ready':     return t("vehicle.status.ready");
-      case 'preparing': return t("vehicle.status.preparing");
-      case 'on_rent':   return t("vehicle.status.onRent");
-    }
-  };
-
-  // Renders vehicle base name plus, when a status is present, a status chip.
-  const VehicleWithChip = ({ vehicle }: { vehicle: Vehicle }) => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
-      <span style={{ color: 'rgb(var(--text))' }}>{formatVehicleBaseName(vehicle)}</span>
-      {vehicle.status && (
-        <span style={getStatusChipStyle(vehicle.status)}>
-          {getVehicleStatusLabel(vehicle.status)}
-        </span>
-      )}
-    </span>
-  );
-
-  const getChecklistActionLabel = (instance: ChecklistInstance): string => {
-    switch (instance.status) {
-      case 'completed':   return t("checklists.viewReport");
-      case 'in_progress': return t("checklists.continueChecklist");
-      default:            return t("checklists.openChecklist");
-    }
-  };
-
-  // Renders a single checklist instance row.
-  const ChecklistRow = ({ instance }: { instance: ChecklistInstance }) => (
-    <div
-      style={{
-        padding: 'var(--space-4)',
-        background: 'rgb(var(--border) / 0.3)',
-        borderRadius: 'var(--radius)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 'var(--space-3)',
-        flexWrap: 'wrap'
-      }}
-    >
-      <div style={{ flex: 1 }}>
-        <div style={{
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'rgb(var(--text))',
-          marginBottom: 'var(--space-1)'
-        }}>
-          {getChecklistDisplayName(instance)}
-        </div>
-        <div>
-          <span style={getStatusChipStyle(instance.status)}>
-            {getChecklistStatusLabel(instance.status)}
-          </span>
-        </div>
-      </div>
-      <Link
-        href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
-        className="btn btn-secondary"
-        style={{
-          fontSize: '14px',
-          padding: 'var(--space-2) var(--space-4)',
-          minHeight: '36px'
-        }}
-      >
-        {getChecklistActionLabel(instance)}
-      </Link>
-    </div>
-  );
-
-  // ────────────────────────────────────────────────────────────────────────────
-
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [redactedBooking, setRedactedBooking] = useState<RedactedBooking | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
   const [checklistInstances, setChecklistInstances] = useState<ChecklistInstance[]>([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BookingFormData>({
     status: "confirmed",
     pickup_at: "",
     return_at: "",
@@ -175,27 +84,8 @@ export default function BookingDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [conflictWarning, setConflictWarning] = useState("");
 
-  // Derived from the currently selected status — drives UI validation and required markers reactively.
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
-
-  const SYSTEM_CHECKLIST_LABELS: Record<string, string> = {
-    handover: 'Pickup Checklist',
-    return: 'Return Checklist',
-    cleaning: 'Cleaning Checklist',
-    mechanical: 'Mechanical Checklist',
-  };
-
-  const getChecklistDisplayName = (instance: ChecklistInstance): string => {
-    if (instance.template?.is_system) {
-      return SYSTEM_CHECKLIST_LABELS[instance.checklist_type] ?? instance.checklist_type;
-    }
-    return (
-      instance.template?.name ??
-      instance.template?.title ??
-      instance.checklist_type
-    );
-  };
 
   useEffect(() => {
     checkUserCapabilities();
@@ -220,13 +110,11 @@ export default function BookingDetailPage() {
         setLoading(false);
         return;
       }
-
       const { data: profile } = await supabase
         .from('staff_profiles')
         .select('can_manage')
         .eq('auth_user_id', user.id)
         .single();
-
       setCanManage(profile?.can_manage ?? false);
     } catch (err: any) {
       setError(err.message || t("error.permissionsFailed"));
@@ -250,11 +138,38 @@ export default function BookingDetailPage() {
     return new Date(datetimeLocal).toISOString();
   };
 
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  const getStatusLabel = (status: BookingStatus) => {
+    switch (status) {
+      case 'draft':      return t("status.pending");
+      case 'confirmed':  return t("status.confirmed");
+      case 'blocked':    return t("status.blocked");
+      case 'on_rent':    return t("status.onRent");
+      case 'completed':  return t("status.completed");
+      case 'cancelled':  return t("status.cancelled");
+    }
+  };
+
+  const getVehicleStatusLabel = (status: VehicleStatus): string => {
+    switch (status) {
+      case 'ready':     return t("vehicle.status.ready");
+      case 'preparing': return t("vehicle.status.preparing");
+      case 'on_rent':   return t("vehicle.status.onRent");
+    }
+  };
+
   const fetchBooking = async () => {
     try {
       setLoading(true);
       setError("");
-
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -262,11 +177,8 @@ export default function BookingDetailPage() {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          setNotFound(true);
-        } else {
-          throw error;
-        }
+        if (error.code === 'PGRST116') setNotFound(true);
+        else throw error;
         return;
       }
 
@@ -296,15 +208,10 @@ export default function BookingDetailPage() {
     try {
       setLoading(true);
       setError("");
-
       const { data, error } = await supabase.rpc('get_staff_booking_redacted', { p_booking_id: id });
 
       if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setNotFound(true);
-        return;
-      }
+      if (!data || data.length === 0) { setNotFound(true); return; }
 
       const bookingData = data[0];
       setRedactedBooking(bookingData);
@@ -315,10 +222,7 @@ export default function BookingDetailPage() {
           .select('id, name, registration_plate, status')
           .eq('id', bookingData.vehicle_id)
           .single();
-
-        if (vehicleData) {
-          setVehicleInfo(vehicleData as Vehicle);
-        }
+        if (vehicleData) setVehicleInfo(vehicleData as Vehicle);
       }
 
       fetchChecklistInstances();
@@ -336,7 +240,6 @@ export default function BookingDetailPage() {
         .from('vehicles')
         .select('id, name, registration_plate, status')
         .order('name', { ascending: true });
-
       if (error) throw error;
       setVehicles((data || []) as Vehicle[]);
     } catch (err: any) {
@@ -380,7 +283,6 @@ export default function BookingDetailPage() {
       setConflictWarning("");
       return true;
     }
-
     try {
       const { data, error } = await supabase
         .from('bookings')
@@ -394,21 +296,15 @@ export default function BookingDetailPage() {
       const newPickup = new Date(formData.pickup_at);
       const newReturn = new Date(formData.return_at);
 
-      const hasConflict = data?.some(booking => {
-        const existingPickup = new Date(booking.pickup_at);
-        const existingReturn = new Date(booking.return_at);
-        return newPickup < existingReturn && newReturn > existingPickup;
+      const conflictBooking = data?.find(b => {
+        const ep = new Date(b.pickup_at);
+        const er = new Date(b.return_at);
+        return newPickup < er && newReturn > ep;
       });
 
-      if (hasConflict && data && data.length > 0) {
-        const conflictBooking = data.find(booking => {
-          const existingPickup = new Date(booking.pickup_at);
-          const existingReturn = new Date(booking.return_at);
-          return newPickup < existingReturn && newReturn > existingPickup;
-        });
-
+      if (conflictBooking) {
         setConflictWarning(
-          t("warning.vehicleConflict", { bookingNumber: conflictBooking?.booking_number })
+          t("warning.vehicleConflict", { bookingNumber: conflictBooking.booking_number })
         );
         return false;
       }
@@ -428,12 +324,9 @@ export default function BookingDetailPage() {
   }, [formData.vehicle_id, formData.pickup_at, formData.return_at]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -442,9 +335,9 @@ export default function BookingDetailPage() {
     setSaving(true);
 
     const normalizedStatus = normalizeStatus(formData.status);
-    const isNoCustomerRequired = normalizedStatus === 'blocked' || normalizedStatus === 'cancelled';
+    const noCustomer = normalizedStatus === 'blocked' || normalizedStatus === 'cancelled';
 
-    if (!isNoCustomerRequired && !formData.customer_name.trim()) {
+    if (!noCustomer && !formData.customer_name.trim()) {
       setError(t("error.customerNameRequired"));
       setSaving(false);
       return;
@@ -489,9 +382,7 @@ export default function BookingDetailPage() {
           updateError.message,
           updateError.details,
           updateError.hint && `hint: ${updateError.hint}`,
-        ]
-          .filter(Boolean)
-          .join('; ');
+        ].filter(Boolean).join('; ');
         setError(detail || t("error.updateFailed"));
         setSaving(false);
         return;
@@ -504,7 +395,6 @@ export default function BookingDetailPage() {
       }
 
       await fetchBooking();
-
       alert(t("success.bookingUpdated"));
     } catch (err: any) {
       console.error('Update booking error (catch):', JSON.stringify(err, Object.getOwnPropertyNames(err)));
@@ -516,7 +406,6 @@ export default function BookingDetailPage() {
 
   const handleDelete = async () => {
     if (!confirm(t("confirm.deleteBooking"))) return;
-
     try {
       setSaving(true);
       const { data: deleteData, error: deleteError } = await supabase
@@ -546,38 +435,6 @@ export default function BookingDetailPage() {
     }
   };
 
-  const getStatusLabel = (status: BookingStatus) => {
-    switch (status) {
-      case 'draft':      return t("status.pending");
-      case 'confirmed':  return t("status.confirmed");
-      case 'blocked':    return t("status.blocked");
-      case 'on_rent':    return t("status.onRent");
-      case 'completed':  return t("status.completed");
-      case 'cancelled':  return t("status.cancelled");
-    }
-  };
-
-  const getChecklistStatusLabel = (
-    status: 'pending' | 'in_progress' | 'completed'
-  ) => {
-    switch (status) {
-      case 'pending':     return t("checklists.status.notStarted");
-      case 'in_progress': return t("checklists.status.inProgress");
-      case 'completed':   return t("checklists.status.completed");
-    }
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString(locale, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Returns the Vehicle object currently selected/relevant, for inline chip rendering.
   const getSelectedVehicle = (): Vehicle | null => {
     if (canManage) {
       if (!formData.vehicle_id) return null;
@@ -585,6 +442,8 @@ export default function BookingDetailPage() {
     }
     return vehicleInfo;
   };
+
+  // ── Early returns ────────────────────────────────────────────────────────────
 
   if (notFound) {
     return (
@@ -637,6 +496,8 @@ export default function BookingDetailPage() {
     );
   }
 
+  // ── Non-manager (redacted) view ──────────────────────────────────────────────
+
   if (!canManage && redactedBooking) {
     return (
       <PageContainer maxWidth="1400px">
@@ -657,10 +518,7 @@ export default function BookingDetailPage() {
               </Link>
             </div>
 
-            <div className="surface" style={{
-              padding: 'var(--space-6)',
-              background: 'rgb(var(--border) / 0.2)'
-            }}>
+            <div className="surface" style={{ padding: 'var(--space-6)', background: 'rgb(var(--border) / 0.2)' }}>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -689,10 +547,20 @@ export default function BookingDetailPage() {
                     {t("field.vehicle")}
                   </div>
                   <div style={{ fontSize: '15px', fontWeight: 500 }}>
-                    {vehicleInfo
-                      ? <VehicleWithChip vehicle={vehicleInfo} />
-                      : <span style={{ color: 'rgb(var(--muted))' }}>{t("vehicle.unassigned")}</span>
-                    }
+                    {vehicleInfo ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                        <span style={{ color: 'rgb(var(--text))' }}>
+                          {vehicleInfo.name} ({vehicleInfo.registration_plate})
+                        </span>
+                        {vehicleInfo.status && (
+                          <span style={getStatusChipStyle(vehicleInfo.status)}>
+                            {getVehicleStatusLabel(vehicleInfo.status)}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'rgb(var(--muted))' }}>{t("vehicle.unassigned")}</span>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -715,47 +583,21 @@ export default function BookingDetailPage() {
             </div>
 
             {redactedBooking.notes && (
-              <div className="surface" style={{
-                padding: 'var(--space-5)',
-                background: 'rgb(var(--border) / 0.15)'
-              }}>
+              <div className="surface" style={{ padding: 'var(--space-5)', background: 'rgb(var(--border) / 0.15)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))', marginBottom: 'var(--space-3)' }}>
                   {t("field.notes")}
                 </h3>
-                <div style={{
-                  fontSize: '15px',
-                  color: 'rgb(var(--text))',
-                  lineHeight: '1.6',
-                  whiteSpace: 'pre-wrap'
-                }}>
+                <div style={{ fontSize: '15px', color: 'rgb(var(--text))', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
                   {redactedBooking.notes}
                 </div>
               </div>
             )}
 
-            <div>
-              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                {t("checklists.title")}
-              </h2>
-              {checklistInstances.length === 0 ? (
-                <div style={{
-                  padding: 'var(--space-4)',
-                  background: 'rgb(var(--border) / 0.3)',
-                  borderRadius: 'var(--radius)',
-                  color: 'rgb(var(--muted))',
-                  fontSize: '14px',
-                  textAlign: 'center'
-                }}>
-                  {t("checklists.empty")}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  {checklistInstances.map((instance) => (
-                    <ChecklistRow key={instance.id} instance={instance} />
-                  ))}
-                </div>
-              )}
-            </div>
+            <BookingChecklistsSection
+              instances={checklistInstances}
+              locale={locale}
+              t={t as (key: string, values?: Record<string, unknown>) => string}
+            />
           </div>
         </div>
       </PageContainer>
@@ -764,7 +606,7 @@ export default function BookingDetailPage() {
 
   if (!booking) return null;
 
-  const selectedVehicle = getSelectedVehicle();
+  // ── Manager view ─────────────────────────────────────────────────────────────
 
   return (
     <PageContainer maxWidth="1400px">
@@ -783,288 +625,32 @@ export default function BookingDetailPage() {
             >
               {t("action.backToBookingsArrow")}
             </Link>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
-                {booking.booking_number}
-              </h1>
-              <span style={getStatusChipStyle(booking.status)}>
-                {getStatusLabel(booking.status)}
-              </span>
-            </div>
-            <div style={{
-              marginTop: 'var(--space-3)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-1)',
-              color: 'rgb(var(--muted))',
-              fontSize: '14px'
-            }}>
-              <div>
-                {t("summary.customer")}:{' '}
-                <span style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || "-"}</span>
-              </div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                <span>{t("summary.vehicle")}:</span>{' '}
-                {selectedVehicle
-                  ? <VehicleWithChip vehicle={selectedVehicle} />
-                  : <span style={{ color: 'rgb(var(--text))' }}>{t("vehicle.unassigned")}</span>
-                }
-              </div>
-              <div>
-                {t("summary.pickup")}:{' '}
-                <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.pickup_at)}</span>
-              </div>
-              <div>
-                {t("summary.return")}:{' '}
-                <span style={{ color: 'rgb(var(--text))' }}>{formatDate(booking.return_at)}</span>
-              </div>
-            </div>
+            <BookingSummaryCard
+              booking={booking}
+              selectedVehicle={getSelectedVehicle()}
+              locale={locale}
+              t={t as (key: string) => string}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-6)'
-          }}>
-            <div>
-              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                {t("section.bookingDetails")}
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
-                <div>
-                  <label htmlFor="status" className="label">
-                    {t("field.status")}
-                  </label>
-                  <select
-                    id="status"
-                    name="status"
-                    className="input"
-                    value={formData.status}
-                    onChange={handleChange}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="draft">{t("status.pending")}</option>
-                    <option value="confirmed">{t("status.confirmed")}</option>
-                    <option value="blocked">{t("status.blocked")}</option>
-                    <option value="on_rent">{t("status.onRent")}</option>
-                    <option value="completed">{t("status.completed")}</option>
-                    <option value="cancelled">{t("status.cancelled")}</option>
-                  </select>
-                </div>
+          <BookingEditForm
+            formData={formData}
+            vehicles={vehicles}
+            saving={saving}
+            error={error}
+            conflictWarning={conflictWarning}
+            isNoCustomerRequired={isNoCustomerRequired}
+            onChange={handleChange}
+            onSubmit={handleSubmit}
+            onDelete={handleDelete}
+            t={t as (key: string) => string}
+          />
 
-                <div>
-                  <label htmlFor="pickup_at" className="label">
-                    {t("field.pickupDateTime")}
-                  </label>
-                  <input
-                    id="pickup_at"
-                    name="pickup_at"
-                    type="datetime-local"
-                    className="input"
-                    value={formData.pickup_at}
-                    onChange={handleChange}
-                    required
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="return_at" className="label">
-                    {t("field.returnDateTime")}
-                  </label>
-                  <input
-                    id="return_at"
-                    name="return_at"
-                    type="datetime-local"
-                    className="input"
-                    value={formData.return_at}
-                    onChange={handleChange}
-                    required
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="vehicle_id" className="label">
-                    {t("field.vehicle")}
-                  </label>
-                  <select
-                    id="vehicle_id"
-                    name="vehicle_id"
-                    className="input"
-                    value={formData.vehicle_id}
-                    onChange={handleChange}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="">{t("vehicle.unassigned")}</option>
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.name} ({vehicle.registration_plate})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                {t("section.customerDetails")}
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
-                <div>
-                  <label htmlFor="customer_name" className="label">
-                    {t("field.customerName")}{!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
-                  </label>
-                  <input
-                    id="customer_name"
-                    name="customer_name"
-                    type="text"
-                    className="input"
-                    value={formData.customer_name}
-                    onChange={handleChange}
-                    required={!isNoCustomerRequired}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="customer_phone" className="label">
-                    {t("field.phoneNumber")}{!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
-                  </label>
-                  <input
-                    id="customer_phone"
-                    name="customer_phone"
-                    type="tel"
-                    className="input"
-                    value={formData.customer_phone}
-                    onChange={handleChange}
-                    required={!isNoCustomerRequired}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="customer_email" className="label">
-                    {t("field.emailOptional")}
-                  </label>
-                  <input
-                    id="customer_email"
-                    name="customer_email"
-                    type="email"
-                    className="input"
-                    value={formData.customer_email}
-                    onChange={handleChange}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="notes" className="label">
-                {t("field.notes")}
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                className="input"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={4}
-                style={{
-                  width: '100%',
-                  resize: 'vertical',
-                  fontFamily: 'inherit'
-                }}
-              />
-            </div>
-
-            {conflictWarning && (
-              <div style={{
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'rgb(var(--warning) / 0.1)',
-                border: '1px solid rgb(var(--warning) / 0.3)',
-                borderRadius: 'var(--radius)',
-                color: 'rgb(var(--warning))',
-                fontSize: '14px'
-              }}>
-                {conflictWarning}
-              </div>
-            )}
-
-            {error && (
-              <div style={{
-                padding: 'var(--space-3) var(--space-4)',
-                background: 'rgb(var(--error) / 0.1)',
-                border: '1px solid rgb(var(--error) / 0.3)',
-                borderRadius: 'var(--radius)',
-                color: 'rgb(var(--error))',
-                fontSize: '14px'
-              }}>
-                {error}
-              </div>
-            )}
-
-            <div style={{
-              display: 'flex',
-              gap: 'var(--space-3)',
-              paddingTop: 'var(--space-2)',
-              flexWrap: 'wrap'
-            }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={saving || !!conflictWarning}
-                style={{
-                  flex: 1,
-                  minWidth: '120px',
-                  opacity: (saving || conflictWarning) ? 0.6 : 1,
-                  cursor: (saving || conflictWarning) ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {saving ? t("action.saving") : t("action.saveChanges")}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="btn btn-secondary"
-                disabled={saving}
-                style={{
-                  minWidth: '120px',
-                  color: 'rgb(var(--error))',
-                  borderColor: 'rgb(var(--error))'
-                }}
-              >
-                {t("action.delete")}
-              </button>
-            </div>
-          </form>
-
-          <div>
-            <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-              {t("checklists.title")}
-            </h2>
-            {checklistInstances.length === 0 ? (
-              <div style={{
-                padding: 'var(--space-4)',
-                background: 'rgb(var(--border) / 0.3)',
-                borderRadius: 'var(--radius)',
-                color: 'rgb(var(--muted))',
-                fontSize: '14px',
-                textAlign: 'center'
-              }}>
-                {t("checklists.empty")}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                {checklistInstances.map((instance) => (
-                  <ChecklistRow key={instance.id} instance={instance} />
-                ))}
-              </div>
-            )}
-          </div>
+          <BookingChecklistsSection
+            instances={checklistInstances}
+            locale={locale}
+            t={t as (key: string, values?: Record<string, unknown>) => string}
+          />
         </div>
       </div>
     </PageContainer>

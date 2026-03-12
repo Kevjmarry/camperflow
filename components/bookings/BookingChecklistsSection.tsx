@@ -1,0 +1,127 @@
+"use client";
+
+import Link from "next/link";
+import { getStatusChipStyle } from "@/lib/statusChip";
+
+type ChecklistType = 'handover' | 'return' | 'cleaning' | 'mechanical';
+
+export interface ChecklistInstance {
+  id: string;
+  checklist_type: ChecklistType;
+  status: 'pending' | 'in_progress' | 'completed';
+  template: {
+    id: string;
+    name: string | null;
+    title: string | null;
+    type: string | null;
+    scope: string | null;
+    is_system: boolean;
+  } | null;
+}
+
+interface Props {
+  instances: ChecklistInstance[];
+  locale: string;
+  t: (key: string, values?: Record<string, unknown>) => string;
+}
+
+const SYSTEM_CHECKLIST_LABELS: Record<string, string> = {
+  handover: 'Pickup Checklist',
+  return: 'Return Checklist',
+  cleaning: 'Cleaning Checklist',
+  mechanical: 'Mechanical Checklist',
+};
+
+export function BookingChecklistsSection({ instances, locale, t }: Props) {
+  const getChecklistDisplayName = (instance: ChecklistInstance): string => {
+    if (instance.template?.is_system) {
+      return SYSTEM_CHECKLIST_LABELS[instance.checklist_type] ?? instance.checklist_type;
+    }
+    return (
+      instance.template?.name ??
+      instance.template?.title ??
+      instance.checklist_type
+    );
+  };
+
+  const getChecklistStatusLabel = (status: 'pending' | 'in_progress' | 'completed') => {
+    switch (status) {
+      case 'pending':     return t("checklists.status.notStarted");
+      case 'in_progress': return t("checklists.status.inProgress");
+      case 'completed':   return t("checklists.status.completed");
+    }
+  };
+
+  const getChecklistActionLabel = (instance: ChecklistInstance): string => {
+    switch (instance.status) {
+      case 'completed':   return t("checklists.viewReport");
+      case 'in_progress': return t("checklists.continueChecklist");
+      default:            return t("checklists.openChecklist");
+    }
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+        {t("checklists.title")}
+      </h2>
+      {instances.length === 0 ? (
+        <div style={{
+          padding: 'var(--space-4)',
+          background: 'rgb(var(--border) / 0.3)',
+          borderRadius: 'var(--radius)',
+          color: 'rgb(var(--muted))',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          {t("checklists.empty")}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {instances.map((instance) => (
+            <div
+              key={instance.id}
+              style={{
+                padding: 'var(--space-4)',
+                background: 'rgb(var(--border) / 0.3)',
+                borderRadius: 'var(--radius)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 'var(--space-3)',
+                flexWrap: 'wrap'
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: 'rgb(var(--text))',
+                  marginBottom: 'var(--space-1)'
+                }}>
+                  {getChecklistDisplayName(instance)}
+                </div>
+                <div>
+                  <span style={getStatusChipStyle(instance.status)}>
+                    {getChecklistStatusLabel(instance.status)}
+                  </span>
+                </div>
+              </div>
+              <Link
+                href={`/${locale}/staff/checklists/${instance.id}?from=booking`}
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '14px',
+                  padding: 'var(--space-2) var(--space-4)',
+                  minHeight: '36px'
+                }}
+              >
+                {getChecklistActionLabel(instance)}
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
