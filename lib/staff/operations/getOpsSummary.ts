@@ -33,21 +33,22 @@ export async function getOpsSummary(): Promise<OpsSummary> {
 
   const [pickups, returns, preparing, overdue] = await Promise.all([
     supabase
-      .from('bookings')
+      .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .in('status', ['confirmed', 'blocked'])
+      .in('booking_status', ['confirmed', 'blocked'])
       .gte('pickup_at', todayStart.toISOString())
       .lte('pickup_at', todayEnd.toISOString()),
 
     supabase
-      .from('bookings')
+      .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('status', 'on_rent')
+      .eq('booking_status', 'on_rent')
       .gte('return_at', todayStart.toISOString())
       .lte('return_at', todayEnd.toISOString()),
 
+    // vehicles table kept: view cannot deduplicate vehicles with multiple bookings
     supabase
       .from('vehicles')
       .select('id', { count: 'exact', head: true })
@@ -55,11 +56,10 @@ export async function getOpsSummary(): Promise<OpsSummary> {
       .eq('status', 'preparing'),
 
     supabase
-      .from('bookings')
+      .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('status', 'on_rent')
-      .lt('return_at', new Date().toISOString()),
+      .eq('is_overdue', true),
   ])
 
   if (pickups.error) throw pickups.error

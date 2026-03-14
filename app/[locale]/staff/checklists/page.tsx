@@ -96,7 +96,9 @@ export default function ChecklistsPage() {
       try {
         let ciQuery = supabase
           .from('checklist_instances')
-          .select('id, checklist_type, status, created_at, booking_id')
+          .select(
+            'id, checklist_type, status, created_at, booking_id, template:checklist_templates!checklist_instances_template_id_fkey(name, title)'
+          )
           .eq('company_id', companyId)
           .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover', 'mechanical'])
           .not('booking_id', 'is', null)
@@ -164,6 +166,7 @@ export default function ChecklistsPage() {
               id: item.id,
               name: item.checklist_type,
               type: item.checklist_type,
+              template_name: item.template?.title ?? item.template?.name ?? undefined,
               status: normalizedStatus,
               booking_number: booking?.booking_number || 'N/A',
               customer_name: booking?.customer_name || 'N/A',
@@ -330,6 +333,7 @@ export default function ChecklistsPage() {
 
   const checklistHeaders = {
     type:     t('table.type'),
+    name:     t('table.name'),
     booking:  t('table.booking'),
     customer: t('table.customer'),
     vehicle:  t('table.vehicle'),

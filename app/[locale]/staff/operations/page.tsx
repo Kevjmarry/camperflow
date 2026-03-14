@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import PageContainer from '@/components/PageContainer'
 import OperationsSummary from '@/components/staff/operations/OperationsSummary'
 import OperationsPickups from '@/components/staff/operations/OperationsPickups'
@@ -13,13 +12,7 @@ import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPick
 
 export const dynamic = 'force-dynamic'
 
-export default async function OperationsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
-  const { locale } = await params
-
+export default async function OperationsPage() {
   const [summary, pickups, returns, vehicles, upcoming] = await Promise.all([
     getOpsSummary(),
     getOpsPickupsToday(),
@@ -35,18 +28,6 @@ export default async function OperationsPage({
 
           {/* Header */}
           <div>
-            <Link
-              href={`/${locale}/staff`}
-              style={{
-                fontSize: '14px',
-                color: 'rgb(var(--brand))',
-                textDecoration: 'none',
-                marginBottom: 'var(--space-2)',
-                display: 'inline-block',
-              }}
-            >
-              ← Dashboard
-            </Link>
             <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>Operations</h1>
             <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>
               Today's pickups, returns, and vehicle readiness at a glance.

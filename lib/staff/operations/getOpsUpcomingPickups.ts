@@ -6,7 +6,12 @@ export interface OpsUpcomingPickup {
   customerName: string
   vehicleName: string
   pickupAt: string
+  opsFlag: string | null
+  opsPriority: number | null
   daysUntil: number
+  nextAction?: string | null
+  hoursToPickup?: number | null
+  vehicleBlocked?: boolean
 }
 
 export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
@@ -23,20 +28,13 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
     return []
   }
 
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(0, 0, 0, 0)
-
-  const sevenDaysFromNow = new Date()
-  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
-  sevenDaysFromNow.setHours(23, 59, 59, 999)
-
   const { data, error } = await supabase
-    .from('bookings')
-    .select('id, booking_number, customer_name, pickup_at, vehicles(name)')
+    .from('ops_bookings')
+    .select('id, booking_number, customer_name, pickup_at, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
     .eq('company_id', companyId)
-    .gte('pickup_at', tomorrow.toISOString())
-    .lte('pickup_at', sevenDaysFromNow.toISOString())
+    .is('ops_flag', null)
+    .gt('pickup_at', new Date().toISOString())
+    .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('pickup_at', { ascending: true })
 
   if (error) throw error
@@ -55,9 +53,14 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       id: b.id,
       bookingNumber: b.booking_number ?? '',
       customerName: b.customer_name ?? '',
-      vehicleName: (b.vehicles as unknown as { name: string } | null)?.name ?? '',
+      vehicleName: b.vehicle_name ?? '',
       pickupAt: b.pickup_at,
+      opsFlag: b.ops_flag ?? null,
+      opsPriority: b.ops_priority ?? null,
       daysUntil,
+      nextAction: b.next_action ?? null,
+      hoursToPickup: b.hours_to_pickup ?? null,
+      vehicleBlocked: b.vehicle_blocked === true,
     }
   })
 }

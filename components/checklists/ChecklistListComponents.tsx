@@ -12,6 +12,7 @@ import {
 
 export interface ChecklistTableHeaders {
   type: string;
+  name: string;
   booking: string;
   customer: string;
   vehicle: string;
@@ -40,6 +41,7 @@ export function ChecklistTableRow({
   const router = useRouter();
   return (
     <tr style={{ cursor: 'pointer' }} onClick={() => router.push(href)}>
+      <td style={TD}>{checklist.template_name ?? '—'}</td>
       <td style={TD}>
         <span style={{ fontWeight: 500 }}>{labels.typeLabel(checklist.name)}</span>
       </td>
@@ -90,6 +92,11 @@ export function ChecklistMobileCard({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
         <span style={{ fontWeight: 600, fontSize: '15px' }}>
           {labels.typeLabel(checklist.name)}
+          {checklist.template_name && (
+            <span style={{ fontWeight: 400, fontSize: '12px', color: 'rgb(var(--muted))', marginLeft: 'var(--space-2)' }}>
+              {checklist.template_name}
+            </span>
+          )}
           <span style={{ fontWeight: 400, fontSize: '13px', color: 'rgb(var(--muted))', marginLeft: 'var(--space-2)' }}>
             #{checklist.booking_number}
           </span>
@@ -236,6 +243,7 @@ export function ChecklistSection({
             <table style={TABLE_STYLE}>
               <thead>
                 <tr>
+                  <th style={TH}>{headers.name}</th>
                   <th style={TH}>{headers.type}</th>
                   <th style={TH}>{headers.booking}</th>
                   <th style={TH}>{headers.customer}</th>

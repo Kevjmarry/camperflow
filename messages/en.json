@@ -817,6 +817,15 @@
       "accessDenied": "Access denied. This account does not have staff privileges.",
       "unexpectedError": "An unexpected error occurred. Please try again."
     },
+    "nav": {
+      "operations": "Operations",
+      "bookings": "Bookings",
+      "vehicles": "Vehicles",
+      "checklists": "Checklists",
+      "team": "Staff Team",
+      "customers": "Customers",
+      "company": "Company Settings"
+    },
     "dashboard": {
       "title": "Staff dashboard",
       "subtitle": "Manage bookings, vehicles, and operations",
@@ -902,6 +911,7 @@
       },
       "table": {
         "type": "Type",
+        "name": "Name",
         "booking": "Booking",
         "customer": "Customer",
         "vehicle": "Vehicle",

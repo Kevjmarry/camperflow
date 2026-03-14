@@ -12,6 +12,25 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatHoursToPickup(hours: number | null | undefined): string {
+  if (hours == null) return ''
+  if (hours <= 24) return 'Today'
+  if (hours <= 48) return 'Tomorrow'
+  return `${Math.round(hours / 24)} days`
+}
+
+const nextActionLabels: Record<string, string> = {
+  prepare_for_pickup: 'Preparing',
+  start_handover: 'Start handover',
+  await_return: 'Await return',
+  start_return: 'Start return',
+}
+
+function formatNextAction(action: string | null | undefined): string {
+  if (!action) return ''
+  return nextActionLabels[action] ?? action
+}
+
 function getUrgencyStyle(returnAt: string): React.CSSProperties {
   const minutesUntilReturn = (new Date(returnAt).getTime() - Date.now()) / 60000
   if (minutesUntilReturn <= 0) {
@@ -78,8 +97,16 @@ export default function OperationsReturns({ returns }: Props) {
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                   {r.customerName} · {r.bookingNumber}
                 </span>
+                {r.nextAction && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(r.nextAction)}</span>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
+                {r.hoursToPickup != null && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    {formatHoursToPickup(r.hoursToPickup)}
+                  </span>
+                )}
                 <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--brand))' }}>
                   {formatTime(r.returnAt)}
                 </span>

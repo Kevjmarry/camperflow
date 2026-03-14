@@ -5,6 +5,7 @@ export interface ChecklistItem {
   id: string;
   name: string;
   type: string;
+  template_name?: string;
   status: string;
   booking_number: string;
   customer_name: string;

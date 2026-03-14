@@ -1,3 +1,4 @@
+import StaffNav from '@/components/staff/StaffNav'
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
@@ -76,5 +77,10 @@ export default async function StaffLayout({
 }) {
   await ensureStaffCompanyId();
 
-  return <>{children}</>;
+  return (
+    <>
+      <StaffNav />
+      {children}
+    </>
+  );
 }

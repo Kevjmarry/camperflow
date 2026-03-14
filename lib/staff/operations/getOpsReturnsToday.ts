@@ -6,7 +6,11 @@ export interface OpsReturn {
   customerName: string
   vehicleName: string
   returnAt: string
+  opsFlag: 'return_today' | 'overdue_return' | null
+  opsPriority: number | null
   status: 'on_rent'
+  nextAction?: string | null
+  hoursToPickup?: number | null
 }
 
 export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
@@ -23,18 +27,12 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
     return []
   }
 
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date()
-  todayEnd.setHours(23, 59, 59, 999)
-
   const { data, error } = await supabase
-    .from('bookings')
-    .select('id, booking_number, customer_name, return_at, status, vehicles(name)')
+    .from('ops_bookings')
+    .select('id, booking_number, customer_name, return_at, booking_status, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority')
     .eq('company_id', companyId)
-    .eq('status', 'on_rent')
-    .gte('return_at', todayStart.toISOString())
-    .lte('return_at', todayEnd.toISOString())
+    .in('ops_flag', ['return_today', 'overdue_return'])
+    .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('return_at', { ascending: true })
 
   if (error) throw error
@@ -43,8 +41,12 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
     id: b.id,
     bookingNumber: b.booking_number ?? '',
     customerName: b.customer_name ?? '',
-    vehicleName: (b.vehicles as unknown as { name: string } | null)?.name ?? '',
+    vehicleName: b.vehicle_name ?? '',
     returnAt: b.return_at,
+    opsFlag: b.ops_flag as 'return_today' | 'overdue_return' | null,
+    opsPriority: b.ops_priority ?? null,
     status: 'on_rent' as const,
+    nextAction: b.next_action ?? null,
+    hoursToPickup: b.hours_to_pickup ?? null,
   }))
 }

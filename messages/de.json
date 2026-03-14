@@ -817,6 +817,15 @@
       "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
       "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
     },
+    "nav": {
+      "operations": "Betrieb",
+      "bookings": "Buchungen",
+      "vehicles": "Fahrzeuge",
+      "checklists": "Checklisten",
+      "team": "Mitarbeiterteam",
+      "customers": "Kunden",
+      "company": "Firmeneinstellungen"
+    },
     "dashboard": {
       "title": "Mitarbeiter-Dashboard",
       "subtitle": "Buchungen, Fahrzeuge und Betrieb verwalten",
@@ -902,6 +911,7 @@
       },
       "table": {
         "type": "Typ",
+        "name": "Name",
         "booking": "Buchung",
         "customer": "Kunde",
         "vehicle": "Fahrzeug",
