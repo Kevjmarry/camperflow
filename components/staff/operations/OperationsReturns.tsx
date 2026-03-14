@@ -100,6 +100,11 @@ export default function OperationsReturns({ returns }: Props) {
                 {r.nextAction && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(r.nextAction)}</span>
                 )}
+                {r.returnItemsTotal != null && r.returnItemsTotal > 0 && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    Return: {r.returnItemsDone ?? 0} / {r.returnItemsTotal}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 {r.hoursToPickup != null && (

@@ -14,6 +14,8 @@ export interface OpsPickup {
   nextAction?: string | null
   hoursToPickup?: number | null
   vehicleBlocked?: boolean
+  handoverItemsDone: number | null
+  handoverItemsTotal: number | null
 }
 
 export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
@@ -32,7 +34,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, booking_status, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
+    .select('id, booking_number, customer_name, pickup_at, booking_status, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, handover_items_done, handover_items_total')
     .eq('company_id', companyId)
     .eq('ops_flag', 'pickup_today')
     .order('ops_priority', { ascending: true, nullsFirst: false })
@@ -74,6 +76,8 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       nextAction: b.next_action ?? null,
       hoursToPickup: b.hours_to_pickup ?? null,
       vehicleBlocked: b.vehicle_blocked === true,
+      handoverItemsDone: b.handover_items_done ?? null,
+      handoverItemsTotal: b.handover_items_total ?? null,
     }
   })
 }

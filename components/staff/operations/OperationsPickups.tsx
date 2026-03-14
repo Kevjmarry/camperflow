@@ -95,6 +95,11 @@ export default function OperationsPickups({ pickups }: Props) {
                 {p.vehicleBlocked && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
                 )}
+                {p.handoverItemsTotal != null && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    Handover: {p.handoverStatus === 'completed' ? `${p.handoverItemsTotal} / ${p.handoverItemsTotal}` : `${p.handoverItemsDone ?? 0} / ${p.handoverItemsTotal}`}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 {p.hoursToPickup != null && (
