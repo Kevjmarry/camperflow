@@ -14,7 +14,7 @@ interface StaffMember {
   id: string;
   auth_user_id: string | null;
   email: string | null;
-  full_name: string | null;
+  name: string | null;
   role: string;
   can_manage: boolean;
   is_active?: boolean | null;
@@ -43,7 +43,11 @@ export default function CompanySettingsPage() {
     emergency_accident_phone_secondary: "",
     emergency_breakdown_phone_primary: "",
     emergency_breakdown_phone_secondary: "",
+    pickup_time: "",
+    dropoff_time: "",
+    final_payment_due_days: "",
   });
+  const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,6 +111,9 @@ export default function CompanySettingsPage() {
         emergency_accident_phone_secondary:  (company as any).emergency_accident_phone_secondary  ?? "",
         emergency_breakdown_phone_primary:   (company as any).emergency_breakdown_phone_primary   ?? "",
         emergency_breakdown_phone_secondary: (company as any).emergency_breakdown_phone_secondary ?? "",
+        pickup_time:                         "",
+        dropoff_time:                        "",
+        final_payment_due_days:              "",
       });
       setLogoPreview(company.logo_url);
       setLoading(false);
@@ -116,6 +123,31 @@ export default function CompanySettingsPage() {
     }
   }, [company, themeLoading, t]);
 
+  // ── Booking defaults + payment reminders → form (company_settings fetch) ───
+
+  useEffect(() => {
+    if (!company?.id) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_reminders_enabled")
+        .eq("id", company.id)
+        .maybeSingle();
+      if (data) {
+        setFormData((prev) => ({
+          ...prev,
+          pickup_time:            (data as any).pickup_time            ?? "",
+          dropoff_time:           (data as any).dropoff_time           ?? "",
+          final_payment_due_days: (data as any).final_payment_due_days != null
+                                    ? String((data as any).final_payment_due_days)
+                                    : "",
+        }));
+        setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
+      }
+    };
+    load();
+  }, [company?.id, supabase]);
+
   // ── Staff load (two-step, safe scoping) ────────────────────────────────────
 
   const loadStaff = useCallback(async () => {
@@ -123,7 +155,7 @@ export default function CompanySettingsPage() {
     setStaffLoading(true);
     setStaffError("");
     try {
-      const BASE = "id, auth_user_id, email, full_name, role, can_manage";
+      const BASE = "id, auth_user_id, email, name, role, can_manage";
 
       // Step 1 — base fetch; try company_id first, fall back to RLS
       let baseRows: StaffMember[] = [];
@@ -131,7 +163,7 @@ export default function CompanySettingsPage() {
         .from("staff_profiles")
         .select(BASE)
         .eq("company_id", company.id)
-        .order("full_name", { ascending: true });
+        .order("name", { ascending: true });
 
       if (!byCompany.error) {
         baseRows = (byCompany.data ?? []) as StaffMember[];
@@ -139,7 +171,7 @@ export default function CompanySettingsPage() {
         const byRls = await supabase
           .from("staff_profiles")
           .select(BASE)
-          .order("full_name", { ascending: true });
+          .order("name", { ascending: true });
         if (byRls.error) throw byRls.error;
         baseRows = (byRls.data ?? []) as StaffMember[];
       }
@@ -227,6 +259,11 @@ export default function CompanySettingsPage() {
         if (!url) { setSaving(false); return; }
         finalLogoUrl = url;
       }
+      const parsedDueDays = formData.final_payment_due_days.trim()
+        ? parseInt(formData.final_payment_due_days, 10)
+        : null;
+
+      // Save branding + contact fields to companies
       const { error: saveErr } = await supabase
         .from("companies")
         .update({
@@ -241,6 +278,18 @@ export default function CompanySettingsPage() {
         })
         .eq("id", company?.id);
       if (saveErr) throw saveErr;
+
+      // Save booking defaults + payment settings to company_settings
+      const { error: settingsErr } = await supabase
+        .from("company_settings")
+        .update({
+          pickup_time:                     formData.pickup_time.trim()  || null,
+          dropoff_time:                    formData.dropoff_time.trim() || null,
+          final_payment_due_days:          parsedDueDays,
+          final_payment_reminders_enabled: finalPaymentRemindersEnabled,
+        })
+        .eq("id", company?.id);
+      if (settingsErr) throw settingsErr;
       await refreshCompany();
       setSuccess(true); setLogoFile(null);
       setTimeout(() => setSuccess(false), 3000);
@@ -340,7 +389,7 @@ export default function CompanySettingsPage() {
 
       const base: Record<string, unknown> = {
         email:      normalizedEmail,
-        full_name:  inviteFullName.trim() || null,
+        name:       inviteFullName.trim() || null,
         role:       inviteRole,
         can_manage: inviteCanManage,
       };
@@ -548,6 +597,71 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
+            {/* Booking Defaults */}
+            <div>
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
+                Booking defaults
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)" }}>
+                <div>
+                  <label htmlFor="pickup_time" className="label">Default pick-up time</label>
+                  <input
+                    id="pickup_time" name="pickup_time" type="time" className="input"
+                    value={formData.pickup_time} onChange={handleChange}
+                    disabled={!isAdmin} style={{ width: "100%" }}
+                  />
+                  <p className="helper-text">Applied to new bookings as the default pick-up time.</p>
+                </div>
+                <div>
+                  <label htmlFor="dropoff_time" className="label">Default drop-off time</label>
+                  <input
+                    id="dropoff_time" name="dropoff_time" type="time" className="input"
+                    value={formData.dropoff_time} onChange={handleChange}
+                    disabled={!isAdmin} style={{ width: "100%" }}
+                  />
+                  <p className="helper-text">Applied to new bookings as the default drop-off time.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Reminders */}
+            <div>
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
+                Payment reminders
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                    <input
+                      type="checkbox"
+                      checked={finalPaymentRemindersEnabled}
+                      onChange={(e) => setFinalPaymentRemindersEnabled(e.target.checked)}
+                      disabled={!isAdmin}
+                    />
+                    <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                      Enable final payment reminders
+                    </span>
+                  </label>
+                  <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                    When enabled, customers are sent a reminder to complete their final payment before the rental starts.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="final_payment_due_days" className="label">Final payment due (days before pickup)</label>
+                  <input
+                    id="final_payment_due_days" name="final_payment_due_days" type="number"
+                    min="0" step="1" className="input"
+                    placeholder="e.g. 14"
+                    value={formData.final_payment_due_days} onChange={handleChange}
+                    disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                  />
+                  <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                    Number of days before pick-up that the final payment is due.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Preview */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
@@ -715,10 +829,10 @@ export default function CompanySettingsPage() {
                       {/* Name / email */}
                       <div>
                         <div style={{ fontWeight: 500, color: "rgb(var(--text))" }}>
-                          {member.full_name || member.email || "Unnamed"}
+                          {member.name || member.email || "Unnamed"}
                           {isSelf && <span style={{ marginLeft: "var(--space-2)", fontSize: "11px", color: "rgb(var(--brand))", fontWeight: 400 }}>(you)</span>}
                         </div>
-                        {member.full_name && member.email && (
+                        {member.name && member.email && (
                           <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>{member.email}</div>
                         )}
                       </div>

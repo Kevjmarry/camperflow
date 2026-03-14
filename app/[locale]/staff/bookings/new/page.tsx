@@ -14,6 +14,15 @@ interface Vehicle {
   status: string;
 }
 
+/** Format a local date + a "HH:MM[:SS]" time string into a datetime-local value. */
+function toDatetimeLocal(date: Date, timeStr: string): string {
+  const [hh, mm] = timeStr.split(":");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hh.padStart(2, "0")}:${(mm ?? "00").padStart(2, "0")}`;
+}
+
 /** Normalize a raw status value to one that satisfies `bookings_status_check`. */
 function normalizeStatus(raw: string): "draft" | "confirmed" | "blocked" | "on_rent" | "completed" | "cancelled" {
   const trimmed = raw.trim();
@@ -61,6 +70,26 @@ export default function NewBookingPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permissionCheckComplete, isAdmin]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    const applyDefaults = async () => {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("pickup_time, dropoff_time")
+        .eq("id", companyId)
+        .maybeSingle();
+      if (!data) return;
+      const today = new Date();
+      setFormData((prev) => ({
+        ...prev,
+        pickup_at: prev.pickup_at || (data.pickup_time ? toDatetimeLocal(today, data.pickup_time) : ""),
+        return_at: prev.return_at || (data.dropoff_time ? toDatetimeLocal(today, data.dropoff_time) : ""),
+      }));
+    };
+    applyDefaults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   const checkAdminAccess = async () => {
     try {

@@ -2,6 +2,7 @@ import PageContainer from '@/components/PageContainer'
 import OperationsSummary from '@/components/staff/operations/OperationsSummary'
 import OperationsPickups from '@/components/staff/operations/OperationsPickups'
 import OperationsReturns from '@/components/staff/operations/OperationsReturns'
+import OperationsInvoiceReminders from '@/components/staff/operations/OperationsInvoiceReminders'
 import OperationsVehiclesPreparing from '@/components/staff/operations/OperationsVehiclesPreparing'
 import OperationsUpcomingPickups from '@/components/staff/operations/OperationsUpcomingPickups'
 import { getOpsSummary } from '@/lib/staff/operations/getOpsSummary'
@@ -9,16 +10,18 @@ import { getOpsPickupsToday } from '@/lib/staff/operations/getOpsPickupsToday'
 import { getOpsReturnsToday } from '@/lib/staff/operations/getOpsReturnsToday'
 import { getOpsVehiclesPreparing } from '@/lib/staff/operations/getOpsVehiclesPreparing'
 import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPickups'
+import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OperationsPage() {
-  const [summary, pickups, returns, vehicles, upcoming] = await Promise.all([
+  const [summary, pickups, returns, vehicles, upcoming, invoiceReminders] = await Promise.all([
     getOpsSummary(),
     getOpsPickupsToday(),
     getOpsReturnsToday(),
     getOpsVehiclesPreparing(),
     getOpsUpcomingPickups(),
+    getOpsInvoiceReminders(),
   ])
 
   return (
@@ -38,6 +41,7 @@ export default async function OperationsPage() {
             {summary && <OperationsSummary data={summary} />}
             <OperationsPickups pickups={pickups} />
             <OperationsReturns returns={returns} />
+            <OperationsInvoiceReminders reminders={invoiceReminders} />
             <OperationsVehiclesPreparing vehicles={vehicles} />
             <OperationsUpcomingPickups pickups={upcoming} />
           </div>

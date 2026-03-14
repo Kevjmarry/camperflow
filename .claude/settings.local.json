@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn from.*company_settings c:CamperFlowcamperflowapp)"
+    ]
+  }
+}
