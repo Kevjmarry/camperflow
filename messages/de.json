@@ -431,6 +431,7 @@
     "subtitle": "Kundenreservierungen verwalten",
     "action": {
       "newBooking": "Neue Buchung",
+      "importBookings": "Buchungen importieren",
       "edit": "Bearbeiten",
       "view": "Ansehen",
       "viewEdit": "Ansehen / Bearbeiten"
@@ -442,18 +443,40 @@
       "confirmed": "Bestätigt",
       "onRent": "Vermietet",
       "completed": "Abgeschlossen",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "vehicleLabel": "Fahrzeug:",
+      "allVehicles": "Alle Fahrzeuge",
+      "sourceTypeLabel": "Quelle:",
+      "allSources": "Alle Quellen",
+      "dateFromLabel": "Von:",
+      "dateToLabel": "Bis:",
+      "searchPlaceholder": "Name, Buchungsnr. suchen…",
+      "clearFilters": "Filter zurücksetzen"
+    },
+    "sort": {
+      "label": "Sortierung:",
+      "pickupAsc": "Abholung: früheste",
+      "pickupDesc": "Abholung: späteste",
+      "createdDesc": "Neueste zuerst",
+      "createdAsc": "Älteste zuerst",
+      "updatedDesc": "Zuletzt aktualisiert",
+      "returnAsc": "Rückgabe: früheste"
     },
     "loading": "Buchungen werden geladen...",
     "empty": "Keine Buchungen gefunden.",
     "emptyAdminSuffix": " Erstellen Sie Ihre erste Buchung, um zu starten.",
+    "noResults": "Keine Buchungen entsprechen Ihren Filtern.",
     "table": {
       "bookingNumber": "Buchungsnr.",
       "customer": "Kunde",
       "vehicle": "Fahrzeug",
+      "vehicleStatus": "Fahrzeugstatus",
       "pickup": "Abholung",
+      "pickupIn": "Abholung in",
       "return": "Rückgabe",
       "status": "Status",
+      "tasks": "Aufgaben",
+      "nextAction": "Nächste Aktion",
       "actions": "Aktionen"
     },
     "unassigned": "Nicht zugewiesen",
@@ -875,6 +898,48 @@
         "nonAdminHint": "Deine Aufgaben erscheinen automatisch, sobald sie einer Buchung zugewiesen wurden."
       }
     },
+    "operations": {
+      "showMore": "{count} weitere anzeigen",
+      "showLess": "Weniger anzeigen",
+      "quietDay": {
+        "title": "Heute nichts geplant.",
+        "subtitle": "Hier siehst du, was als Nächstes ansteht."
+      },
+      "completedBookings": {
+        "title": "Abgeschlossene Buchungen",
+        "viewAll": "Alle anzeigen",
+        "empty": "Keine abgeschlossenen Buchungen.",
+        "returnedOn": "Zurückgegeben {date}",
+        "view": "Anzeigen"
+      },
+      "extras": {
+        "nights": "{count}N",
+        "guests": "{count} Personen",
+        "pets": "Haustier",
+        "airportPickup": "Flughafentransfer",
+        "extraDriver": "Zusatzfahrer"
+      },
+      "nextUp": {
+        "nextPickup": "Nächste Abholung",
+        "nextReturn": "Nächste Rückgabe",
+        "view": "Buchung anzeigen",
+        "nonePickup": "Keine bevorstehenden Abholungen",
+        "noneReturn": "Keine bevorstehenden Rückgaben"
+      },
+      "upcomingReturns": {
+        "title": "Bevorstehende Rückgaben",
+        "viewAll": "Alle anzeigen",
+        "empty": "Keine bevorstehenden Rückgaben.",
+        "inDays": "in {count}T",
+        "view": "Anzeigen"
+      },
+      "vehicleBlocks": {
+        "title": "Fahrzeugsperren",
+        "defaultLabel": "Gesperrter Zeitraum",
+        "activeNow": "Aktuell aktiv",
+        "until": "Bis {date}"
+      }
+    },
     "checklistsPage": {
       "loading": "Wird geladen…",
       "backToDashboard": "← Zurück zum Dashboard",
@@ -1069,11 +1134,31 @@
       "customerName": "Kundenname",
       "phoneNumber": "Telefonnummer",
       "emailOptional": "E-Mail (optional)",
-      "notes": "Notizen"
+      "notes": "Notizen",
+      "guests": "Gäste",
+      "pets": "Haustiere",
+      "airportTransfer": "Flughafentransfer",
+      "extraDriver": "Zusätzlicher Fahrer",
+      "whatsappOptin": "WhatsApp-Anmeldung",
+      "marketingOptin": "Marketing-Anmeldung",
+      "internalNotes": "Interne Notizen (nur Mitarbeiter)"
     },
     "section": {
       "bookingDetails": "Buchungsdetails",
-      "customerDetails": "Kundendaten"
+      "customerDetails": "Kundendaten",
+      "tripDetails": "Reisedetails",
+      "internalNotes": "Interne Notizen"
+    },
+    "tripDetails": {
+      "noOverride": "Importwert verwenden",
+      "notSet": "Nicht gesetzt",
+      "yes": "Ja",
+      "no": "Nein",
+      "usingImported": "Importiert",
+      "staffOverride": "Durch Mitarbeiter bearbeitet",
+      "noImportedValue": "Nicht angegeben",
+      "maxGuests": "Maximal {max} für dieses Fahrzeug",
+      "guestExceedsCapacity": "Gästezahl überschreitet die Fahrzeugkapazität (max. {max})"
     },
     "summary": {
       "customer": "Kunde",
@@ -1719,5 +1804,75 @@
     "errorDetailDetails": "Details:",
     "errorDetailHint": "Hinweis:",
     "rawErrorJson": "Fehler-JSON (Rohformat)"
+  },
+  "bookingsImport": {
+    "backToBookings": "← Zurück zu Buchungen",
+    "title": "Buchungen importieren",
+    "subtitle": "Laden Sie einen CSV- oder JSON-Export Ihrer Buchungsplattform hoch.",
+    "dropzone": {
+      "primary": "Datei hierher ziehen und ablegen",
+      "accepted": "Akzeptierte Formate: .csv, .json",
+      "browse": "Datei auswählen",
+      "inputLabel": "Buchungsdatei hochladen"
+    },
+    "file": {
+      "remove": "Entfernen"
+    },
+    "preview": {
+      "placeholder": "Die Importvorschau erscheint hier nach dem Upload.",
+      "parsing": "Datei wird analysiert…",
+      "matchingVehicles": "Fahrzeuge werden abgeglichen…",
+      "checkingExisting": "Vorhandene Buchungen werden geprüft…",
+      "undetectedSource": "Importquelle konnte nicht erkannt werden.",
+      "parseError": "Datei konnte nicht verarbeitet werden.",
+      "readError": "Datei konnte nicht gelesen werden."
+    },
+    "match": {
+      "vehicleNotFound": "Fahrzeug nicht gefunden",
+      "ambiguous": "Mehrere passende Fahrzeuge gefunden",
+      "noCompanyId": "Ihrem Konto ist kein Unternehmen zugeordnet.",
+      "vehicleQueryError": "Fahrzeuge Ihres Unternehmens konnten nicht geladen werden.",
+      "statusMatched": "gefunden",
+      "statusUnmatched": "nicht gefunden",
+      "statusAmbiguous": "mehrdeutig"
+    },
+    "summary": {
+      "sourceType": "Quellentyp",
+      "totalRows": "Zeilen gesamt",
+      "toCreate": "Neu anlegen",
+      "toUpdate": "Aktualisieren",
+      "toBlock": "Fahrzeugsperren",
+      "rowsWithErrors": "Zeilen mit Fehlern",
+      "rowsSkipped": "Übersprungen"
+    },
+    "action": {
+      "create": "neu",
+      "update": "aktualisieren",
+      "block": "blockieren",
+      "skip": "überspringen",
+      "error": "fehler"
+    },
+    "table": {
+      "rowNum": "#",
+      "sourceId": "Quell-ID",
+      "vehicleRef": "Fahrzeugreferenz",
+      "pickup": "Abholung",
+      "return": "Rückgabe",
+      "match": "Abgleich",
+      "action": "Aktion",
+      "issue": "Problem"
+    },
+    "import": {
+      "button": "{count} Änderungen übernehmen",
+      "importing": "Importiere…",
+      "unexpectedError": "Beim Import ist ein unerwarteter Fehler aufgetreten.",
+      "resultTitle": "Import abgeschlossen",
+      "resultCreated": "{count} erstellt",
+      "resultUpdated": "{count} aktualisiert",
+      "resultBlocked": "{count} Fahrzeugsperren importiert",
+      "resultErrors": "{count} Fehler",
+      "rowError": "Zeile {row}: {message}",
+      "defaultBlockLabel": "Gesperrter Zeitraum"
+    }
   }
 }

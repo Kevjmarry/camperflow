@@ -4,32 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import type { OpsUpcomingPickup } from '@/lib/staff/operations/getOpsUpcomingPickups'
+import type { OpsUpcomingReturn } from '@/lib/staff/operations/getOpsUpcomingReturns'
 
 interface Props {
-  pickups: OpsUpcomingPickup[]
+  returns: OpsUpcomingReturn[]
 }
 
 const LIMIT = 5
-
-const nextActionLabels: Record<string, string> = {
-  prepare_for_pickup: 'Preparing',
-  start_handover: 'Start handover',
-  await_return: 'Await return',
-  start_return: 'Start return',
-}
-
-function formatNextAction(action: string | null | undefined): string {
-  if (!action) return ''
-  return nextActionLabels[action] ?? action
-}
-
-function formatHoursToPickup(hours: number | null | undefined): string {
-  if (hours == null) return ''
-  if (hours <= 24) return 'Today'
-  if (hours <= 48) return 'Tomorrow'
-  return `${Math.round(hours / 24)} days`
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -102,23 +83,23 @@ const badgeStyle: React.CSSProperties = {
 }
 
 function MetaBadges({
-  p,
+  r,
   t,
 }: {
-  p: OpsUpcomingPickup
+  r: OpsUpcomingReturn
   t: (k: string, v?: Record<string, unknown>) => string
 }) {
   const badges: React.ReactNode[] = []
 
-  if (p.guestCount != null && p.guestCount > 0) {
+  if (r.guestCount != null && r.guestCount > 0) {
     badges.push(
       <span key="guests" style={badgeStyle}>
         <IconPerson />
-        {t('extras.guests', { count: p.guestCount })}
+        {t('extras.guests', { count: r.guestCount })}
       </span>
     )
   }
-  if (p.hasExtraDriver) {
+  if (r.hasExtraDriver) {
     badges.push(
       <span key="driver" style={badgeStyle}>
         <IconPersonPlus />
@@ -126,7 +107,7 @@ function MetaBadges({
       </span>
     )
   }
-  if (p.hasPets) {
+  if (r.hasPets) {
     badges.push(
       <span key="pets" style={badgeStyle}>
         <IconPaw />
@@ -134,7 +115,7 @@ function MetaBadges({
       </span>
     )
   }
-  if (p.hasAirportPickup) {
+  if (r.hasAirportPickup) {
     badges.push(
       <span key="airport" style={badgeStyle}>
         <IconPlane />
@@ -151,15 +132,14 @@ function MetaBadges({
   )
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
-export default function OperationsUpcomingPickups({ pickups }: Props) {
+export default function OperationsUpcomingReturns({ returns }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations')
+  const tSection = useTranslations('staff.operations.upcomingReturns')
   const [expanded, setExpanded] = useState(false)
 
-  const visible = expanded ? pickups : pickups.slice(0, LIMIT)
-  const hidden = pickups.length - LIMIT
+  const visible = expanded ? returns : returns.slice(0, LIMIT)
+  const hidden = returns.length - LIMIT
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
@@ -172,24 +152,24 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
         }}
       >
         <h2 style={{ fontSize: '18px', margin: 0, color: 'rgb(var(--text))' }}>
-          Upcoming pickups
+          {tSection('title')}
         </h2>
         <Link
           href={`/${locale}/staff/bookings`}
           style={{ fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
         >
-          View all
+          {tSection('viewAll')}
         </Link>
       </div>
 
-      {pickups.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No upcoming pickups.</p>
+      {returns.length === 0 ? (
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{tSection('empty')}</p>
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {visible.map((p) => (
+            {visible.map((r) => (
               <div
-                key={p.id}
+                key={r.id}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -201,48 +181,42 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                   flexWrap: 'wrap',
                 }}
               >
-                {/* Left: booking identity + badges */}
+                {/* Left: booking identity + extras */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
                   <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
-                    {p.vehicleName}
+                    {r.vehicleName}
                   </span>
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                    {p.customerName} · {p.bookingNumber}
+                    {r.customerName} · {r.bookingNumber}
                   </span>
-                  {p.nextAction && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(p.nextAction)}</span>
-                  )}
-                  {p.vehicleBlocked && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
-                  )}
-                  <MetaBadges p={p} t={t} />
+                  <MetaBadges r={r} t={t} />
                 </div>
 
-                {/* Right: time, date, countdown, link */}
+                {/* Right: return time, date, countdown, link */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {formatTime(p.pickupAt)}
+                      {formatTime(r.returnAt)}
                     </div>
                     <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatDate(p.pickupAt)}
+                      {formatDate(r.returnAt)}
                     </div>
                     <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatHoursToPickup(p.hoursToPickup) || `in ${p.daysUntil}d`}
+                      {tSection('inDays', { count: r.daysUntil })}
                     </div>
                   </div>
                   <Link
-                    href={`/${locale}/staff/bookings/${p.id}`}
+                    href={`/${locale}/staff/bookings/${r.id}`}
                     style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
                   >
-                    View
+                    {tSection('view')}
                   </Link>
                 </div>
               </div>
             ))}
           </div>
 
-          {pickups.length > LIMIT && (
+          {returns.length > LIMIT && (
             <button
               onClick={() => setExpanded(!expanded)}
               style={{

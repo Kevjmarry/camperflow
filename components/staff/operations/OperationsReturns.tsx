@@ -6,6 +6,7 @@ import type { OpsReturn } from '@/lib/staff/operations/getOpsReturnsToday'
 
 interface Props {
   returns: OpsReturn[]
+  quiet?: boolean
 }
 
 function formatTime(iso: string) {
@@ -50,8 +51,31 @@ function getUrgencyStyle(returnAt: string): React.CSSProperties {
   }
 }
 
-export default function OperationsReturns({ returns }: Props) {
+export default function OperationsReturns({ returns, quiet }: Props) {
   const { locale } = useParams<{ locale: string }>()
+
+  // On quiet days with nothing scheduled, render a lightweight status line
+  if (quiet && returns.length === 0) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          padding: 'var(--space-3) var(--space-4)',
+          border: '1px dashed rgb(var(--border))',
+          borderRadius: 'var(--radius)',
+          opacity: 0.55,
+        }}
+      >
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))' }}>
+          Returns today
+        </span>
+        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>
+        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>None scheduled</span>
+      </div>
+    )
+  }
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>

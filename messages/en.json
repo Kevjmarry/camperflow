@@ -431,6 +431,7 @@
     "subtitle": "Manage customer reservations",
     "action": {
       "newBooking": "New booking",
+      "importBookings": "Import bookings",
       "edit": "Edit",
       "view": "View",
       "viewEdit": "View / Edit"
@@ -442,18 +443,40 @@
       "confirmed": "Confirmed",
       "onRent": "On Rent",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "vehicleLabel": "Vehicle:",
+      "allVehicles": "All vehicles",
+      "sourceTypeLabel": "Source:",
+      "allSources": "All sources",
+      "dateFromLabel": "From:",
+      "dateToLabel": "To:",
+      "searchPlaceholder": "Search by name, booking #…",
+      "clearFilters": "Clear filters"
+    },
+    "sort": {
+      "label": "Sort:",
+      "pickupAsc": "Pickup: soonest",
+      "pickupDesc": "Pickup: latest",
+      "createdDesc": "Newest created",
+      "createdAsc": "Oldest created",
+      "updatedDesc": "Last updated",
+      "returnAsc": "Return: soonest"
     },
     "loading": "Loading bookings...",
     "empty": "No bookings found.",
     "emptyAdminSuffix": " Create your first booking to get started.",
+    "noResults": "No bookings match your filters.",
     "table": {
       "bookingNumber": "Booking #",
       "customer": "Customer",
       "vehicle": "Vehicle",
+      "vehicleStatus": "Vehicle status",
       "pickup": "Pickup",
+      "pickupIn": "Pickup in",
       "return": "Return",
       "status": "Status",
+      "tasks": "Tasks",
+      "nextAction": "Next action",
       "actions": "Actions"
     },
     "unassigned": "Unassigned",
@@ -875,6 +898,48 @@
         "nonAdminHint": "Your tasks will appear automatically when assigned to a booking."
       }
     },
+    "operations": {
+      "showMore": "Show {count} more",
+      "showLess": "Show less",
+      "quietDay": {
+        "title": "Nothing scheduled for today.",
+        "subtitle": "Here's what's coming up next."
+      },
+      "completedBookings": {
+        "title": "Completed bookings",
+        "viewAll": "View all",
+        "empty": "No completed bookings.",
+        "returnedOn": "Returned {date}",
+        "view": "View"
+      },
+      "extras": {
+        "nights": "{count}n",
+        "guests": "{count} guests",
+        "pets": "Pets",
+        "airportPickup": "Airport pickup",
+        "extraDriver": "Extra driver"
+      },
+      "nextUp": {
+        "nextPickup": "Next pickup",
+        "nextReturn": "Next return",
+        "view": "View booking",
+        "nonePickup": "No upcoming pickups",
+        "noneReturn": "No upcoming returns"
+      },
+      "upcomingReturns": {
+        "title": "Upcoming returns",
+        "viewAll": "View all",
+        "empty": "No upcoming returns.",
+        "inDays": "in {count}d",
+        "view": "View"
+      },
+      "vehicleBlocks": {
+        "title": "Vehicle blocks",
+        "defaultLabel": "Blocked period",
+        "activeNow": "Active now",
+        "until": "Until {date}"
+      }
+    },
     "checklistsPage": {
       "loading": "Loading…",
       "backToDashboard": "← Back to Dashboard",
@@ -1069,11 +1134,31 @@
       "customerName": "Customer name",
       "phoneNumber": "Phone number",
       "emailOptional": "Email (optional)",
-      "notes": "Notes"
+      "notes": "Notes",
+      "guests": "Guests",
+      "pets": "Pets",
+      "airportTransfer": "Airport pick-up",
+      "extraDriver": "Extra driver",
+      "whatsappOptin": "WhatsApp opt-in",
+      "marketingOptin": "Marketing opt-in",
+      "internalNotes": "Internal notes (staff only)"
     },
     "section": {
       "bookingDetails": "Booking Details",
-      "customerDetails": "Customer Details"
+      "customerDetails": "Customer Details",
+      "tripDetails": "Trip Details",
+      "internalNotes": "Internal Notes"
+    },
+    "tripDetails": {
+      "noOverride": "Use imported value",
+      "notSet": "Not set",
+      "yes": "Yes",
+      "no": "No",
+      "usingImported": "Imported",
+      "staffOverride": "Edited by staff",
+      "noImportedValue": "Not provided",
+      "maxGuests": "Maximum {max} for this vehicle",
+      "guestExceedsCapacity": "Guest count exceeds this vehicle's capacity (max {max})"
     },
     "summary": {
       "customer": "Customer",
@@ -1719,5 +1804,75 @@
     "errorDetailDetails": "details:",
     "errorDetailHint": "hint:",
     "rawErrorJson": "Raw error JSON"
+  },
+  "bookingsImport": {
+    "backToBookings": "← Back to bookings",
+    "title": "Import bookings",
+    "subtitle": "Upload a CSV or JSON export from your booking platform.",
+    "dropzone": {
+      "primary": "Drag and drop your file here",
+      "accepted": "Accepted formats: .csv, .json",
+      "browse": "Browse file",
+      "inputLabel": "Upload booking file"
+    },
+    "file": {
+      "remove": "Remove"
+    },
+    "preview": {
+      "placeholder": "Import preview will appear here after upload.",
+      "parsing": "Parsing file…",
+      "matchingVehicles": "Matching vehicles…",
+      "checkingExisting": "Checking existing bookings…",
+      "undetectedSource": "Could not detect import source for this file.",
+      "parseError": "Failed to parse file",
+      "readError": "Failed to read file"
+    },
+    "match": {
+      "vehicleNotFound": "Vehicle not found",
+      "ambiguous": "Multiple vehicle matches found",
+      "noCompanyId": "No company is associated with your account.",
+      "vehicleQueryError": "Failed to load vehicles for your company.",
+      "statusMatched": "matched",
+      "statusUnmatched": "unmatched",
+      "statusAmbiguous": "ambiguous"
+    },
+    "summary": {
+      "sourceType": "Source type",
+      "totalRows": "Total rows",
+      "toCreate": "To create",
+      "toUpdate": "To update",
+      "toBlock": "Vehicle blocks",
+      "rowsWithErrors": "Rows with errors",
+      "rowsSkipped": "Skipped"
+    },
+    "action": {
+      "create": "create",
+      "update": "update",
+      "block": "block",
+      "skip": "skip",
+      "error": "error"
+    },
+    "table": {
+      "rowNum": "#",
+      "sourceId": "Source ID",
+      "vehicleRef": "Vehicle ref",
+      "pickup": "Pickup",
+      "return": "Return",
+      "match": "Match",
+      "action": "Action",
+      "issue": "Issue"
+    },
+    "import": {
+      "button": "Apply {count} changes",
+      "importing": "Importing…",
+      "unexpectedError": "An unexpected error occurred during import.",
+      "resultTitle": "Import complete",
+      "resultCreated": "{count} created",
+      "resultUpdated": "{count} updated",
+      "resultBlocked": "{count} vehicle blocks imported",
+      "resultErrors": "{count} errors",
+      "rowError": "Row {row}: {message}",
+      "defaultBlockLabel": "Blocked period"
+    }
   }
 }

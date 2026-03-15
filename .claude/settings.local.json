@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -rn from.*company_settings c:CamperFlowcamperflowapp)"
+      "Bash(grep -rn from.*company_settings c:CamperFlowcamperflowapp)",
+      "Bash(grep -r \"staff_metadata\\\\|internal_notes\\\\|booking_notes\" /c/CamperFlow/camperflow --include=*.ts --include=*.tsx --include=*.sql)",
+      "Bash(grep -r \"checklist_template\\\\|checklist_instance\\\\|issue_flag\" /c/CamperFlow/camperflow/supabase --include=*.sql)"
     ]
   }
 }

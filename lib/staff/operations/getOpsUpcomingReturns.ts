@@ -1,19 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 
-export interface OpsUpcomingPickup {
+export interface OpsUpcomingReturn {
   id: string
   bookingNumber: string
   customerName: string
   vehicleName: string
-  pickupAt: string
-  returnAt: string | null
+  pickupAt: string | null
+  returnAt: string
   nights: number | null
-  opsFlag: string | null
-  opsPriority: number | null
   daysUntil: number
-  nextAction?: string | null
-  hoursToPickup?: number | null
-  vehicleBlocked?: boolean
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -72,7 +67,7 @@ function resolveExtras(
   }
 }
 
-export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
+export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase
@@ -84,14 +79,16 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   if (!companyId) return []
 
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
+
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name')
     .eq('company_id', companyId)
-    .is('ops_flag', null)
-    .gt('pickup_at', new Date().toISOString())
-    .order('ops_priority', { ascending: true, nullsFirst: false })
-    .order('pickup_at', { ascending: true })
+    .gt('return_at', endOfToday.toISOString())
+    .order('return_at', { ascending: true })
+    .limit(20)
 
   if (error) throw error
 
@@ -112,14 +109,14 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   todayStart.setHours(0, 0, 0, 0)
 
   return (data ?? []).map((b) => {
-    const pickupDate = new Date(b.pickup_at)
-    pickupDate.setHours(0, 0, 0, 0)
+    const returnDate = new Date(b.return_at)
+    returnDate.setHours(0, 0, 0, 0)
     const daysUntil = Math.round(
-      (pickupDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24)
+      (returnDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24)
     )
 
     let nights: number | null = null
-    if (b.return_at) {
+    if (b.pickup_at) {
       const ms = new Date(b.return_at).getTime() - new Date(b.pickup_at).getTime()
       nights = Math.round(ms / (1000 * 60 * 60 * 24))
     }
@@ -132,15 +129,10 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       bookingNumber: b.booking_number ?? '',
       customerName: b.customer_name ?? '',
       vehicleName: b.vehicle_name ?? '',
-      pickupAt: b.pickup_at,
-      returnAt: b.return_at ?? null,
+      pickupAt: b.pickup_at ?? null,
+      returnAt: b.return_at,
       nights,
-      opsFlag: b.ops_flag ?? null,
-      opsPriority: b.ops_priority ?? null,
       daysUntil,
-      nextAction: b.next_action ?? null,
-      hoursToPickup: b.hours_to_pickup ?? null,
-      vehicleBlocked: b.vehicle_blocked === true,
       ...extras,
     }
   })

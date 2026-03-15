@@ -6,6 +6,7 @@ import type { OpsPickup } from '@/lib/staff/operations/getOpsPickupsToday'
 
 interface Props {
   pickups: OpsPickup[]
+  quiet?: boolean
 }
 
 function formatTime(iso: string) {
@@ -42,8 +43,31 @@ function getUrgencyStyle(pickupAt: string): React.CSSProperties {
   return { border: '1px solid rgb(var(--border))' }
 }
 
-export default function OperationsPickups({ pickups }: Props) {
+export default function OperationsPickups({ pickups, quiet }: Props) {
   const { locale } = useParams<{ locale: string }>()
+
+  // On quiet days with nothing scheduled, render a lightweight status line
+  if (quiet && pickups.length === 0) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          padding: 'var(--space-3) var(--space-4)',
+          border: '1px dashed rgb(var(--border))',
+          borderRadius: 'var(--radius)',
+          opacity: 0.55,
+        }}
+      >
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))' }}>
+          Pickups today
+        </span>
+        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>
+        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>None scheduled</span>
+      </div>
+    )
+  }
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>

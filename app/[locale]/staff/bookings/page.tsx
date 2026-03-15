@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, CSSProperties } from "react";
+import { useState, useEffect, useMemo, CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -18,12 +18,16 @@ interface ChecklistInstance {
 interface Booking {
   id: string;
   booking_number?: string;
+  booking_code?: string;
   status: string;
   pickup_at: string;
   return_at: string;
   vehicle_id: string | null;
   customer_name?: string;
   customer_phone?: string;
+  source_type?: string | null;
+  created_at?: string;
+  updated_at?: string;
   vehicles?: {
     id: string;
     name: string;
@@ -44,7 +48,14 @@ export default function BookingsPage() {
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Filter + sort state
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("pickup_asc");
+  const [vehicleFilter, setVehicleFilter] = useState<string>("all");
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     checkUserCapabilities();
@@ -54,7 +65,7 @@ export default function BookingsPage() {
     if (canManage !== null) {
       fetchBookings();
     }
-  }, [statusFilter, canManage]);
+  }, [canManage]);
 
   const checkUserCapabilities = async () => {
     try {
@@ -87,43 +98,18 @@ export default function BookingsPage() {
       let rawBookings: Booking[] = [];
 
       if (canManage) {
-        let query = supabase
+        const { data, error } = await supabase
           .from('bookings')
           .select('*, vehicles(id, name, status)')
-          .order('pickup_at', { ascending: false });
+          .order('pickup_at', { ascending: true });
 
-        if (statusFilter === 'pending') {
-          query = query.eq('status', 'draft');
-        } else if (statusFilter === 'confirmed') {
-          query = query.in('status', ['confirmed', 'blocked']);
-        } else if (statusFilter === 'on_rent') {
-          query = query.eq('status', 'on_rent');
-        } else if (statusFilter === 'completed') {
-          query = query.eq('status', 'completed');
-        } else if (statusFilter === 'cancelled') {
-          query = query.eq('status', 'cancelled');
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
         rawBookings = data || [];
       } else {
         const { data, error } = await supabase.rpc('list_staff_bookings_redacted');
         if (error) throw error;
 
-        let filtered = data || [];
-        if (statusFilter === 'pending') {
-          filtered = filtered.filter((b: Booking) => b.status === 'draft');
-        } else if (statusFilter === 'confirmed') {
-          filtered = filtered.filter((b: Booking) => ['confirmed', 'blocked'].includes(b.status));
-        } else if (statusFilter === 'on_rent') {
-          filtered = filtered.filter((b: Booking) => b.status === 'on_rent');
-        } else if (statusFilter === 'completed') {
-          filtered = filtered.filter((b: Booking) => b.status === 'completed');
-        } else if (statusFilter === 'cancelled') {
-          filtered = filtered.filter((b: Booking) => b.status === 'cancelled');
-        }
-
+        const filtered = data || [];
         const vehicleIds = [...new Set(filtered.map((b: Booking) => b.vehicle_id).filter(Boolean))];
         if (vehicleIds.length > 0) {
           const { data: vehicles } = await supabase
@@ -132,14 +118,14 @@ export default function BookingsPage() {
             .in('id', vehicleIds);
 
           const vehicleMap = new Map(vehicles?.map(v => [v.id, { name: v.name, status: v.status }]) || []);
-          filtered = filtered.map((b: Booking) => ({
+          rawBookings = filtered.map((b: Booking) => ({
             ...b,
             vehicle_name: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.name : null,
             vehicle_status: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.status : null,
           }));
+        } else {
+          rawBookings = filtered;
         }
-
-        rawBookings = filtered;
       }
 
       // Fetch checklist instances with item counts for all bookings
@@ -162,17 +148,102 @@ export default function BookingsPage() {
         }
       }
 
-      const enriched = rawBookings.map(b => ({
-        ...b,
-        checklists: checklistsByBooking[b.id] || [],
-      }));
-
-      setBookings(enriched);
+      setBookings(rawBookings.map(b => ({ ...b, checklists: checklistsByBooking[b.id] || [] })));
     } catch (err: any) {
       setError(err.message || t("error.loadFailed"));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Derived dropdown options from loaded data
+  const vehicleOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const b of bookings) {
+      const name = canManage ? b.vehicles?.name : b.vehicle_name;
+      if (name) seen.set(name, name);
+    }
+    return Array.from(seen.keys()).sort((a, b) => a.localeCompare(b));
+  }, [bookings, canManage]);
+
+  const sourceTypeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const b of bookings) {
+      if (b.source_type) seen.add(b.source_type);
+    }
+    return Array.from(seen).sort();
+  }, [bookings]);
+
+  // Filtered + sorted view — no re-fetch needed
+  const displayedBookings = useMemo(() => {
+    let result = bookings;
+
+    if (statusFilter === 'pending') {
+      result = result.filter(b => b.status === 'draft');
+    } else if (statusFilter === 'confirmed') {
+      result = result.filter(b => ['confirmed', 'blocked'].includes(b.status));
+    } else if (statusFilter === 'on_rent') {
+      result = result.filter(b => b.status === 'on_rent');
+    } else if (statusFilter === 'completed') {
+      result = result.filter(b => b.status === 'completed');
+    } else if (statusFilter === 'cancelled') {
+      result = result.filter(b => b.status === 'cancelled');
+    }
+
+    if (vehicleFilter !== 'all') {
+      result = result.filter(b => {
+        const name = canManage ? b.vehicles?.name : b.vehicle_name;
+        return name === vehicleFilter;
+      });
+    }
+
+    if (sourceTypeFilter !== 'all') {
+      result = result.filter(b => (b.source_type ?? '') === sourceTypeFilter);
+    }
+
+    if (dateFrom) {
+      result = result.filter(b => b.pickup_at >= dateFrom);
+    }
+    if (dateTo) {
+      result = result.filter(b => b.pickup_at.slice(0, 10) <= dateTo);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(b =>
+        (b.customer_name ?? '').toLowerCase().includes(q) ||
+        (b.booking_number ?? '').toLowerCase().includes(q) ||
+        (b.booking_code ?? '').toLowerCase().includes(q),
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'pickup_asc':   return a.pickup_at.localeCompare(b.pickup_at);
+        case 'pickup_desc':  return b.pickup_at.localeCompare(a.pickup_at);
+        case 'created_desc': return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+        case 'created_asc':  return (a.created_at ?? '').localeCompare(b.created_at ?? '');
+        case 'updated_desc': return (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
+        case 'return_asc':   return a.return_at.localeCompare(b.return_at);
+        default:             return 0;
+      }
+    });
+
+    return result;
+  }, [bookings, statusFilter, vehicleFilter, sourceTypeFilter, dateFrom, dateTo, searchQuery, sortBy, canManage]);
+
+  const hasActiveFilters =
+    statusFilter !== 'all' || vehicleFilter !== 'all' || sourceTypeFilter !== 'all' ||
+    dateFrom !== '' || dateTo !== '' || searchQuery.trim() !== '' || sortBy !== 'pickup_asc';
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setVehicleFilter('all');
+    setSourceTypeFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setSearchQuery('');
+    setSortBy('pickup_asc');
   };
 
   const getStatusLabel = (status: string) => {
@@ -363,7 +434,10 @@ export default function BookingsPage() {
     return <span style={{ color: 'rgb(var(--text))' }}>{name}</span>;
   };
 
-  // Shared desktop table cell styles — only change from original
+  const selectStyle: CSSProperties = { width: 'auto', minHeight: '36px', padding: 'var(--space-2) var(--space-3)' };
+  const filterLabelStyle: CSSProperties = { fontSize: '14px', color: 'rgb(var(--muted))', whiteSpace: 'nowrap' };
+
+  // Shared desktop table cell styles
   const td: CSSProperties = {
     padding: 'var(--space-3)',
     fontSize: '14px',
@@ -424,41 +498,144 @@ export default function BookingsPage() {
               </p>
             </div>
             {canManage && (
-              <Link
-                href={`/${locale}/staff/bookings/new`}
-                className="btn btn-primary"
-                style={{ flexShrink: 0 }}
-              >
-                {t("action.newBooking")}
-              </Link>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', flexShrink: 0, flexWrap: 'wrap' }}>
+                <Link
+                  href={`/${locale}/staff/bookings/import`}
+                  className="btn btn-secondary"
+                >
+                  {t("action.importBookings")}
+                </Link>
+                <Link
+                  href={`/${locale}/staff/bookings/new`}
+                  className="btn btn-primary"
+                >
+                  {t("action.newBooking")}
+                </Link>
+              </div>
             )}
           </div>
 
+          {/* Filter + sort toolbar */}
           <div style={{
             display: 'flex',
+            flexDirection: 'column',
             gap: 'var(--space-3)',
-            flexWrap: 'wrap',
             paddingBottom: 'var(--space-4)',
             borderBottom: '1px solid rgb(var(--border))'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <label htmlFor="status-filter" style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
-                {t("filter.statusLabel")}
-              </label>
-              <select
-                id="status-filter"
+            {/* Row 1: search + sort */}
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="text"
                 className="input"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{ width: 'auto', minHeight: '36px', padding: 'var(--space-2) var(--space-3)' }}
-              >
-                <option value="all">{t("filter.all")}</option>
-                <option value="pending">{t("filter.pending")}</option>
-                <option value="confirmed">{t("filter.confirmed")}</option>
-                <option value="on_rent">{t("filter.onRent")}</option>
-                <option value="completed">{t("filter.completed")}</option>
-                <option value="cancelled">{t("filter.cancelled")}</option>
-              </select>
+                placeholder={t("filter.searchPlaceholder")}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ flex: '1 1 200px', minWidth: '160px', minHeight: '36px', padding: 'var(--space-2) var(--space-3)' }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+                <label style={filterLabelStyle}>{t("sort.label")}</label>
+                <select
+                  className="input"
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="pickup_asc">{t("sort.pickupAsc")}</option>
+                  <option value="pickup_desc">{t("sort.pickupDesc")}</option>
+                  <option value="created_desc">{t("sort.createdDesc")}</option>
+                  <option value="created_asc">{t("sort.createdAsc")}</option>
+                  <option value="updated_desc">{t("sort.updatedDesc")}</option>
+                  <option value="return_asc">{t("sort.returnAsc")}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 2: filters */}
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <label style={filterLabelStyle}>{t("filter.statusLabel")}</label>
+                <select
+                  className="input"
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="all">{t("filter.all")}</option>
+                  <option value="pending">{t("filter.pending")}</option>
+                  <option value="confirmed">{t("filter.confirmed")}</option>
+                  <option value="on_rent">{t("filter.onRent")}</option>
+                  <option value="completed">{t("filter.completed")}</option>
+                  <option value="cancelled">{t("filter.cancelled")}</option>
+                </select>
+              </div>
+
+              {vehicleOptions.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <label style={filterLabelStyle}>{t("filter.vehicleLabel")}</label>
+                  <select
+                    className="input"
+                    value={vehicleFilter}
+                    onChange={e => setVehicleFilter(e.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="all">{t("filter.allVehicles")}</option>
+                    {vehicleOptions.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {sourceTypeOptions.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <label style={filterLabelStyle}>{t("filter.sourceTypeLabel")}</label>
+                  <select
+                    className="input"
+                    value={sourceTypeFilter}
+                    onChange={e => setSourceTypeFilter(e.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="all">{t("filter.allSources")}</option>
+                    {sourceTypeOptions.map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <label style={filterLabelStyle}>{t("filter.dateFromLabel")}</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={dateFrom}
+                  onChange={e => setDateFrom(e.target.value)}
+                  style={{ ...selectStyle, minWidth: '130px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <label style={filterLabelStyle}>{t("filter.dateToLabel")}</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={dateTo}
+                  onChange={e => setDateTo(e.target.value)}
+                  style={{ ...selectStyle, minWidth: '130px' }}
+                />
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={clearFilters}
+                  style={{ minHeight: '36px', fontSize: '14px', padding: 'var(--space-2) var(--space-3)' }}
+                >
+                  {t("filter.clearFilters")}
+                </button>
+              )}
             </div>
           </div>
 
@@ -505,7 +682,17 @@ export default function BookingsPage() {
             </div>
           )}
 
-          {!loading && !error && bookings.length > 0 && (
+          {!loading && !error && bookings.length > 0 && displayedBookings.length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: 'var(--space-8)',
+              color: 'rgb(var(--muted))'
+            }}>
+              {t("noResults")}
+            </div>
+          )}
+
+          {!loading && !error && displayedBookings.length > 0 && (
             <>
               {/* Desktop Table View */}
               <div className="desktop-table" style={{ overflowX: 'auto' }}>
@@ -533,13 +720,13 @@ export default function BookingsPage() {
                         {t("table.vehicle")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        Vehicle status
+                        {t("table.vehicleStatus")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
                         {t("table.pickup")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        Pickup in
+                        {t("table.pickupIn")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
                         {t("table.return")}
@@ -548,15 +735,15 @@ export default function BookingsPage() {
                         {t("table.status")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        Tasks
+                        {t("table.tasks")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        Next action
+                        {t("table.nextAction")}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {bookings.map((booking) => {
+                    {displayedBookings.map((booking) => {
                       const timeToPickup = getTimeToPickup(booking.pickup_at);
                       return (
                         <tr
@@ -616,7 +803,7 @@ export default function BookingsPage() {
 
               {/* Mobile Card View */}
               <div className="mobile-cards">
-                {bookings.map((booking) => {
+                {displayedBookings.map((booking) => {
                   const timeToPickup = getTimeToPickup(booking.pickup_at);
                   return (
                     <div
@@ -721,7 +908,7 @@ export default function BookingsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
                         <div>
                           <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
-                            Tasks
+                            {t("table.tasks")}
                           </div>
                           {getTaskSummary(booking) ?? <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>}
                         </div>

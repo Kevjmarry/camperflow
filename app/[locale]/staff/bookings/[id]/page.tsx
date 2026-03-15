@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getStatusChipStyle } from "@/lib/statusChip";
 import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
 import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
-import { BookingEditForm, BookingFormData } from "@/components/bookings/BookingEditForm";
+import type { BookingFormData } from "@/components/bookings/BookingEditForm";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
 type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
@@ -20,6 +20,35 @@ interface Vehicle {
   registration_plate: string;
   status: VehicleStatus | null;
 }
+
+// Staff-owned overrides — separate from source_metadata (import-owned).
+// Only keys with non-null values are persisted to the DB.
+interface StaffMeta {
+  pets: boolean | null;
+  guest_count: number | null;
+  airport_transfer: boolean | null;
+  extra_driver: boolean | null;
+  whatsapp_optin: boolean | null;
+  marketing_optin: boolean | null;
+}
+
+const EMPTY_STAFF_META: StaffMeta = {
+  pets: null,
+  guest_count: null,
+  airport_transfer: null,
+  extra_driver: null,
+  whatsapp_optin: null,
+  marketing_optin: null,
+};
+
+// Config for the visible boolean trip-detail fields (marketing_optin kept in StaffMeta
+// for data round-trip safety but not exposed in the UI).
+const BOOL_META_FIELDS: { key: keyof Omit<StaffMeta, 'guest_count'>; labelKey: string }[] = [
+  { key: 'extra_driver',     labelKey: 'field.extraDriver' },
+  { key: 'pets',             labelKey: 'field.pets' },
+  { key: 'airport_transfer', labelKey: 'field.airportTransfer' },
+  { key: 'whatsapp_optin',   labelKey: 'field.whatsappOptin' },
+];
 
 interface Booking {
   id: string;
@@ -33,6 +62,9 @@ interface Booking {
   customer_email: string | null;
   notes: string | null;
   company_id: string;
+  source_metadata: Record<string, unknown> | null;
+  staff_metadata: Record<string, unknown> | null;
+  internal_notes: string | null;
 }
 
 interface RedactedBooking {
@@ -78,6 +110,8 @@ export default function BookingDetailPage() {
     customer_email: "",
     notes: "",
   });
+  const [staffMeta, setStaffMeta] = useState<StaffMeta>(EMPTY_STAFF_META);
+  const [internalNotes, setInternalNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -194,6 +228,20 @@ export default function BookingDetailPage() {
           customer_email: data.customer_email || "",
           notes: data.notes || "",
         });
+
+        // Load staff_metadata — only keys present in the DB object become overrides.
+        // Absent key means no override (null), not false.
+        const sm = (data.staff_metadata ?? {}) as Record<string, unknown>;
+        setStaffMeta({
+          pets:             'pets'             in sm ? Boolean(sm.pets)             : null,
+          guest_count:      typeof sm.guest_count === 'number' ? sm.guest_count    : null,
+          airport_transfer: 'airport_transfer' in sm ? Boolean(sm.airport_transfer): null,
+          extra_driver:     'extra_driver'     in sm ? Boolean(sm.extra_driver)    : null,
+          whatsapp_optin:   'whatsapp_optin'   in sm ? Boolean(sm.whatsapp_optin)  : null,
+          marketing_optin:  'marketing_optin'  in sm ? Boolean(sm.marketing_optin) : null,
+        });
+        setInternalNotes(data.internal_notes || "");
+
         fetchChecklistInstances();
       }
     } catch (err: any) {
@@ -349,6 +397,24 @@ export default function BookingDetailPage() {
       return;
     }
 
+    // Guest capacity check — derives max from vehicle name (no extra DB column needed)
+    if (formData.vehicle_id) {
+      const veh = vehicles.find(v => v.id === formData.vehicle_id);
+      if (veh) {
+        const cap = /ducato|spark/i.test(veh.name) ? 4 : 5;
+        const sm = booking?.source_metadata ?? {};
+        const effGuests =
+          staffMeta.guest_count !== null
+            ? staffMeta.guest_count
+            : typeof sm.guest_count === 'number' ? sm.guest_count : null;
+        if (effGuests !== null && effGuests > cap) {
+          setError(t("tripDetails.guestExceedsCapacity", { max: cap }));
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     if (formData.vehicle_id && booking && isActiveStatus(booking.status)) {
       const isAvailable = await checkVehicleAvailability();
       if (!isAvailable) {
@@ -357,6 +423,14 @@ export default function BookingDetailPage() {
         return;
       }
     }
+
+    // Build staff_metadata: only persist keys that have an explicit override (non-null).
+    // If all fields are null (no overrides), write null to the column.
+    const staffMetaObj: Record<string, boolean | number> = {};
+    for (const [k, v] of Object.entries(staffMeta)) {
+      if (v !== null) staffMetaObj[k] = v;
+    }
+    const staffMetaDb = Object.keys(staffMetaObj).length > 0 ? staffMetaObj : null;
 
     try {
       const { data: updateData, error: updateError } = await supabase
@@ -370,6 +444,8 @@ export default function BookingDetailPage() {
           customer_phone: formData.customer_phone.trim() || null,
           customer_email: formData.customer_email.trim() || null,
           notes: formData.notes.trim() || null,
+          staff_metadata: staffMetaDb,
+          internal_notes: internalNotes.trim() || null,
         })
         .eq('id', id)
         .select('id')
@@ -443,7 +519,57 @@ export default function BookingDetailPage() {
     return vehicleInfo;
   };
 
-  // ── Early returns ────────────────────────────────────────────────────────────
+  // ── Trip Details helpers ───────────────────────────────────────────────────
+
+  /**
+   * Small status line shown below each trip-detail control.
+   * - "Edited by staff" (brand) when staff_metadata has an explicit value.
+   * - "Imported: Yes/No/X" (muted) when showing the imported value with no staff override.
+   * - "No imported value" (muted) when neither source nor staff has data.
+   */
+  function renderMetaStatus(staffVal: unknown, sourceVal: unknown): JSX.Element {
+    if (staffVal !== null && staffVal !== undefined) {
+      return (
+        <span style={{
+          fontSize: '11px',
+          color: 'rgb(var(--brand))',
+          fontWeight: 500,
+          marginTop: '4px',
+          display: 'block',
+        }}>
+          {t("tripDetails.staffOverride")}
+        </span>
+      );
+    }
+    if (sourceVal !== null && sourceVal !== undefined) {
+      const displayVal =
+        sourceVal === true  ? t("tripDetails.yes") :
+        sourceVal === false ? t("tripDetails.no")  :
+        String(sourceVal);
+      return (
+        <span style={{
+          fontSize: '11px',
+          color: 'rgb(var(--muted))',
+          marginTop: '4px',
+          display: 'block',
+        }}>
+          {t("tripDetails.usingImported")}: {displayVal}
+        </span>
+      );
+    }
+    return (
+      <span style={{
+        fontSize: '11px',
+        color: 'rgb(var(--muted))',
+        marginTop: '4px',
+        display: 'block',
+      }}>
+        {t("tripDetails.noImportedValue")}
+      </span>
+    );
+  }
+
+  // ── Early returns ─────────────────────────────────────────────────────────
 
   if (notFound) {
     return (
@@ -496,7 +622,7 @@ export default function BookingDetailPage() {
     );
   }
 
-  // ── Non-manager (redacted) view ──────────────────────────────────────────────
+  // ── Non-manager (redacted) view ───────────────────────────────────────────
 
   if (!canManage && redactedBooking) {
     return (
@@ -606,12 +732,28 @@ export default function BookingDetailPage() {
 
   if (!booking) return null;
 
-  // ── Manager view ─────────────────────────────────────────────────────────────
+  // ── Manager view ──────────────────────────────────────────────────────────
+
+  const srcMeta = booking.source_metadata ?? {};
+
+  // Vehicle capacity: Ducato / Spark → 4 guests, Siena and others → 5
+  const selectedVehicle = getSelectedVehicle();
+  const vehicleCapacity: number | null = selectedVehicle
+    ? (/ducato|spark/i.test(selectedVehicle.name) ? 4 : 5)
+    : null;
+  const effectiveGuestCount: number | null =
+    staffMeta.guest_count !== null
+      ? staffMeta.guest_count
+      : typeof srcMeta.guest_count === 'number' ? srcMeta.guest_count : null;
+  const guestExceedsCapacity =
+    vehicleCapacity !== null && effectiveGuestCount !== null && effectiveGuestCount > vehicleCapacity;
 
   return (
     <PageContainer maxWidth="1400px">
       <div className="surface" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+          {/* Back link + summary card */}
           <div>
             <Link
               href={`/${locale}/staff/bookings`}
@@ -633,24 +775,318 @@ export default function BookingDetailPage() {
             />
           </div>
 
-          <BookingEditForm
-            formData={formData}
-            vehicles={vehicles}
-            saving={saving}
-            error={error}
-            conflictWarning={conflictWarning}
-            isNoCustomerRequired={isNoCustomerRequired}
-            onChange={handleChange}
+          {/*
+           * Single unified form — Booking Details, Customer Details, Notes,
+           * Trip Details, and Internal Notes are all part of one form so that
+           * the action buttons sit naturally at the very bottom.
+           */}
+          <form
             onSubmit={handleSubmit}
-            onDelete={handleDelete}
-            t={t as (key: string) => string}
-          />
+            style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}
+          >
+            {/* ── Booking Details ─────────────────────────────────────────── */}
+            <div>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                {t("section.bookingDetails")}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
+                <div>
+                  <label htmlFor="status" className="label">{t("field.status")}</label>
+                  <select
+                    id="status"
+                    name="status"
+                    className="input"
+                    value={formData.status}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="draft">{t("status.pending")}</option>
+                    <option value="confirmed">{t("status.confirmed")}</option>
+                    <option value="blocked">{t("status.blocked")}</option>
+                    <option value="on_rent">{t("status.onRent")}</option>
+                    <option value="completed">{t("status.completed")}</option>
+                    <option value="cancelled">{t("status.cancelled")}</option>
+                  </select>
+                </div>
 
+                <div>
+                  <label htmlFor="pickup_at" className="label">{t("field.pickupDateTime")}</label>
+                  <input
+                    id="pickup_at"
+                    name="pickup_at"
+                    type="datetime-local"
+                    className="input"
+                    value={formData.pickup_at}
+                    onChange={handleChange}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="return_at" className="label">{t("field.returnDateTime")}</label>
+                  <input
+                    id="return_at"
+                    name="return_at"
+                    type="datetime-local"
+                    className="input"
+                    value={formData.return_at}
+                    onChange={handleChange}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="vehicle_id" className="label">{t("field.vehicle")}</label>
+                  <select
+                    id="vehicle_id"
+                    name="vehicle_id"
+                    className="input"
+                    value={formData.vehicle_id}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">{t("vehicle.unassigned")}</option>
+                    {vehicles.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.name} ({vehicle.registration_plate})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Customer Details ─────────────────────────────────────────── */}
+            <div>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                {t("section.customerDetails")}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
+                <div>
+                  <label htmlFor="customer_name" className="label">
+                    {t("field.customerName")}
+                    {!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
+                  </label>
+                  <input
+                    id="customer_name"
+                    name="customer_name"
+                    type="text"
+                    className="input"
+                    value={formData.customer_name}
+                    onChange={handleChange}
+                    required={!isNoCustomerRequired}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="customer_phone" className="label">
+                    {t("field.phoneNumber")}
+                    {!isNoCustomerRequired && <span style={{ color: 'rgb(var(--error))' }}> *</span>}
+                  </label>
+                  <input
+                    id="customer_phone"
+                    name="customer_phone"
+                    type="tel"
+                    className="input"
+                    value={formData.customer_phone}
+                    onChange={handleChange}
+                    required={!isNoCustomerRequired}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="customer_email" className="label">
+                    {t("field.emailOptional")}
+                  </label>
+                  <input
+                    id="customer_email"
+                    name="customer_email"
+                    type="email"
+                    className="input"
+                    value={formData.customer_email}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Trip Details ─────────────────────────────────────────────── */}
+            <div style={{
+              paddingTop: 'var(--space-2)',
+              borderTop: '1px solid rgb(var(--border) / 0.4)',
+            }}>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                {t("section.tripDetails")}
+              </h2>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 'var(--space-4)',
+              }}>
+                {/* Guests — number field */}
+                <div>
+                  <label className="label">{t("field.guests")}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={vehicleCapacity ?? undefined}
+                    className="input"
+                    style={{
+                      width: '100%',
+                      borderColor: guestExceedsCapacity ? 'rgb(var(--error))' : undefined,
+                    }}
+                    value={
+                      staffMeta.guest_count !== null
+                        ? staffMeta.guest_count
+                        : srcMeta.guest_count !== undefined
+                          ? String(srcMeta.guest_count)
+                          : ""
+                    }
+                    onChange={(e) => setStaffMeta(prev => ({
+                      ...prev,
+                      guest_count: e.target.value === "" ? null : Number(e.target.value),
+                    }))}
+                  />
+                  {vehicleCapacity !== null && !guestExceedsCapacity && (
+                    <span style={{ fontSize: '11px', color: 'rgb(var(--muted))', marginTop: '4px', display: 'block' }}>
+                      {t("tripDetails.maxGuests", { max: vehicleCapacity })}
+                    </span>
+                  )}
+                  {guestExceedsCapacity && (
+                    <span style={{ fontSize: '11px', color: 'rgb(var(--error))', fontWeight: 500, marginTop: '4px', display: 'block' }}>
+                      {t("tripDetails.guestExceedsCapacity", { max: vehicleCapacity })}
+                    </span>
+                  )}
+                  {renderMetaStatus(staffMeta.guest_count, srcMeta.guest_count)}
+                </div>
+
+                {/* Boolean fields — 3-state select */}
+                {BOOL_META_FIELDS.map(({ key, labelKey }) => (
+                  <div key={key}>
+                    <label className="label">{t(labelKey)}</label>
+                    <select
+                      className="input"
+                      style={{ width: '100%' }}
+                      value={
+                        staffMeta[key] !== null
+                          ? String(staffMeta[key])
+                          : srcMeta[key] !== undefined
+                            ? String(srcMeta[key])
+                            : ""
+                      }
+                      onChange={(e) => setStaffMeta(prev => ({
+                        ...prev,
+                        [key]: e.target.value === "" ? null : e.target.value === "true",
+                      }))}
+                    >
+                      <option value="true">{t("tripDetails.yes")}</option>
+                      <option value="false">{t("tripDetails.no")}</option>
+                      {srcMeta[key] !== undefined
+                        ? <option value="">{t("tripDetails.noOverride")}</option>
+                        : <option value="">{t("tripDetails.notSet")}</option>
+                      }
+                    </select>
+                    {renderMetaStatus(staffMeta[key], srcMeta[key])}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Internal Notes ───────────────────────────────────────────── */}
+            <div style={{
+              paddingTop: 'var(--space-2)',
+              borderTop: '1px solid rgb(var(--border) / 0.4)',
+            }}>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-2)', color: 'rgb(var(--text))' }}>
+                {t("section.internalNotes")}
+              </h2>
+              <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-3)' }}>
+                {t("field.internalNotes")}
+              </p>
+              <textarea
+                className="input"
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                rows={4}
+                style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
+            {/* ── Feedback + actions ───────────────────────────────────────── */}
+            {conflictWarning && (
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'rgb(var(--warning) / 0.1)',
+                border: '1px solid rgb(var(--warning) / 0.3)',
+                borderRadius: 'var(--radius)',
+                color: 'rgb(var(--warning))',
+                fontSize: '14px',
+              }}>
+                {conflictWarning}
+              </div>
+            )}
+
+            {error && (
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'rgb(var(--error) / 0.1)',
+                border: '1px solid rgb(var(--error) / 0.3)',
+                borderRadius: 'var(--radius)',
+                color: 'rgb(var(--error))',
+                fontSize: '14px',
+              }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              gap: 'var(--space-3)',
+              paddingTop: 'var(--space-2)',
+              flexWrap: 'wrap',
+            }}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={saving || !!conflictWarning || guestExceedsCapacity}
+                style={{
+                  flex: 1,
+                  minWidth: '120px',
+                  opacity: (saving || conflictWarning || guestExceedsCapacity) ? 0.6 : 1,
+                  cursor: (saving || conflictWarning || guestExceedsCapacity) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {saving ? t("action.saving") : t("action.saveChanges")}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="btn btn-secondary"
+                disabled={saving}
+                style={{
+                  minWidth: '120px',
+                  color: 'rgb(var(--error))',
+                  borderColor: 'rgb(var(--error))',
+                }}
+              >
+                {t("action.delete")}
+              </button>
+            </div>
+          </form>
+
+          {/* Checklists sit outside the form — read-only, no submit relation */}
           <BookingChecklistsSection
             instances={checklistInstances}
             locale={locale}
             t={t as (key: string, values?: Record<string, unknown>) => string}
           />
+
         </div>
       </div>
     </PageContainer>
