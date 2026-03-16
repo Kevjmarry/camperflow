@@ -2,7 +2,8 @@ export type ImportSourceType =
   | "bookingmood_csv"
   | "bookingmood_json"
   | "generic_csv"
-  | "generic_json";
+  | "generic_json"
+  | "ical";
 
 export type ImportJobStatus =
   | "uploaded"

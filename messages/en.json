@@ -1809,6 +1809,24 @@
     "backToBookings": "← Back to bookings",
     "title": "Import bookings",
     "subtitle": "Upload a CSV or JSON export from your booking platform.",
+    "tabs": {
+      "file": "File upload",
+      "ical": "iCal URL"
+    },
+    "ical": {
+      "urlLabel": "Feed URL",
+      "urlPlaceholder": "https://…/calendar.ics",
+      "vehicleLabel": "Vehicle",
+      "vehiclePlaceholder": "Select a vehicle",
+      "vehiclesLoading": "Loading vehicles…",
+      "fetchButton": "Fetch & Preview",
+      "fetching": "Fetching feed…",
+      "fetchError": "Failed to fetch iCal feed",
+      "noVehicleSelected": "Please select a vehicle before fetching.",
+      "vehicleMode": "Vehicle mode",
+      "vehicleModeSingle": "Single vehicle",
+      "vehicleModeMulti": "Multiple vehicles"
+    },
     "dropzone": {
       "primary": "Drag and drop your file here",
       "accepted": "Accepted formats: .csv, .json",
@@ -1821,6 +1839,7 @@
     "preview": {
       "placeholder": "Import preview will appear here after upload.",
       "parsing": "Parsing file…",
+      "fetchingIcal": "Fetching iCal feed…",
       "matchingVehicles": "Matching vehicles…",
       "checkingExisting": "Checking existing bookings…",
       "undetectedSource": "Could not detect import source for this file.",
@@ -1861,6 +1880,12 @@
       "match": "Match",
       "action": "Action",
       "issue": "Issue"
+    },
+    "bulkAssign": {
+      "sectionTitle": "Assign unmatched vehicle references",
+      "rowCount": "{count} unmatched rows",
+      "selectPlaceholder": "Select a vehicle",
+      "assignButton": "Assign"
     },
     "import": {
       "button": "Apply {count} changes",
