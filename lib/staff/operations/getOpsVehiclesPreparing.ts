@@ -22,11 +22,19 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
     return []
   }
 
-  const now = new Date().toISOString()
+  const now = new Date()
+  const nowStr = now.toISOString()
+
+  // Only surface vehicles that have a real confirmed booking within the next
+  // 30 days. This prevents vehicles that were stuck in 'preparing' by old
+  // iCal imports (never moved to on_rent / completed) from cluttering the list.
+  const thirtyDaysFromNow = new Date(now)
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+  const thirtyDaysStr = thirtyDaysFromNow.toISOString()
 
   const { data, error } = await supabase
     .from('vehicles')
-    .select('id, name, registration_plate, bookings(booking_number, pickup_at)')
+    .select('id, name, registration_plate, bookings(booking_number, pickup_at, status)')
     .eq('status', 'preparing')
     .eq('company_id', companyId)
 
@@ -34,23 +42,29 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
 
   return (data ?? [])
     .map((v) => {
-      const bookings = (v.bookings as unknown as { booking_number: string; pickup_at: string }[] | null) ?? []
+      const bookings = (v.bookings as unknown as { booking_number: string; pickup_at: string; status: string }[] | null) ?? []
+
+      // Only consider confirmed bookings within the 30-day window.
       const next = bookings
-        .filter((b) => b.pickup_at >= now)
+        .filter(
+          (b) =>
+            b.status === 'confirmed' &&
+            b.pickup_at >= nowStr &&
+            b.pickup_at <= thirtyDaysStr,
+        )
         .sort((a, b) => a.pickup_at.localeCompare(b.pickup_at))[0]
+
+      // No relevant upcoming booking → this vehicle is stuck; exclude it.
+      if (!next) return null
 
       return {
         id: v.id,
         name: v.name ?? '',
         plate: v.registration_plate ?? '',
-        bookingNumber: next?.booking_number ?? '',
-        pickupAt: next?.pickup_at ?? '',
+        bookingNumber: next.booking_number,
+        pickupAt: next.pickup_at,
       }
     })
-    .sort((a, b) => {
-      if (a.pickupAt && b.pickupAt) return a.pickupAt.localeCompare(b.pickupAt)
-      if (a.pickupAt) return -1
-      if (b.pickupAt) return 1
-      return 0
-    })
+    .filter((v): v is OpsVehiclePreparing => v !== null)
+    .sort((a, b) => a.pickupAt.localeCompare(b.pickupAt))
 }

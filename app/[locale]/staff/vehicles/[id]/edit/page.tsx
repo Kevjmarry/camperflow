@@ -87,6 +87,16 @@ export default function EditVehiclePage({
     hold_reason: "",
   });
 
+  // ── Calendar sync state ────────────────────────────────────────────────────
+  const [calendarSyncUrl, setCalendarSyncUrl] = useState("");
+  const [calendarSyncInterval, setCalendarSyncInterval] = useState("none");
+  const [calendarLastSyncedAt, setCalendarLastSyncedAt] = useState<string | null>(null);
+  const [calendarLastSyncStatus, setCalendarLastSyncStatus] = useState<string | null>(null);
+  const [calendarLastSyncError, setCalendarLastSyncError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ created: number; updated: number; blocked: number } | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
   // ── Compliance state ───────────────────────────────────────────────────────
   const [compliance, setCompliance] = useState<ComplianceRow[]>([]);
   const [allTypes, setAllTypes] = useState<ComplianceType[]>([]);
@@ -125,11 +135,15 @@ export default function EditVehiclePage({
 
         setCompanyId(profile.company_id ?? null);
 
-        const { data: vehicleData, error: vehicleError } = await supabase
-          .from("vehicles")
-          .select("*")
-          .eq("id", vehicleId)
-          .single();
+        const [{ data: vehicleData, error: vehicleError }, { data: calendarSource }] =
+          await Promise.all([
+            supabase.from("vehicles").select("*").eq("id", vehicleId).single(),
+            supabase
+              .from("vehicle_calendar_sources")
+              .select("ical_url, sync_interval, last_synced_at, last_sync_status, last_sync_error")
+              .eq("vehicle_id", vehicleId)
+              .maybeSingle(),
+          ]);
 
         if (vehicleError) {
           setError(vehicleError.code === "PGRST116" ? t("vehicleNotFound") : t("loadFailed"));
@@ -137,6 +151,11 @@ export default function EditVehiclePage({
           return;
         }
 
+        setCalendarSyncUrl(calendarSource?.ical_url ?? "");
+        setCalendarSyncInterval(calendarSource?.sync_interval ?? "none");
+        setCalendarLastSyncedAt(calendarSource?.last_synced_at ?? null);
+        setCalendarLastSyncStatus(calendarSource?.last_sync_status ?? null);
+        setCalendarLastSyncError(calendarSource?.last_sync_error ?? null);
         setVehicle(vehicleData);
         setFormData({
           name: vehicleData.name || "",
@@ -265,13 +284,11 @@ export default function EditVehiclePage({
     if (!resolvedTypeId && customTypeName) {
       if (!companyId) throw new Error("Company ID not available");
 
-      // Normalize exactly as the DB does: trim → collapse whitespace → lowercase
       const normalized = customTypeName
         .trim()
         .replace(/\s+/g, " ")
         .toLowerCase();
 
-      // 1. Look for an existing active type with the same normalized name
       const { data: existingType } = await supabase
         .from("compliance_types")
         .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
@@ -281,7 +298,6 @@ export default function EditVehiclePage({
         .maybeSingle();
 
       if (existingType) {
-        // Reuse the existing type
         resolvedTypeId = existingType.id;
         setAllTypes((prev) =>
           prev.some((t) => t.id === existingType.id)
@@ -289,7 +305,6 @@ export default function EditVehiclePage({
             : [...prev, existingType as ComplianceType]
         );
       } else {
-        // 2. Attempt to insert a new custom type
         const maxSortOrder = allTypes.reduce((max, ct) => Math.max(max, ct.sort_order), 0);
         const slug = `custom-${Date.now()}`;
 
@@ -310,7 +325,6 @@ export default function EditVehiclePage({
           .single();
 
         if (insertError) {
-          // 3. Race condition: another insert won — re-query by normalized_name
           const { data: racedType, error: refetchError } = await supabase
             .from("compliance_types")
             .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
@@ -464,6 +478,50 @@ export default function EditVehiclePage({
     }
   };
 
+  // ── Calendar sync handlers ─────────────────────────────────────────────────
+
+  const handleSyncIntervalChange = async (interval: string) => {
+    setCalendarSyncInterval(interval);
+    // Persist immediately — only if a calendar source record exists (ical_url set)
+    if (calendarSyncUrl.trim()) {
+      await supabase
+        .from("vehicle_calendar_sources")
+        .upsert(
+          { vehicle_id: vehicleId, ical_url: calendarSyncUrl.trim(), sync_interval: interval, updated_at: new Date().toISOString() },
+          { onConflict: "vehicle_id" },
+        );
+    }
+  };
+
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    setSyncError(null);
+    try {
+      const res = await fetch(`/api/staff/vehicles/${vehicleId}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sync_interval: calendarSyncInterval }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error ?? `Sync failed (HTTP ${res.status})`);
+      }
+      setSyncResult({ created: data.created, updated: data.updated, blocked: data.blocked });
+      setCalendarLastSyncedAt(data.syncedAt ?? new Date().toISOString());
+      setCalendarLastSyncStatus("success");
+      setCalendarLastSyncError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sync failed";
+      setSyncError(msg);
+      setCalendarLastSyncStatus("error");
+      setCalendarLastSyncError(msg);
+      setCalendarLastSyncedAt(new Date().toISOString());
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // ── Derived ────────────────────────────────────────────────────────────────
 
   const trackedSingleTypeIds = new Set(
@@ -599,6 +657,16 @@ export default function EditVehiclePage({
             onDeleteRow={handleDeleteRow}
             onEditSave={handleEditSave}
             onAddSave={handleAddSave}
+            initialCalendarSyncUrl={calendarSyncUrl}
+            syncInterval={calendarSyncInterval}
+            onSyncIntervalChange={handleSyncIntervalChange}
+            onSyncNow={handleSyncNow}
+            syncing={syncing}
+            lastSyncedAt={calendarLastSyncedAt}
+            lastSyncStatus={calendarLastSyncStatus}
+            lastSyncError={calendarLastSyncError}
+            syncResult={syncResult}
+            syncResultError={syncError}
           />
 
         </div>

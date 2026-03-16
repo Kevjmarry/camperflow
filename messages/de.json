@@ -278,6 +278,25 @@
         "habitationService": "Wohnraumwartung",
         "generalService": "Allgemeine Wartung"
       }
+    },
+    "vehicleCalendar": {
+      "title": "Kalender-Synchronisation",
+      "connect": "Kalender verbinden",
+      "urlPlaceholder": "https://…/calendar.ics",
+      "importButton": "Kalender importieren / Vorschau",
+      "syncNow": "Jetzt synchronisieren",
+      "syncing": "Synchronisierung…",
+      "autoSyncInterval": "Auto-Sync-Intervall",
+      "intervalNone": "Deaktiviert",
+      "interval1h": "Stündlich",
+      "interval6h": "Alle 6 Stunden",
+      "interval12h": "Alle 12 Stunden",
+      "interval24h": "Täglich",
+      "lastSynced": "Zuletzt synchronisiert",
+      "syncSuccess": "Erfolgreich",
+      "syncError": "Fehlgeschlagen",
+      "syncResultDetail": "{created} erstellt · {updated} aktualisiert · {blocked} blockiert",
+      "noUrlToSync": "Bitte zuerst eine iCal-URL eingeben und importieren, um die Synchronisierung zu aktivieren"
     }
   },
   "vehicleEdit": {

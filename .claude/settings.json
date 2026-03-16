@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:CamperFlowcamperflowappapi -type f -name *.ts)",
+      "Bash(grep -r \"registration_plate\\\\|company_id\" c:CamperFlowcamperflow --include=*.ts)",
+      "Bash(grep -r \"status.*preparing\\\\|preparing.*status\" c:CamperFlowcamperflow --include=*.ts --include=*.sql)",
+      "Bash(find c:/CamperFlow/camperflow -type f -name *calendar* -o -name *sync*)",
+      "Bash(ls -la c:/CamperFlow/camperflow/app/api/staff/vehicles/[id]/sync/)"
+    ]
+  }
+}

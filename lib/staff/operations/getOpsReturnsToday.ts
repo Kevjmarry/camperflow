@@ -33,6 +33,9 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
     .from('ops_bookings')
     .select('id, booking_number, customer_name, return_at, booking_status, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, return_items_done, return_items_total')
     .eq('company_id', companyId)
+    // Only genuinely active rentals can have a real overdue or today-return event.
+    // Confirmed iCal imports that were never activated must not appear here.
+    .eq('booking_status', 'on_rent')
     .in('ops_flag', ['return_today', 'overdue_return'])
     .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('return_at', { ascending: true })

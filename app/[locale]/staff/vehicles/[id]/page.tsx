@@ -118,6 +118,7 @@ export default function VehicleDetailPage({
   const supabase = createClient();
   const t = useTranslations("vehicleDetail");
   const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
+  const tCal = useTranslations("vehicleDetail.vehicleCalendar");
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,8 @@ export default function VehicleDetailPage({
 
   const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const [calendarSyncUrl, setCalendarSyncUrl] = useState("");
 
   const formatDate = (dateStr: string): string => {
     const d = new Date(dateStr);
@@ -727,6 +730,48 @@ export default function VehicleDetailPage({
                 </div>
               )}
             </div>
+            {/* Calendar Sync */}
+            <div className="surface" style={{ padding: "var(--space-6)" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                {tCal("title")}
+              </div>
+              <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 280px" }}>
+                  <label
+                    htmlFor="calendar-sync-url"
+                    style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))", display: "block", marginBottom: "var(--space-2)" }}
+                  >
+                    {tCal("title")}
+                  </label>
+                  <input
+                    id="calendar-sync-url"
+                    type="url"
+                    value={calendarSyncUrl}
+                    onChange={(e) => setCalendarSyncUrl(e.target.value)}
+                    placeholder={tCal("urlPlaceholder")}
+                    style={{
+                      width: "100%",
+                      padding: "var(--space-2) var(--space-3)",
+                      border: "1px solid rgb(var(--border))",
+                      borderRadius: "var(--radius)",
+                      fontSize: "14px",
+                      color: "rgb(var(--text))",
+                      background: "rgb(var(--surface))",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={!calendarSyncUrl.trim()}
+                  style={{ fontSize: "14px", whiteSpace: "nowrap" }}
+                >
+                  {tCal("connect")}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       </PageContainer>

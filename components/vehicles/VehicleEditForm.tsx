@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { CSSProperties, ChangeEvent, FormEvent, Dispatch, SetStateAction } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import VehicleComplianceSection from "@/components/vehicles/VehicleComplianceSection";
 
@@ -106,6 +108,17 @@ interface Props {
     customTypeName?: string,
     customBlocksReadiness?: boolean
   ) => Promise<void>;
+  // Calendar sync
+  initialCalendarSyncUrl?: string;
+  syncInterval?: string;
+  onSyncIntervalChange?: (interval: string) => void;
+  onSyncNow?: () => Promise<void>;
+  syncing?: boolean;
+  lastSyncedAt?: string | null;
+  lastSyncStatus?: string | null;
+  lastSyncError?: string | null;
+  syncResult?: { created: number; updated: number; blocked: number } | null;
+  syncResultError?: string | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -136,8 +149,26 @@ export default function VehicleEditForm({
   onDeleteRow,
   onEditSave,
   onAddSave,
+  initialCalendarSyncUrl = "",
+  syncInterval = "none",
+  onSyncIntervalChange,
+  onSyncNow,
+  syncing = false,
+  lastSyncedAt = null,
+  lastSyncStatus = null,
+  lastSyncError = null,
+  syncResult = null,
+  syncResultError = null,
 }: Props) {
   const t = useTranslations("staffVehicleEdit");
+  const tCal = useTranslations("vehicleDetail.vehicleCalendar");
+
+  const [calendarSyncUrl, setCalendarSyncUrl] = useState(initialCalendarSyncUrl);
+
+  // Sync when the page finishes loading the saved URL asynchronously
+  useEffect(() => {
+    if (initialCalendarSyncUrl) setCalendarSyncUrl(initialCalendarSyncUrl);
+  }, [initialCalendarSyncUrl]);
 
   // ── Style objects ────────────────────────────────────────────────────────
 
@@ -158,6 +189,27 @@ export default function VehicleEditForm({
     color: "rgb(var(--text))",
     marginBottom: "var(--space-2)",
   };
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  function formatSyncTime(iso: string): string {
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  }
+
+  const intervalOptions = [
+    { value: "none",  label: tCal("intervalNone") },
+    { value: "1h",   label: tCal("interval1h") },
+    { value: "6h",   label: tCal("interval6h") },
+    { value: "12h",  label: tCal("interval12h") },
+    { value: "24h",  label: tCal("interval24h") },
+  ];
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -357,6 +409,138 @@ export default function VehicleEditForm({
         onAddSave={onAddSave}
       />
       {/* ── End compliance section ────────────────────────────────────────── */}
+
+      {/* ── Calendar Sync ─────────────────────────────────────────────────── */}
+      <div
+        style={{
+          borderTop: "1px solid rgb(var(--border))",
+          paddingTop: "var(--space-4)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
+        <div style={{ fontSize: "15px", fontWeight: 600, color: "rgb(var(--text))" }}>
+          {tCal("title")}
+        </div>
+
+        {/* URL input + manual import button */}
+        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            type="url"
+            value={calendarSyncUrl}
+            onChange={(e) => setCalendarSyncUrl(e.target.value)}
+            placeholder={tCal("urlPlaceholder")}
+            style={{ ...inputStyle, flex: "1 1 280px" }}
+          />
+          <Link
+            href={
+              calendarSyncUrl.trim()
+                ? `/${locale}/staff/bookings/import?vehicleId=${vehicleId}&iCalUrl=${encodeURIComponent(calendarSyncUrl.trim())}`
+                : `/${locale}/staff/bookings/import?vehicleId=${vehicleId}`
+            }
+            className="btn btn-secondary"
+            style={{ fontSize: "14px", whiteSpace: "nowrap", textDecoration: "none" }}
+          >
+            {tCal("importButton")}
+          </Link>
+        </div>
+
+        {/* Auto-sync interval + Sync now */}
+        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: "1 1 200px" }}>
+            <label style={{ fontSize: "13px", color: "rgb(var(--muted))", fontWeight: 500 }}>
+              {tCal("autoSyncInterval")}
+            </label>
+            <select
+              value={syncInterval}
+              onChange={(e) => onSyncIntervalChange?.(e.target.value)}
+              style={{ ...inputStyle, width: "auto" }}
+            >
+              {intervalOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={onSyncNow}
+            disabled={syncing || !calendarSyncUrl.trim()}
+            className="btn btn-secondary"
+            style={{
+              fontSize: "14px",
+              whiteSpace: "nowrap",
+              opacity: syncing || !calendarSyncUrl.trim() ? 0.5 : 1,
+              cursor: syncing || !calendarSyncUrl.trim() ? "not-allowed" : "pointer",
+              alignSelf: "flex-end",
+            }}
+          >
+            {syncing ? tCal("syncing") : tCal("syncNow")}
+          </button>
+        </div>
+
+        {/* Last sync status */}
+        {lastSyncedAt && (
+          <div style={{ fontSize: "13px", color: "rgb(var(--muted))", display: "flex", flexWrap: "wrap", gap: "var(--space-2)", alignItems: "center" }}>
+            <span>{tCal("lastSynced")}: {formatSyncTime(lastSyncedAt)}</span>
+            {lastSyncStatus === "success" && (
+              <span style={{ color: "rgb(var(--success))", fontWeight: 500 }}>
+                {tCal("syncSuccess")}
+              </span>
+            )}
+            {lastSyncStatus === "error" && (
+              <span style={{ color: "rgb(var(--error))", fontWeight: 500 }}>
+                {tCal("syncError")}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* In-session sync result (after Sync now) */}
+        {syncResult && (
+          <div
+            style={{
+              fontSize: "13px",
+              padding: "var(--space-2) var(--space-3)",
+              background: "rgb(var(--success) / 0.08)",
+              border: "1px solid rgb(var(--success) / 0.25)",
+              borderRadius: "var(--radius)",
+              color: "rgb(var(--success))",
+            }}
+          >
+            {tCal("syncResultDetail", {
+              created: syncResult.created,
+              updated: syncResult.updated,
+              blocked: syncResult.blocked,
+            })}
+          </div>
+        )}
+
+        {/* In-session sync error */}
+        {syncResultError && (
+          <div
+            style={{
+              fontSize: "13px",
+              padding: "var(--space-2) var(--space-3)",
+              background: "rgb(var(--error) / 0.08)",
+              border: "1px solid rgb(var(--error) / 0.25)",
+              borderRadius: "var(--radius)",
+              color: "rgb(var(--error))",
+            }}
+          >
+            {syncResultError}
+          </div>
+        )}
+
+        {/* Hint when no URL yet */}
+        {!calendarSyncUrl.trim() && (
+          <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
+            {tCal("noUrlToSync")}
+          </div>
+        )}
+      </div>
+      {/* ── End Calendar Sync ─────────────────────────────────────────────── */}
 
       {/* Save / Delete */}
       <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>

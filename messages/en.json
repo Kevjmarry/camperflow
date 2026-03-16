@@ -278,6 +278,25 @@
         "habitationService": "Habitation Service",
         "generalService": "General Service"
       }
+    },
+    "vehicleCalendar": {
+      "title": "Calendar Sync",
+      "connect": "Connect calendar",
+      "urlPlaceholder": "https://…/calendar.ics",
+      "importButton": "Import / Preview calendar",
+      "syncNow": "Sync now",
+      "syncing": "Syncing…",
+      "autoSyncInterval": "Auto-sync interval",
+      "intervalNone": "Disabled",
+      "interval1h": "Every hour",
+      "interval6h": "Every 6 hours",
+      "interval12h": "Every 12 hours",
+      "interval24h": "Every 24 hours",
+      "lastSynced": "Last synced",
+      "syncSuccess": "Success",
+      "syncError": "Failed",
+      "syncResultDetail": "{created} created · {updated} updated · {blocked} blocked",
+      "noUrlToSync": "Enter and import an iCal URL first to enable Sync now"
     }
   },
   "vehicleEdit": {

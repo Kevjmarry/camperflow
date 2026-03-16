@@ -107,8 +107,93 @@ function validateNormalized(n: NormalizedImportBooking): string | null {
   if (!n.pickupAt) return 'Missing pickupAt';
   if (!n.returnAt) return 'Missing returnAt';
   if (!n.customerName?.trim()) return 'Missing customer_name';
-  if (!n.customerPhone?.trim()) return 'Missing customer_phone';
+  // iCal feeds rarely carry a phone number — only enforce for structured CSV/JSON imports
+  if (n.sourceType !== 'ical' && !n.customerPhone?.trim()) return 'Missing customer_phone';
   return null;
+}
+
+// ── Bookingmood family helpers ─────────────────────────────────────────────────
+
+/**
+ * The three source_types that share the same external booking-ID space for
+ * Bookingmood-originated data. Used as the IN list when querying for existing
+ * records that might have arrived via a different channel.
+ */
+const BOOKINGMOOD_FAMILY = ['bookingmood_csv', 'bookingmood_json', 'ical'] as const;
+
+/**
+ * Returns true when rawMetadata signals that an iCal event originated from
+ * Bookingmood. Checks (any one is sufficient):
+ *   • UID ends with @bookingmood.com
+ *   • URL contains bookingmood.com
+ *   • ORGANIZER contains bookingmood.com
+ *
+ * rawMetadata is structured as { raw: { UID: "...", URL: "...", ... } } by
+ * normalizeICalEvent — the raw iCal property values live one level down.
+ */
+function isBookingmoodOriginIcal(rawMetadata: Record<string, unknown>): boolean {
+  const raw = rawMetadata?.raw as Record<string, unknown> | undefined;
+  if (!raw) return false;
+
+  const uid = typeof raw.UID === 'string' ? raw.UID.toLowerCase() : '';
+  if (uid.endsWith('@bookingmood.com')) return true;
+
+  const url = typeof raw.URL === 'string' ? raw.URL.toLowerCase() : '';
+  if (url.includes('bookingmood.com')) return true;
+
+  const organizer = typeof raw.ORGANIZER === 'string' ? raw.ORGANIZER.toLowerCase() : '';
+  if (organizer.includes('bookingmood.com')) return true;
+
+  return false;
+}
+
+/**
+ * Returns true when the incoming row is a member of the Bookingmood idempotency
+ * family — i.e. it shares booking IDs with bookingmood_csv / bookingmood_json.
+ * Structured imports always qualify; iCal qualifies only when it originates from
+ * Bookingmood (detected via raw metadata). Non-Bookingmood iCal is isolated.
+ */
+function isBookingmoodFamilyMember(
+  sourceType: string,
+  rawMetadata: Record<string, unknown>,
+): boolean {
+  if (sourceType === 'bookingmood_csv' || sourceType === 'bookingmood_json') return true;
+  if (sourceType === 'ical') return isBookingmoodOriginIcal(rawMetadata);
+  return false;
+}
+
+/**
+ * Returns true when the existing stored source is a Bookingmood structured
+ * import (CSV or JSON) — i.e. richer than iCal.
+ */
+function isBookingmoodRicherSource(existingSourceType: string): boolean {
+  return existingSourceType === 'bookingmood_csv' || existingSourceType === 'bookingmood_json';
+}
+
+/**
+ * Returns true when the raw iCal DTSTART is an all-day DATE value (8-digit
+ * YYYYMMDD, no time component). This is the authoritative signal — checking the
+ * raw value avoids false positives from midnight UTC strings that were produced
+ * by the normalizer from a timed event that happened to land at midnight.
+ */
+function isIcalAllDay(rawMetadata: Record<string, unknown>): boolean {
+  const raw = rawMetadata?.raw as Record<string, unknown> | undefined;
+  if (!raw) return false;
+  const dtstart = typeof raw.DTSTART === 'string' ? raw.DTSTART.trim() : '';
+  return /^\d{8}$/.test(dtstart);
+}
+
+// Shape of the existing row fields we need for merge decisions.
+interface ExistingBookingData {
+  id: string;
+  source_type: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
+  notes: string | null;
+  source_reference: string | null;
+  pickup_at: string | null;
+  return_at: string | null;
 }
 
 // ── route handler ─────────────────────────────────────────────────────────────
@@ -189,25 +274,65 @@ export async function POST(request: NextRequest) {
     }
 
     // ── bookings: batch-fetch existing for insert vs update decision ──────────
+
+    // existingIdMap: key → DB row id (for update path)
     const existingIdMap: Record<string, string> = {};
+    // existingDataMap: key → full row snapshot (for Bookingmood merge logic)
+    const existingDataMap: Record<string, ExistingBookingData> = {};
 
-    const sourceTypeGroups = new Map<string, string[]>();
-    for (const row of bookingRows) {
-      const st = row.normalized!.sourceType;
-      if (!sourceTypeGroups.has(st)) sourceTypeGroups.set(st, []);
-      sourceTypeGroups.get(st)!.push(row.normalized!.sourceBookingId);
-    }
+    if (bookingRows.length > 0) {
+      // Map each source_booking_id to the incoming source_type so we can build
+      // the map keys using the *incoming* type (not the stored one).
+      const incomingTypeForId = new Map<string, string>();
+      const querySourceTypes = new Set<string>();
 
-    for (const [sourceType, ids] of sourceTypeGroups) {
+      for (const row of bookingRows) {
+        const n = row.normalized!;
+        incomingTypeForId.set(n.sourceBookingId, n.sourceType);
+
+        if (isBookingmoodFamilyMember(n.sourceType, n.rawMetadata)) {
+          // Bookingmood family: search all three source_types in one query so
+          // we find the record regardless of which channel last wrote it.
+          for (const fst of BOOKINGMOOD_FAMILY) {
+            querySourceTypes.add(fst);
+          }
+        } else {
+          // Non-Bookingmood sources (including plain iCal) are isolated.
+          querySourceTypes.add(n.sourceType);
+        }
+      }
+
+      const allBookingIds = bookingRows.map((r) => r.normalized!.sourceBookingId);
+
       const { data: existing } = await supabase
         .from('bookings')
-        .select('id, source_type, source_booking_id')
+        .select(
+          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at',
+        )
         .eq('company_id', companyId)
-        .eq('source_type', sourceType)
-        .in('source_booking_id', ids);
+        .in('source_type', [...querySourceTypes])
+        .in('source_booking_id', allBookingIds);
 
       for (const e of existing ?? []) {
-        existingIdMap[`${e.source_type}:${e.source_booking_id}`] = e.id;
+        // Key uses the *incoming* source_type so the lookup below
+        // (`${n.sourceType}:${n.sourceBookingId}`) always matches, regardless
+        // of how the existing record was originally imported.
+        const incomingType = incomingTypeForId.get(e.source_booking_id);
+        if (incomingType) {
+          const key = `${incomingType}:${e.source_booking_id}`;
+          existingIdMap[key] = e.id;
+          existingDataMap[key] = {
+            id: e.id,
+            source_type: e.source_type,
+            customer_name: e.customer_name ?? null,
+            customer_phone: e.customer_phone ?? null,
+            customer_email: e.customer_email ?? null,
+            notes: e.notes ?? null,
+            source_reference: e.source_reference ?? null,
+            pickup_at: e.pickup_at ?? null,
+            return_at: e.return_at ?? null,
+          };
+        }
       }
     }
 
@@ -239,39 +364,115 @@ export async function POST(request: NextRequest) {
       const key = `${n.sourceType}:${n.sourceBookingId}`;
       const existingId = existingIdMap[key];
 
-      const sharedPayload = {
-        company_id: companyId,
-        status: mapExternalStatus(n.externalStatus),
-        pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
-        return_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
-        vehicle_id: row.matchedVehicleId,
-        customer_name: n.customerName!,
-        customer_phone: n.customerPhone!,
-        customer_email: n.customerEmail ?? null,
-        notes: n.notes ?? null,
-        source_type: n.sourceType,
-        source_booking_id: n.sourceBookingId,
-        source_reference: n.sourceReference ?? null,
-        import_last_seen_at: now,
-        source_metadata: n.rawMetadata,
-      };
-
       if (existingId) {
-        const { error } = await supabase
-          .from('bookings')
-          .update(sharedPayload)
-          .eq('id', existingId);
+        const existing = existingDataMap[key];
 
-        if (error) {
-          errors.push({ rowNumber: row.rowNumber, message: error.message });
+        // Bookingmood iCal updating an existing Bookingmood CSV/JSON booking:
+        // apply safe-merge rules to avoid clobbering richer structured data.
+        const isBookingmoodIcalMerge =
+          n.sourceType === 'ical' &&
+          isBookingmoodOriginIcal(n.rawMetadata) &&
+          existing != null &&
+          isBookingmoodRicherSource(existing.source_type);
+
+        if (isBookingmoodIcalMerge) {
+          // ── Preserve richer CSV/JSON contact fields ──────────────────────
+          // Keep existing value when non-empty; fall back to iCal only if missing.
+          const mergedName = existing!.customer_name?.trim() || n.customerName || '';
+          const mergedPhone = existing!.customer_phone?.trim() || n.customerPhone || '';
+          const mergedEmail = existing!.customer_email?.trim() || n.customerEmail || null;
+          const mergedNotes = existing!.notes?.trim() || n.notes || null;
+          const mergedSourceRef = existing!.source_reference?.trim() || n.sourceReference || null;
+
+          // ── Time precedence ───────────────────────────────────────────────
+          // If the iCal event is all-day (raw DTSTART is 8-digit DATE, no time),
+          // the normalizer emits midnight UTC — a weaker signal than the
+          // specific pickup/return times stored from the CSV/JSON import.
+          // In that case, keep the existing timestamps unchanged.
+          // Only overwrite if the iCal event carries an actual time component.
+          const icalIsAllDay = isIcalAllDay(n.rawMetadata);
+          const mergedPickupAt =
+            icalIsAllDay && existing!.pickup_at
+              ? existing!.pickup_at
+              : applyDefaultTime(n.pickupAt, defaultPickupTime);
+          const mergedReturnAt =
+            icalIsAllDay && existing!.return_at
+              ? existing!.return_at
+              : applyDefaultTime(n.returnAt, defaultDropoffTime);
+
+          // ── Allowed iCal updates ──────────────────────────────────────────
+          // Only status, times (when richer), vehicle, and sync fields are
+          // updated; source_type / source_booking_id are NOT changed so the
+          // record retains its CSV/JSON provenance.
+          const { error } = await supabase
+            .from('bookings')
+            .update({
+              status: mapExternalStatus(n.externalStatus),
+              vehicle_id: row.matchedVehicleId,
+              customer_name: mergedName,
+              customer_phone: mergedPhone,
+              customer_email: mergedEmail,
+              notes: mergedNotes,
+              source_reference: mergedSourceRef,
+              pickup_at: mergedPickupAt,
+              return_at: mergedReturnAt,
+              import_last_seen_at: now,
+              source_metadata: n.rawMetadata,
+            })
+            .eq('id', existingId);
+
+          if (error) {
+            errors.push({ rowNumber: row.rowNumber, message: error.message });
+          } else {
+            updated++;
+          }
         } else {
-          updated++;
+          // Standard update: full overwrite with incoming values.
+          const { error } = await supabase
+            .from('bookings')
+            .update({
+              company_id: companyId,
+              status: mapExternalStatus(n.externalStatus),
+              pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
+              return_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
+              vehicle_id: row.matchedVehicleId,
+              customer_name: n.customerName!,
+              customer_phone: n.customerPhone ?? '',
+              customer_email: n.customerEmail ?? null,
+              notes: n.notes ?? null,
+              source_type: n.sourceType,
+              source_booking_id: n.sourceBookingId,
+              source_reference: n.sourceReference ?? null,
+              import_last_seen_at: now,
+              source_metadata: n.rawMetadata,
+            })
+            .eq('id', existingId);
+
+          if (error) {
+            errors.push({ rowNumber: row.rowNumber, message: error.message });
+          } else {
+            updated++;
+          }
         }
       } else {
+        // Insert new booking.
         const { error } = await supabase
           .from('bookings')
           .insert({
-            ...sharedPayload,
+            company_id: companyId,
+            status: mapExternalStatus(n.externalStatus),
+            pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
+            return_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
+            vehicle_id: row.matchedVehicleId,
+            customer_name: n.customerName!,
+            customer_phone: n.customerPhone ?? '',
+            customer_email: n.customerEmail ?? null,
+            notes: n.notes ?? null,
+            source_type: n.sourceType,
+            source_booking_id: n.sourceBookingId,
+            source_reference: n.sourceReference ?? null,
+            import_last_seen_at: now,
+            source_metadata: n.rawMetadata,
             booking_number: generateBookingNumber(),
             booking_code: generateBookingCode(),
             imported_at: now,

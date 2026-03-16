@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useMemo, DragEvent, ChangeEvent } from "react";
-import { useParams } from "next/navigation";
+import { useState, useRef, useEffect, DragEvent, ChangeEvent } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
@@ -119,6 +119,24 @@ async function applyVehicleMatching(
 
 // ── existing booking detection (idempotency: company_id + source_type + source_booking_id) ──
 
+/**
+ * Returns the set of DB source_types to search when looking for an existing
+ * booking that might have been imported under a different-but-equivalent
+ * source type.  Bookingmood CSV, Bookingmood JSON, and plain iCal all share
+ * the same external booking IDs, so they form a single idempotency family.
+ * All other source types are matched exactly.
+ */
+function bookingmoodFamilyTypes(sourceType: string): string[] {
+  if (
+    sourceType === "bookingmood_csv" ||
+    sourceType === "bookingmood_json" ||
+    sourceType === "ical"
+  ) {
+    return ["bookingmood_csv", "bookingmood_json", "ical"];
+  }
+  return [sourceType];
+}
+
 async function applyExistingBookingMatching(
   rows: ImportPreviewRow[],
 ): Promise<ImportPreviewRow[]> {
@@ -144,24 +162,35 @@ async function applyExistingBookingMatching(
 
   if (checkableRows.length === 0) return rows;
 
-  const sourceTypeGroups = new Map<string, string[]>();
+  // Map each source_booking_id to the incoming source_type so we can build the
+  // existingKeys entry using the *incoming* type (not whatever is stored in the DB).
+  const incomingTypeForId = new Map<string, string>();
+  const querySourceTypes = new Set<string>();
+
   for (const row of checkableRows) {
     const st = row.normalized!.sourceType;
-    if (!sourceTypeGroups.has(st)) sourceTypeGroups.set(st, []);
-    sourceTypeGroups.get(st)!.push(row.normalized!.sourceBookingId);
+    incomingTypeForId.set(row.normalized!.sourceBookingId, st);
+    for (const fst of bookingmoodFamilyTypes(st)) {
+      querySourceTypes.add(fst);
+    }
   }
 
-  const existingKeys = new Set<string>();
-  for (const [sourceType, ids] of sourceTypeGroups) {
-    const { data: existing } = await supabase
-      .from("bookings")
-      .select("source_type, source_booking_id")
-      .eq("company_id", companyId)
-      .eq("source_type", sourceType)
-      .in("source_booking_id", ids);
+  const allBookingIds = checkableRows.map((r) => r.normalized!.sourceBookingId);
 
-    for (const e of existing ?? []) {
-      existingKeys.add(`${e.source_type}:${e.source_booking_id}`);
+  const existingKeys = new Set<string>();
+  const { data: existing } = await supabase
+    .from("bookings")
+    .select("source_type, source_booking_id")
+    .eq("company_id", companyId)
+    .in("source_type", [...querySourceTypes])
+    .in("source_booking_id", allBookingIds);
+
+  for (const e of existing ?? []) {
+    // Key uses the *incoming* source_type so the check below always matches,
+    // regardless of how the record was originally stored.
+    const incomingType = incomingTypeForId.get(e.source_booking_id);
+    if (incomingType) {
+      existingKeys.add(`${incomingType}:${e.source_booking_id}`);
     }
   }
 
@@ -206,16 +235,38 @@ async function callImportRoute(rows: ImportPreviewRow[]): Promise<ImportResult> 
   return data as ImportResult;
 }
 
+// ── calendar source persistence ───────────────────────────────────────────────
+// Requires table: vehicle_calendar_sources(vehicle_id PK, ical_url text, updated_at timestamptz)
+async function saveCalendarSource(vehicleId: string, url: string): Promise<void> {
+  try {
+    const supabase = createClient();
+    await supabase
+      .from("vehicle_calendar_sources")
+      .upsert(
+        { vehicle_id: vehicleId, ical_url: url, updated_at: new Date().toISOString() },
+        { onConflict: "vehicle_id" },
+      );
+  } catch {
+    // best-effort — do not surface to the user
+  }
+}
+
 // ── component ─────────────────────────────────────────────────────────────────
 
 type ImportMode = "file" | "ical";
 
 export default function BookingImportPage() {
   const { locale } = useParams<{ locale: string }>();
+  const searchParams = useSearchParams();
   const t = useTranslations("bookingsImport");
 
+  const prefillVehicleId = searchParams.get("vehicleId") ?? "";
+  const prefillICalUrl   = searchParams.get("iCalUrl")   ?? "";
+
   // ── shared state ────────────────────────────────────────────────────────────
-  const [importMode, setImportMode] = useState<ImportMode>("file");
+  const [importMode, setImportMode] = useState<ImportMode>(
+    prefillVehicleId || prefillICalUrl ? "ical" : "file"
+  );
   const [sourceType, setSourceType] = useState<ImportSourceType | null>(null);
   const [previewRows, setPreviewRows] = useState<ImportPreviewRow[]>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -232,17 +283,13 @@ export default function BookingImportPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── iCal-mode state ─────────────────────────────────────────────────────────
-  const [icalUrl, setIcalUrl] = useState("");
-  const [icalVehicleMode, setIcalVehicleMode] = useState<"single_vehicle" | "multi_vehicle">("single_vehicle");
-  const [icalVehicleId, setIcalVehicleId] = useState("");
+  const [icalUrl, setIcalUrl] = useState(prefillICalUrl);
+  const [icalVehicleId, setIcalVehicleId] = useState(prefillVehicleId);
   const [icalVehicleName, setIcalVehicleName] = useState("");
   const [vehicles, setVehicles] = useState<{ id: string; name: string }[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [isFetchingIcal, setIsFetchingIcal] = useState(false);
   const vehiclesLoadedRef = useRef(false);
-
-  // ── bulk vehicle assignment state ────────────────────────────────────────────
-  const [vehicleAssignments, setVehicleAssignments] = useState<Record<string, string>>({});
 
   // ── shared reset ────────────────────────────────────────────────────────────
   const resetPreview = () => {
@@ -255,7 +302,6 @@ export default function BookingImportPage() {
     setIsFetchingIcal(false);
     setImportResult(null);
     setImportError(null);
-    setVehicleAssignments({});
   };
 
   // ── file mode handlers ──────────────────────────────────────────────────────
@@ -382,9 +428,25 @@ export default function BookingImportPage() {
     setImportMode("file");
   };
 
+  // Auto-load vehicles when arriving via prefill params
+  useEffect(() => {
+    if ((prefillVehicleId || prefillICalUrl) && !vehiclesLoadedRef.current) {
+      vehiclesLoadedRef.current = true;
+      loadVehicles();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync icalVehicleName once the vehicle list resolves for a prefilled ID
+  useEffect(() => {
+    if (prefillVehicleId && vehicles.length > 0) {
+      const v = vehicles.find((v) => v.id === prefillVehicleId);
+      if (v) setIcalVehicleName(v.name);
+    }
+  }, [vehicles]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleFetchIcal = async () => {
     if (!icalUrl.trim()) return;
-    if (icalVehicleMode === "single_vehicle" && !icalVehicleId) {
+    if (!icalVehicleId) {
       setPreviewError(t("ical.noVehicleSelected"));
       return;
     }
@@ -392,11 +454,11 @@ export default function BookingImportPage() {
     setIsFetchingIcal(true);
 
     try {
-      const requestBody: Record<string, string> = { url: icalUrl.trim() };
-      if (icalVehicleMode === "single_vehicle") {
-        requestBody.vehicleReference = icalVehicleName;
-        requestBody.vehicleId = icalVehicleId;
-      }
+      const requestBody: Record<string, string> = {
+        url: icalUrl.trim(),
+        vehicleReference: icalVehicleName,
+        vehicleId: icalVehicleId,
+      };
 
       const res = await fetch("/api/staff/bookings/ical", {
         method: "POST",
@@ -412,19 +474,12 @@ export default function BookingImportPage() {
       setSourceType("ical");
       setIsFetchingIcal(false);
 
-      let rows = data.rows as ImportPreviewRow[];
-
-      if (icalVehicleMode === "multi_vehicle") {
-        setIsMatchingVehicles(true);
-        rows = await applyVehicleMatching(
-          rows,
-          t("match.vehicleNotFound"),
-          t("match.ambiguous"),
-          t("match.noCompanyId"),
-          t("match.vehicleQueryError"),
-        );
-        setIsMatchingVehicles(false);
-      }
+      // Force all rows to be matched to the selected vehicle
+      const rows = (data.rows as ImportPreviewRow[]).map((r) => ({
+        ...r,
+        matchedVehicleId: icalVehicleId,
+        matchStatus: "matched" as const,
+      }));
 
       setIsCheckingExisting(true);
       const finalRows = await applyExistingBookingMatching(rows);
@@ -433,7 +488,6 @@ export default function BookingImportPage() {
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : t("ical.fetchError"));
       setIsFetchingIcal(false);
-      setIsMatchingVehicles(false);
       setIsCheckingExisting(false);
     }
   };
@@ -446,6 +500,10 @@ export default function BookingImportPage() {
     try {
       const result = await callImportRoute(previewRows);
       setImportResult(result);
+      // Persist the iCal URL for this vehicle after a successful iCal import
+      if (importMode === "ical" && icalVehicleId && icalUrl.trim()) {
+        await saveCalendarSource(icalVehicleId, icalUrl.trim());
+      }
     } catch (err) {
       setImportError(err instanceof Error ? err.message : t("import.unexpectedError"));
     } finally {
@@ -453,43 +511,10 @@ export default function BookingImportPage() {
     }
   };
 
-  // ── bulk vehicle assignment ─────────────────────────────────────────────────
-  const applyBulkAssignment = (ref: string, vehicleId: string) => {
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    if (!vehicle) return;
-    const vehicleNotFoundMsg = t("match.vehicleNotFound");
-    setPreviewRows((prev) =>
-      prev.map((row) => {
-        if (row.matchStatus !== "unmatched" || row.normalized?.vehicleReference !== ref) return row;
-        // Only restore actionType when this row's error was vehicle-not-found; leave other errors intact
-        const isVehicleError = row.errorMessage === vehicleNotFoundMsg;
-        const restoredAction = isVehicleError
-          ? row.normalized!.bookingType === "blocked_period"
-            ? ("block" as const)
-            : row.normalized!.bookingType === "existing"
-              ? ("update" as const)
-              : ("create" as const)
-          : row.actionType;
-        return {
-          ...row,
-          matchStatus: "matched" as const,
-          matchedVehicleId: vehicleId,
-          actionType: restoredAction,
-          errorMessage: isVehicleError ? undefined : row.errorMessage,
-        };
-      }),
-    );
-    setVehicleAssignments((prev) => {
-      const next = { ...prev };
-      delete next[ref];
-      return next;
-    });
-  };
-
   // ── derived ─────────────────────────────────────────────────────────────────
   const isLoading = importMode === "file"
     ? isParsing || isMatchingVehicles || isCheckingExisting
-    : isFetchingIcal || isMatchingVehicles || isCheckingExisting;
+    : isFetchingIcal || isCheckingExisting;
 
   const rowsToCreate = previewRows.filter(
     (r) => r.actionType === "create" && r.matchStatus === "matched",
@@ -503,17 +528,6 @@ export default function BookingImportPage() {
   const rowsReady = rowsToCreate + rowsToUpdate + rowsToBlock;
   const rowsWithErrors = previewRows.filter((r) => r.actionType === "error").length;
   const rowsSkipped = previewRows.filter((r) => r.actionType === "skip").length;
-
-  // Group unmatched rows by vehicleReference for bulk assignment
-  const unmatchedGroups = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const row of previewRows) {
-      if (row.matchStatus !== "unmatched" || !row.normalized?.vehicleReference) continue;
-      const ref = row.normalized.vehicleReference;
-      map.set(ref, (map.get(ref) ?? 0) + 1);
-    }
-    return Array.from(map.entries()).map(([ref, count]) => ({ ref, count }));
-  }, [previewRows]);
 
   const matchStatusLabel = (status: ImportPreviewRow["matchStatus"]) => {
     if (status === "matched") return t("match.statusMatched");
@@ -754,75 +768,45 @@ export default function BookingImportPage() {
                 />
               </div>
 
-              {/* Vehicle mode toggle */}
+              {/* Vehicle selector */}
               <div>
-                <p style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))", marginBottom: "var(--space-2)" }}>
-                  {t("ical.vehicleMode")}
-                </p>
-                <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                  {(["single_vehicle", "multi_vehicle"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setIcalVehicleMode(mode)}
-                      style={{
-                        padding: "var(--space-1) var(--space-4)",
-                        fontSize: "13px",
-                        fontWeight: icalVehicleMode === mode ? 600 : 400,
-                        border: `1px solid ${icalVehicleMode === mode ? "rgb(var(--brand))" : "rgb(var(--border))"}`,
-                        borderRadius: "var(--radius)",
-                        background: icalVehicleMode === mode ? "rgb(var(--brand) / 0.08)" : "rgb(var(--surface))",
-                        color: icalVehicleMode === mode ? "rgb(var(--brand))" : "rgb(var(--muted))",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {mode === "single_vehicle" ? t("ical.vehicleModeSingle") : t("ical.vehicleModeMulti")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Vehicle selector — single_vehicle only */}
-              {icalVehicleMode === "single_vehicle" && (
-                <div>
-                  <label
-                    htmlFor="ical-vehicle"
-                    style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))", display: "block", marginBottom: "var(--space-2)" }}
+                <label
+                  htmlFor="ical-vehicle"
+                  style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))", display: "block", marginBottom: "var(--space-2)" }}
+                >
+                  {t("ical.vehicleLabel")}
+                </label>
+                {vehiclesLoading ? (
+                  <p style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>
+                    {t("ical.vehiclesLoading")}
+                  </p>
+                ) : (
+                  <select
+                    id="ical-vehicle"
+                    value={icalVehicleId}
+                    onChange={(e) => {
+                      const v = vehicles.find((v) => v.id === e.target.value);
+                      setIcalVehicleId(e.target.value);
+                      setIcalVehicleName(v?.name ?? "");
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "var(--space-2) var(--space-3)",
+                      border: "1px solid rgb(var(--border))",
+                      borderRadius: "var(--radius)",
+                      fontSize: "14px",
+                      color: "rgb(var(--text))",
+                      background: "rgb(var(--surface))",
+                      boxSizing: "border-box",
+                    }}
                   >
-                    {t("ical.vehicleLabel")}
-                  </label>
-                  {vehiclesLoading ? (
-                    <p style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>
-                      {t("ical.vehiclesLoading")}
-                    </p>
-                  ) : (
-                    <select
-                      id="ical-vehicle"
-                      value={icalVehicleId}
-                      onChange={(e) => {
-                        const v = vehicles.find((v) => v.id === e.target.value);
-                        setIcalVehicleId(e.target.value);
-                        setIcalVehicleName(v?.name ?? "");
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "var(--space-2) var(--space-3)",
-                        border: "1px solid rgb(var(--border))",
-                        borderRadius: "var(--radius)",
-                        fontSize: "14px",
-                        color: "rgb(var(--text))",
-                        background: "rgb(var(--surface))",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      <option value="">{t("ical.vehiclePlaceholder")}</option>
-                      {vehicles.map((v) => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
+                    <option value="">{t("ical.vehiclePlaceholder")}</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
               {/* Fetch button */}
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -830,7 +814,7 @@ export default function BookingImportPage() {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleFetchIcal}
-                  disabled={!icalUrl.trim() || (icalVehicleMode === "single_vehicle" && !icalVehicleId) || isFetchingIcal}
+                  disabled={!icalUrl.trim() || !icalVehicleId || isFetchingIcal}
                   style={{ fontSize: "14px" }}
                 >
                   {isFetchingIcal ? t("ical.fetching") : t("ical.fetchButton")}
@@ -926,73 +910,6 @@ export default function BookingImportPage() {
             </div>
           )}
 
-          {/* Bulk vehicle assignment — shown when unmatched references remain after auto-matching */}
-          {sourceType && !isLoading && !previewError && unmatchedGroups.length > 0 && (
-            <div style={{
-              border: "1px solid rgb(var(--border))",
-              borderRadius: "var(--radius)",
-              padding: "var(--space-4)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-              background: "rgb(var(--surface-raised, var(--surface)))",
-            }}>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", margin: 0 }}>
-                {t("bulkAssign.sectionTitle")}
-              </p>
-              {unmatchedGroups.map(({ ref, count }) => (
-                <div
-                  key={ref}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--space-3)",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ minWidth: "160px", flex: "1 1 160px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      {ref}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "rgb(var(--muted))", marginLeft: "var(--space-2)" }}>
-                      {t("bulkAssign.rowCount", { count })}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: "var(--space-2)", flex: "0 0 auto" }}>
-                    <select
-                      value={vehicleAssignments[ref] ?? ""}
-                      onChange={(e) =>
-                        setVehicleAssignments((prev) => ({ ...prev, [ref]: e.target.value }))
-                      }
-                      style={{
-                        padding: "var(--space-1) var(--space-3)",
-                        border: "1px solid rgb(var(--border))",
-                        borderRadius: "var(--radius)",
-                        fontSize: "13px",
-                        color: "rgb(var(--text))",
-                        background: "rgb(var(--surface))",
-                        minWidth: "160px",
-                      }}
-                    >
-                      <option value="">{t("bulkAssign.selectPlaceholder")}</option>
-                      {vehicles.map((v) => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      disabled={!vehicleAssignments[ref]}
-                      onClick={() => applyBulkAssignment(ref, vehicleAssignments[ref] ?? "")}
-                      style={{ fontSize: "13px", whiteSpace: "nowrap" }}
-                    >
-                      {t("bulkAssign.assignButton")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
 
           {/* Import result feedback */}
           {importResult && (

@@ -215,7 +215,7 @@ export function normalizeICalEvent(
   }
 
   // ── real booking ──────────────────────────────────────────────────────────
-  const customerName = extractAttendeeName(event);
+  const customerName = extractAttendeeName(event) ?? (summary || undefined);
   const customerEmail = extractAttendeeEmail(event);
 
   return {
