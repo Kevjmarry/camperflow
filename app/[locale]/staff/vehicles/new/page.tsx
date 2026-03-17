@@ -45,6 +45,9 @@ export default function NewVehiclePage() {
     model: '',
     year: '',
     vin: '',
+    length_m: '',
+    width_m: '',
+    height_m: '',
     notes: '',
     operational_hold: false,
     hold_reason: '',
@@ -121,6 +124,9 @@ export default function NewVehiclePage() {
           model: formData.model,
           year: yearNum,
           vin: formData.vin || null,
+          length_m: formData.length_m ? parseFloat(formData.length_m) : null,
+          width_m: formData.width_m ? parseFloat(formData.width_m) : null,
+          height_m: formData.height_m ? parseFloat(formData.height_m) : null,
           notes: formData.notes || null,
           operational_hold: formData.operational_hold,
           hold_reason: formData.operational_hold && formData.hold_reason.trim()
@@ -310,6 +316,34 @@ export default function NewVehiclePage() {
                 onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
                 style={inputStyle}
               />
+            </div>
+
+            {/* Dimensions */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-4)' }}>
+              <div>
+                <label htmlFor="length_m" style={labelStyle}>{t('field.lengthM')}</label>
+                <input
+                  type="number" id="length_m" value={formData.length_m} step="0.01" min="0" disabled={submitting}
+                  onChange={(e) => setFormData({ ...formData, length_m: e.target.value })}
+                  placeholder="e.g. 5.99" style={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="width_m" style={labelStyle}>{t('field.widthM')}</label>
+                <input
+                  type="number" id="width_m" value={formData.width_m} step="0.01" min="0" disabled={submitting}
+                  onChange={(e) => setFormData({ ...formData, width_m: e.target.value })}
+                  placeholder="e.g. 2.10" style={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="height_m" style={labelStyle}>{t('field.heightM')}</label>
+                <input
+                  type="number" id="height_m" value={formData.height_m} step="0.01" min="0" disabled={submitting}
+                  onChange={(e) => setFormData({ ...formData, height_m: e.target.value })}
+                  placeholder="e.g. 2.85" style={inputStyle}
+                />
+              </div>
             </div>
 
             {/* Notes */}

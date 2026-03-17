@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -57,6 +57,7 @@ interface Booking {
   pickup_at: string;
   return_at: string;
   vehicle_id: string | null;
+  customer_id: string | null;
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
@@ -65,6 +66,13 @@ interface Booking {
   source_metadata: Record<string, unknown> | null;
   staff_metadata: Record<string, unknown> | null;
   internal_notes: string | null;
+}
+
+interface LinkedCustomer {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface RedactedBooking {
@@ -96,6 +104,7 @@ export default function BookingDetailPage() {
 
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [linkedCustomer, setLinkedCustomer] = useState<LinkedCustomer | null>(null);
   const [redactedBooking, setRedactedBooking] = useState<RedactedBooking | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleInfo, setVehicleInfo] = useState<Vehicle | null>(null);
@@ -117,6 +126,10 @@ export default function BookingDetailPage() {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [conflictWarning, setConflictWarning] = useState("");
+  const [linkCustomerOpen, setLinkCustomerOpen] = useState(false);
+  const [allCustomers, setAllCustomers] = useState<{ id: string; full_name: string | null }[]>([]);
+  const [linkingCustomer, setLinkingCustomer] = useState(false);
+  const [linkCustomerSuccess, setLinkCustomerSuccess] = useState(false);
 
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
@@ -242,6 +255,18 @@ export default function BookingDetailPage() {
         });
         setInternalNotes(data.internal_notes || "");
 
+        if (data.customer_id) {
+          const { data: custData } = await supabase
+            .from('customers')
+            .select('id, full_name, email, phone')
+            .eq('id', data.customer_id)
+            .eq('company_id', data.company_id)
+            .maybeSingle();
+          setLinkedCustomer(custData ?? null);
+        } else {
+          setLinkedCustomer(null);
+        }
+
         fetchChecklistInstances();
       }
     } catch (err: any) {
@@ -293,6 +318,74 @@ export default function BookingDetailPage() {
     } catch (err: any) {
       console.error('Failed to fetch vehicles:', err);
     }
+  };
+
+  const fetchAllCustomers = async (companyId: string) => {
+    const { data } = await supabase
+      .from('customers')
+      .select('id, full_name')
+      .eq('company_id', companyId)
+      .order('full_name', { ascending: true });
+    setAllCustomers(data || []);
+  };
+
+  const handleLinkCustomer = async (customerId: string) => {
+    setLinkingCustomer(true);
+
+    // 1. Fetch the customer record first so we can write snapshot fields in one update
+    const { data: custFull, error: custError } = await supabase
+      .from('customers')
+      .select('id, full_name, email, phone')
+      .eq('id', customerId)
+      .single();
+
+    if (custError || !custFull) {
+      setError(custError?.message ?? "Failed to load customer record.");
+      setLinkingCustomer(false);
+      return;
+    }
+
+    // 2. Single update: customer_id + snapshot fields
+    const { error: linkError } = await supabase
+      .from('bookings')
+      .update({
+        customer_id: customerId,
+        customer_name: custFull.full_name ?? "",
+        customer_email: custFull.email ?? null,
+        customer_phone: custFull.phone ?? "",
+      })
+      .eq('id', id);
+
+    setLinkingCustomer(false);
+
+    if (linkError) {
+      setError(linkError.message);
+      return;
+    }
+
+    // 3. Update local state immediately
+    setLinkedCustomer(custFull);
+    setFormData(prev => ({
+      ...prev,
+      customer_name: custFull.full_name ?? "",
+      customer_email: custFull.email ?? "",
+      customer_phone: custFull.phone ?? "",
+    }));
+    setBooking(prev => prev ? {
+      ...prev,
+      customer_id: customerId,
+      customer_name: custFull.full_name ?? "",
+      customer_email: custFull.email ?? null,
+      customer_phone: custFull.phone ?? "",
+    } : prev);
+
+    // 4. Clear stale feedback
+    setError("");
+    setConflictWarning("");
+    setLinkCustomerOpen(false);
+    setLinkCustomerSuccess(true);
+
+    await fetchBooking();
   };
 
   const fetchChecklistInstances = async (): Promise<ChecklistInstance[]> => {
@@ -527,7 +620,7 @@ export default function BookingDetailPage() {
    * - "Imported: Yes/No/X" (muted) when showing the imported value with no staff override.
    * - "No imported value" (muted) when neither source nor staff has data.
    */
-  function renderMetaStatus(staffVal: unknown, sourceVal: unknown): JSX.Element {
+  function renderMetaStatus(staffVal: unknown, sourceVal: unknown): React.ReactElement {
     if (staffVal !== null && staffVal !== undefined) {
       return (
         <span style={{
@@ -773,6 +866,68 @@ export default function BookingDetailPage() {
               locale={locale}
               t={t as (key: string) => string}
             />
+          </div>
+
+          {/* ── Linked Customer ─────────────────────────────────────────── */}
+          <div className="surface" style={{ padding: 'var(--space-5)', background: 'rgb(var(--border) / 0.15)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--muted))', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Customer
+            </h3>
+            {linkedCustomer ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                <Link
+                  href={`/${locale}/staff/customers/${linkedCustomer.id}`}
+                  style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--accent))', textDecoration: 'none' }}
+                >
+                  {linkedCustomer.full_name ?? "Unnamed customer"}
+                </Link>
+                <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap', fontSize: '14px', color: 'rgb(var(--muted))' }}>
+                  {linkedCustomer.email && <span>{linkedCustomer.email}</span>}
+                  {linkedCustomer.phone && <span>{linkedCustomer.phone}</span>}
+                  {!linkedCustomer.email && !linkedCustomer.phone && <span>No contact info</span>}
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>No customer linked</p>
+            )}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ marginTop: 'var(--space-3)', fontSize: '13px' }}
+              onClick={() => {
+                if (!linkCustomerOpen && allCustomers.length === 0 && booking) {
+                  fetchAllCustomers(booking.company_id);
+                }
+                setLinkCustomerSuccess(false);
+                setLinkCustomerOpen(o => !o);
+              }}
+            >
+              Link / change customer
+            </button>
+            {linkCustomerOpen && (
+              <div style={{ marginTop: 'var(--space-2)' }}>
+                <select
+                  className="input"
+                  style={{ width: '100%', maxWidth: '360px' }}
+                  defaultValue=""
+                  disabled={linkingCustomer}
+                  onChange={(e) => { if (e.target.value) handleLinkCustomer(e.target.value); }}
+                >
+                  <option value="">-- Select customer --</option>
+                  {allCustomers.map((c) => (
+                    <option key={c.id} value={c.id}>{c.full_name ?? "Unnamed"}</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: 'var(--space-1)', margin: '4px 0 0' }}>
+                  Changing the linked customer saves immediately.
+                </p>
+              </div>
+            )}
+            {linkCustomerSuccess && (
+              <p style={{ fontSize: '13px', color: 'rgb(var(--success, 34 197 94))', marginTop: 'var(--space-2)', margin: '8px 0 0' }}>
+                Customer linked successfully.
+              </p>
+            )}
           </div>
 
           {/*

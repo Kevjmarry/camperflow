@@ -5,7 +5,23 @@
       "Bash(grep -r \"registration_plate\\\\|company_id\" c:CamperFlowcamperflow --include=*.ts)",
       "Bash(grep -r \"status.*preparing\\\\|preparing.*status\" c:CamperFlowcamperflow --include=*.ts --include=*.sql)",
       "Bash(find c:/CamperFlow/camperflow -type f -name *calendar* -o -name *sync*)",
-      "Bash(ls -la c:/CamperFlow/camperflow/app/api/staff/vehicles/[id]/sync/)"
+      "Bash(ls -la c:/CamperFlow/camperflow/app/api/staff/vehicles/[id]/sync/)",
+      "Bash(ls -la c:/CamperFlow/camperflow/app/[locale]/staff/)",
+      "Bash(xargs ls:*)",
+      "Bash(grep -L \"use client\" /c/CamperFlow/camperflow/app/[locale]/staff/*/page.tsx)",
+      "Bash(head -5 /c/CamperFlow/camperflow/app/[locale]/staff/page.tsx /c/CamperFlow/camperflow/app/[locale]/staff/operations/page.tsx /c/CamperFlow/camperflow/app/[locale]/staff/checklists/[id]/page.tsx)",
+      "Bash(grep -l \"async function\\\\|export async default\\\\|''''use server''''\" /c/CamperFlow/camperflow/app/[locale]/staff/*/page.tsx)",
+      "Bash(head -1 /c/CamperFlow/camperflow/app/[locale]/staff/company/page.tsx)",
+      "Bash(find /c/CamperFlow/camperflow/app -type f -name *settings* -o -name *operations*)",
+      "Bash(ls -la /c/CamperFlow/camperflow/app/[locale]/staff/)",
+      "Bash(ls -la /c/CamperFlow/camperflow/app/[locale]/staff/company/)",
+      "Bash(ls -la /c/CamperFlow/camperflow/app/[locale]/staff/operations/)",
+      "Bash(wc -l /c/CamperFlow/camperflow/app/[locale]/staff/company/page.tsx)",
+      "Bash(find /c/CamperFlow/camperflow/app/api/staff -type f -name *.ts)",
+      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff/company -type f)"
+    ],
+    "additionalDirectories": [
+      "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"
     ]
   }
 }

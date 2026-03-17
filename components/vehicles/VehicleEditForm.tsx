@@ -15,6 +15,9 @@ export interface VehicleFormData {
   model: string;
   year: string;
   vin: string;
+  length_m: string;
+  width_m: string;
+  height_m: string;
   notes: string;
   photo_url: string;
   operational_hold: boolean;
@@ -281,6 +284,37 @@ export default function VehicleEditForm({
           value={formData.vin} onChange={onChange}
           placeholder={t("vinPlaceholder")} style={inputStyle}
         />
+      </div>
+
+      {/* Dimensions */}
+      <div
+        className="grid-two-col"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--space-4)" }}
+      >
+        <div>
+          <label htmlFor="length_m" style={labelStyle}>{t("lengthLabel")}</label>
+          <input
+            id="length_m" name="length_m" type="number" step="0.01" min="0"
+            value={formData.length_m} onChange={onChange}
+            placeholder="e.g. 5.99" style={inputStyle}
+          />
+        </div>
+        <div>
+          <label htmlFor="width_m" style={labelStyle}>{t("widthLabel")}</label>
+          <input
+            id="width_m" name="width_m" type="number" step="0.01" min="0"
+            value={formData.width_m} onChange={onChange}
+            placeholder="e.g. 2.10" style={inputStyle}
+          />
+        </div>
+        <div>
+          <label htmlFor="height_m" style={labelStyle}>{t("heightLabel")}</label>
+          <input
+            id="height_m" name="height_m" type="number" step="0.01" min="0"
+            value={formData.height_m} onChange={onChange}
+            placeholder="e.g. 2.85" style={inputStyle}
+          />
+        </div>
       </div>
 
       {/* Photo upload */}

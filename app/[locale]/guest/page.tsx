@@ -44,17 +44,17 @@ const icons: Record<string, ReactNode> = {
       </svg>
     </div>
   ),
-  rulesAndTips: (
+  faq: (
     <div style={iconWrap}>
       <svg width="24" height="24" stroke="currentColor" fill="none">
-        <path strokeWidth="2" d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        <path strokeWidth="2" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-6v.01M12 8a2 2 0 00-2 2" />
       </svg>
     </div>
   ),
-  messages: (
+  help: (
     <div style={iconWrap}>
       <svg width="24" height="24" stroke="currentColor" fill="none">
-        <path strokeWidth="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+        <path strokeWidth="2" d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 14v.01M12 7a3 3 0 013 3c0 1.5-1.5 2.5-2.5 3-.5.25-.5.75-.5 1" />
       </svg>
     </div>
   ),
@@ -79,12 +79,12 @@ export default function GuestPage() {
   }
 
   const cards: { key: string; functional: boolean; href: string }[] = [
-    { key: "bookingDetails", functional: true,  href: `/${locale}/guest/bookings/${code}` },
-    { key: "emergency",      functional: true,  href: `/${locale}/guest/emergency?code=${code}` },
-    { key: "pickupInfo",     functional: false, href: "#" },
-    { key: "returnInfo",     functional: false, href: "#" },
-    { key: "rulesAndTips",   functional: false, href: "#" },
-    { key: "messages",       functional: false, href: "#" },
+    { key: "bookingDetails", functional: true, href: `/${locale}/guest/bookings/${code}` },
+    { key: "pickupInfo",     functional: true, href: `/${locale}/guest/pickup?code=${code}` },
+    { key: "returnInfo",     functional: true, href: `/${locale}/guest/return?code=${code}` },
+    { key: "faq",            functional: true, href: `/${locale}/guest/faq?code=${code}` },
+    { key: "help",           functional: true, href: `/${locale}/guest/help?code=${code}` },
+    { key: "emergency",      functional: true, href: `/${locale}/guest/emergency?code=${code}` },
   ];
 
   const sharedCardStyle = {
@@ -144,6 +144,18 @@ export default function GuestPage() {
         >
           {t("guestAccess")}
         </span>
+        <Link
+          href={`/${locale}`}
+          style={{
+            marginLeft: "auto",
+            fontSize: "14px",
+            color: "rgb(var(--muted))",
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {t("useDifferentCode")}
+        </Link>
       </div>
 
       {/* Card grid */}

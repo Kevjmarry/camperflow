@@ -18,6 +18,7 @@ interface ChecklistTemplate {
   active: boolean;
   created_at: string;
   is_system?: boolean;
+  item_count?: number;
 }
 
 function isSystemTemplate(template: ChecklistTemplate): boolean {
@@ -152,9 +153,26 @@ export default function ChecklistTemplatesPage() {
 
     if (error) {
       setErrorMsg(error.message);
-    } else {
-      setTemplates(data || []);
+      return;
     }
+
+    // Fetch item counts from checklist_template_items
+    const templateIds = (data ?? []).map((tmpl) => tmpl.id);
+    if (templateIds.length > 0) {
+      const { data: itemRows } = await supabase
+        .from('checklist_template_items')
+        .select('template_id')
+        .in('template_id', templateIds);
+
+      const countMap: Record<string, number> = {};
+      for (const row of itemRows ?? []) {
+        countMap[row.template_id] = (countMap[row.template_id] ?? 0) + 1;
+      }
+
+      data = (data ?? []).map((tmpl) => ({ ...tmpl, item_count: countMap[tmpl.id] ?? 0 }));
+    }
+
+    setTemplates(data || []);
   }
 
   useEffect(() => {
@@ -263,6 +281,13 @@ export default function ChecklistTemplatesPage() {
         </td>
         <td
           className="cf-td"
+          data-label={t('colItems')}
+          style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}
+        >
+          <span className="cf-td-value">{template.item_count ?? 0}</span>
+        </td>
+        <td
+          className="cf-td"
           data-label={t('colStatus')}
           style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom }}
         >
@@ -310,15 +335,17 @@ export default function ChecklistTemplatesPage() {
           <div className="cf-table-wrapper">
             <table className="cf-table" style={TABLE_STYLE}>
               <colgroup className="cf-colgroup">
-                <col style={{ width: '45%' }} />
+                <col style={{ width: '38%' }} />
                 <col style={{ width: '18%' }} />
-                <col style={{ width: '17%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '12%' }} />
                 <col style={{ width: '20%' }} />
               </colgroup>
               <thead className="cf-thead">
                 <tr>
                   <th style={TH}>{t('colName')}</th>
                   <th style={TH}>{t('colType')}</th>
+                  <th style={TH}>{t('colItems')}</th>
                   <th style={TH}>{t('colStatus')}</th>
                   <th style={{ ...TH, textAlign: 'right' }}>{t('colActions')}</th>
                 </tr>

@@ -34,9 +34,36 @@ interface VehicleRow {
   name: string | null;
   registration_plate: string | null;
   vin: string | null;
+  length_m: number | null;
+  width_m: number | null;
+  height_m: number | null;
 }
 
 const STORAGE_KEY = "camperflow:last_company_theme";
+
+const NOTES_PLACEHOLDER_LABELS = [
+  "company name",
+  "company registration no.",
+  "vat no.",
+  "vat registration no.",
+  "comments",
+];
+
+function hasRealNotes(notes: string | null): boolean {
+  if (!notes) return false;
+  for (const line of notes.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx !== -1) {
+      const label = trimmed.slice(0, colonIdx).trim().toLowerCase();
+      const value = trimmed.slice(colonIdx + 1).trim();
+      if (NOTES_PLACEHOLDER_LABELS.includes(label) && !value) continue;
+    }
+    return true;
+  }
+  return false;
+}
 
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -103,7 +130,7 @@ export default async function GuestBookingPage({ params }: PageProps) {
   if (booking.vehicle_id) {
     const { data, error: vehicleError } = await supabase
       .from("vehicles")
-      .select("id, name, registration_plate, vin")
+      .select("id, name, registration_plate, vin, length_m, width_m, height_m")
       .eq("id", booking.vehicle_id)
       .maybeSingle<VehicleRow>();
 
@@ -344,7 +371,7 @@ try{
             </div>
           </div>
 
-          {booking.notes && (
+          {hasRealNotes(booking.notes) && (
             <div
               style={{
                 marginTop: "var(--space-6)",
@@ -445,6 +472,32 @@ try{
                   <p style={{ fontFamily: "monospace", fontSize: "14px", color: "rgb(var(--muted))" }}>{vehicle.vin}</p>
                 </div>
               )}
+
+              {(vehicle.length_m != null || vehicle.width_m != null || vehicle.height_m != null) && (
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      color: "rgb(var(--text-secondary))",
+                      marginBottom: "var(--space-2)",
+                    }}
+                  >
+                    {t("dimensions")}
+                  </p>
+                  <p style={{ fontWeight: "500", color: "rgb(var(--text))", fontSize: "14px" }}>
+                    {[
+                      vehicle.length_m != null && `${t("dimensionLength")} ${vehicle.length_m} m`,
+                      vehicle.width_m  != null && `${t("dimensionWidth")}  ${vehicle.width_m} m`,
+                      vehicle.height_m != null && `${t("dimensionHeight")} ${vehicle.height_m} m`,
+                    ]
+                      .filter(Boolean)
+                      .join("  ·  ")}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -538,78 +591,92 @@ try{
             </h2>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              {checklists.map((checklist: any) => (
-                <div
-                  key={checklist.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    padding: "var(--space-4)",
-                    background: "rgb(var(--app-bg))",
-                    border: "1px solid rgb(var(--border))",
-                    borderRadius: "var(--radius)",
-                  }}
-                >
-                  <div>
-                    <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>
-                      {checklist.type || t("checklistDefault")}
-                    </p>
-                    {checklist.created_at && (
-                      <p style={{ marginTop: "var(--space-1)", fontSize: "14px", color: "rgb(var(--muted))" }}>
-                        {new Date(checklist.created_at).toLocaleString(dateLocale)}
-                      </p>
-                    )}
-                  </div>
+              {checklists.map((checklist: any) => {
+                const isClickable = checklist.completed_at || checklist.can_submit;
+                const rowStyle = {
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  padding: "var(--space-4)",
+                  background: "rgb(var(--app-bg))",
+                  border: "1px solid rgb(var(--border))",
+                  borderRadius: "var(--radius)",
+                  textDecoration: "none",
+                };
+                const checklistHref = `/${locale}/guest/bookings/${encodeURIComponent(code)}/checklists/${checklist.template_id}?code=${encodeURIComponent(code)}`;
 
-                  {checklist.completed_at ? (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        background: "rgb(var(--success) / 0.1)",
-                        color: "rgb(var(--success))",
-                        borderRadius: "var(--radius-xl)",
-                        padding: "var(--space-1) var(--space-3)",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {t("checklistCompleted")}
-                    </span>
-                  ) : checklist.can_submit ? (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        background: "rgb(var(--brand-light))",
-                        color: "rgb(var(--brand))",
-                        borderRadius: "var(--radius-xl)",
-                        padding: "var(--space-1) var(--space-3)",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {t("checklistAvailable")}
-                    </span>
-                  ) : (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        background: "rgb(var(--muted) / 0.1)",
-                        color: "rgb(var(--muted))",
-                        borderRadius: "var(--radius-xl)",
-                        padding: "var(--space-1) var(--space-3)",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {t("checklistLocked")}
-                    </span>
-                  )}
-                </div>
-              ))}
+                const rowInner = (
+                  <>
+                    <div>
+                      <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>
+                        {checklist.type || t("checklistDefault")}
+                      </p>
+                      {checklist.created_at && (
+                        <p style={{ marginTop: "var(--space-1)", fontSize: "14px", color: "rgb(var(--muted))" }}>
+                          {new Date(checklist.created_at).toLocaleString(dateLocale)}
+                        </p>
+                      )}
+                    </div>
+
+                    {checklist.completed_at ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          background: "rgb(var(--success) / 0.1)",
+                          color: "rgb(var(--success))",
+                          borderRadius: "var(--radius-xl)",
+                          padding: "var(--space-1) var(--space-3)",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {t("checklistCompleted")}
+                      </span>
+                    ) : checklist.can_submit ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          background: "rgb(var(--brand-light))",
+                          color: "rgb(var(--brand))",
+                          borderRadius: "var(--radius-xl)",
+                          padding: "var(--space-1) var(--space-3)",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {t("checklistAvailable")}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          background: "rgb(var(--muted) / 0.1)",
+                          color: "rgb(var(--muted))",
+                          borderRadius: "var(--radius-xl)",
+                          padding: "var(--space-1) var(--space-3)",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {t("checklistLocked")}
+                      </span>
+                    )}
+                  </>
+                );
+
+                return isClickable ? (
+                  <Link key={checklist.id} href={checklistHref} style={rowStyle}>
+                    {rowInner}
+                  </Link>
+                ) : (
+                  <div key={checklist.id} style={rowStyle}>
+                    {rowInner}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

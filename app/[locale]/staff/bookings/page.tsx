@@ -219,7 +219,14 @@ export default function BookingsPage() {
 
     result = [...result].sort((a, b) => {
       switch (sortBy) {
-        case 'pickup_asc':   return a.pickup_at.localeCompare(b.pickup_at);
+        case 'pickup_asc': {
+          const now = new Date().toISOString();
+          const aFuture = a.pickup_at >= now;
+          const bFuture = b.pickup_at >= now;
+          if (aFuture && bFuture) return a.pickup_at.localeCompare(b.pickup_at);
+          if (!aFuture && !bFuture) return b.pickup_at.localeCompare(a.pickup_at);
+          return aFuture ? -1 : 1;
+        }
         case 'pickup_desc':  return b.pickup_at.localeCompare(a.pickup_at);
         case 'created_desc': return (b.created_at ?? '').localeCompare(a.created_at ?? '');
         case 'created_asc':  return (a.created_at ?? '').localeCompare(b.created_at ?? '');

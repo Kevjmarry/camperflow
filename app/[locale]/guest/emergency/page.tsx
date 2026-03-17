@@ -1,11 +1,33 @@
-"use client";
-
+import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
 import type { ReactNode } from "react";
 
-function PhoneRow({ label }: { label: string }) {
+interface PageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ code?: string }>;
+}
+
+interface GuestBooking {
+  company_id: string | null;
+}
+
+interface CompanyEmergency {
+  emergency_accident_phone_primary: string | null;
+  emergency_accident_phone_secondary: string | null;
+  emergency_breakdown_phone_primary: string | null;
+  emergency_breakdown_phone_secondary: string | null;
+}
+
+function PhoneRow({
+  label,
+  phone,
+  notConfigured,
+}: {
+  label: string;
+  phone: string | null;
+  notConfigured: string;
+}) {
   return (
     <div
       style={{
@@ -52,15 +74,24 @@ function PhoneRow({ label }: { label: string }) {
         >
           {label}
         </p>
-        <p
-          style={{
-            fontSize: "14px",
-            color: "rgb(var(--text-secondary))",
-            fontStyle: "italic",
-          }}
-        >
-          Not yet configured
-        </p>
+        {phone ? (
+          <a
+            href={`tel:${phone}`}
+            style={{ fontSize: "14px", color: "rgb(var(--text))", fontWeight: "500", textDecoration: "none" }}
+          >
+            {phone}
+          </a>
+        ) : (
+          <p
+            style={{
+              fontSize: "14px",
+              color: "rgb(var(--text-secondary))",
+              fontStyle: "italic",
+            }}
+          >
+            {notConfigured}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -72,12 +103,18 @@ function SectionCard({
   instructions,
   phone1Label,
   phone2Label,
+  phone1,
+  phone2,
+  notConfigured,
 }: {
   title: string;
   icon: ReactNode;
   instructions: string;
   phone1Label: string;
   phone2Label: string;
+  phone1: string | null;
+  phone2: string | null;
+  notConfigured: string;
 }) {
   return (
     <div className="surface" style={{ padding: "var(--space-6)" }}>
@@ -105,18 +142,19 @@ function SectionCard({
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-        <PhoneRow label={phone1Label} />
-        <PhoneRow label={phone2Label} />
+        <PhoneRow label={phone1Label} phone={phone1} notConfigured={notConfigured} />
+        <PhoneRow label={phone2Label} phone={phone2} notConfigured={notConfigured} />
       </div>
     </div>
   );
 }
 
-export default function EmergencyPage() {
-  const t = useTranslations("guestEmergency");
-  const locale = useLocale();
-  const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+export default async function EmergencyPage({ params, searchParams }: PageProps) {
+  const { locale } = await params;
+  const { code: codeRaw } = await searchParams;
+  const code = decodeURIComponent(codeRaw || "").trim();
+
+  const t = await getTranslations("guestEmergency");
 
   if (!code) {
     return (
@@ -129,6 +167,32 @@ export default function EmergencyPage() {
       </div>
     );
   }
+
+  const supabase = await createClient();
+
+  let emergency: CompanyEmergency = {
+    emergency_accident_phone_primary: null,
+    emergency_accident_phone_secondary: null,
+    emergency_breakdown_phone_primary: null,
+    emergency_breakdown_phone_secondary: null,
+  };
+
+  const { data: booking } = await supabase
+    .rpc("get_guest_booking_by_code", { p_code: code })
+    .maybeSingle<GuestBooking>();
+
+  if (booking?.company_id) {
+    const { data } = await supabase
+      .from("companies")
+      .select(
+        "emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary"
+      )
+      .eq("id", booking.company_id)
+      .maybeSingle<CompanyEmergency>();
+    if (data) emergency = data;
+  }
+
+  const notConfigured = t("notConfigured");
 
   const iconWrapError = {
     width: "48px",
@@ -210,6 +274,9 @@ export default function EmergencyPage() {
           instructions={t("accident.instructions")}
           phone1Label={t("accident.phone1Label")}
           phone2Label={t("accident.phone2Label")}
+          phone1={emergency.emergency_accident_phone_primary}
+          phone2={emergency.emergency_accident_phone_secondary}
+          notConfigured={notConfigured}
         />
       </div>
 
@@ -226,6 +293,9 @@ export default function EmergencyPage() {
         instructions={t("breakdown.instructions")}
         phone1Label={t("breakdown.phone1Label")}
         phone2Label={t("breakdown.phone2Label")}
+        phone1={emergency.emergency_breakdown_phone_primary}
+        phone2={emergency.emergency_breakdown_phone_secondary}
+        notConfigured={notConfigured}
       />
 
     </div>

@@ -806,6 +806,10 @@
     "vehicle": "Fahrzeug",
     "licensePlate": "Kennzeichen",
     "vin": "FIN",
+    "dimensions": "Abmessungen",
+    "dimensionLength": "L",
+    "dimensionWidth": "B",
+    "dimensionHeight": "H",
     "customerInformation": "Kundeninformationen",
     "name": "Name",
     "email": "E-Mail-Adresse",
@@ -1088,6 +1092,9 @@
           "model": "Modell *",
           "year": "Baujahr *",
           "vin": "VIN (optional)",
+          "lengthM": "Länge (m)",
+          "widthM": "Breite (m)",
+          "heightM": "Höhe (m)",
           "status": "Status",
           "notes": "Notizen (optional)",
           "operationalHold": "Betriebssperre",
@@ -1383,6 +1390,9 @@
     "yearPlaceholder": "z. B. 2022",
     "vinLabel": "FIN",
     "vinPlaceholder": "Fahrzeug-Identifizierungsnummer",
+    "lengthLabel": "Länge (m)",
+    "widthLabel": "Breite (m)",
+    "heightLabel": "Höhe (m)",
     "notesLabel": "Notizen",
     "notesPlaceholder": "Zusätzliche Notizen...",
     "statusLabel": "Status",
@@ -1459,21 +1469,43 @@
       "removePhoto": "Foto entfernen"
     }
   },
+  "guestPickup": {
+    "title": "Abholinformationen",
+    "pickupDateTime": "Abholdatum & -uhrzeit",
+    "vehicle": "Fahrzeug",
+    "placeholder": "Abholinstruktionen werden hier verfügbar sein, sobald sie vom Vermieter konfiguriert wurden.",
+    "pickupInfo": "Abholinformationen",
+    "contactPhone": "Telefon",
+    "contactWhatsapp": "WhatsApp"
+  },
+  "guestReturn": {
+    "title": "Rückgabeinformationen",
+    "returnDateTime": "Rückgabedatum & -uhrzeit",
+    "vehicle": "Fahrzeug",
+    "placeholder": "Rückgabeinstruktionen werden hier verfügbar sein, sobald sie vom Vermieter konfiguriert wurden.",
+    "returnInfo": "Rückgabeinformationen",
+    "contactPhone": "Telefon",
+    "contactWhatsapp": "WhatsApp",
+    "checklistTitle": "Rückgabe-Checkliste",
+    "noChecklist": "Für diese Buchung wurde keine Rückgabe-Checkliste erstellt.",
+    "noItems": "Diese Checkliste enthält keine Einträge."
+  },
   "guestDashboard": {
     "title": "Meine Buchung",
     "subtitle": "Alles Wichtige rund um Ihre Miete.",
     "summaryCode": "Buchungscode",
     "guestAccess": "Gastzugang",
+    "useDifferentCode": "Anderen Buchungscode verwenden",
     "comingSoon": "Demnächst",
     "noCodeTitle": "Kein Buchungscode",
     "noCodeMessage": "Bitte nutzen Sie den Link aus Ihrer Buchungsbestätigung.",
     "cards": {
       "bookingDetails": "Buchungsdetails",
-      "emergency": "Notfall & Pannenhilfe",
       "pickupInfo": "Abholinformationen",
       "returnInfo": "Rückgabeinformationen",
-      "rulesAndTips": "Regeln & Tipps",
-      "messages": "Nachrichten"
+      "faq": "FAQ",
+      "help": "Fahrzeugführer",
+      "emergency": "Notfall & Pannenhilfe"
     }
   },
   "staffCompany": {
@@ -1545,6 +1577,7 @@
     "noCodeTitle": "Kein Buchungscode",
     "noCodeMessage": "Es wurde kein Buchungscode gefunden. Bitte nutzen Sie den Link in Ihrer Bestätigungs-E-Mail.",
     "back": "Zurück zur Übersicht",
+    "notConfigured": "Noch nicht konfiguriert",
     "title": "Notfall & Pannenhilfe",
     "subtitle": "Rund um die Uhr erreichbar — Hilfe ist nur einen Anruf entfernt",
     "languageNote": "Unser Support ist auf Englisch und Deutsch (EN / DE) verfügbar. Rufen Sie uns einfach an – wir helfen Ihnen gerne in Ihrer bevorzugten Sprache.",
@@ -1572,6 +1605,7 @@
     "noTemplates": "Noch keine Vorlagen vorhanden.",
     "colName": "Name",
     "colType": "Typ",
+    "colItems": "Einträge",
     "colStatus": "Status",
     "colActions": "Aktionen",
     "badgeActive": "Aktiv",

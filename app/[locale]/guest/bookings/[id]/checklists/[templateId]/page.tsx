@@ -1,185 +1,254 @@
-'use client'
+import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { useTranslations } from 'next-intl'
-import PageContainer from '@/components/PageContainer'
-import { createClient } from '@/lib/supabase/client'
+interface PageProps {
+  params: Promise<{ locale: string; id: string; templateId: string }>;
+}
 
-export default function GuestChecklistPage({
-  params,
-}: {
-  params: { locale: string; id: string; templateId: string }
-}) {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const t = useTranslations('guestChecklist')
-  const code = searchParams.get('code')
-  const [checklist, setChecklist] = useState<any>(null)
-  const [items, setItems] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+interface GuestBooking {
+  company_id: string | null;
+}
 
-  useEffect(() => {
-    if (!code) {
-      router.push(`/${params.locale}/guest`)
-      return
-    }
+export default async function GuestChecklistPage({ params }: PageProps) {
+  const { locale, id: codeRaw, templateId } = await params;
+  const code = decodeURIComponent(codeRaw || "").trim();
+  const supabase = await createClient();
+  const t = await getTranslations("guestBooking");
 
-    fetchChecklistData()
-  }, [code, params.id, params.templateId, params.locale])
-
-  const fetchChecklistData = async () => {
-    try {
-      const supabase = createClient()
-      
-      const { data: bookingData } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('id', params.id)
-        .eq('code', code)
-        .single()
-
-      if (!bookingData) throw new Error('Invalid booking')
-
-      const { data: checklistData, error: checklistError } = await supabase
-        .from('booking_checklists')
-        .select('*, checklist_template:checklist_templates(name)')
-        .eq('booking_id', params.id)
-        .eq('template_id', params.templateId)
-        .single()
-
-      if (checklistError) throw checklistError
-
-      const { data: itemsData } = await supabase
-        .from('checklist_items')
-        .select('*')
-        .eq('checklist_id', checklistData.id)
-        .order('order_index')
-
-      setChecklist(checklistData)
-      setItems(itemsData || [])
-    } catch (err: any) {
-      setError(t('checklistNotFoundOrInvalidCode'))
-    } finally {
-      setLoading(false)
-    }
+  if (!code) {
+    return (
+      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      </div>
+    );
   }
 
-  if (loading) {
+  const { data: booking, error: bookingError } = await supabase
+    .rpc("get_guest_booking_by_code", { p_code: code })
+    .maybeSingle<GuestBooking>();
+
+  if (bookingError || !booking) {
     return (
-      <PageContainer>
-        <div className="surface p-8">
-          <p>{t('loading')}</p>
-        </div>
-      </PageContainer>
-    )
+      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      </div>
+    );
   }
 
-  if (error || !checklist) {
+  if (!booking.company_id) {
     return (
-      <PageContainer>
-        <div className="surface p-8">
-          <h1 className="text-2xl font-bold mb-4">{t('error')}</h1>
-          <p className="text-red-600 mb-4">{error || t('checklistNotFound')}</p>
-          <Link href={`/${params.locale}/guest`} className="btn btn-secondary">
-            {t('backToPortal')}
+      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      </div>
+    );
+  }
+
+  const { data: template } = await supabase
+    .from("checklist_templates")
+    .select("id, name, type")
+    .eq("id", templateId)
+    .eq("company_id", booking.company_id)
+    .maybeSingle();
+
+  if (!template) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <div>
+          <Link
+            href={`/${locale}/guest/bookings/${encodeURIComponent(code)}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "rgb(var(--text-secondary))",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("back")}
           </Link>
         </div>
-      </PageContainer>
-    )
+        <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px" }}>
+          <p style={{ color: "rgb(var(--muted))" }}>{t("notFoundTitle")}</p>
+        </div>
+      </div>
+    );
   }
 
-  const completedCount = items.filter(item => item.checked).length
-  const progress = items.length > 0 ? (completedCount / items.length) * 100 : 0
+  const { data: itemsData } = await supabase
+    .from("checklist_template_items")
+    .select("id, label, section, sort_order, required")
+    .eq("template_id", template.id)
+    .order("sort_order", { ascending: true });
+
+  const items = itemsData || [];
+
+  // Group items by section
+  const sections: { name: string | null; items: typeof items }[] = [];
+  for (const item of items) {
+    const last = sections[sections.length - 1];
+    if (!last || last.name !== item.section) {
+      sections.push({ name: item.section, items: [item] });
+    } else {
+      last.items.push(item);
+    }
+  }
 
   return (
-    <PageContainer>
-      <div className="mb-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      {/* Back link */}
+      <div>
         <Link
-          href={`/${params.locale}/guest/bookings/${params.id}?code=${code}`}
-          className="btn btn-secondary"
+          href={`/${locale}/guest/bookings/${encodeURIComponent(code)}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            fontSize: "14px",
+            fontWeight: "500",
+            color: "rgb(var(--text-secondary))",
+            textDecoration: "none",
+          }}
         >
-          {t('backToBooking')}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {t("back")}
         </Link>
       </div>
 
-      <div className="surface p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">
-            {checklist.checklist_template?.name || t('checklistFallback')}
-          </h1>
-          <p className="text-gray-600">
-            {t('status')}: <span className="font-medium">{checklist.status}</span>
+      {/* Title bar */}
+      <div
+        className="surface"
+        style={{
+          padding: "var(--space-6)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "var(--space-4)",
+        }}
+      >
+        <h1>{template.name}</h1>
+        <span
+          style={{
+            background: "rgb(var(--brand-light))",
+            color: "rgb(var(--brand))",
+            padding: "var(--space-2) var(--space-4)",
+            borderRadius: "var(--radius-xl)",
+            fontSize: "14px",
+            fontWeight: "500",
+          }}
+        >
+          {t("guestAccess")}
+        </span>
+      </div>
+
+      {/* Guide notice */}
+      <div
+        className="surface"
+        style={{
+          padding: "var(--space-5) var(--space-6)",
+          borderLeft: "3px solid rgb(var(--brand))",
+        }}
+      >
+        <p style={{ fontSize: "14px", color: "rgb(var(--text-secondary))", margin: 0 }}>
+          {locale === "de"
+            ? "Diese Checkliste dient als Übersicht. Das digitale Ausfüllen wird in Kürze verfügbar sein."
+            : "This checklist is shown as a guide. Digital completion will be available soon."}
+        </p>
+      </div>
+
+      {/* Items */}
+      <div className="surface" style={{ padding: "var(--space-6)" }}>
+        {items.length === 0 ? (
+          <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
+            {locale === "de" ? "Keine Einträge vorhanden." : "No checklist items available."}
           </p>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <label className="label">{t('progress')}</label>
-            <span className="text-sm text-gray-600">
-              {t('itemsCount', { completed: completedCount, total: items.length })}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {items.length === 0 ? (
-            <p className="text-gray-600">{t('noItemsAvailable')}</p>
-          ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className="border rounded-lg p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {item.checked ? (
-                      <div className="w-5 h-5 bg-green-500 rounded flex items-center justify-center">
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 border-2 rounded" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${item.checked ? 'line-through text-gray-500' : ''}`}>
-                      {item.title}
-                    </p>
-                    {item.description && (
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                    )}
-                    {item.notes && (
-                      <p className="text-sm text-gray-500 mt-2 italic">
-                        {t('note')}: {item.notes}
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+            {sections.map((section, si) => (
+              <div key={si}>
+                {section.name && (
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      color: "rgb(var(--text-secondary))",
+                      marginBottom: "var(--space-3)",
+                    }}
+                  >
+                    {section.name}
+                  </p>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  {section.items.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "var(--space-3)",
+                        padding: "var(--space-3) var(--space-4)",
+                        background: "rgb(var(--app-bg))",
+                        border: "1px solid rgb(var(--border-light))",
+                        borderRadius: "var(--radius)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          marginTop: "2px",
+                          width: "18px",
+                          height: "18px",
+                          border: "2px solid rgb(var(--border))",
+                          borderRadius: "4px",
+                          background: "rgb(var(--surface))",
+                        }}
+                      />
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: item.required ? "500" : "400",
+                          color: "rgb(var(--text))",
+                          margin: 0,
+                          lineHeight: "1.5",
+                        }}
+                      >
+                        {item.label}
+                        {item.required && (
+                          <span
+                            style={{
+                              marginLeft: "var(--space-2)",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              color: "rgb(var(--brand))",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            {locale === "de" ? "Pflicht" : "Required"}
+                          </span>
+                        )}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {checklist.completed_at && (
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800">
-              {t('completedOn', { 
-                date: new Date(checklist.completed_at).toLocaleString(params.locale === 'de' ? 'de-DE' : 'en-US')
-              })}
-            </p>
+            ))}
           </div>
         )}
       </div>
-    </PageContainer>
-  )
+    </div>
+  );
 }

@@ -26,6 +26,9 @@ interface Vehicle {
   model: string | null;
   year: number | null;
   vin: string | null;
+  length_m: number | null;
+  width_m: number | null;
+  height_m: number | null;
   notes: string | null;
   status: "ready" | "preparing" | "on_rent";
   photo_url: string | null;
@@ -81,6 +84,9 @@ export default function EditVehiclePage({
     model: "",
     year: "",
     vin: "",
+    length_m: "",
+    width_m: "",
+    height_m: "",
     notes: "",
     photo_url: "",
     operational_hold: false,
@@ -164,6 +170,9 @@ export default function EditVehiclePage({
           model: vehicleData.model || "",
           year: vehicleData.year?.toString() || "",
           vin: vehicleData.vin || "",
+          length_m: vehicleData.length_m?.toString() || "",
+          width_m: vehicleData.width_m?.toString() || "",
+          height_m: vehicleData.height_m?.toString() || "",
           notes: vehicleData.notes || "",
           photo_url: vehicleData.photo_url || "",
           operational_hold: vehicleData.operational_hold ?? false,
@@ -442,6 +451,9 @@ export default function EditVehiclePage({
           model: formData.model || null,
           year: formData.year ? parseInt(formData.year) : null,
           vin: formData.vin || null,
+          length_m: formData.length_m ? parseFloat(formData.length_m) : null,
+          width_m: formData.width_m ? parseFloat(formData.width_m) : null,
+          height_m: formData.height_m ? parseFloat(formData.height_m) : null,
           notes: formData.notes || null,
           photo_url: formData.photo_url || null,
           operational_hold: formData.operational_hold,

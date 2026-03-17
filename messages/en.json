@@ -806,6 +806,10 @@
     "vehicle": "Vehicle",
     "licensePlate": "License Plate",
     "vin": "VIN",
+    "dimensions": "Dimensions",
+    "dimensionLength": "L",
+    "dimensionWidth": "W",
+    "dimensionHeight": "H",
     "customerInformation": "Customer Information",
     "name": "Name",
     "email": "Email Address",
@@ -1088,6 +1092,9 @@
           "model": "Model *",
           "year": "Year *",
           "vin": "VIN (optional)",
+          "lengthM": "Length (m)",
+          "widthM": "Width (m)",
+          "heightM": "Height (m)",
           "status": "Status",
           "notes": "Notes (optional)",
           "operationalHold": "Operational hold",
@@ -1383,6 +1390,9 @@
     "yearPlaceholder": "e.g. 2022",
     "vinLabel": "VIN",
     "vinPlaceholder": "Vehicle Identification Number",
+    "lengthLabel": "Length (m)",
+    "widthLabel": "Width (m)",
+    "heightLabel": "Height (m)",
     "notesLabel": "Notes",
     "notesPlaceholder": "Additional notes...",
     "statusLabel": "Status",
@@ -1459,21 +1469,43 @@
       "removePhoto": "Remove photo"
     }
   },
+  "guestPickup": {
+    "title": "Pickup Info",
+    "pickupDateTime": "Pickup date & time",
+    "vehicle": "Vehicle",
+    "placeholder": "Pickup instructions will be available here once configured by the rental company.",
+    "pickupInfo": "Pickup instructions",
+    "contactPhone": "Phone",
+    "contactWhatsapp": "WhatsApp"
+  },
+  "guestReturn": {
+    "title": "Return Info",
+    "returnDateTime": "Return date & time",
+    "vehicle": "Vehicle",
+    "placeholder": "Return instructions will be available here once configured by the rental company.",
+    "returnInfo": "Return instructions",
+    "contactPhone": "Phone",
+    "contactWhatsapp": "WhatsApp",
+    "checklistTitle": "Return Checklist",
+    "noChecklist": "No return checklist has been created for this booking.",
+    "noItems": "This checklist has no items."
+  },
   "guestDashboard": {
     "title": "My Booking",
     "subtitle": "Everything you need for your rental.",
     "summaryCode": "Booking code",
     "guestAccess": "Guest access",
+    "useDifferentCode": "Use different booking code",
     "comingSoon": "Coming soon",
     "noCodeTitle": "No booking code",
     "noCodeMessage": "Please use the link provided in your booking confirmation.",
     "cards": {
       "bookingDetails": "Booking details",
-      "emergency": "Emergency & assistance",
       "pickupInfo": "Pickup info",
       "returnInfo": "Return info",
-      "rulesAndTips": "Rules & tips",
-      "messages": "Messages"
+      "faq": "FAQ",
+      "help": "Vehicle guide",
+      "emergency": "Emergency & assistance"
     }
   },
   "staffCompany": {
@@ -1545,6 +1577,7 @@
     "noCodeTitle": "No Booking Code",
     "noCodeMessage": "No booking code was found. Please use the link from your confirmation email.",
     "back": "Back to dashboard",
+    "notConfigured": "Not yet configured",
     "title": "Emergency & Assistance",
     "subtitle": "Available 24 / 7 — help is one call away",
     "languageNote": "Support is available in English and German (EN / DE). Call us and we will assist you in your preferred language.",
@@ -1572,6 +1605,7 @@
     "noTemplates": "No templates yet.",
     "colName": "Name",
     "colType": "Type",
+    "colItems": "Items",
     "colStatus": "Status",
     "colActions": "Actions",
     "badgeActive": "Active",
