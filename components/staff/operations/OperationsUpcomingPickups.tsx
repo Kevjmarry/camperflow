@@ -106,7 +106,7 @@ function MetaBadges({
   t,
 }: {
   p: OpsUpcomingPickup
-  t: (k: string, v?: Record<string, unknown>) => string
+  t: ReturnType<typeof useTranslations>
 }) {
   const badges: React.ReactNode[] = []
 
