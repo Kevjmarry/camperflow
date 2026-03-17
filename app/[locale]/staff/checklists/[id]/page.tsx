@@ -38,7 +38,8 @@ export default async function ChecklistDetailPage({
       booking:bookings (
         id,
         booking_number,
-        customer_name
+        customer_name,
+        status
       )
     `
     )
