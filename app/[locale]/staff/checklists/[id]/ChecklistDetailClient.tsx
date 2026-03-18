@@ -9,6 +9,7 @@ import PageContainer from '@/components/PageContainer';
 type ChecklistInstanceType = {
   id: string;
   booking_id: string | null;
+  vehicle_id: string | null;
   checklist_type: string;
   status: string;
   started_at: string | null;
@@ -22,7 +23,10 @@ type ChecklistInstanceType = {
     customer_name: string;
     status: string;
   } | null;
-  vehicles: any;
+  vehicles: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 type ChecklistItemType = {
@@ -397,12 +401,14 @@ export default function ChecklistDetailClient({
   const navigateBack = useCallback(() => {
     if (from === 'booking' && instance.booking_id) {
       router.push(`/${locale}/staff/bookings/${instance.booking_id}`);
+    } else if (from === 'vehicle' && instance.vehicle_id) {
+      router.push(`/${locale}/staff/vehicles/${instance.vehicle_id}`);
     } else {
       router.push(
         `/${locale}/staff/checklists?scope=${listScope}&status=${listStatus}`
       );
     }
-  }, [from, instance.booking_id, locale, listScope, listStatus, router]);
+  }, [from, instance.booking_id, instance.vehicle_id, locale, listScope, listStatus, router]);
 
   /**
    * Navigate after checklist completion using entry-context awareness.
@@ -410,6 +416,8 @@ export default function ChecklistDetailClient({
   const navigateAfterCompletion = useCallback(() => {
     if (from === 'booking') {
       router.push(`/${locale}/staff/bookings`);
+    } else if (from === 'vehicle' && instance.vehicle_id) {
+      router.push(`/${locale}/staff/vehicles/${instance.vehicle_id}`);
     } else if (searchParams.has('listScope') || searchParams.has('listStatus')) {
       router.push(`/${locale}/staff/checklists`);
     } else if (instance.booking_id) {
@@ -417,7 +425,7 @@ export default function ChecklistDetailClient({
     } else {
       router.push(`/${locale}/staff/bookings`);
     }
-  }, [from, locale, instance.booking_id, router, searchParams]);
+  }, [from, locale, instance.booking_id, instance.vehicle_id, router, searchParams]);
 
   const handleBackClick = () => {
     navigateBack();
@@ -439,9 +447,7 @@ export default function ChecklistDetailClient({
       return;
     }
 
-    const confirmed = confirm(
-      `Complete all ${uncheckedItems.length} remaining item${uncheckedItems.length === 1 ? '' : 's'} and finish this checklist?`
-    );
+    const confirmed = confirm(t('quickCompleteConfirm', { count: uncheckedItems.length }));
     if (!confirmed) return;
 
     const {
@@ -870,13 +876,20 @@ export default function ChecklistDetailClient({
   const backButtonLabel =
     from === 'booking' && instance.booking_id
       ? t('backToBooking')
+      : from === 'vehicle' && instance.vehicle_id
+      ? t('backToVehicle')
       : t('backToChecklists');
 
   const CHECKLIST_TYPE_LABELS: Record<string, string> = {
-    handover: t('type_handover'),
-    return: t('type_return'),
-    cleaning: t('type_cleaning'),
-    mechanical: t('type_mechanical'),
+    handover:          t('type_handover'),
+    pickup:            t('type_pickup'),
+    return:            t('type_return'),
+    cleaning:          t('type_cleaning'),
+    mechanical:        t('type_mechanical'),
+    guest_prereturn:   t('type_guest_prereturn'),
+    vehicle_readiness: t('type_vehicle_readiness'),
+    pre_season:        t('type_pre_season'),
+    post_season:       t('type_post_season'),
   };
 
   const checklistTitle = CHECKLIST_TYPE_LABELS[instance.checklist_type] ?? t('typeUnknown');
@@ -1347,6 +1360,8 @@ export default function ChecklistDetailClient({
             <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
               {instance.bookings
                 ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
+                : instance.vehicles
+                ? instance.vehicles.name
                 : t('noBookingLinked')}
             </p>
           </div>
@@ -1416,7 +1431,7 @@ export default function ChecklistDetailClient({
                   strokeLinejoin="round"
                 />
               </svg>
-              Quick Mode
+              {t('quickMode')}
             </button>
           </div>
         </div>
@@ -1474,13 +1489,13 @@ export default function ChecklistDetailClient({
               }}
             >
               {allDoneAlready
-                ? `All ${totalItems} items checked`
-                : `${checkedItems} of ${totalItems} items checked`}
+                ? t('allItemsChecked', { total: totalItems })
+                : t('itemsCheckedOf', { checked: checkedItems, total: totalItems })}
             </div>
             <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
               {allDoneAlready
-                ? 'Checklist is complete.'
-                : `${remainingCount} item${remainingCount === 1 ? '' : 's'} remaining.`}
+                ? t('checklistIsComplete')
+                : t('itemsRemaining', { count: remainingCount })}
             </div>
           </div>
 
@@ -1507,20 +1522,20 @@ export default function ChecklistDetailClient({
             }}
           >
             {quickCompleting ? (
-              'Completing…'
+              t('completing')
             ) : allDoneAlready ? (
               <>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M2 8.5L6 12.5L14 4.5" stroke="rgb(var(--brand))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Done — go back
+                {t('doneGoBack')}
               </>
             ) : (
               <>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9 1L2 9.5H7.5L7 15L14 6.5H8.5L9 1Z" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round" />
                 </svg>
-                Complete checklist
+                {t('completeChecklist')}
               </>
             )}
           </button>
@@ -1559,7 +1574,7 @@ export default function ChecklistDetailClient({
               flexShrink: 0,
             }}
           >
-            Dismiss
+            {t('dismiss')}
           </button>
         </div>
       )}
@@ -1614,7 +1629,7 @@ export default function ChecklistDetailClient({
               padding: 0,
             }}
           >
-            Dismiss
+            {t('dismiss')}
           </button>
         </div>
       )}

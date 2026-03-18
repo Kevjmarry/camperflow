@@ -279,6 +279,17 @@
         "generalService": "Allgemeine Wartung"
       }
     },
+    "checklists": {
+      "title": "Fahrzeug-Checklisten",
+      "loading": "Checklisten werden geladen…",
+      "empty": "Keine Fahrzeug-Checklisten konfiguriert.",
+      "open": "Öffnen",
+      "continue": "Fortsetzen",
+      "view": "Ansehen",
+      "notStarted": "Nicht begonnen",
+      "inProgress": "In Bearbeitung",
+      "completed": "Abgeschlossen"
+    },
     "vehicleCalendar": {
       "title": "Kalender-Synchronisation",
       "connect": "Kalender verbinden",
@@ -1804,6 +1815,7 @@
   },
   "checklistDetail": {
     "backToBooking": "Zurück zur Buchung",
+    "backToVehicle": "Zurück zum Fahrzeug",
     "backToChecklists": "Zurück zu den Checklisten",
     "noBookingLinked": "Keine Buchung verknüpft",
     "statusNotStarted": "Nicht begonnen",
@@ -1819,10 +1831,15 @@
     "sectionOther": "Sonstiges",
     "sectionProgress": "{completed}/{total} abgeschlossen",
     "typeUnknown": "Checkliste",
-    "type_handover": "Übergabe-Checkliste",
+    "type_handover": "Abhol-Checkliste",
+    "type_pickup": "Abhol-Checkliste",
     "type_return": "Rückgabe-Checkliste",
     "type_cleaning": "Reinigungs-Checkliste",
     "type_mechanical": "Technische Checkliste",
+    "type_guest_prereturn": "Vorabnahme-Checkliste",
+    "type_vehicle_readiness": "Fahrzeugbereitschafts-Checkliste",
+    "type_pre_season": "Vorsaison-Checkliste",
+    "type_post_season": "Nachsaison-Checkliste",
     "lockFallback": "Diese Checkliste ist aufgrund einer Geschäftsregel gesperrt.",
     "errorItemUpdateFailed": "Checklistenpunkt konnte nicht gespeichert werden — die Änderung wurde nicht übernommen.",
     "errorStatusSyncFailed": "Status-Synchronisierung fehlgeschlagen — die Punkte wurden gespeichert, aber der Gesamtstatus konnte nicht aktualisiert werden.",
@@ -1942,6 +1959,7 @@
     },
     "import": {
       "button": "{count} Änderungen übernehmen",
+      "buttonApplied": "Import abgeschlossen",
       "importing": "Importiere…",
       "unexpectedError": "Beim Import ist ein unerwarteter Fehler aufgetreten.",
       "resultTitle": "Import abgeschlossen",

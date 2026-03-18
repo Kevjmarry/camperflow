@@ -101,8 +101,7 @@ export default function ChecklistsPage() {
           )
           .eq('company_id', companyId)
           .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover', 'mechanical'])
-          .not('booking_id', 'is', null)
-          .order('created_at', { ascending: false });
+          .not('booking_id', 'is', null);
 
         if (status !== 'all') {
           if (status === 'not_started') {
@@ -176,6 +175,23 @@ export default function ChecklistsPage() {
               return_at: booking?.return_at || undefined,
               created_at: item.created_at,
             };
+          });
+
+          // Sort by operational next-action date:
+          //   pickup / handover → pickup_at ASC
+          //   all others (return, cleaning, mechanical, guest_prereturn) → return_at ASC
+          // Fall back to the other date, then created_at when both are absent.
+          const PICKUP_TYPES = new Set(['pickup', 'handover']);
+          formatted.sort((a, b) => {
+            const pickA = PICKUP_TYPES.has(a.type);
+            const pickB = PICKUP_TYPES.has(b.type);
+            const dateA = pickA
+              ? (a.pickup_at ?? a.return_at ?? a.created_at)
+              : (a.return_at ?? a.pickup_at ?? a.created_at);
+            const dateB = pickB
+              ? (b.pickup_at ?? b.return_at ?? b.created_at)
+              : (b.return_at ?? b.pickup_at ?? b.created_at);
+            return dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
           });
 
           if (!cancelled) setBookingChecklists(formatted);

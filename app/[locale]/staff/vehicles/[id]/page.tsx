@@ -46,6 +46,13 @@ interface ComplianceRowRaw {
 
 type ComplianceStatus = "expired" | "expiring" | "ok";
 
+interface VehicleChecklist {
+  id: string;
+  checklist_type: string;
+  status: "pending" | "in_progress" | "completed";
+  template_name: string | null;
+}
+
 // Slugs that have translation keys in compliance.systemTypes.*
 const SYSTEM_SLUG_KEYS: Record<string, string> = {
   "technical-inspection": "technicalInspection",
@@ -126,9 +133,14 @@ export default function VehicleDetailPage({
   const [notFound, setNotFound] = useState(false);
   const [canManage, setCanManage] = useState(false);
 
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
   const [compliance, setCompliance] = useState<ComplianceRow[]>([]);
   const [allTypes, setAllTypes] = useState<ComplianceType[]>([]);
   const [complianceLoading, setComplianceLoading] = useState(true);
+
+  const [vehicleChecklists, setVehicleChecklists] = useState<VehicleChecklist[]>([]);
+  const [checklistsLoading, setChecklistsLoading] = useState(false);
 
   const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -177,13 +189,14 @@ export default function VehicleDetailPage({
 
         const { data: profile } = await supabase
           .from("staff_profiles")
-          .select("role, can_manage")
+          .select("role, can_manage, company_id")
           .eq("auth_user_id", user.id)
           .maybeSingle();
 
         setCanManage(
           profile ? profile.role === "admin" || profile.can_manage === true : false
         );
+        setCompanyId(profile?.company_id ?? null);
 
         const { data: vehicleData, error: vehicleError } = await supabase
           .from("vehicles")
@@ -247,6 +260,100 @@ export default function VehicleDetailPage({
     fetchCompliance();
   }, [vehicle, supabase]);
 
+  useEffect(() => {
+    if (!vehicle || !companyId) return;
+
+    const loadVehicleChecklists = async () => {
+      setChecklistsLoading(true);
+      try {
+        // 1. Fetch active vehicle-scoped templates for this company
+        const { data: templates } = await supabase
+          .from("checklist_templates")
+          .select("id, name, type")
+          .eq("company_id", companyId)
+          .eq("scope", "vehicle")
+          .eq("active", true);
+
+        if (!templates || templates.length === 0) {
+          setVehicleChecklists([]);
+          return;
+        }
+
+        // 2. Fetch existing instances for this vehicle
+        const { data: existing } = await supabase
+          .from("checklist_instances")
+          .select("id, template_id, checklist_type, status")
+          .eq("vehicle_id", vehicle.id)
+          .is("booking_id", null);
+
+        const existingByTemplateId = new Map(
+          (existing || []).map((i: any) => [i.template_id, i])
+        );
+
+        // 3. Create missing instances (with items)
+        for (const template of templates) {
+          if (existingByTemplateId.has(template.id)) continue;
+
+          const { data: newInstance } = await supabase
+            .from("checklist_instances")
+            .insert({
+              company_id: companyId,
+              vehicle_id: vehicle.id,
+              template_id: template.id,
+              checklist_type: template.type,
+              status: "pending",
+            })
+            .select("id")
+            .single();
+
+          if (newInstance) {
+            const { data: templateItems } = await supabase
+              .from("checklist_template_items")
+              .select("id")
+              .eq("template_id", template.id);
+
+            if (templateItems && templateItems.length > 0) {
+              await supabase.from("checklist_instance_items").insert(
+                templateItems.map((item: any) => ({
+                  instance_id: newInstance.id,
+                  template_item_id: item.id,
+                  checked: false,
+                }))
+              );
+            }
+
+            existingByTemplateId.set(template.id, {
+              id: newInstance.id,
+              template_id: template.id,
+              checklist_type: template.type,
+              status: "pending",
+            });
+          }
+        }
+
+        // 4. Build ordered list matching template order
+        const result: VehicleChecklist[] = templates
+          .map((t) => {
+            const inst = existingByTemplateId.get(t.id);
+            if (!inst) return null;
+            return {
+              id: inst.id,
+              checklist_type: inst.checklist_type as string,
+              status: inst.status as VehicleChecklist["status"],
+              template_name: t.name as string | null,
+            };
+          })
+          .filter((x): x is VehicleChecklist => x !== null);
+
+        setVehicleChecklists(result);
+      } finally {
+        setChecklistsLoading(false);
+      }
+    };
+
+    loadVehicleChecklists();
+  }, [vehicle, companyId, supabase]);
+
   const handleEditSave = async (rowId: string, expiryDate: string, notes: string) => {
     const { error } = await supabase
       .from("vehicle_compliance")
@@ -296,6 +403,17 @@ export default function VehicleDetailPage({
   const trackedTypeIds = new Set(compliance.map((r) => r.compliance_type_id));
   const availableToAdd = allTypes.filter((ct) => !trackedTypeIds.has(ct.id));
 
+  // Mirror the vehicles-list derived status: a ready vehicle with any
+  // incomplete vehicle-scope checklist should display as 'preparing'.
+  const derivedStatus: Vehicle["status"] =
+    vehicle?.status === "ready" &&
+    !checklistsLoading &&
+    vehicleChecklists.some(
+      (c) => c.status === "in_progress"
+    )
+      ? "preparing"
+      : (vehicle?.status ?? "ready");
+
   const getVehicleStatusLabel = (status: string) => {
     switch (status) {
       case "ready":     return t("status.ready");
@@ -311,6 +429,22 @@ export default function VehicleDetailPage({
       case "preparing": return "rgb(var(--warning))";
       case "on_rent":   return "rgb(var(--brand))";
       default:          return "rgb(var(--text))";
+    }
+  };
+
+  const getChecklistStatusLabel = (status: VehicleChecklist["status"]) => {
+    switch (status) {
+      case "completed":   return t("checklists.completed");
+      case "in_progress": return t("checklists.inProgress");
+      default:            return t("checklists.notStarted");
+    }
+  };
+
+  const getChecklistActionLabel = (status: VehicleChecklist["status"]) => {
+    switch (status) {
+      case "completed":   return t("checklists.view");
+      case "in_progress": return t("checklists.continue");
+      default:            return t("checklists.open");
     }
   };
 
@@ -461,13 +595,13 @@ export default function VehicleDetailPage({
                     style={{
                       padding: "var(--space-2) var(--space-3)",
                       borderRadius: "var(--radius)",
-                      background: `${getVehicleStatusColor(vehicle.status)}15`,
-                      color: getVehicleStatusColor(vehicle.status),
+                      background: `${getVehicleStatusColor(derivedStatus)}15`,
+                      color: getVehicleStatusColor(derivedStatus),
                       fontSize: "14px",
                       fontWeight: 600,
                     }}
                   >
-                    {getVehicleStatusLabel(vehicle.status)}
+                    {getVehicleStatusLabel(derivedStatus)}
                   </span>
                 </div>
                 <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
@@ -730,6 +864,77 @@ export default function VehicleDetailPage({
                 </div>
               )}
             </div>
+
+            {/* Vehicle Checklists */}
+            <div className="surface" style={{ padding: "var(--space-6)" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                {t("checklists.title")}
+              </div>
+              {checklistsLoading ? (
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
+                  {t("checklists.loading")}
+                </div>
+              ) : vehicleChecklists.length === 0 ? (
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
+                  {t("checklists.empty")}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  {vehicleChecklists.map((checklist) => (
+                    <div
+                      key={checklist.id}
+                      style={{
+                        padding: "var(--space-4)",
+                        background: "rgb(var(--border) / 0.3)",
+                        borderRadius: "var(--radius)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "var(--space-3)",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))", marginBottom: "var(--space-1)" }}>
+                          {checklist.template_name || checklist.checklist_type}
+                        </div>
+                        <div>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "var(--radius)",
+                              fontSize: "12px",
+                              fontWeight: 500,
+                              background: checklist.status === "completed"
+                                ? "rgb(var(--success) / 0.12)"
+                                : checklist.status === "in_progress"
+                                ? "rgb(var(--warning) / 0.12)"
+                                : "rgb(var(--muted) / 0.15)",
+                              color: checklist.status === "completed"
+                                ? "rgb(var(--success))"
+                                : checklist.status === "in_progress"
+                                ? "rgb(var(--warning))"
+                                : "rgb(var(--muted))",
+                            }}
+                          >
+                            {getChecklistStatusLabel(checklist.status)}
+                          </span>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/${locale}/staff/checklists/${checklist.id}?from=vehicle&vehicleId=${vehicle.id}`}
+                        className="btn btn-secondary"
+                        style={{ fontSize: "14px", padding: "var(--space-2) var(--space-4)", minHeight: "36px" }}
+                      >
+                        {getChecklistActionLabel(checklist.status)}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Calendar Sync */}
             <div className="surface" style={{ padding: "var(--space-6)" }}>
               <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>

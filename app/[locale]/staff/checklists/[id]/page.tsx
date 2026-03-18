@@ -28,6 +28,7 @@ export default async function ChecklistDetailPage({
       `
       id,
       booking_id,
+      vehicle_id,
       checklist_type,
       status,
       started_at,
@@ -40,6 +41,10 @@ export default async function ChecklistDetailPage({
         booking_number,
         customer_name,
         status
+      ),
+      vehicle:vehicles (
+        id,
+        name
       )
     `
     )
@@ -74,10 +79,12 @@ export default async function ChecklistDetailPage({
 
   // Normalize booking (array -> single object)
   const bk = Array.isArray(instance.booking) ? instance.booking[0] : instance.booking;
+  // Normalize vehicle (array -> single object)
+  const veh = Array.isArray((instance as any).vehicle) ? (instance as any).vehicle[0] : (instance as any).vehicle;
   const normalizedInstance = {
     ...instance,
     bookings: bk ?? null,
-    vehicles: null,
+    vehicles: veh ? { id: veh.id, name: veh.name } : null,
   };
 
   // Normalize template (array -> single object)

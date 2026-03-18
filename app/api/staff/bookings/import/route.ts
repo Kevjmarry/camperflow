@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ImportPreviewRow, NormalizedImportBooking } from '@/lib/bookings/import/types';
 
 // ── internal helpers ──────────────────────────────────────────────────────────
@@ -181,6 +182,63 @@ function isIcalAllDay(rawMetadata: Record<string, unknown>): boolean {
   if (!raw) return false;
   const dtstart = typeof raw.DTSTART === 'string' ? raw.DTSTART.trim() : '';
   return /^\d{8}$/.test(dtstart);
+}
+
+// ── Customer find-or-create ────────────────────────────────────────────────────
+
+/**
+ * Finds an existing customer for the company matching on email (primary) or
+ * full_name+phone (fallback). Creates a new customer row if none found.
+ * Returns the customer id, or null on error.
+ */
+async function findOrCreateCustomer(
+  supabase: SupabaseClient,
+  companyId: string,
+  fullName: string,
+  phone: string | null,
+  email: string | null,
+): Promise<string | null> {
+  const trimmedEmail = email?.trim() || null;
+  const trimmedPhone = phone?.trim() || null;
+  const trimmedName = fullName?.trim() || null;
+
+  // Try email match first (most reliable)
+  if (trimmedEmail) {
+    const { data: byEmail } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('email', trimmedEmail)
+      .maybeSingle();
+    if (byEmail) return byEmail.id;
+  }
+
+  // Fallback: match by full_name + phone
+  if (trimmedName && trimmedPhone) {
+    const { data: byNamePhone } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('full_name', trimmedName)
+      .eq('phone', trimmedPhone)
+      .maybeSingle();
+    if (byNamePhone) return byNamePhone.id;
+  }
+
+  // Create new customer
+  const { data: created, error } = await supabase
+    .from('customers')
+    .insert({
+      company_id: companyId,
+      full_name: trimmedName,
+      email: trimmedEmail,
+      phone: trimmedPhone,
+    })
+    .select('id')
+    .single();
+
+  if (error || !created) return null;
+  return created.id;
 }
 
 // Shape of the existing row fields we need for merge decisions.
@@ -400,6 +458,14 @@ export async function POST(request: NextRequest) {
               ? existing!.return_at
               : applyDefaultTime(n.returnAt, defaultDropoffTime);
 
+          const customerId = await findOrCreateCustomer(
+            supabase,
+            companyId,
+            mergedName,
+            mergedPhone,
+            mergedEmail,
+          );
+
           // ── Allowed iCal updates ──────────────────────────────────────────
           // Only status, times (when richer), vehicle, and sync fields are
           // updated; source_type / source_booking_id are NOT changed so the
@@ -418,6 +484,7 @@ export async function POST(request: NextRequest) {
               return_at: mergedReturnAt,
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
+              ...(customerId ? { customer_id: customerId } : {}),
             })
             .eq('id', existingId);
 
@@ -428,6 +495,14 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Standard update: full overwrite with incoming values.
+          const customerId = await findOrCreateCustomer(
+            supabase,
+            companyId,
+            n.customerName!,
+            n.customerPhone ?? null,
+            n.customerEmail ?? null,
+          );
+
           const { error } = await supabase
             .from('bookings')
             .update({
@@ -445,6 +520,7 @@ export async function POST(request: NextRequest) {
               source_reference: n.sourceReference ?? null,
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
+              ...(customerId ? { customer_id: customerId } : {}),
             })
             .eq('id', existingId);
 
@@ -456,6 +532,14 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Insert new booking.
+        const customerId = await findOrCreateCustomer(
+          supabase,
+          companyId,
+          n.customerName!,
+          n.customerPhone ?? null,
+          n.customerEmail ?? null,
+        );
+
         const { error } = await supabase
           .from('bookings')
           .insert({
@@ -476,6 +560,7 @@ export async function POST(request: NextRequest) {
             booking_number: generateBookingNumber(),
             booking_code: generateBookingCode(),
             imported_at: now,
+            ...(customerId ? { customer_id: customerId } : {}),
           });
 
         if (error) {

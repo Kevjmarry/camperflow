@@ -898,12 +898,14 @@ export default function BookingImportPage() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={rowsReady === 0 || isImporting}
+                  disabled={rowsReady === 0 || isImporting || importResult !== null}
                   onClick={handleImport}
                   style={{ fontSize: "14px", minWidth: "160px" }}
                 >
                   {isImporting
                     ? t("import.importing")
+                    : importResult !== null
+                    ? t("import.buttonApplied")
                     : t("import.button", { count: rowsReady })}
                 </button>
               </div>

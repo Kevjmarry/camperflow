@@ -727,9 +727,6 @@ export default function BookingsPage() {
                         {t("table.vehicle")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        {t("table.vehicleStatus")}
-                      </th>
-                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
                         {t("table.pickup")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
@@ -777,9 +774,6 @@ export default function BookingsPage() {
                           )}
                           <td style={td}>
                             {getVehicleName(booking)}
-                          </td>
-                          <td style={td}>
-                            {getVehicleReadinessChip(booking)}
                           </td>
                           <td style={td}>
                             {formatDate(booking.pickup_at)}

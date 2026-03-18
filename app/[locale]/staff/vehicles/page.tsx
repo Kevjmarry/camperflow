@@ -77,53 +77,97 @@ export default function VehiclesPage() {
 
       const vehicleList: Vehicle[] = data || [];
       const preparingIds = vehicleList.filter(v => v.status === 'preparing').map(v => v.id);
+      const readyIds     = vehicleList.filter(v => v.status === 'ready').map(v => v.id);
 
-      if (preparingIds.length === 0) {
+      if (preparingIds.length === 0 && readyIds.length === 0) {
         setVehicles(vehicleList);
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      // ── Block A: enrichment queries for already-preparing vehicles ──────────
+      let issues:     any[] = [];
+      let compliance: any[] = [];
+      let checklists: any[] = [];
 
-      // 1. Open unresolved vehicle issues
-      const { data: issues } = await supabase
-        .from('vehicle_issues')
-        .select('vehicle_id')
-        .in('vehicle_id', preparingIds)
-        .eq('resolved', false);
+      if (preparingIds.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
 
-      // 2. Expired blocking compliance — join compliance_types for blocks_readiness and name
-      const { data: compliance } = await supabase
-        .from('vehicle_compliance')
-        .select('vehicle_id, compliance_types!inner(name, slug, is_system, blocks_readiness)')
-        .in('vehicle_id', preparingIds)
-        .eq('compliance_types.blocks_readiness', true)
-        .lte('expiry_date', today);
+        const [r1, r2, r3] = await Promise.all([
+          // 1. Open unresolved vehicle issues
+          supabase
+            .from('vehicle_issues')
+            .select('vehicle_id')
+            .in('vehicle_id', preparingIds)
+            .eq('resolved', false),
+          // 2. Expired blocking compliance
+          supabase
+            .from('vehicle_compliance')
+            .select('vehicle_id, compliance_types!inner(name, slug, is_system, blocks_readiness)')
+            .in('vehicle_id', preparingIds)
+            .eq('compliance_types.blocks_readiness', true)
+            .lte('expiry_date', today),
+          // 3. Incomplete booking-linked checklist instances
+          supabase
+            .from('checklist_instances')
+            .select('bookings!inner(vehicle_id)')
+            .in('bookings.vehicle_id', preparingIds)
+            .neq('status', 'completed'),
+        ]);
 
-      // 3. Incomplete checklist instances linked via bookings.vehicle_id
-      const { data: checklists } = await supabase
-        .from('checklist_instances')
-        .select('bookings!inner(vehicle_id)')
-        .in('bookings.vehicle_id', preparingIds)
-        .neq('status', 'completed');
+        issues     = r1.data || [];
+        compliance = r2.data || [];
+        checklists = r3.data || [];
+      }
 
-      const issueSet = new Set((issues || []).map((r: any) => r.vehicle_id));
+      // ── Block B: vehicle-scope checklist check for ready vehicles ───────────
+      // Vehicle-scope instances: vehicle_id set, booking_id IS NULL.
+      const vehicleScopeBlockers = new Set<string>();
 
-      // Map vehicle_id → first expired blocking compliance name
+      if (readyIds.length > 0) {
+        const { data: vscData, error: vscError } = await supabase
+          .from('checklist_instances')
+          .select('vehicle_id, status')
+          .in('vehicle_id', readyIds)
+          .is('booking_id', null)
+          .eq('status', 'in_progress');
+
+        if (vscError) {
+          console.error('[VehiclesPage] vehicle-scope checklist query failed:', vscError);
+        }
+
+        for (const r of (vscData || []) as any[]) {
+          if (
+            r.vehicle_id &&
+            r.status === 'in_progress'
+          ) {
+            vehicleScopeBlockers.add(r.vehicle_id);
+          }
+        }
+      }
+
+      // ── Build enriched list ─────────────────────────────────────────────────
+      const issueSet = new Set(issues.map((r: any) => r.vehicle_id));
+
       const complianceNameByVehicle = new Map<string, string>();
-      for (const r of (compliance || []) as any[]) {
+      for (const r of compliance as any[]) {
         if (r.vehicle_id && r.compliance_types?.name && !complianceNameByVehicle.has(r.vehicle_id)) {
           complianceNameByVehicle.set(r.vehicle_id, r.compliance_types.name);
         }
       }
 
-      const checklistSet = new Set(
-        (checklists || [])
-          .map((r: any) => r.bookings?.vehicle_id)
-          .filter(Boolean)
+      const bookingChecklistSet = new Set(
+        checklists.map((r: any) => r.bookings?.vehicle_id).filter(Boolean)
       );
 
       const withReasons = vehicleList.map(v => {
+        // Override ready → preparing when a vehicle-scope checklist is incomplete
+        if (v.status === 'ready' && vehicleScopeBlockers.has(v.id)) {
+          return {
+            ...v,
+            status: 'preparing' as const,
+            blockingReason: t("blockingReason.checklistIncomplete"),
+          };
+        }
         if (v.status !== 'preparing') return v;
         let blockingReason = '';
         if (issueSet.has(v.id)) {
@@ -132,7 +176,7 @@ export default function VehiclesPage() {
           const complianceName = complianceNameByVehicle.get(v.id);
           if (complianceName !== undefined) {
             blockingReason = t("blockingReason.expiredComplianceWithName", { name: complianceName });
-          } else if (checklistSet.has(v.id)) {
+          } else if (bookingChecklistSet.has(v.id)) {
             blockingReason = t("blockingReason.checklistIncomplete");
           }
         }
@@ -381,7 +425,7 @@ export default function VehiclesPage() {
                     )}
                     
                     <Link
-                      href={canManage ? `/${locale}/staff/vehicles/${vehicle.id}/edit` : `/${locale}/staff/vehicles/${vehicle.id}`}
+                      href={`/${locale}/staff/vehicles/${vehicle.id}`}
                       className="btn btn-secondary"
                       style={{
                         padding: 'var(--space-2) var(--space-4)',
@@ -389,8 +433,21 @@ export default function VehiclesPage() {
                         minHeight: '36px'
                       }}
                     >
-                      {canManage ? t("buttons.edit") : t("buttons.view")}
+                      {t("buttons.view")}
                     </Link>
+                    {canManage && (
+                      <Link
+                        href={`/${locale}/staff/vehicles/${vehicle.id}/edit`}
+                        className="btn btn-secondary"
+                        style={{
+                          padding: 'var(--space-2) var(--space-4)',
+                          fontSize: '14px',
+                          minHeight: '36px'
+                        }}
+                      >
+                        {t("buttons.edit")}
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))}

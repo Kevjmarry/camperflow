@@ -18,7 +18,8 @@
       "Bash(ls -la /c/CamperFlow/camperflow/app/[locale]/staff/operations/)",
       "Bash(wc -l /c/CamperFlow/camperflow/app/[locale]/staff/company/page.tsx)",
       "Bash(find /c/CamperFlow/camperflow/app/api/staff -type f -name *.ts)",
-      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff/company -type f)"
+      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff/company -type f)",
+      "Bash(grep -l \"CREATE TABLE.*checklist\" \"c:\\\\CamperFlow\\\\camperflow\\\\supabase\\\\migrations\"/*.sql)"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"
