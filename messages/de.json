@@ -1256,6 +1256,18 @@
     "confirm": {
       "cancelBooking": "Diese Buchung stornieren? Dies wird den Status auf storniert setzen.",
       "deleteBooking": "Sind Sie sicher, dass Sie diese Buchung löschen möchten? Dies kann nicht rückgängig gemacht werden."
+    },
+    "pickupChecklistReopenHint": "Die Abholcheckliste wurde bereits abgeschlossen. Sie können sie bearbeiten und erneut abschließen.",
+    "revert": {
+      "button": "Übergabe rückgängig machen",
+      "modalTitle": "Übergabe rückgängig machen",
+      "modalDescription": "Die Buchung wird von \"In Vermietung\" zurück auf \"Bestätigt\" gesetzt. Das Fahrzeug wird anschließend neu berechnet.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Grund für die Rückgängigmachung eingeben...",
+      "confirm": "Rückgängig machen",
+      "cancel": "Abbrechen",
+      "reverting": "Wird verarbeitet...",
+      "errorFailed": "Buchung konnte nicht zurückgesetzt werden"
     }
   },
   "staffTeamMember": {
@@ -1873,7 +1885,20 @@
     "errorDetailCode": "Code:",
     "errorDetailDetails": "Details:",
     "errorDetailHint": "Hinweis:",
-    "rawErrorJson": "Fehler-JSON (Rohformat)"
+    "rawErrorJson": "Fehler-JSON (Rohformat)",
+    "safetyModalTitle": "Offene gemeldete Probleme",
+    "safetyModalBody": "Die folgenden Probleme sind auf dieser Checkliste noch offen:",
+    "safetyModalMoreIssues": "{count, plural, one {+# weiteres Problem} other {+# weitere Probleme}}",
+    "safetyModalQuestion": "Ist das Fahrzeug sicher zur Übergabe?",
+    "safetyModalConfirm": "Ja, sicher zur Übergabe",
+    "safetyModalCancel": "Nein, Checkliste offen lassen",
+    "reopenButton": "Abhol-Checkliste erneut öffnen",
+    "reopenModalTitle": "Abhol-Checkliste erneut öffnen",
+    "reopenModalBody": "Alle erledigten Punkte werden zurückgesetzt, damit die Checkliste erneut abgearbeitet werden kann. Der aktuelle Zustand wird vor dem Zurücksetzen als Snapshot gespeichert.",
+    "reopenReasonPlaceholder": "Grund (optional)…",
+    "reopenConfirm": "Checkliste erneut öffnen",
+    "reopenCancel": "Abbrechen",
+    "reopening": "Wird erneut geöffnet…"
   },
   "bookingsImport": {
     "backToBookings": "← Zurück zu Buchungen",

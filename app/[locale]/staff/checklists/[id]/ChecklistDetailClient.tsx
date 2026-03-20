@@ -29,6 +29,9 @@ type ChecklistInstanceType = {
   } | null;
 };
 
+/** DB severity values stored in checklist_instance_items.issue_severity */
+type DbIssueSeverity = 'low' | 'medium' | 'high' | 'critical';
+
 type ChecklistItemType = {
   id: string;
   template_item_id: string;
@@ -37,6 +40,13 @@ type ChecklistItemType = {
   checked_at: string | null;
   checked_by: string | null;
   created_at: string;
+  // Issue lifecycle fields (stored directly on the item row)
+  issue_flag: boolean | null;
+  issue_title: string | null;
+  issue_description: string | null;
+  issue_severity: DbIssueSeverity | null;
+  issue_blocking: boolean | null;
+  linked_vehicle_issue_id: string | null;
   template: {
     label: string;
     sort_order: number;
@@ -69,15 +79,8 @@ type SyncError = {
   raw: string;
 };
 
+/** UI severity values used in the flag panel draft and badge rendering */
 type IssueSeverity = 'attention' | 'urgent';
-
-type IssueFlag = {
-  id: string;
-  checklist_instance_item_id: string;
-  severity: IssueSeverity;
-  note: string;
-  status: string;
-};
 
 type FlagDraft = {
   severity: IssueSeverity;
@@ -85,6 +88,25 @@ type FlagDraft = {
   saving: boolean;
   error: string | null;
 };
+
+/** Map UI severity → DB severity for persistence */
+function uiToDbSeverity(ui: IssueSeverity): DbIssueSeverity {
+  switch (ui) {
+    case 'attention': return 'medium';
+    case 'urgent': return 'high';
+  }
+}
+
+/** Map DB severity → UI severity for badge rendering */
+function dbToUiSeverity(db: DbIssueSeverity | null | undefined): IssueSeverity {
+  switch (db) {
+    case 'high':
+    case 'critical':
+      return 'urgent';
+    default:
+      return 'attention';
+  }
+}
 
 /**
  * Pure function — takes an explicit snapshot rather than closing over state,
@@ -178,8 +200,16 @@ export default function ChecklistDetailClient({
   const [quickMode, setQuickMode] = useState(false);
   const [quickCompleting, setQuickCompleting] = useState(false);
 
-  // Issue flagging state
-  const [flagsByItemId, setFlagsByItemId] = useState<Record<string, IssueFlag>>({});
+  // Handover safety confirmation modal
+  const [handoverSafetyModal, setHandoverSafetyModal] = useState<{ flaggedItems: ChecklistItemType[] } | null>(null);
+  const pendingCompletionRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Reopen checklist modal
+  const [reopenModal, setReopenModal] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+  const [reopening, setReopening] = useState(false);
+
+  // Issue flagging UI state
   const [openFlagPanelById, setOpenFlagPanelById] = useState<Record<string, boolean>>({});
   const [flagDraftById, setFlagDraftById] = useState<Record<string, FlagDraft>>({});
   const [resolvingFlagById, setResolvingFlagById] = useState<Record<string, boolean>>({});
@@ -198,24 +228,206 @@ export default function ChecklistDetailClient({
     (instance.checklist_type === 'handover' || instance.checklist_type === 'return') &&
     instance.bookings?.status === 'completed';
 
-  // Load existing open flags for this checklist instance
-  useEffect(() => {
-    const fetchFlags = async () => {
-      const { data } = await supabase
-        .from('issue_flags')
-        .select('id,checklist_instance_item_id,severity,note,status')
-        .eq('checklist_instance_id', instance.id)
-        .eq('status', 'open');
+  // Only pickup and handover types require the safety confirmation gate.
+  const isPickupOrHandover =
+    instance.checklist_type === 'pickup' || instance.checklist_type === 'handover';
 
-      if (!data) return;
-      const map: Record<string, IssueFlag> = {};
-      for (const flag of data) {
-        map[flag.checklist_instance_item_id] = flag as IssueFlag;
+  // --- Handover safety confirmation helpers ---
+
+  const showHandoverSafetyModal = (
+    flaggedItems: ChecklistItemType[],
+    onConfirm: () => Promise<void>
+  ) => {
+    pendingCompletionRef.current = onConfirm;
+    setHandoverSafetyModal({ flaggedItems });
+  };
+
+  const handleSafetyConfirm = async () => {
+    const flaggedItems = handoverSafetyModal?.flaggedItems ?? [];
+    setHandoverSafetyModal(null);
+
+    // Downgrade all blocking flagged items to non-blocking before completing.
+    // issue_flag stays true and the issue stays open; only the blocking flag is cleared.
+    const blockingIds = flaggedItems
+      .filter((it) => it.issue_blocking === true)
+      .map((it) => it.id);
+
+    if (blockingIds.length > 0) {
+      // Optimistic local update
+      setLocalItems((prev) =>
+        prev.map((it) =>
+          blockingIds.includes(it.id) ? { ...it, issue_blocking: false } : it
+        )
+      );
+
+      const { error } = await supabase
+        .from('checklist_instance_items')
+        .update({ issue_blocking: false })
+        .in('id', blockingIds);
+
+      if (error) {
+        console.error('[handleSafetyConfirm] failed to downgrade blocking issues:', error);
+        // Roll back optimistic update and surface the error — do not complete.
+        setLocalItems((prev) =>
+          prev.map((it) =>
+            blockingIds.includes(it.id) ? { ...it, issue_blocking: true } : it
+          )
+        );
+        setSyncError(parseSyncError(error, 'item_update_failed'));
+        return;
       }
-      setFlagsByItemId(map);
+    }
+
+    const fn = pendingCompletionRef.current;
+    pendingCompletionRef.current = null;
+    if (fn) await fn();
+  };
+
+  const handleSafetyCancel = () => {
+    setHandoverSafetyModal(null);
+    pendingCompletionRef.current = null;
+  };
+
+  const handleReopenConfirm = async () => {
+    if (!userId) return;
+    setReopening(true);
+
+    // Build snapshot of current state before resetting
+    const snapshot = {
+      instance: {
+        status: localInstance.status,
+        started_at: localInstance.started_at,
+        started_by: localInstance.started_by,
+        completed_at: localInstance.completed_at,
+        completed_by: localInstance.completed_by,
+      },
+      items: localItems.map((it) => ({
+        id: it.id,
+        template_item_id: it.template_item_id,
+        checked: it.checked,
+        notes: it.notes,
+        checked_at: it.checked_at,
+        checked_by: it.checked_by,
+        issue_flag: it.issue_flag,
+        issue_title: it.issue_title,
+        issue_description: it.issue_description,
+        issue_severity: it.issue_severity,
+        issue_blocking: it.issue_blocking,
+        linked_vehicle_issue_id: it.linked_vehicle_issue_id,
+      })),
     };
-    fetchFlags();
-  }, [instance.id]);
+
+    // 1. Insert history snapshot
+    const { error: historyError } = await supabase
+      .from('checklist_reopen_history')
+      .insert({
+        checklist_instance_id: instance.id,
+        snapshot,
+        reopened_by: userId,
+        reason: reopenReason.trim() || null,
+      });
+
+    if (historyError) {
+      console.error('[handleReopenConfirm] history insert failed:', historyError);
+      setSyncError(parseSyncError(historyError, 'status_sync_failed'));
+      setReopening(false);
+      return;
+    }
+
+    // 2. Reset instance status first so the DB lock on completed checklists is lifted
+    //    before we attempt to write to checklist_instance_items.
+    const { error: instanceError } = await supabase
+      .from('checklist_instances')
+      .update({ status: 'in_progress', completed_at: null, completed_by: null })
+      .eq('id', instance.id);
+
+    if (instanceError) {
+      console.error('[handleReopenConfirm] instance reset failed:', instanceError);
+      setSyncError(parseSyncError(instanceError, 'status_sync_failed'));
+      setReopening(false);
+      return;
+    }
+
+    // 3. Now reset all item fields — the instance is no longer completed so the DB allows it.
+    //    Filter by instance_id (the real FK column) rather than collecting item IDs from local state.
+    const { error: itemsError } = await supabase
+      .from('checklist_instance_items')
+      .update({
+        checked: false,
+        checked_at: null,
+        checked_by: null,
+        issue_flag: false,
+        issue_title: null,
+        issue_description: null,
+        issue_severity: null,
+        issue_blocking: null,
+        linked_vehicle_issue_id: null,
+      })
+      .eq('instance_id', instance.id);
+
+    if (itemsError) {
+      // Extract every observable field so the error is never silently swallowed as {}.
+      const extracted = {
+        message:  (itemsError as any).message  ?? undefined,
+        code:     (itemsError as any).code     ?? undefined,
+        details:  (itemsError as any).details  ?? undefined,
+        hint:     (itemsError as any).hint     ?? undefined,
+        name:     (itemsError as any).name     ?? undefined,
+        stack:    (itemsError as any).stack    ?? undefined,
+        keys:     Object.keys(itemsError as any),
+        json:     (() => { try { return JSON.stringify(itemsError); } catch { return '(unstringifiable)'; } })(),
+      };
+      console.error('[handleReopenConfirm] items reset failed — raw object:', itemsError);
+      console.error('[handleReopenConfirm] items reset failed — extracted:', extracted);
+
+      // Rollback: restore instance to completed so we don't leave a half-reopened state.
+      await supabase
+        .from('checklist_instances')
+        .update({
+          status: snapshot.instance.status,
+          completed_at: snapshot.instance.completed_at,
+          completed_by: snapshot.instance.completed_by,
+        })
+        .eq('id', instance.id);
+
+      // Build a synthetic error that parseSyncError can surface in the banner.
+      const syntheticForBanner = {
+        message: extracted.message ?? extracted.json ?? 'Unknown error resetting checklist items',
+        code:    extracted.code    ?? null,
+        details: extracted.details ?? (extracted.keys.length ? `keys: ${extracted.keys.join(', ')}` : null),
+        hint:    extracted.hint    ?? extracted.stack ?? null,
+      };
+      setSyncError(parseSyncError(syntheticForBanner, 'item_update_failed'));
+      setReopening(false);
+      return;
+    }
+
+    // 4. Apply optimistic local updates in the same order (instance first, then items).
+    setLocalInstance((prev) => ({
+      ...prev,
+      status: 'in_progress',
+      completed_at: null,
+      completed_by: null,
+    }));
+    setLocalItems((prev) =>
+      prev.map((it) => ({
+        ...it,
+        checked: false,
+        checked_at: null,
+        checked_by: null,
+        issue_flag: false,
+        issue_title: null,
+        issue_description: null,
+        issue_severity: null,
+        issue_blocking: null,
+        linked_vehicle_issue_id: null,
+      }))
+    );
+
+    setReopenModal(false);
+    setReopenReason('');
+    setReopening(false);
+  };
 
   const fetchInitialsForUsers = useCallback(
     async (userIds: string[]) => {
@@ -455,6 +667,21 @@ export default function ChecklistDetailClient({
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Safety gate: for pickup/handover checklists, require confirmation if flagged issues exist.
+    if (isPickupOrHandover) {
+      const flagged = localItems.filter((it) => !!it.issue_flag);
+      if (flagged.length > 0) {
+        showHandoverSafetyModal(flagged, async () => {
+          await doQuickCompleteAll(user.id, uncheckedItems);
+        });
+        return;
+      }
+    }
+
+    await doQuickCompleteAll(user.id, uncheckedItems);
+  };
+
+  const doQuickCompleteAll = async (userId: string, uncheckedItems: ChecklistItemType[]) => {
     setQuickCompleting(true);
 
     const now = new Date().toISOString();
@@ -465,7 +692,7 @@ export default function ChecklistDetailClient({
 
     const nextItems = localItems.map((it) =>
       uncheckedIds.includes(it.id)
-        ? { ...it, checked: true, checked_at: now, checked_by: user.id }
+        ? { ...it, checked: true, checked_at: now, checked_by: userId }
         : it
     );
 
@@ -473,7 +700,7 @@ export default function ChecklistDetailClient({
 
     const { error: itemError } = await supabase
       .from('checklist_instance_items')
-      .update({ checked: true, checked_at: now, checked_by: user.id })
+      .update({ checked: true, checked_at: now, checked_by: userId })
       .in('id', uncheckedIds);
 
     if (itemError) {
@@ -494,7 +721,7 @@ export default function ChecklistDetailClient({
     }
 
     try {
-      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+      const result = await syncInstanceStatus(nextItems, userId, prevItems, prevInstance);
 
       if ('locked' in result) {
         await supabase
@@ -545,6 +772,36 @@ export default function ChecklistDetailClient({
         : it
     );
 
+    // Safety gate: if this toggle would complete a pickup/handover checklist and
+    // unresolved flagged issues exist, pause and ask before writing anything.
+    const wouldComplete = isPickupOrHandover && nextItems.every((it) => it.checked);
+    if (wouldComplete) {
+      const flagged = localItems.filter((it) => !!it.issue_flag);
+      if (flagged.length > 0) {
+        showHandoverSafetyModal(flagged, async () => {
+          await doToggleWrites(
+            itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked
+          );
+        });
+        return;
+      }
+    }
+
+    await doToggleWrites(
+      itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked
+    );
+  };
+
+  const doToggleWrites = async (
+    itemId: string,
+    newChecked: boolean,
+    now: string,
+    userId: string,
+    nextItems: ChecklistItemType[],
+    prevItems: ChecklistItemType[],
+    prevInstance: ChecklistInstanceType,
+    currentChecked: boolean
+  ) => {
     setLocalItems(nextItems);
 
     const { error: itemError } = await supabase
@@ -552,7 +809,7 @@ export default function ChecklistDetailClient({
       .update({
         checked: newChecked,
         checked_at: newChecked ? now : null,
-        checked_by: newChecked ? user.id : null,
+        checked_by: newChecked ? userId : null,
       })
       .eq('id', itemId);
 
@@ -577,7 +834,7 @@ export default function ChecklistDetailClient({
     }
 
     try {
-      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+      const result = await syncInstanceStatus(nextItems, userId, prevItems, prevInstance);
 
       if ('locked' in result) {
         const prevItem = prevItems.find((it) => it.id === itemId);
@@ -631,11 +888,35 @@ export default function ChecklistDetailClient({
         : it
     );
 
+    // Safety gate: if completing this section would finish a pickup/handover checklist
+    // and unresolved flagged issues exist, pause and ask before writing anything.
+    const wouldComplete = isPickupOrHandover && nextItems.every((it) => it.checked);
+    if (wouldComplete) {
+      const flagged = localItems.filter((it) => !!it.issue_flag);
+      if (flagged.length > 0) {
+        showHandoverSafetyModal(flagged, async () => {
+          await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
+        });
+        return;
+      }
+    }
+
+    await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
+  };
+
+  const doCompleteSectionWrites = async (
+    userId: string,
+    now: string,
+    uncheckedIds: string[],
+    nextItems: ChecklistItemType[],
+    prevItems: ChecklistItemType[],
+    prevInstance: ChecklistInstanceType
+  ) => {
     setLocalItems(nextItems);
 
     const { error: itemError } = await supabase
       .from('checklist_instance_items')
-      .update({ checked: true, checked_at: now, checked_by: user.id })
+      .update({ checked: true, checked_at: now, checked_by: userId })
       .in('id', uncheckedIds);
 
     if (itemError) {
@@ -659,7 +940,7 @@ export default function ChecklistDetailClient({
     }
 
     try {
-      const result = await syncInstanceStatus(nextItems, user.id, prevItems, prevInstance);
+      const result = await syncInstanceStatus(nextItems, userId, prevItems, prevInstance);
 
       if ('locked' in result) {
         await Promise.all(
@@ -746,6 +1027,10 @@ export default function ChecklistDetailClient({
     }));
   };
 
+  /**
+   * Save an issue flag by updating the checklist_instance_items row directly.
+   * The DB trigger creates/updates the linked vehicle_issues row automatically.
+   */
   const handleSaveFlag = async (itemId: string) => {
     if (isChecklistLocked) return;
 
@@ -760,34 +1045,39 @@ export default function ChecklistDetailClient({
       return;
     }
 
-    if (!companyId) return;
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
+
+    const item = localItems.find((it) => it.id === itemId);
+    if (!item) return;
 
     setFlagDraftById((prev) => ({
       ...prev,
       [itemId]: { ...draft, saving: true, error: null },
     }));
 
-    const { data, error } = await supabase
-      .from('issue_flags')
-      .insert({
-        company_id: companyId,
-        checklist_instance_id: localInstance.id,
-        checklist_instance_item_id: itemId,
-        severity: draft.severity,
-        status: 'open',
-        note: draft.note.trim(),
-        created_by: user.id,
-      })
-      .select('id,checklist_instance_item_id,severity,note,status')
-      .single();
+    const issueUpdate = {
+      issue_flag: true,
+      issue_title: item.template.label,
+      issue_description: draft.note.trim(),
+      issue_severity: uiToDbSeverity(draft.severity),
+      issue_blocking: true,
+      // Clear any stale link from a previously-resolved issue so the trigger
+      // always follows the "create new vehicle issue" path rather than trying
+      // to reopen an already-resolved issue (which fails silently and rolls
+      // back the issue_flag=true write).
+      linked_vehicle_issue_id: null,
+    };
+
+    const { error } = await supabase
+      .from('checklist_instance_items')
+      .update(issueUpdate)
+      .eq('id', itemId);
 
     if (error) {
-      console.error('[handleSaveFlag] insert failed:', error);
+      console.error('[handleSaveFlag] update failed:', error);
       setFlagDraftById((prev) => ({
         ...prev,
         [itemId]: { ...draft, saving: false, error: error.message ?? t('flagSaveFailed') },
@@ -795,19 +1085,26 @@ export default function ChecklistDetailClient({
       return;
     }
 
-    if (data) {
-      setFlagsByItemId((prev) => ({ ...prev, [itemId]: data as IssueFlag }));
-    }
+    // Optimistically update local item state
+    setLocalItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId ? { ...it, ...issueUpdate } : it
+      )
+    );
 
     closeFlagPanel(itemId);
     router.refresh();
   };
 
+  /**
+   * Resolve an issue by clearing the issue_flag on the checklist item row.
+   * The DB trigger automatically resolves the linked vehicle_issues row.
+   */
   const handleResolveFlag = async (itemId: string) => {
     if (isChecklistLocked) return;
 
-    const existingFlag = flagsByItemId[itemId];
-    if (!existingFlag) return;
+    const item = localItems.find((it) => it.id === itemId);
+    if (!item?.issue_flag) return;
 
     const {
       data: { user },
@@ -816,25 +1113,27 @@ export default function ChecklistDetailClient({
 
     setResolvingFlagById((prev) => ({ ...prev, [itemId]: true }));
 
-    const { error } = await supabase.rpc('fn_resolve_issue_flag', {
-      p_flag_id: existingFlag.id,
-      p_user_id: user.id,
-    });
+    const { error } = await supabase
+      .from('checklist_instance_items')
+      .update({ issue_flag: false })
+      .eq('id', itemId);
 
     if (error) {
-      console.error('[handleResolveFlag] rpc failed:', error);
+      console.error('[handleResolveFlag] update failed:', error);
       setResolvingFlagById((prev) => ({ ...prev, [itemId]: false }));
       const syncErr = parseSyncError(error, 'status_sync_failed');
       setSyncError(syncErr);
       return;
     }
 
+    // Optimistically update local item state
+    setLocalItems((prev) =>
+      prev.map((it) =>
+        it.id === itemId ? { ...it, issue_flag: false } : it
+      )
+    );
+
     setResolvingFlagById((prev) => {
-      const next = { ...prev };
-      delete next[itemId];
-      return next;
-    });
-    setFlagsByItemId((prev) => {
       const next = { ...prev };
       delete next[itemId];
       return next;
@@ -919,13 +1218,13 @@ export default function ChecklistDetailClient({
         ? initialsByUserId[item.checked_by] ?? null
         : null;
 
-    const existingFlag = flagsByItemId[item.id] ?? null;
-    const isFlagged = !!existingFlag;
+    const isFlagged = !!item.issue_flag;
+    const itemUiSeverity = isFlagged ? dbToUiSeverity(item.issue_severity) : null;
     const isFlagPanelOpen = !quickMode && !isChecklistLocked && !!openFlagPanelById[item.id];
     const draft = flagDraftById[item.id] ?? null;
     const isResolvingFlag = !!resolvingFlagById[item.id];
 
-    const badgeStyle = isFlagged ? severityBadgeStyles[existingFlag.severity] : null;
+    const badgeStyle = isFlagged && itemUiSeverity ? severityBadgeStyles[itemUiSeverity] : null;
 
     return (
       <div
@@ -1039,7 +1338,7 @@ export default function ChecklistDetailClient({
                   </span>
                 )}
                 {/* Flagged badge */}
-                {isFlagged && badgeStyle && (
+                {isFlagged && badgeStyle && itemUiSeverity && (
                   <span
                     title={t('flagAlreadyOpen')}
                     style={{
@@ -1057,7 +1356,7 @@ export default function ChecklistDetailClient({
                       cursor: 'default',
                     }}
                   >
-                    ⚑ {severityLabel(existingFlag.severity)}
+                    ⚑ {severityLabel(itemUiSeverity)}
                   </span>
                 )}
               </div>
@@ -1271,17 +1570,17 @@ export default function ChecklistDetailClient({
                   <button
                     type="button"
                     onClick={() => handleSaveFlag(item.id)}
-                    disabled={draft.saving || !userId || !companyId}
+                    disabled={draft.saving || !userId}
                     style={{
                       fontSize: '12px',
                       fontWeight: 600,
                       padding: '4px 12px',
                       borderRadius: '4px',
                       border: '1px solid #f59e0b',
-                      backgroundColor: (draft.saving || !userId || !companyId) ? '#fef3c7' : '#f59e0b',
-                      color: (draft.saving || !userId || !companyId) ? '#92400e' : '#fff',
-                      cursor: (draft.saving || !userId || !companyId) ? 'not-allowed' : 'pointer',
-                      opacity: (draft.saving || !userId || !companyId) ? 0.7 : 1,
+                      backgroundColor: (draft.saving || !userId) ? '#fef3c7' : '#f59e0b',
+                      color: (draft.saving || !userId) ? '#92400e' : '#fff',
+                      cursor: (draft.saving || !userId) ? 'not-allowed' : 'pointer',
+                      opacity: (draft.saving || !userId) ? 0.7 : 1,
                     }}
                   >
                     {draft.saving ? t('saving') : t('saveFlag')}
@@ -1669,15 +1968,35 @@ export default function ChecklistDetailClient({
                 {t('checklistCompleted')}
               </span>
             </div>
-            {instance.booking_id && (
-              <button
-                onClick={handleGoToBooking}
-                className="btn btn-primary"
-                style={{ padding: '6px 14px', fontSize: '14px', fontWeight: 500 }}
-              >
-                {t('goToBooking')}
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              {instance.checklist_type === 'handover' && instance.bookings?.status === 'confirmed' && (
+                <button
+                  type="button"
+                  onClick={() => setReopenModal(true)}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    borderRadius: '6px',
+                    border: '1px solid rgb(var(--border))',
+                    backgroundColor: 'rgb(var(--surface))',
+                    color: 'rgb(var(--text))',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('reopenButton')}
+                </button>
+              )}
+              {instance.booking_id && (
+                <button
+                  onClick={handleGoToBooking}
+                  className="btn btn-primary"
+                  style={{ padding: '6px 14px', fontSize: '14px', fontWeight: 500 }}
+                >
+                  {t('goToBooking')}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1800,6 +2119,172 @@ export default function ChecklistDetailClient({
           );
         })}
       </div>
+
+      {/* Reopen checklist modal */}
+      {reopenModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="surface"
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '24px',
+              borderRadius: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'rgb(var(--text))', margin: '0 0 6px' }}>
+                {t('reopenModalTitle')}
+              </h2>
+              <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
+                {t('reopenModalBody')}
+              </p>
+            </div>
+
+            <textarea
+              placeholder={t('reopenReasonPlaceholder')}
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              rows={3}
+              className="input"
+              style={{
+                width: '100%',
+                resize: 'vertical',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+              }}
+            />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleReopenConfirm}
+                disabled={reopening}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600, opacity: reopening ? 0.6 : 1 }}
+              >
+                {reopening ? t('reopening') : t('reopenConfirm')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setReopenModal(false); setReopenReason(''); }}
+                disabled={reopening}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: '1px solid rgb(var(--border))',
+                  backgroundColor: 'rgb(var(--surface))',
+                  color: 'rgb(var(--text))',
+                  cursor: reopening ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {t('reopenCancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Handover safety confirmation modal */}
+      {handoverSafetyModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="surface"
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '24px',
+              borderRadius: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'rgb(var(--text))', margin: '0 0 6px' }}>
+                {t('safetyModalTitle')}
+              </h2>
+              <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
+                {t('safetyModalBody')}
+              </p>
+            </div>
+
+            {/* Flagged item list */}
+            <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {handoverSafetyModal.flaggedItems.slice(0, 3).map((it) => (
+                <li key={it.id} style={{ fontSize: '14px', color: 'rgb(var(--text))', fontWeight: 500 }}>
+                  {it.issue_title ?? it.template.label}
+                </li>
+              ))}
+              {handoverSafetyModal.flaggedItems.length > 3 && (
+                <li style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
+                  {t('safetyModalMoreIssues', { count: handoverSafetyModal.flaggedItems.length - 3 })}
+                </li>
+              )}
+            </ul>
+
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
+              {t('safetyModalQuestion')}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleSafetyConfirm}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600 }}
+              >
+                {t('safetyModalConfirm')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSafetyCancel}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: '1px solid rgb(var(--border))',
+                  backgroundColor: 'rgb(var(--surface))',
+                  color: 'rgb(var(--text))',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('safetyModalCancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

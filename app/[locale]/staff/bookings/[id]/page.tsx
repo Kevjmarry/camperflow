@@ -130,6 +130,10 @@ export default function BookingDetailPage() {
   const [allCustomers, setAllCustomers] = useState<{ id: string; full_name: string | null }[]>([]);
   const [linkingCustomer, setLinkingCustomer] = useState(false);
   const [linkCustomerSuccess, setLinkCustomerSuccess] = useState(false);
+  const [revertModalOpen, setRevertModalOpen] = useState(false);
+  const [revertReason, setRevertReason] = useState("");
+  const [reverting, setReverting] = useState(false);
+  const [revertError, setRevertError] = useState("");
 
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
@@ -601,6 +605,29 @@ export default function BookingDetailPage() {
     } catch (err: any) {
       setError(err.message || t("error.deleteFailed"));
       setSaving(false);
+    }
+  };
+
+  const handleRevert = async () => {
+    try {
+      setReverting(true);
+      setRevertError("");
+      const res = await fetch(`/api/staff/bookings/${id}/revert`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revert_reason: revertReason }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json?.error || t("revert.errorFailed"));
+      }
+      setRevertModalOpen(false);
+      setRevertReason("");
+      await fetchBooking();
+    } catch (err: any) {
+      setRevertError(err.message || t("revert.errorFailed"));
+    } finally {
+      setReverting(false);
     }
   };
 
@@ -1232,10 +1259,34 @@ export default function BookingDetailPage() {
               >
                 {t("action.delete")}
               </button>
+
+              {booking.status === 'on_rent' && (
+                <button
+                  type="button"
+                  onClick={() => { setRevertError(""); setRevertModalOpen(true); }}
+                  className="btn btn-secondary"
+                  disabled={saving}
+                  style={{ minWidth: '120px' }}
+                >
+                  {t("revert.button")}
+                </button>
+              )}
             </div>
           </form>
 
           {/* Checklists sit outside the form — read-only, no submit relation */}
+          {booking.status === 'confirmed' && checklistInstances.some(i => i.checklist_type === 'handover' && i.status === 'completed') && selectedVehicle?.status !== 'preparing' && (
+            <div style={{
+              padding: 'var(--space-3) var(--space-4)',
+              background: 'rgb(var(--warning) / 0.1)',
+              border: '1px solid rgb(var(--warning) / 0.3)',
+              borderRadius: 'var(--radius)',
+              color: 'rgb(var(--warning))',
+              fontSize: '14px',
+            }}>
+              {t("pickupChecklistReopenHint")}
+            </div>
+          )}
           <BookingChecklistsSection
             instances={checklistInstances}
             locale={locale}
@@ -1244,6 +1295,83 @@ export default function BookingDetailPage() {
 
         </div>
       </div>
+
+      {/* ── Revert handover modal ─────────────────────────────────────────── */}
+      {revertModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-4)',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setRevertModalOpen(false); }}
+        >
+          <div
+            className="surface"
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              padding: 'var(--space-6)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-4)',
+            }}
+          >
+            <h2 style={{ fontSize: '18px', color: 'rgb(var(--text))', margin: 0 }}>
+              {t("revert.modalTitle")}
+            </h2>
+            <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
+              {t("revert.modalDescription")}
+            </p>
+            <div>
+              <label style={{ fontSize: '12px', color: 'rgb(var(--muted))', display: 'block', marginBottom: 4 }}>
+                {t("revert.reasonLabel")}
+              </label>
+              <textarea
+                className="input"
+                value={revertReason}
+                onChange={(e) => setRevertReason(e.target.value)}
+                placeholder={t("revert.reasonPlaceholder")}
+                rows={3}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+            {revertError && (
+              <div style={{
+                padding: 'var(--space-3)',
+                background: 'rgb(var(--error) / 0.1)',
+                border: '1px solid rgb(var(--error) / 0.3)',
+                borderRadius: 'var(--radius)',
+                color: 'rgb(var(--error))',
+                fontSize: '13px',
+              }}>
+                {revertError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setRevertModalOpen(false)}
+                disabled={reverting}
+              >
+                {t("revert.cancel")}
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleRevert}
+                disabled={reverting}
+              >
+                {reverting ? t("revert.reverting") : t("revert.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

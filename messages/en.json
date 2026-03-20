@@ -1256,6 +1256,18 @@
     "confirm": {
       "cancelBooking": "Cancel this booking? This will set status to cancelled.",
       "deleteBooking": "Are you sure you want to delete this booking? This cannot be undone."
+    },
+    "pickupChecklistReopenHint": "Pickup checklist was previously completed. You can edit it and complete again.",
+    "revert": {
+      "button": "Revert handover",
+      "modalTitle": "Revert handover",
+      "modalDescription": "This will revert the booking from On Rent back to Confirmed. The vehicle will be marked as available again.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Enter a reason for reverting...",
+      "confirm": "Confirm revert",
+      "cancel": "Cancel",
+      "reverting": "Reverting...",
+      "errorFailed": "Failed to revert booking"
     }
   },
   "staffTeamMember": {
@@ -1873,7 +1885,20 @@
     "errorDetailCode": "code:",
     "errorDetailDetails": "details:",
     "errorDetailHint": "hint:",
-    "rawErrorJson": "Raw error JSON"
+    "rawErrorJson": "Raw error JSON",
+    "safetyModalTitle": "Open flagged issues",
+    "safetyModalBody": "The following issue(s) are still open on this checklist:",
+    "safetyModalMoreIssues": "{count, plural, one {+# more issue} other {+# more issues}}",
+    "safetyModalQuestion": "Is the vehicle safe to hand over?",
+    "safetyModalConfirm": "Yes, safe to hand over",
+    "safetyModalCancel": "No, keep checklist open",
+    "reopenButton": "Re-open pickup checklist",
+    "reopenModalTitle": "Re-open pickup checklist",
+    "reopenModalBody": "This will reset all checked items so the checklist can be completed again. A snapshot of the current state will be saved before resetting.",
+    "reopenReasonPlaceholder": "Reason (optional)…",
+    "reopenConfirm": "Re-open checklist",
+    "reopenCancel": "Cancel",
+    "reopening": "Re-opening…"
   },
   "bookingsImport": {
     "backToBookings": "← Back to bookings",
