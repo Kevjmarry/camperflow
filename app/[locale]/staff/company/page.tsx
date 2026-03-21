@@ -7,6 +7,7 @@ import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
+import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ export default function CompanySettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
+  const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // ── Accordion state (all closed by default) ────────────────────────────────
@@ -106,7 +108,7 @@ export default function CompanySettingsPage() {
     }
   }, [company, themeLoading, t]);
 
-  // ── Booking defaults + payment reminders → form (company_settings fetch) ───
+  // ── Booking defaults + payment reminders + extras → form ──────────────────
 
   useEffect(() => {
     if (!company?.id) return;
@@ -114,7 +116,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_reminders_enabled, contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, included_items, faq_items")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_reminders_enabled, contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, included_items, faq_items, extras_catalog")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -149,6 +151,7 @@ export default function CompanySettingsPage() {
       if (data) {
         setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
         setFaqItems((data as any).faq_items ?? []);
+        setExtrasCatalog((data as any).extras_catalog ?? []);
       }
     };
     load();
@@ -221,7 +224,7 @@ export default function CompanySettingsPage() {
       if (saveErr) throw saveErr;
       if (!companiesRows || companiesRows.length === 0) throw new Error("Failed to save company row.");
 
-      // Save booking defaults + payment settings + guest info to company_settings
+      // Save booking defaults + payment settings + guest info + extras to company_settings
       const { data: settingsRows, error: settingsErr } = await supabase
         .from("company_settings")
         .update({
@@ -237,6 +240,7 @@ export default function CompanySettingsPage() {
           before_arrival_info:             formData.before_arrival_info.trim() || null,
           included_items:                  formData.included_items.trim()      || null,
           faq_items:                       faqItems.length > 0 ? faqItems : null,
+          extras_catalog:                  extrasCatalog.length > 0 ? extrasCatalog : null,
         })
         .eq("id", company?.id)
         .select("id");
@@ -532,6 +536,79 @@ export default function CompanySettingsPage() {
                     Number of days before pick-up that the final payment is due.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Extras Catalog */}
+            <div>
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
+                Extras catalog
+              </h2>
+              <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
+                Define the extras available for bookings (e.g. child seat, bike rack). Staff select from this list when creating or editing a booking.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                {extrasCatalog.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "var(--space-3)",
+                      border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)",
+                      padding: "var(--space-3) var(--space-4)",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Extra name"
+                      value={item.name}
+                      disabled={!isAdmin}
+                      onChange={(e) =>
+                        setExtrasCatalog(extrasCatalog.map((x) =>
+                          x.id === item.id ? { ...x, name: e.target.value } : x
+                        ))
+                      }
+                      style={{ flex: 1, minWidth: 0 }}
+                    />
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: isAdmin ? "pointer" : "default", flexShrink: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={item.active}
+                        disabled={!isAdmin}
+                        onChange={(e) =>
+                          setExtrasCatalog(extrasCatalog.map((x) =>
+                            x.id === item.id ? { ...x, active: e.target.checked } : x
+                          ))
+                        }
+                      />
+                      <span style={{ fontSize: "13px", color: "rgb(var(--muted))", whiteSpace: "nowrap" }}>Active</span>
+                    </label>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setExtrasCatalog(extrasCatalog.filter((x) => x.id !== item.id))}
+                        style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() =>
+                      setExtrasCatalog([...extrasCatalog, { id: crypto.randomUUID(), name: "", active: true }])
+                    }
+                    style={{ alignSelf: "flex-start", fontSize: "14px", marginTop: "var(--space-1)" }}
+                  >
+                    Add extra
+                  </button>
+                )}
+                {extrasCatalog.length === 0 && !isAdmin && (
+                  <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No extras configured.</p>
+                )}
               </div>
             </div>
 

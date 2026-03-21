@@ -1040,7 +1040,8 @@
         "subtitle": "Neue Kundenreservierung erstellen",
         "sections": {
           "bookingDetails": "Buchungsdetails",
-          "customerDetails": "Kundendaten"
+          "customerDetails": "Kundendaten",
+          "extras": "Extras"
         },
         "fields": {
           "pickupAt": "Abholung Datum & Uhrzeit",
@@ -1050,7 +1051,13 @@
           "customerName": "Kundenname",
           "customerPhone": "Telefonnummer",
           "emailOptional": "E-Mail (optional)",
-          "notesOptional": "Notizen (optional)"
+          "notesOptional": "Notizen (optional)",
+          "extras": {
+            "coffeeMachine": "Kaffeemaschine",
+            "paddleboard": "Paddleboard",
+            "electricGrill": "Elektrogrill",
+            "electricPaddleBoardPump": "Elektrische Paddleboard-Pumpe"
+          }
         },
         "vehicle": {
           "unassigned": "Nicht zugewiesen",
@@ -1184,7 +1191,14 @@
       "bookingDetails": "Buchungsdetails",
       "customerDetails": "Kundendaten",
       "tripDetails": "Reisedetails",
-      "internalNotes": "Interne Notizen"
+      "internalNotes": "Interne Notizen",
+      "extras": "Extras"
+    },
+    "extras": {
+      "coffeeMachine": "Kaffeemaschine",
+      "paddleboard": "Paddleboard",
+      "electricGrill": "Elektrogrill",
+      "electricPaddleBoardPump": "Elektrische Paddleboard-Pumpe"
     },
     "tripDetails": {
       "noOverride": "Importwert verwenden",
@@ -1891,14 +1905,59 @@
     "safetyModalMoreIssues": "{count, plural, one {+# weiteres Problem} other {+# weitere Probleme}}",
     "safetyModalQuestion": "Ist das Fahrzeug sicher zur Übergabe?",
     "safetyModalConfirm": "Ja, sicher zur Übergabe",
+    "safetyModalMarkUrgent": "Als dringend markieren",
     "safetyModalCancel": "Nein, Checkliste offen lassen",
+    "urgentModalTitle": "Dringende Probleme – Übergabe blockiert",
+    "urgentModalBody": "Mindestens ein dringendes Problem muss gelöst werden, bevor die Übergabe abgeschlossen werden kann. Bitte kehren Sie zurück und lösen Sie alle dringenden Markierungen zuerst.",
+    "urgentModalDismiss": "Zurück zur Checkliste",
     "reopenButton": "Abhol-Checkliste erneut öffnen",
     "reopenModalTitle": "Abhol-Checkliste erneut öffnen",
     "reopenModalBody": "Alle erledigten Punkte werden zurückgesetzt, damit die Checkliste erneut abgearbeitet werden kann. Der aktuelle Zustand wird vor dem Zurücksetzen als Snapshot gespeichert.",
     "reopenReasonPlaceholder": "Grund (optional)…",
     "reopenConfirm": "Checkliste erneut öffnen",
     "reopenCancel": "Abbrechen",
-    "reopening": "Wird erneut geöffnet…"
+    "reopening": "Wird erneut geöffnet…",
+    "historyTitle": "Wiedereröffnungs- / Rücksetzungsverlauf",
+    "historyExpand": "Details anzeigen",
+    "historyCollapse": "Details ausblenden",
+    "historyEmpty": "Noch keine Wiedereröffnungen vorhanden.",
+    "historyReopenedAt": "Checkliste erneut geöffnet",
+    "historyReason": "Grund",
+    "historyPreviousStatus": "Vorheriger Status",
+    "historyPreviousCompletedAt": "Zuletzt abgeschlossen am",
+    "historySnapshotItems": "Punkte zum Zeitpunkt der Rücksetzung",
+    "historyNoReason": "Kein Grund angegeben",
+    "historyChecked": "Erledigt",
+    "historyUnchecked": "Nicht erledigt",
+    "historyFlagged": "Markiert",
+    "historySnapshotStatus": "Vorheriger Status",
+    "historySnapshotCompletedAt": "Zuletzt abgeschlossen am",
+    "pickupModeIntro": "Diese Übergabe folgt drei Phasen: zuerst eine gastgebende Hospitality-Tour, dann eine Überprüfung mit Belegen, und zuletzt die Büropapiere zum Abschluss.",
+    "phase1Label": "Hospitality-Tour",
+    "phase1Desc": "Führe den Gast gemeinsam durchs Fahrzeug — Bedienung, Ausstattung, Notfallausrüstung und alles Wichtige. Hier gibt es nichts abzuhaken; das ist die geführte, freihändige Übergabe.",
+    "phase2Label": "Überprüfung",
+    "phase2Desc": "Arbeite jeden Punkt der Checkliste durch. Markiere Schäden, fehlendes Zubehör oder andere Probleme, bevor du die Schlüssel übergibst.",
+    "auditVehicleDataTitle": "Fahrzeugdaten",
+    "auditVehicleDataDesc": "Notiere den aktuellen Kilometerstand, den Kraftstoffstand und den AdBlue-Stand an der Fahrertür, bevor du mit der Kontrolle beginnst.",
+    "auditEvidenceTitle": "Belege",
+    "auditEvidenceDesc": "Dokumentiere den Fahrzeugzustand mit Rundum-Fotos und markiere Schäden, fehlendes Zubehör oder Probleme in der Checkliste unten.",
+    "evidenceRequiredBadge": "Pflichtfeld",
+    "evidenceRequiredHint": "Fotos sind bei jeder Übergabe erforderlich, um den Fahrzeugzustand zu dokumentieren.",
+    "evidencePhotosCount": "Fotos hinzugefügt: {count}",
+    "evidenceNoPhotos": "Noch keine Fotos hinzugefügt",
+    "auditChecklistTitle": "Checkliste",
+    "auditChecklistDesc": "Arbeite jeden Abschnitt unten durch. Nutze den Markier-Button bei jedem Punkt, um ein Problem zu erfassen.",
+    "phase3Label": "Büro",
+    "phase3Desc": "Abschluss der Papiere: Mietvertrag unterschreiben, Ausweis prüfen, Kaution einsammeln und Schlüssel übergeben. Keine digitalen Schritte erforderlich.",
+    "officeConfirmationsTitle": "Büro-Bestätigungen",
+    "officeContractSigned": "Mietvertrag unterschrieben",
+    "officeIdVerified": "Ausweis geprüft",
+    "officeDepositCollected": "Kaution eingezogen",
+    "officeVehicleDocsHandedOver": "Fahrzeugdokumente übergeben",
+    "officeKeysHandedOver": "Schlüssel übergeben",
+    "officeIdPhotosTitle": "Ausweis-Foto (optional)",
+    "officeIdPhotosDesc": "Foto des Kundenausweises für Ihre Unterlagen hinzufügen. Optional, noch nicht synchronisiert.",
+    "officeAddIdPhoto": "Ausweis-Foto hinzufügen"
   },
   "bookingsImport": {
     "backToBookings": "← Zurück zu Buchungen",

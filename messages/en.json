@@ -1040,7 +1040,8 @@
         "subtitle": "Create a new customer reservation",
         "sections": {
           "bookingDetails": "Booking Details",
-          "customerDetails": "Customer Details"
+          "customerDetails": "Customer Details",
+          "extras": "Extras"
         },
         "fields": {
           "pickupAt": "Pickup date & time",
@@ -1050,7 +1051,13 @@
           "customerName": "Customer name",
           "customerPhone": "Phone number",
           "emailOptional": "Email (optional)",
-          "notesOptional": "Notes (optional)"
+          "notesOptional": "Notes (optional)",
+          "extras": {
+            "coffeeMachine": "Coffee machine",
+            "paddleboard": "Paddleboard",
+            "electricGrill": "Electric grill",
+            "electricPaddleBoardPump": "Electric paddle board pump"
+          }
         },
         "vehicle": {
           "unassigned": "Unassigned",
@@ -1184,7 +1191,14 @@
       "bookingDetails": "Booking Details",
       "customerDetails": "Customer Details",
       "tripDetails": "Trip Details",
-      "internalNotes": "Internal Notes"
+      "internalNotes": "Internal Notes",
+      "extras": "Extras"
+    },
+    "extras": {
+      "coffeeMachine": "Coffee machine",
+      "paddleboard": "Paddleboard",
+      "electricGrill": "Electric grill",
+      "electricPaddleBoardPump": "Electric paddle board pump"
     },
     "tripDetails": {
       "noOverride": "Use imported value",
@@ -1891,14 +1905,59 @@
     "safetyModalMoreIssues": "{count, plural, one {+# more issue} other {+# more issues}}",
     "safetyModalQuestion": "Is the vehicle safe to hand over?",
     "safetyModalConfirm": "Yes, safe to hand over",
+    "safetyModalMarkUrgent": "Mark as urgent",
     "safetyModalCancel": "No, keep checklist open",
+    "urgentModalTitle": "Urgent issues — handover blocked",
+    "urgentModalBody": "One or more urgent issues must be resolved before handover can be completed. Please go back and resolve all urgent flags first.",
+    "urgentModalDismiss": "Return to checklist",
     "reopenButton": "Re-open pickup checklist",
     "reopenModalTitle": "Re-open pickup checklist",
     "reopenModalBody": "This will reset all checked items so the checklist can be completed again. A snapshot of the current state will be saved before resetting.",
     "reopenReasonPlaceholder": "Reason (optional)…",
     "reopenConfirm": "Re-open checklist",
     "reopenCancel": "Cancel",
-    "reopening": "Re-opening…"
+    "reopening": "Re-opening…",
+    "historyTitle": "Reopen / revert history",
+    "historyExpand": "View details",
+    "historyCollapse": "Hide details",
+    "historyEmpty": "No reopen history yet.",
+    "historyReopenedAt": "Reopened checklist",
+    "historyReason": "Reason",
+    "historyPreviousStatus": "Previous status",
+    "historyPreviousCompletedAt": "Previously completed at",
+    "historySnapshotItems": "Items at time of revert",
+    "historyNoReason": "No reason provided",
+    "historyChecked": "Checked",
+    "historyUnchecked": "Unchecked",
+    "historyFlagged": "Flagged",
+    "historySnapshotStatus": "Previous status",
+    "historySnapshotCompletedAt": "Previously completed at",
+    "pickupModeIntro": "This pickup follows three phases: a host-led hospitality tour first, then an evidence audit, and finally office paperwork to close.",
+    "phase1Label": "Hospitality Tour",
+    "phase1Desc": "Walk the guest through the vehicle together — controls, features, emergency kit, and anything they need to know. No items to tick here; this is your guided, hands-free walkthrough.",
+    "phase2Label": "Audit",
+    "phase2Desc": "Work through each checklist item below. Flag any damage, missing equipment, or issues before handing over the keys.",
+    "auditVehicleDataTitle": "Vehicle Data",
+    "auditVehicleDataDesc": "Record the current odometer reading, fuel level, and AdBlue level at the driver's door before starting the walkaround.",
+    "auditEvidenceTitle": "Evidence",
+    "auditEvidenceDesc": "Document the vehicle condition with walkaround photos and flag any damage, missing equipment, or issues using the checklist below.",
+    "evidenceRequiredBadge": "Required",
+    "evidenceRequiredHint": "Photos are required for every pickup to document vehicle condition.",
+    "evidencePhotosCount": "Photos added: {count}",
+    "evidenceNoPhotos": "No photos added yet",
+    "auditChecklistTitle": "Checklist Actions",
+    "auditChecklistDesc": "Work through each section below. Use the flag button on any item to record an issue.",
+    "phase3Label": "Office",
+    "phase3Desc": "Finalise the paperwork: sign the rental contract, verify ID, collect the security deposit, and hand over the keys. No digital steps required here.",
+    "officeConfirmationsTitle": "Office confirmations",
+    "officeContractSigned": "Rental contract signed",
+    "officeIdVerified": "ID verified",
+    "officeDepositCollected": "Security deposit collected",
+    "officeVehicleDocsHandedOver": "Vehicle documents handed over",
+    "officeKeysHandedOver": "Keys handed over",
+    "officeIdPhotosTitle": "ID photo capture (optional)",
+    "officeIdPhotosDesc": "Attach a photo of the customer's ID for your records. This is optional and not yet synced.",
+    "officeAddIdPhoto": "Add ID photo"
   },
   "bookingsImport": {
     "backToBookings": "← Back to bookings",

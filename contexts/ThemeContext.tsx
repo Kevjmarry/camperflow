@@ -3,6 +3,12 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+export interface ExtraCatalogItem {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export interface CompanySettings {
   id: string;
   name: string;

@@ -62,6 +62,35 @@ type InstanceStatusSnapshot = {
   completed_by: string | null;
 };
 
+type ReopenHistoryEntry = {
+  id: string;
+  reopened_at: string;
+  reason: string | null;
+  snapshot: {
+    instance: {
+      status: string;
+      started_at: string | null;
+      started_by: string | null;
+      completed_at: string | null;
+      completed_by: string | null;
+    };
+    items: Array<{
+      id: string;
+      template_item_id: string;
+      checked: boolean;
+      notes: string | null;
+      checked_at: string | null;
+      checked_by: string | null;
+      issue_flag: boolean | null;
+      issue_title: string | null;
+      issue_description: string | null;
+      issue_severity: DbIssueSeverity | null;
+      issue_blocking: boolean | null;
+      linked_vehicle_issue_id: string | null;
+    }>;
+  };
+};
+
 type InstanceUpdate = {
   status: string;
   started_at: string | null;
@@ -87,6 +116,7 @@ type FlagDraft = {
   note: string;
   saving: boolean;
   error: string | null;
+  photos: File[];
 };
 
 /** Map UI severity → DB severity for persistence */
@@ -200,14 +230,47 @@ export default function ChecklistDetailClient({
   const [quickMode, setQuickMode] = useState(false);
   const [quickCompleting, setQuickCompleting] = useState(false);
 
+  // Office confirmations (Phase 3) — local state only, no backend wiring yet
+  const [officeConfirmations, setOfficeConfirmations] = useState({
+    contractSigned: false,
+    idVerified: false,
+    securityDepositCollected: false,
+    vehicleDocsHandedOver: false,
+    keysHandedOver: false,
+  });
+
+  // Optional ID photos (Phase 3) — local state only, no upload yet
+  const [officeIdPhotos, setOfficeIdPhotos] = useState<File[]>([]);
+
+  // Vehicle data capture (Phase 2 Block 1) — local state only, no backend wiring yet
+  const [vehicleData, setVehicleData] = useState({ km: '', fuel: '', adblue: '' });
+
+  // Evidence photos (Phase 2 Block 2) — local state only, no upload yet
+  const [evidencePhotos, setEvidencePhotos] = useState<{ general: File[]; damage: File[] }>({ general: [], damage: [] });
+
+  // Missing pickup data warning modal (UI only — does not block completion)
+  const [pickupDataWarningModal, setPickupDataWarningModal] = useState<{
+    missing: string[];
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+
   // Handover safety confirmation modal
-  const [handoverSafetyModal, setHandoverSafetyModal] = useState<{ flaggedItems: ChecklistItemType[] } | null>(null);
+  const [handoverSafetyModal, setHandoverSafetyModal] = useState<{
+    flaggedItems: ChecklistItemType[];
+    triggerCheckedIds: string[];
+    triggerCheckedAt: string;
+    triggerCheckedBy: string;
+  } | null>(null);
   const pendingCompletionRef = useRef<(() => Promise<void>) | null>(null);
 
   // Reopen checklist modal
   const [reopenModal, setReopenModal] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
   const [reopening, setReopening] = useState(false);
+
+  // Reopen/revert history (handover checklists only)
+  const [reopenHistory, setReopenHistory] = useState<ReopenHistoryEntry[]>([]);
+  const [expandedHistoryIds, setExpandedHistoryIds] = useState<Record<string, boolean>>({});
 
   // Issue flagging UI state
   const [openFlagPanelById, setOpenFlagPanelById] = useState<Record<string, boolean>>({});
@@ -236,10 +299,13 @@ export default function ChecklistDetailClient({
 
   const showHandoverSafetyModal = (
     flaggedItems: ChecklistItemType[],
-    onConfirm: () => Promise<void>
+    onConfirm: () => Promise<void>,
+    triggerCheckedIds: string[],
+    triggerCheckedAt: string,
+    triggerCheckedBy: string
   ) => {
     pendingCompletionRef.current = onConfirm;
-    setHandoverSafetyModal({ flaggedItems });
+    setHandoverSafetyModal({ flaggedItems, triggerCheckedIds, triggerCheckedAt, triggerCheckedBy });
   };
 
   const handleSafetyConfirm = async () => {
@@ -287,6 +353,95 @@ export default function ChecklistDetailClient({
     setHandoverSafetyModal(null);
     pendingCompletionRef.current = null;
   };
+
+  const handleSafetyMarkUrgent = async () => {
+    const modal = handoverSafetyModal;
+    const attentionItems = (modal?.flaggedItems ?? []).filter(
+      (it) => it.issue_blocking !== true
+    );
+    const attentionIds = attentionItems.map((it) => it.id);
+    const triggerCheckedIds = modal?.triggerCheckedIds ?? [];
+    const triggerCheckedAt = modal?.triggerCheckedAt ?? '';
+    const triggerCheckedBy = modal?.triggerCheckedBy ?? '';
+
+    setHandoverSafetyModal(null);
+    pendingCompletionRef.current = null;
+
+    if (attentionIds.length === 0) return;
+
+    // Optimistic local update: upgrade attention items to urgent + uncheck them,
+    // and mark trigger items as checked (they weren't written yet).
+    setLocalItems((prev) =>
+      prev.map((it) => {
+        if (attentionIds.includes(it.id)) {
+          return {
+            ...it,
+            issue_severity: 'high' as DbIssueSeverity,
+            issue_blocking: true,
+            checked: false,
+            checked_at: null,
+            checked_by: null,
+          };
+        }
+        if (triggerCheckedIds.includes(it.id)) {
+          return { ...it, checked: true, checked_at: triggerCheckedAt, checked_by: triggerCheckedBy };
+        }
+        return it;
+      })
+    );
+
+    // Persist: upgrade severity and uncheck attention items in one write.
+    const { error: urgentError } = await supabase
+      .from('checklist_instance_items')
+      .update({ issue_severity: 'high', issue_blocking: true, checked: false, checked_at: null, checked_by: null })
+      .in('id', attentionIds);
+
+    if (urgentError) {
+      console.error('[handleSafetyMarkUrgent] failed to upgrade attention issues:', urgentError);
+      // Roll back using original values captured before the update
+      setLocalItems((prev) =>
+        prev.map((it) => {
+          const original = attentionItems.find((orig) => orig.id === it.id);
+          return original
+            ? {
+                ...it,
+                issue_severity: original.issue_severity,
+                issue_blocking: original.issue_blocking,
+                checked: original.checked,
+                checked_at: original.checked_at,
+                checked_by: original.checked_by,
+              }
+            : it;
+        })
+      );
+      setSyncError(parseSyncError(urgentError, 'item_update_failed'));
+      return;
+    }
+
+    // Persist: write trigger items as checked (excluding any that became urgent).
+    const finalTriggerIds = triggerCheckedIds.filter((id) => !attentionIds.includes(id));
+    if (finalTriggerIds.length > 0 && triggerCheckedBy) {
+      const { error: triggerError } = await supabase
+        .from('checklist_instance_items')
+        .update({ checked: true, checked_at: triggerCheckedAt, checked_by: triggerCheckedBy })
+        .in('id', finalTriggerIds);
+
+      if (triggerError) {
+        console.error('[handleSafetyMarkUrgent] failed to persist trigger items as checked:', triggerError);
+        setSyncError(parseSyncError(triggerError, 'item_update_failed'));
+      }
+    }
+  };
+
+  const fetchReopenHistory = useCallback(async () => {
+    if (instance.checklist_type !== 'handover') return;
+    const { data } = await supabase
+      .from('checklist_reopen_history')
+      .select('id, reopened_at, reason, snapshot')
+      .eq('checklist_instance_id', instance.id)
+      .order('reopened_at', { ascending: false });
+    if (data) setReopenHistory(data as ReopenHistoryEntry[]);
+  }, [supabase, instance.id, instance.checklist_type]);
 
   const handleReopenConfirm = async () => {
     if (!userId) return;
@@ -427,6 +582,7 @@ export default function ChecklistDetailClient({
     setReopenModal(false);
     setReopenReason('');
     setReopening(false);
+    fetchReopenHistory();
   };
 
   const fetchInitialsForUsers = useCallback(
@@ -470,6 +626,20 @@ export default function ChecklistDetailClient({
     }
   }, [localItems, initialsByUserId, fetchInitialsForUsers]);
 
+  // Resolve initials for checked_by IDs saved in history snapshots.
+  useEffect(() => {
+    const historicalIds = reopenHistory.flatMap((entry) =>
+      entry.snapshot.items
+        .filter((it) => it.checked && it.checked_by)
+        .map((it) => it.checked_by as string)
+    );
+    const unique = [...new Set(historicalIds)];
+    const missing = unique.filter((id) => !(id in initialsByUserId));
+    if (missing.length > 0) {
+      fetchInitialsForUsers(missing);
+    }
+  }, [reopenHistory, initialsByUserId, fetchInitialsForUsers]);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       const {
@@ -496,6 +666,10 @@ export default function ChecklistDetailClient({
 
     fetchUserProfile();
   }, []);
+
+  useEffect(() => {
+    fetchReopenHistory();
+  }, [fetchReopenHistory]);
 
   function isLockError(error: any): boolean {
     if (
@@ -649,6 +823,16 @@ export default function ChecklistDetailClient({
     }
   };
 
+  const getMissingPickupData = (): string[] => {
+    const missing: string[] = [];
+    if (!vehicleData.km) missing.push('km');
+    if (!vehicleData.fuel) missing.push('fuel');
+    if (!vehicleData.adblue) missing.push('adblue');
+    const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
+    if (totalPhotos === 0) missing.push('photos');
+    return missing;
+  };
+
   /** Quick Mode: complete ALL remaining unchecked items across all sections. */
   const handleQuickCompleteAll = async () => {
     if (isChecklistLocked) return;
@@ -667,18 +851,70 @@ export default function ChecklistDetailClient({
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Safety gate: for pickup/handover checklists, require confirmation if flagged issues exist.
+    // Inner helper: runs existing flag safety gate then completes.
+    const proceedQuickComplete = async () => {
+      // Safety gate: for pickup/handover checklists, require confirmation if flagged issues exist.
+      if (isPickupOrHandover) {
+        // Urgent-blocking: if any items are issue_blocking, uncheck them and show modal —
+        // no completion or status sync occurs.
+        const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+        if (urgentItems.length > 0) {
+          const urgentIds = urgentItems.map((it) => it.id);
+          const now = new Date().toISOString();
+          const uncheckedIds = uncheckedItems.map((it) => it.id);
+          const toCheckIds = uncheckedIds.filter((id) => !urgentIds.includes(id));
+          const nextWithUrgentsUnchecked = localItems.map((it) => {
+            if (urgentIds.includes(it.id)) {
+              return { ...it, checked: false, checked_at: null, checked_by: null };
+            }
+            if (uncheckedIds.includes(it.id)) {
+              return { ...it, checked: true, checked_at: now, checked_by: user.id };
+            }
+            return it;
+          });
+          setLocalItems(nextWithUrgentsUnchecked);
+          const writes: PromiseLike<unknown>[] = [
+            supabase
+              .from('checklist_instance_items')
+              .update({ checked: false, checked_at: null, checked_by: null })
+              .in('id', urgentIds),
+          ];
+          if (toCheckIds.length > 0) {
+            writes.push(
+              supabase
+                .from('checklist_instance_items')
+                .update({ checked: true, checked_at: now, checked_by: user.id })
+                .in('id', toCheckIds)
+            );
+          }
+          await Promise.all(writes);
+          setHandoverSafetyModal({ flaggedItems: urgentItems, triggerCheckedIds: [], triggerCheckedAt: '', triggerCheckedBy: '' });
+          return;
+        }
+
+        const flagged = localItems.filter((it) => !!it.issue_flag);
+        if (flagged.length > 0) {
+          const triggerNow = new Date().toISOString();
+          showHandoverSafetyModal(flagged, async () => {
+            await doQuickCompleteAll(user.id, uncheckedItems);
+          }, uncheckedItems.map((it) => it.id), triggerNow, user.id);
+          return;
+        }
+      }
+
+      await doQuickCompleteAll(user.id, uncheckedItems);
+    };
+
+    // Missing pickup data check — fires before flag safety gate.
     if (isPickupOrHandover) {
-      const flagged = localItems.filter((it) => !!it.issue_flag);
-      if (flagged.length > 0) {
-        showHandoverSafetyModal(flagged, async () => {
-          await doQuickCompleteAll(user.id, uncheckedItems);
-        });
+      const missing = getMissingPickupData();
+      if (missing.length > 0) {
+        setPickupDataWarningModal({ missing, onConfirm: proceedQuickComplete });
         return;
       }
     }
 
-    await doQuickCompleteAll(user.id, uncheckedItems);
+    await proceedQuickComplete();
   };
 
   const doQuickCompleteAll = async (userId: string, uncheckedItems: ChecklistItemType[]) => {
@@ -776,15 +1012,57 @@ export default function ChecklistDetailClient({
     // unresolved flagged issues exist, pause and ask before writing anything.
     const wouldComplete = isPickupOrHandover && nextItems.every((it) => it.checked);
     if (wouldComplete) {
-      const flagged = localItems.filter((it) => !!it.issue_flag);
-      if (flagged.length > 0) {
-        showHandoverSafetyModal(flagged, async () => {
-          await doToggleWrites(
-            itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked
+      // Inner helper: runs flag safety check then writes.
+      const proceedToggle = async () => {
+        // Urgent-blocking: if any items are issue_blocking, uncheck them and show modal —
+        // the trigger item stays checked in UI; NO completion or status sync occurs.
+        const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+        if (urgentItems.length > 0) {
+          const urgentIds = urgentItems.map((it) => it.id);
+          const nextWithUrgentsUnchecked = nextItems.map((it) =>
+            urgentIds.includes(it.id)
+              ? { ...it, checked: false, checked_at: null, checked_by: null }
+              : it
           );
-        });
+          setLocalItems(nextWithUrgentsUnchecked);
+          await Promise.all([
+            supabase
+              .from('checklist_instance_items')
+              .update({ checked: true, checked_at: now, checked_by: user.id })
+              .eq('id', itemId),
+            supabase
+              .from('checklist_instance_items')
+              .update({ checked: false, checked_at: null, checked_by: null })
+              .in('id', urgentIds),
+          ]);
+          setHandoverSafetyModal({ flaggedItems: urgentItems, triggerCheckedIds: [], triggerCheckedAt: '', triggerCheckedBy: '' });
+          return;
+        }
+
+        const flagged = localItems.filter((it) => !!it.issue_flag);
+        if (flagged.length > 0) {
+          showHandoverSafetyModal(flagged, async () => {
+            await doToggleWrites(
+              itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked
+            );
+          }, [itemId], now, user.id);
+          return;
+        }
+
+        await doToggleWrites(
+          itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked
+        );
+      };
+
+      // Missing pickup data check — fires before flag safety gate.
+      const missing = getMissingPickupData();
+      if (missing.length > 0) {
+        setPickupDataWarningModal({ missing, onConfirm: proceedToggle });
         return;
       }
+
+      await proceedToggle();
+      return;
     }
 
     await doToggleWrites(
@@ -892,13 +1170,59 @@ export default function ChecklistDetailClient({
     // and unresolved flagged issues exist, pause and ask before writing anything.
     const wouldComplete = isPickupOrHandover && nextItems.every((it) => it.checked);
     if (wouldComplete) {
-      const flagged = localItems.filter((it) => !!it.issue_flag);
-      if (flagged.length > 0) {
-        showHandoverSafetyModal(flagged, async () => {
-          await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
-        });
+      // Inner helper: runs flag safety check then writes.
+      const proceedCompleteSection = async () => {
+        // Urgent-blocking: if any items are issue_blocking, uncheck them and show modal —
+        // no completion or status sync occurs.
+        const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+        if (urgentItems.length > 0) {
+          const urgentIds = urgentItems.map((it) => it.id);
+          const toCheckIds = uncheckedIds.filter((id) => !urgentIds.includes(id));
+          const nextWithUrgentsUnchecked = nextItems.map((it) =>
+            urgentIds.includes(it.id)
+              ? { ...it, checked: false, checked_at: null, checked_by: null }
+              : it
+          );
+          setLocalItems(nextWithUrgentsUnchecked);
+          const writes: PromiseLike<unknown>[] = [
+            supabase
+              .from('checklist_instance_items')
+              .update({ checked: false, checked_at: null, checked_by: null })
+              .in('id', urgentIds),
+          ];
+          if (toCheckIds.length > 0) {
+            writes.push(
+              supabase
+                .from('checklist_instance_items')
+                .update({ checked: true, checked_at: now, checked_by: user.id })
+                .in('id', toCheckIds)
+            );
+          }
+          await Promise.all(writes);
+          setHandoverSafetyModal({ flaggedItems: urgentItems, triggerCheckedIds: [], triggerCheckedAt: '', triggerCheckedBy: '' });
+          return;
+        }
+
+        const flagged = localItems.filter((it) => !!it.issue_flag);
+        if (flagged.length > 0) {
+          showHandoverSafetyModal(flagged, async () => {
+            await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
+          }, uncheckedIds, now, user.id);
+          return;
+        }
+
+        await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
+      };
+
+      // Missing pickup data check — fires before flag safety gate.
+      const missing = getMissingPickupData();
+      if (missing.length > 0) {
+        setPickupDataWarningModal({ missing, onConfirm: proceedCompleteSection });
         return;
       }
+
+      await proceedCompleteSection();
+      return;
     }
 
     await doCompleteSectionWrites(user.id, now, uncheckedIds, nextItems, prevItems, prevInstance);
@@ -1002,7 +1326,7 @@ export default function ChecklistDetailClient({
     if (isChecklistLocked) return;
     setFlagDraftById((prev) => ({
       ...prev,
-      [itemId]: prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null },
+      [itemId]: prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null, photos: [] },
     }));
     setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: true }));
   };
@@ -1023,8 +1347,29 @@ export default function ChecklistDetailClient({
   ) => {
     setFlagDraftById((prev) => ({
       ...prev,
-      [itemId]: { ...(prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null }), [field]: value },
+      [itemId]: { ...(prev[itemId] ?? { severity: 'attention' as IssueSeverity, note: '', saving: false, error: null, photos: [] }), [field]: value },
     }));
+  };
+
+  const handleFlagAddPhotos = (itemId: string, files: FileList | null) => {
+    if (!files) return;
+    setFlagDraftById((prev) => {
+      const draft = prev[itemId];
+      if (!draft) return prev;
+      const current = draft.photos ?? [];
+      const added = Array.from(files);
+      const merged = [...current, ...added].slice(0, 3);
+      return { ...prev, [itemId]: { ...draft, photos: merged } };
+    });
+  };
+
+  const handleFlagRemovePhoto = (itemId: string, index: number) => {
+    setFlagDraftById((prev) => {
+      const draft = prev[itemId];
+      if (!draft) return prev;
+      const photos = draft.photos.filter((_, i) => i !== index);
+      return { ...prev, [itemId]: { ...draft, photos } };
+    });
   };
 
   /**
@@ -1063,7 +1408,7 @@ export default function ChecklistDetailClient({
       issue_title: item.template.label,
       issue_description: draft.note.trim(),
       issue_severity: uiToDbSeverity(draft.severity),
-      issue_blocking: true,
+      issue_blocking: draft.severity === 'urgent',
       // Clear any stale link from a previously-resolved issue so the trigger
       // always follows the "create new vehicle issue" path rather than trying
       // to reopen an already-resolved issue (which fails silently and rolls
@@ -1155,6 +1500,64 @@ export default function ChecklistDetailClient({
     }
   };
 
+  // --- Pickup / handover Audit label remapping ---
+  //
+  // Design intent: van-side audit actions live in Phase 2 (Audit); legal/admin
+  // actions live in Phase 3 (Office). Items that belong to Office are hidden
+  // from the interactive Audit checklist rather than deleted from the DB.
+  //
+  // Future behaviour notes (not yet implemented):
+  //   - "Standard kit present" is currently a static line item.
+  //   - "Special add-ons loaded" should eventually be dynamic per booking:
+  //     e.g. if a booking includes Paddleboard + Pump, the pickup checklist
+  //     should surface "Paddleboard present / loaded" as a named item, and
+  //     the return checklist should require "Paddleboard returned / recovered".
+  //     Do NOT implement dynamic add-on injection here — this note is a
+  //     placeholder for that future work.
+
+  /**
+   * UI-only label map for pickup/handover Phase 2 Audit items.
+   * Returns null  → hide the row from the interactive Audit checklist.
+   * Returns string → display this label instead of the DB template label.
+   * Matching is case-insensitive keyword-based; DB labels may vary.
+   */
+  function getPickupAuditDisplayLabel(label: string): string | null {
+    const l = label.toLowerCase();
+
+    // ── Hide: items covered by Phase 3 Office ──────────────────────────────
+    if (l.includes('fuel') || l.includes('fluid')) return null;
+    if (l.includes('document') && l.includes('contact')) return null;
+    if (
+      l.includes('handover completed') ||
+      l.includes('ready to depart') ||
+      l.includes('customer ready')
+    ) return null;
+
+    // ── Relabel: remaining Audit items to agreed wording ──────────────────
+    if (l.includes('exterior')) return 'Exterior condition checked';
+    if (l.includes('interior') && l.includes('condition')) return 'Interior condition checked';
+    if (
+      (l.includes('standard') && (l.includes('kit') || l.includes('equipment'))) ||
+      (l.includes('kit') && !l.includes('first aid') && !l.includes('tool'))
+    ) return 'Standard kit present';
+    if (
+      l.includes('add-on') || l.includes('addon') || l.includes('add on') ||
+      l.includes('extra') || l.includes('optional')
+    ) return 'Special add-ons loaded';
+    if (
+      l.includes('key system') || l.includes('controls explained') ||
+      (l.includes('explain') && !l.includes('contract')) ||
+      l.includes('features')
+    ) return 'Key systems explained';
+    if (
+      l.includes('interior readiness') || l.includes('interior ready') ||
+      (l.includes('ready') && l.includes('interior'))
+    ) return 'Interior readiness confirmed';
+
+    // No matching pattern — keep original label
+    return label;
+  }
+
   // --- Render ---
 
   const sortedItems = [...localItems].sort(
@@ -1178,6 +1581,13 @@ export default function ChecklistDetailClient({
       : from === 'vehicle' && instance.vehicle_id
       ? t('backToVehicle')
       : t('backToChecklists');
+
+  const toggleHistoryEntry = (id: string) => {
+    setExpandedHistoryIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const templateItemIdToLabel = new Map(initialItems.map((it) => [it.template_item_id, it.template.label]));
+  const templateItemIdToSortOrder = new Map(initialItems.map((it) => [it.template_item_id, it.template.sort_order]));
 
   const CHECKLIST_TYPE_LABELS: Record<string, string> = {
     handover:          t('type_handover'),
@@ -1212,7 +1622,7 @@ export default function ChecklistDetailClient({
   const remainingCount = totalItems - checkedItems;
   const allDoneAlready = remainingCount === 0;
 
-  const renderItem = (item: ChecklistItemType) => {
+  const renderItem = (item: ChecklistItemType, displayLabel?: string) => {
     const checkerInitials =
       item.checked && item.checked_by
         ? initialsByUserId[item.checked_by] ?? null
@@ -1315,7 +1725,7 @@ export default function ChecklistDetailClient({
                   className="label"
                   style={{ fontWeight: 500, margin: 0 }}
                 >
-                  {item.template.label}
+                  {displayLabel ?? item.template.label}
                 </span>
                 {checkerInitials && (
                   <span
@@ -1560,6 +1970,95 @@ export default function ChecklistDetailClient({
                     boxSizing: 'border-box',
                   }}
                 />
+
+                {/* Photos */}
+                {(() => {
+                  const photoInputId = `flag-photos-${item.id}`;
+                  return (
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', marginBottom: '6px' }}>
+                        Photos (optional)
+                      </div>
+                      {draft.photos.length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                          {draft.photos.map((file, idx) => (
+                            <div
+                              key={idx}
+                              style={{ position: 'relative', width: '64px', height: '64px', flexShrink: 0 }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt=""
+                                style={{
+                                  width: '64px',
+                                  height: '64px',
+                                  objectFit: 'cover',
+                                  borderRadius: '4px',
+                                  border: '1px solid #fbbf24',
+                                  display: 'block',
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleFlagRemovePhoto(item.id, idx)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '-6px',
+                                  right: '-6px',
+                                  width: '16px',
+                                  height: '16px',
+                                  borderRadius: '50%',
+                                  border: '1px solid #fbbf24',
+                                  backgroundColor: '#fff',
+                                  color: '#92400e',
+                                  fontSize: '10px',
+                                  lineHeight: '14px',
+                                  textAlign: 'center',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {draft.photos.length < 3 && (
+                        <>
+                          <input
+                            id={photoInputId}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleFlagAddPhotos(item.id, e.target.files)}
+                          />
+                          <label
+                            htmlFor={photoInputId}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              border: '1px solid #fbbf24',
+                              backgroundColor: '#fff',
+                              color: '#92400e',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            + Add photo
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {draft.error && (
                   <div style={{ fontSize: '12px', color: '#ef4444' }}>{draft.error}</div>
@@ -2002,123 +2501,1081 @@ export default function ChecklistDetailClient({
       )}
 
       {/* Sectioned Checklist Items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {sections.map(({ name, items: sectionItems }) => {
-          const completedCount = sectionItems.filter((it) => it.checked).length;
-          const totalCount = sectionItems.length;
-          const allDone = completedCount === totalCount;
-          const isCollapsed = !!collapsedSections[name];
+      {isPickupOrHandover ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          return (
+          {/* Phase summary strip */}
+          <div
+            className="surface"
+            style={{
+              borderRadius: '8px',
+              padding: '14px 16px',
+              borderLeft: '3px solid rgb(var(--brand))',
+            }}
+          >
+            <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: '0 0 10px' }}>
+              {t('pickupModeIntro')}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {[
+                { n: '1', label: t('phase1Label') },
+                { n: '2', label: t('phase2Label') },
+                { n: '3', label: t('phase3Label') },
+              ].map(({ n, label }, idx, arr) => (
+                <span key={n} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgb(var(--brand))',
+                        color: '#fff',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {n}
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                      {label}
+                    </span>
+                  </span>
+                  {idx < arr.length - 1 && (
+                    <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>→</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Phase 1: Hospitality Tour */}
+          <div
+            className="surface"
+            style={{ borderRadius: '8px', overflow: 'hidden' }}
+          >
             <div
-              key={name}
-              className="surface"
-              style={{ borderRadius: '8px', overflow: 'hidden' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(var(--brand), 0.04)',
+                borderBottom: '1px solid rgb(var(--border))',
+              }}
             >
-              {/* Section Header */}
-              <div
+              <span
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderBottom: isCollapsed ? 'none' : '1px solid rgb(var(--border))',
-                  gap: '12px',
+                  justifyContent: 'center',
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgb(var(--brand))',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  flexShrink: 0,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => toggleSection(name)}
+                1
+              </span>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'rgb(var(--text))' }}>
+                {t('phase1Label')}
+              </span>
+            </div>
+            <div style={{ padding: '14px 16px' }}>
+              <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0, lineHeight: '1.6' }}>
+                {t('phase1Desc')}
+              </p>
+            </div>
+          </div>
+
+          {/* Phase 2: Audit */}
+          <div
+            className="surface"
+            style={{ borderRadius: '8px', overflow: 'hidden' }}
+          >
+            {/* Phase 2 header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(var(--brand), 0.04)',
+                borderBottom: '1px solid rgb(var(--border))',
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgb(var(--brand))',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                2
+              </span>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'rgb(var(--text))' }}>
+                {t('phase2Label')}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid rgb(var(--border))',
+              }}
+            >
+              <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0, lineHeight: '1.6' }}>
+                {t('phase2Desc')}
+              </p>
+            </div>
+
+            {/* Phase 2 sub-blocks */}
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* Block 1: Vehicle Data */}
+              <div
+                style={{
+                  border: '1px solid rgb(var(--border))',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
                   style={{
+                    padding: '10px 14px',
+                    borderBottom: '1px solid rgb(var(--border))',
+                    backgroundColor: 'rgba(var(--brand), 0.02)',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
+                    {t('auditVehicleDataTitle')}
+                  </span>
+                </div>
+                <div style={{ padding: '12px 14px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    {/* KM */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 120px', minWidth: '100px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
+                        KM
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={vehicleData.km}
+                        onChange={(e) => setVehicleData((prev) => ({ ...prev, km: e.target.value }))}
+                        placeholder="e.g. 45200"
+                        className="input"
+                        style={{ fontSize: '13px', padding: '6px 8px' }}
+                      />
+                    </div>
+
+                    {/* Fuel */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 120px', minWidth: '100px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
+                        Fuel
+                      </label>
+                      <select
+                        value={vehicleData.fuel}
+                        onChange={(e) => setVehicleData((prev) => ({ ...prev, fuel: e.target.value }))}
+                        className="input"
+                        style={{ fontSize: '13px', padding: '6px 8px' }}
+                      >
+                        <option value="">— Select —</option>
+                        <option value="full">Full</option>
+                        <option value="3/4">3/4</option>
+                        <option value="1/2">1/2</option>
+                        <option value="1/4">1/4</option>
+                        <option value="empty">Empty</option>
+                      </select>
+                    </div>
+
+                    {/* AdBlue */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 120px', minWidth: '100px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
+                        AdBlue
+                      </label>
+                      <select
+                        value={vehicleData.adblue}
+                        onChange={(e) => setVehicleData((prev) => ({ ...prev, adblue: e.target.value }))}
+                        className="input"
+                        style={{ fontSize: '13px', padding: '6px 8px' }}
+                      >
+                        <option value="">— Select —</option>
+                        <option value="full">Full</option>
+                        <option value="3/4">3/4</option>
+                        <option value="1/2">1/2</option>
+                        <option value="1/4">1/4</option>
+                        <option value="empty">Empty</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Block 2: Evidence */}
+              {(() => {
+                const totalEvidencePhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
+                const evidenceEmpty = totalEvidencePhotos === 0;
+                return (
+              <div
+                style={{
+                  border: evidenceEmpty ? '1px solid #fbbf24' : '1px solid rgb(var(--border))',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s ease',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderBottom: '1px solid rgb(var(--border))',
+                    backgroundColor: evidenceEmpty ? '#fffbeb' : 'rgba(var(--brand), 0.02)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    flex: 1,
-                    minWidth: 0,
-                    textAlign: 'left',
                   }}
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{
-                      flexShrink: 0,
-                      transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.15s ease',
-                      color: 'rgb(var(--muted))',
-                    }}
-                  >
-                    <path
-                      d="M4 6L8 10L12 6"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <span
-                    style={{ fontWeight: 600, fontSize: '14px', color: 'rgb(var(--text))' }}
-                  >
-                    {name}
+                  <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
+                    {t('auditEvidenceTitle')}
                   </span>
                   <span
                     style={{
-                      fontSize: '13px',
-                      color: allDone ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {t('sectionProgress', { completed: completedCount, total: totalCount })}
-                  </span>
-                </button>
-
-                {/* Per-section complete button — normal mode, unlocked only */}
-                {!quickMode && !isChecklistLocked && !allDone && (
-                  <button
-                    type="button"
-                    onClick={() => handleCompleteSection(name, sectionItems)}
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      color: 'rgb(var(--brand))',
-                      background: 'none',
-                      border: '1px solid rgb(var(--brand))',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '1px 6px',
                       borderRadius: '4px',
-                      cursor: 'pointer',
-                      padding: '4px 10px',
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
+                      backgroundColor: '#fef3c7',
+                      color: '#92400e',
+                      border: '1px solid #fbbf24',
+                      letterSpacing: '0.02em',
                     }}
                   >
-                    {t('completeSection')}
-                  </button>
-                )}
-              </div>
-
-              {/* Section Items */}
-              {!isCollapsed && (
+                    {t('evidenceRequiredBadge')}
+                  </span>
+                </div>
+                {/* Desc + hint + progress */}
                 <div
                   style={{
-                    padding: '12px 16px',
+                    padding: '8px 14px 10px',
+                    borderBottom: '1px solid rgb(var(--border))',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: '4px',
                   }}
                 >
-                  {sectionItems.map((item) => renderItem(item))}
+                  <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0, lineHeight: '1.5' }}>
+                    {t('auditEvidenceDesc')}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#b45309', margin: 0, fontWeight: 500 }}>
+                    {t('evidenceRequiredHint')}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '12px', color: evidenceEmpty ? '#b45309' : '#166534', fontWeight: 600 }}>
+                      {t('evidencePhotosCount', { count: totalEvidencePhotos })}
+                    </span>
+                    {evidenceEmpty && (
+                      <span style={{ fontSize: '12px', color: '#b45309' }}>
+                        — {t('evidenceNoPhotos')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              )}
+                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {(['general', 'damage'] as const).map((group) => (
+                    <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
+                        {group === 'general' ? 'General photos' : 'Damage photos'}
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {/* Thumbnails */}
+                        {evidencePhotos[group].map((file, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              position: 'relative',
+                              width: '64px',
+                              height: '64px',
+                              borderRadius: '6px',
+                              overflow: 'hidden',
+                              border: '1px solid rgb(var(--border))',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`${group} ${idx + 1}`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEvidencePhotos((prev) => ({
+                                  ...prev,
+                                  [group]: prev[group].filter((_, i) => i !== idx),
+                                }))
+                              }
+                              style={{
+                                position: 'absolute',
+                                top: '3px',
+                                right: '3px',
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: 'rgba(0,0,0,0.55)',
+                                color: '#fff',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '10px',
+                                lineHeight: '16px',
+                                textAlign: 'center',
+                                padding: 0,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                        {/* Add tile */}
+                        <label
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '6px',
+                            border: '1.5px dashed rgb(var(--border))',
+                            backgroundColor: 'rgb(var(--surface))',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files ?? []);
+                              if (files.length > 0)
+                                setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }));
+                            }}
+                          />
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5v14M5 12h14" stroke="rgb(var(--muted))" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          <span style={{ fontSize: '9px', color: 'rgb(var(--muted))', textAlign: 'center', lineHeight: '1.2' }}>Add</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+                );
+              })()}
+
+              {/* Block 3: Checklist Actions */}
+              <div
+                style={{
+                  border: '1px solid rgb(var(--border))',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderBottom: '1px solid rgb(var(--border))',
+                    backgroundColor: 'rgba(var(--brand), 0.02)',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
+                    {t('auditChecklistTitle')}
+                  </span>
+                </div>
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgb(var(--border))' }}>
+                  <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0, lineHeight: '1.6' }}>
+                    {t('auditChecklistDesc')}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                  {sections.map(({ name, items: sectionItems }, sectionIdx) => {
+                    const completedCount = sectionItems.filter((it) => it.checked).length;
+                    const totalCount = sectionItems.length;
+                    const allDone = completedCount === totalCount;
+                    const isCollapsed = !!collapsedSections[name];
+
+                    return (
+                      <div
+                        key={name}
+                        className="surface"
+                        style={{
+                          borderRadius: 0,
+                          overflow: 'hidden',
+                          borderTop: sectionIdx > 0 ? '1px solid rgb(var(--border))' : 'none',
+                        }}
+                      >
+                        {/* Section Header */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '12px 16px',
+                            borderBottom: isCollapsed ? 'none' : '1px solid rgb(var(--border))',
+                            gap: '12px',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleSection(name)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0,
+                              flex: 1,
+                              minWidth: 0,
+                              textAlign: 'left',
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              style={{
+                                flexShrink: 0,
+                                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.15s ease',
+                                color: 'rgb(var(--muted))',
+                              }}
+                            >
+                              <path
+                                d="M4 6L8 10L12 6"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            <span style={{ fontWeight: 600, fontSize: '14px', color: 'rgb(var(--text))' }}>
+                              {name}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '13px',
+                                color: allDone ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {t('sectionProgress', { completed: completedCount, total: totalCount })}
+                            </span>
+                          </button>
+
+                          {!quickMode && !isChecklistLocked && !allDone && (
+                            <button
+                              type="button"
+                              onClick={() => handleCompleteSection(name, sectionItems)}
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: 'rgb(var(--brand))',
+                                background: 'none',
+                                border: '1px solid rgb(var(--brand))',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                padding: '4px 10px',
+                                flexShrink: 0,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {t('completeSection')}
+                            </button>
+                          )}
+                        </div>
+
+                        {!isCollapsed && (
+                          <div
+                            style={{
+                              padding: '12px 16px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px',
+                            }}
+                          >
+                            {sectionItems.map((item) => {
+                              const auditLabel = getPickupAuditDisplayLabel(item.template.label);
+                              if (auditLabel === null) return null;
+                              return renderItem(item, auditLabel);
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          {/* Phase 3: Office */}
+          <div
+            className="surface"
+            style={{ borderRadius: '8px', overflow: 'hidden' }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(var(--brand), 0.04)',
+                borderBottom: '1px solid rgb(var(--border))',
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgb(var(--brand))',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                3
+              </span>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'rgb(var(--text))' }}>
+                {t('phase3Label')}
+              </span>
+            </div>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* Office confirmations */}
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px 0' }}>
+                  {t('officeConfirmationsTitle')}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(
+                    [
+                      { key: 'contractSigned', label: t('officeContractSigned') },
+                      { key: 'idVerified', label: t('officeIdVerified') },
+                      { key: 'securityDepositCollected', label: t('officeDepositCollected') },
+                      { key: 'vehicleDocsHandedOver', label: t('officeVehicleDocsHandedOver') },
+                      { key: 'keysHandedOver', label: t('officeKeysHandedOver') },
+                    ] as { key: keyof typeof officeConfirmations; label: string }[]
+                  ).map(({ key, label }) => (
+                    <label
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: officeConfirmations[key]
+                          ? 'rgba(var(--brand), 0.06)'
+                          : 'rgba(var(--border), 0.3)',
+                        border: `1px solid ${officeConfirmations[key] ? 'rgba(var(--brand), 0.25)' : 'rgb(var(--border))'}`,
+                        transition: 'background-color 0.15s, border-color 0.15s',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={officeConfirmations[key]}
+                        onChange={() =>
+                          setOfficeConfirmations((prev) => ({ ...prev, [key]: !prev[key] }))
+                        }
+                        style={{ width: '16px', height: '16px', accentColor: 'rgb(var(--brand))', flexShrink: 0, cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '13px', color: officeConfirmations[key] ? 'rgb(var(--text))' : 'rgb(var(--muted))', fontWeight: officeConfirmations[key] ? 500 : 400 }}>
+                        {label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional ID photos */}
+              <div style={{ borderTop: '1px solid rgb(var(--border))', paddingTop: '16px' }}>
+                <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px 0' }}>
+                  {t('officeIdPhotosTitle')}
+                </p>
+                <p style={{ fontSize: '12px', color: 'rgb(var(--muted))', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+                  {t('officeIdPhotosDesc')}
+                </p>
+
+                {/* Thumbnails */}
+                {officeIdPhotos.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                    {officeIdPhotos.map((file, idx) => (
+                      <div key={idx} style={{ position: 'relative', display: 'inline-block' }}>
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgb(var(--border))' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setOfficeIdPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                          style={{
+                            position: 'absolute',
+                            top: '-6px',
+                            right: '-6px',
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgb(var(--destructive, 220 38 38))',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            lineHeight: '18px',
+                            textAlign: 'center',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          aria-label="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add photo button */}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 12px',
+                    borderRadius: '6px',
+                    border: '1px dashed rgb(var(--border))',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    color: 'rgb(var(--muted))',
+                    backgroundColor: 'rgba(var(--border), 0.2)',
+                  }}
+                >
+                  <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
+                  {t('officeAddIdPhoto')}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      if (files.length > 0) setOfficeIdPhotos((prev) => [...prev, ...files]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {sections.map(({ name, items: sectionItems }) => {
+            const completedCount = sectionItems.filter((it) => it.checked).length;
+            const totalCount = sectionItems.length;
+            const allDone = completedCount === totalCount;
+            const isCollapsed = !!collapsedSections[name];
+
+            return (
+              <div
+                key={name}
+                className="surface"
+                style={{ borderRadius: '8px', overflow: 'hidden' }}
+              >
+                {/* Section Header */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderBottom: isCollapsed ? 'none' : '1px solid rgb(var(--border))',
+                    gap: '12px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(name)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      flex: 1,
+                      minWidth: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{
+                        flexShrink: 0,
+                        transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.15s ease',
+                        color: 'rgb(var(--muted))',
+                      }}
+                    >
+                      <path
+                        d="M4 6L8 10L12 6"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span
+                      style={{ fontWeight: 600, fontSize: '14px', color: 'rgb(var(--text))' }}
+                    >
+                      {name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        color: allDone ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {t('sectionProgress', { completed: completedCount, total: totalCount })}
+                    </span>
+                  </button>
+
+                  {/* Per-section complete button — normal mode, unlocked only */}
+                  {!quickMode && !isChecklistLocked && !allDone && (
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteSection(name, sectionItems)}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: 'rgb(var(--brand))',
+                        background: 'none',
+                        border: '1px solid rgb(var(--brand))',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        padding: '4px 10px',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('completeSection')}
+                    </button>
+                  )}
+                </div>
+
+                {/* Section Items */}
+                {!isCollapsed && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    {sectionItems.map((item) => renderItem(item))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Reopen/Revert History — handover checklists only */}
+      {instance.checklist_type === 'handover' && (
+        <div style={{ marginTop: '32px' }}>
+          {/* Divider + section header */}
+          <div style={{ borderTop: '1px solid rgb(var(--border))', paddingTop: '20px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--muted))', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {t('historyTitle')}
+            </h2>
+          </div>
+
+          {/* Empty state */}
+          {reopenHistory.length === 0 && (
+            <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0 }}>
+              {t('historyEmpty')}
+            </p>
+          )}
+
+          {/* History entries */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {reopenHistory.map((entry) => {
+              const isExpanded = !!expandedHistoryIds[entry.id];
+              const sortedSnapshotItems = [...entry.snapshot.items].sort((a, b) => {
+                const aOrder = templateItemIdToSortOrder.get(a.template_item_id) ?? 0;
+                const bOrder = templateItemIdToSortOrder.get(b.template_item_id) ?? 0;
+                return aOrder - bOrder;
+              });
+              const snapshotStatusLabel = (() => {
+                switch (entry.snapshot.instance.status) {
+                  case 'pending':
+                  case 'not_started':
+                    return t('statusNotStarted');
+                  case 'in_progress':
+                    return t('statusInProgress');
+                  case 'completed':
+                    return t('statusCompleted');
+                  default:
+                    return entry.snapshot.instance.status;
+                }
+              })();
+              return (
+                <div
+                  key={entry.id}
+                  className="surface"
+                  style={{
+                    borderRadius: '8px',
+                    border: '1px solid rgb(var(--border))',
+                    padding: '12px 14px',
+                  }}
+                >
+                  {/* Entry header row */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                    }}
+                  >
+                    {/* Left: date + subtext + reason */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {new Date(entry.reopened_at).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: '2px' }}>
+                        {t('historyReopenedAt')}
+                      </div>
+                      {entry.reason && (
+                        <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: '6px', fontStyle: 'italic' }}>
+                          "{entry.reason}"
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right: toggle button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleHistoryEntry(entry.id)}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: 'rgb(var(--text))',
+                        background: 'rgb(var(--surface))',
+                        border: '1px solid rgb(var(--border))',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        padding: '4px 10px',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isExpanded ? t('historyCollapse') : t('historyExpand')}
+                    </button>
+                  </div>
+
+                  {/* Expanded snapshot view */}
+                  {isExpanded && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        paddingTop: '10px',
+                        borderTop: '1px solid rgb(var(--border))',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                      }}
+                    >
+                      {/* Snapshot meta row */}
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '13px', color: 'rgb(var(--muted))' }}>
+                        <span>
+                          {t('historySnapshotStatus')}:{' '}
+                          <strong style={{ color: 'rgb(var(--text))' }}>{snapshotStatusLabel}</strong>
+                        </span>
+                        {entry.snapshot.instance.completed_at && (
+                          <span>
+                            {t('historySnapshotCompletedAt')}:{' '}
+                            <strong style={{ color: 'rgb(var(--text))' }}>
+                              {new Date(entry.snapshot.instance.completed_at).toLocaleString()}
+                            </strong>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Snapshot items — compact read-only rows */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {sortedSnapshotItems.map((snapItem) => {
+                          const label = templateItemIdToLabel.get(snapItem.template_item_id) ?? snapItem.template_item_id;
+                          const isFlagged = !!snapItem.issue_flag;
+                          const uiSev = isFlagged ? dbToUiSeverity(snapItem.issue_severity) : null;
+                          const badgeStyle = uiSev ? severityBadgeStyles[uiSev] : null;
+                          return (
+                            <div
+                              key={snapItem.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '5px 8px',
+                                borderRadius: '4px',
+                                border: isFlagged ? '1px solid #f59e0b' : '1px solid rgb(var(--border))',
+                                backgroundColor: snapItem.checked ? 'rgba(var(--brand), 0.04)' : 'transparent',
+                              }}
+                            >
+                              {/* Read-only checkbox */}
+                              <div
+                                style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  border: snapItem.checked
+                                    ? '2px solid rgb(var(--brand))'
+                                    : '2px solid rgb(var(--border))',
+                                  borderRadius: '3px',
+                                  backgroundColor: 'rgb(var(--surface))',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {snapItem.checked && (
+                                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                                    <path
+                                      d="M13.3332 4L5.99984 11.3333L2.6665 8"
+                                      stroke="rgb(var(--brand))"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+
+                              {/* Label + initials group (flex: 1 so flagged badge stays at end) */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                <span
+                                  style={{
+                                    fontSize: '13px',
+                                    color: snapItem.checked ? 'rgb(var(--text))' : 'rgb(var(--muted))',
+                                    fontWeight: snapItem.checked ? 500 : 400,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {label}
+                                </span>
+                                {snapItem.checked && snapItem.checked_by && initialsByUserId[snapItem.checked_by] && (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '20px',
+                                      height: '20px',
+                                      borderRadius: '50%',
+                                      border: '1px solid rgb(var(--border))',
+                                      backgroundColor: 'rgb(var(--surface))',
+                                      color: 'rgb(var(--muted))',
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {initialsByUserId[snapItem.checked_by]}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Flagged badge */}
+                              {isFlagged && badgeStyle && uiSev && (
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    padding: '1px 5px',
+                                    borderRadius: '3px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    backgroundColor: badgeStyle.bg,
+                                    color: badgeStyle.color,
+                                    border: `1px solid ${badgeStyle.border}`,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  ⚑ {severityLabel(uiSev)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Reopen checklist modal */}
       {reopenModal && (
@@ -2228,45 +3685,181 @@ export default function ChecklistDetailClient({
               gap: '16px',
             }}
           >
+            {(() => {
+              const hasUrgent = handoverSafetyModal.flaggedItems.some(
+                (it) => it.issue_blocking === true
+              );
+              return (
+                <>
+                  <div>
+                    <h2
+                      style={{
+                        fontSize: '17px',
+                        fontWeight: 700,
+                        color: hasUrgent ? '#991b1b' : 'rgb(var(--text))',
+                        margin: '0 0 6px',
+                      }}
+                    >
+                      {hasUrgent ? t('urgentModalTitle') : t('safetyModalTitle')}
+                    </h2>
+                    <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
+                      {hasUrgent ? t('urgentModalBody') : t('safetyModalBody')}
+                    </p>
+                  </div>
+
+                  {/* Flagged item list */}
+                  <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {handoverSafetyModal.flaggedItems.slice(0, 3).map((it) => (
+                      <li key={it.id} style={{ fontSize: '14px', color: 'rgb(var(--text))', fontWeight: 500 }}>
+                        {it.issue_title ?? it.template.label}
+                      </li>
+                    ))}
+                    {handoverSafetyModal.flaggedItems.length > 3 && (
+                      <li style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
+                        {t('safetyModalMoreIssues', { count: handoverSafetyModal.flaggedItems.length - 3 })}
+                      </li>
+                    )}
+                  </ul>
+
+                  {!hasUrgent && (
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
+                      {t('safetyModalQuestion')}
+                    </p>
+                  )}
+
+                  {hasUrgent ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSafetyCancel}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          borderRadius: '6px',
+                          border: '1px solid rgb(var(--border))',
+                          backgroundColor: 'rgb(var(--surface))',
+                          color: 'rgb(var(--text))',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t('urgentModalDismiss')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSafetyConfirm}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600 }}
+                      >
+                        {t('safetyModalConfirm')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSafetyMarkUrgent}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          borderRadius: '6px',
+                          border: '1px solid #f59e0b',
+                          backgroundColor: '#fef3c7',
+                          color: '#92400e',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t('safetyModalMarkUrgent')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSafetyCancel}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          borderRadius: '6px',
+                          border: '1px solid rgb(var(--border))',
+                          backgroundColor: 'rgb(var(--surface))',
+                          color: 'rgb(var(--text))',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t('safetyModalCancel')}
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Missing pickup data warning modal */}
+      {pickupDataWarningModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="surface"
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              padding: '24px',
+              borderRadius: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
             <div>
               <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'rgb(var(--text))', margin: '0 0 6px' }}>
-                {t('safetyModalTitle')}
+                Missing pickup information
               </h2>
               <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
-                {t('safetyModalBody')}
+                You have not entered the following:
               </p>
             </div>
-
-            {/* Flagged item list */}
             <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {handoverSafetyModal.flaggedItems.slice(0, 3).map((it) => (
-                <li key={it.id} style={{ fontSize: '14px', color: 'rgb(var(--text))', fontWeight: 500 }}>
-                  {it.issue_title ?? it.template.label}
-                </li>
-              ))}
-              {handoverSafetyModal.flaggedItems.length > 3 && (
-                <li style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                  {t('safetyModalMoreIssues', { count: handoverSafetyModal.flaggedItems.length - 3 })}
-                </li>
-              )}
+              {pickupDataWarningModal.missing.map((key) => {
+                const labels: Record<string, string> = { km: 'KM', fuel: 'Fuel', adblue: 'AdBlue', photos: 'Photos' };
+                return (
+                  <li key={key} style={{ fontSize: '14px', color: 'rgb(var(--text))', fontWeight: 500 }}>
+                    {labels[key] ?? key}
+                  </li>
+                );
+              })}
             </ul>
-
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
-              {t('safetyModalQuestion')}
-            </p>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button
                 type="button"
-                onClick={handleSafetyConfirm}
+                onClick={async () => {
+                  const fn = pickupDataWarningModal.onConfirm;
+                  setPickupDataWarningModal(null);
+                  await fn();
+                }}
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600 }}
               >
-                {t('safetyModalConfirm')}
+                Continue anyway
               </button>
               <button
                 type="button"
-                onClick={handleSafetyCancel}
+                onClick={() => setPickupDataWarningModal(null)}
                 style={{
                   width: '100%',
                   padding: '10px',
@@ -2279,7 +3872,7 @@ export default function ChecklistDetailClient({
                   cursor: 'pointer',
                 }}
               >
-                {t('safetyModalCancel')}
+                Go back
               </button>
             </div>
           </div>

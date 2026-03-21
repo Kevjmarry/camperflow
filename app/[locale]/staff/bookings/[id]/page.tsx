@@ -10,6 +10,7 @@ import { getStatusChipStyle } from "@/lib/statusChip";
 import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
 import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
 import type { BookingFormData } from "@/components/bookings/BookingEditForm";
+import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
 type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
@@ -120,6 +121,8 @@ export default function BookingDetailPage() {
     notes: "",
   });
   const [staffMeta, setStaffMeta] = useState<StaffMeta>(EMPTY_STAFF_META);
+  const [catalogExtras, setCatalogExtras] = useState<ExtraCatalogItem[]>([]);
+  const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
   const [internalNotes, setInternalNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -217,6 +220,20 @@ export default function BookingDetailPage() {
     }
   };
 
+  const fetchExtrasCatalog = async (companyId: string) => {
+    try {
+      const { data } = await supabase
+        .from('company_settings')
+        .select('extras_catalog')
+        .eq('id', companyId)
+        .maybeSingle();
+      const catalog = ((data as any)?.extras_catalog ?? []) as ExtraCatalogItem[];
+      setCatalogExtras(catalog.filter((item) => item.active));
+    } catch {
+      // silently fail — extras section will be empty
+    }
+  };
+
   const fetchBooking = async () => {
     try {
       setLoading(true);
@@ -257,6 +274,11 @@ export default function BookingDetailPage() {
           whatsapp_optin:   'whatsapp_optin'   in sm ? Boolean(sm.whatsapp_optin)  : null,
           marketing_optin:  'marketing_optin'  in sm ? Boolean(sm.marketing_optin) : null,
         });
+
+        // extras stored as array of catalog IDs; ignore old boolean-object format
+        const rawExtras = sm.extras;
+        setSelectedExtraIds(Array.isArray(rawExtras) ? (rawExtras as string[]) : []);
+
         setInternalNotes(data.internal_notes || "");
 
         if (data.customer_id) {
@@ -271,7 +293,10 @@ export default function BookingDetailPage() {
           setLinkedCustomer(null);
         }
 
-        fetchChecklistInstances();
+        await Promise.all([
+          fetchChecklistInstances(),
+          fetchExtrasCatalog(data.company_id),
+        ]);
       }
     } catch (err: any) {
       console.error('Fetch booking error:', err);
@@ -522,12 +547,13 @@ export default function BookingDetailPage() {
     }
 
     // Build staff_metadata: only persist keys that have an explicit override (non-null).
-    // If all fields are null (no overrides), write null to the column.
-    const staffMetaObj: Record<string, boolean | number> = {};
+    // extras stored as array of selected catalog IDs.
+    const staffMetaObj: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(staffMeta)) {
       if (v !== null) staffMetaObj[k] = v;
     }
-    const staffMetaDb = Object.keys(staffMetaObj).length > 0 ? staffMetaObj : null;
+    staffMetaObj.extras = selectedExtraIds;
+    const staffMetaDb = staffMetaObj;
 
     try {
       const { data: updateData, error: updateError } = await supabase
@@ -612,18 +638,14 @@ export default function BookingDetailPage() {
     try {
       setReverting(true);
       setRevertError("");
-      const res = await fetch(`/api/staff/bookings/${id}/revert`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ revert_reason: revertReason }),
+      const { error } = await supabase.rpc('revert_booking_handover', {
+        p_booking_id: booking!.id,
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json?.error || t("revert.errorFailed"));
-      }
+      if (error) throw new Error(error.message || t("revert.errorFailed"));
       setRevertModalOpen(false);
       setRevertReason("");
-      await fetchBooking();
+      await fetchBooking();      // refreshes booking data + checklist data
+      await fetchVehicles();     // refreshes vehicle state
     } catch (err: any) {
       setRevertError(err.message || t("revert.errorFailed"));
     } finally {
@@ -1097,6 +1119,22 @@ export default function BookingDetailPage() {
               </div>
             </div>
 
+            {/* ── Notes ───────────────────────────────────────────────────── */}
+            <div>
+              <label htmlFor="notes" className="label">
+                {t("field.notes")}
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                className="input"
+                value={formData.notes}
+                onChange={handleChange}
+                rows={4}
+                style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </div>
+
             {/* ── Trip Details ─────────────────────────────────────────────── */}
             <div style={{
               paddingTop: 'var(--space-2)',
@@ -1177,6 +1215,47 @@ export default function BookingDetailPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* ── Extras ───────────────────────────────────────────────────── */}
+            <div style={{
+              paddingTop: 'var(--space-2)',
+              borderTop: '1px solid rgb(var(--border) / 0.4)',
+            }}>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                {t("section.extras")}
+              </h2>
+              {catalogExtras.length > 0 ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-2)',
+                }}>
+                  {catalogExtras.map((item) => (
+                    <label
+                      key={item.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedExtraIds.includes(item.id)}
+                        onChange={(e) =>
+                          setSelectedExtraIds(prev =>
+                            e.target.checked
+                              ? [...prev, item.id]
+                              : prev.filter(xid => xid !== item.id)
+                          )
+                        }
+                      />
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{item.name}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
+                  No extras configured. Add extras in company settings.
+                </p>
+              )}
             </div>
 
             {/* ── Internal Notes ───────────────────────────────────────────── */}

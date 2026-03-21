@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
+import type { ExtrasData } from "@/components/bookings/BookingEditForm";
+import { EMPTY_EXTRAS } from "@/components/bookings/BookingEditForm";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -55,6 +57,7 @@ export default function NewBookingPage() {
     notes: "",
     status: "confirmed",
   });
+  const [extras, setExtras] = useState<ExtrasData>(EMPTY_EXTRAS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [conflictWarning, setConflictWarning] = useState("");
@@ -270,6 +273,7 @@ export default function NewBookingPage() {
             customer_phone: formData.customer_phone.trim() || null,
             customer_email: formData.customer_email.trim() || null,
             notes: formData.notes.trim() || null,
+            staff_metadata: { extras },
           },
         ])
         .select("id")
@@ -535,6 +539,39 @@ export default function NewBookingPage() {
                   fontFamily: "inherit",
                 }}
               />
+            </div>
+
+            {/* ── Extras ─────────────────────────────────────────────────── */}
+            <div>
+              <h2 style={{ fontSize: "18px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
+                {t("sections.extras")}
+              </h2>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "var(--space-3)",
+              }}>
+                {(
+                  [
+                    { key: "coffee_machine",             labelKey: "fields.extras.coffeeMachine" },
+                    { key: "paddleboard",                labelKey: "fields.extras.paddleboard" },
+                    { key: "electric_grill",             labelKey: "fields.extras.electricGrill" },
+                    { key: "electric_paddle_board_pump", labelKey: "fields.extras.electricPaddleBoardPump" },
+                  ] as { key: keyof ExtrasData; labelKey: string }[]
+                ).map(({ key, labelKey }) => (
+                  <label
+                    key={key}
+                    style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer" }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={extras[key]}
+                      onChange={(e) => setExtras(prev => ({ ...prev, [key]: e.target.checked }))}
+                    />
+                    <span style={{ fontSize: "14px", color: "rgb(var(--text))" }}>{t(labelKey)}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {conflictWarning && (

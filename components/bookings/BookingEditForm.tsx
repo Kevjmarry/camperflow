@@ -22,14 +22,37 @@ export interface BookingFormData {
   notes: string;
 }
 
+export interface ExtrasData {
+  coffee_machine: boolean;
+  paddleboard: boolean;
+  electric_grill: boolean;
+  electric_paddle_board_pump: boolean;
+}
+
+export const EMPTY_EXTRAS: ExtrasData = {
+  coffee_machine: false,
+  paddleboard: false,
+  electric_grill: false,
+  electric_paddle_board_pump: false,
+};
+
+const EXTRAS_KEYS: { key: keyof ExtrasData; labelKey: string }[] = [
+  { key: 'coffee_machine',            labelKey: 'extras.coffeeMachine' },
+  { key: 'paddleboard',               labelKey: 'extras.paddleboard' },
+  { key: 'electric_grill',            labelKey: 'extras.electricGrill' },
+  { key: 'electric_paddle_board_pump', labelKey: 'extras.electricPaddleBoardPump' },
+];
+
 interface Props {
   formData: BookingFormData;
+  extras: ExtrasData;
   vehicles: Vehicle[];
   saving: boolean;
   error: string;
   conflictWarning: string;
   isNoCustomerRequired: boolean;
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  onExtrasChange: (key: keyof ExtrasData, value: boolean) => void;
   onSubmit: (e: FormEvent) => void;
   onDelete: () => void;
   t: (key: string) => string;
@@ -37,12 +60,14 @@ interface Props {
 
 export function BookingEditForm({
   formData,
+  extras,
   vehicles,
   saving,
   error,
   conflictWarning,
   isNoCustomerRequired,
   onChange,
+  onExtrasChange,
   onSubmit,
   onDelete,
   t,
@@ -199,6 +224,35 @@ export function BookingEditForm({
           rows={4}
           style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
         />
+      </div>
+
+      {/* ── Extras ────────────────────────────────────────────────────────── */}
+      <div style={{
+        paddingTop: 'var(--space-2)',
+        borderTop: '1px solid rgb(var(--border) / 0.4)',
+      }}>
+        <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+          {t("section.extras")}
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 'var(--space-3)',
+        }}>
+          {EXTRAS_KEYS.map(({ key, labelKey }) => (
+            <label
+              key={key}
+              style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={extras[key]}
+                onChange={(e) => onExtrasChange(key, e.target.checked)}
+              />
+              <span style={{ fontSize: '14px', color: 'rgb(var(--text))' }}>{t(labelKey)}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       {conflictWarning && (
