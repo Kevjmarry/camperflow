@@ -35,6 +35,7 @@ interface ItemEditState {
   label: string;
   required: boolean;
   input_type: string;
+  options: string[];
   section: string | null;
   newSectionName: string;
   saving: boolean;
@@ -217,8 +218,48 @@ function SortableItem({
           >
             <option value="checkbox">Checkbox</option>
             <option value="number">Number</option>
+            <option value="dropdown">Dropdown</option>
           </select>
         </div>
+        {editState.input_type === 'dropdown' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgb(var(--muted))' }}>Dropdown options</span>
+            {editState.options.map((opt, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                <input
+                  className="input"
+                  type="text"
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...editState.options];
+                    next[idx] = e.target.value;
+                    onUpdateField('options', next);
+                  }}
+                  disabled={editState.saving}
+                  placeholder={`Option ${idx + 1}`}
+                  style={{ fontSize: '13px', flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => onUpdateField('options', editState.options.filter((_, i) => i !== idx))}
+                  disabled={editState.saving}
+                  aria-label="Remove option"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgb(var(--error))', padding: '0 6px', fontSize: '16px', lineHeight: 1 }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => onUpdateField('options', [...editState.options, ''])}
+              disabled={editState.saving}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgb(var(--brand))', fontSize: '13px', padding: 0, textAlign: 'left' }}
+            >
+              + Add option
+            </button>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
           <select
             className="input"
@@ -325,6 +366,11 @@ function SortableItem({
         {item.input_type === 'number' && (
           <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
             Number
+          </span>
+        )}
+        {item.input_type === 'dropdown' && (
+          <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            Dropdown
           </span>
         )}
         {item.required && (

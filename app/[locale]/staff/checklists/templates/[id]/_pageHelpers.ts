@@ -27,12 +27,15 @@ export interface ChecklistTemplateItem {
   position: number;         // per-section ordering (unique per section)
   required: boolean;
   input_type: string;
+  ui_section?: string | null;  // 'checklist_actions' | 'office' | 'vehicle_data' | null
+  options: string[] | null;   // dropdown option labels; null = use runtime default
 }
 
 export interface ItemEditState {
   label: string;
   required: boolean;
   input_type: string;
+  options: string[];          // editable dropdown options (empty = no override)
   // null = General (DB null), any string = named section, NEW_SECTION_SENTINEL = user typing a new name
   section: string | null;
   newSectionName: string;
@@ -73,7 +76,9 @@ export const ERROR_BOX: CSSProperties = {
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
 export function normaliseInputType(raw: string): string {
-  return raw === 'number' ? 'number' : 'checkbox';
+  if (raw === 'number') return 'number';
+  if (raw === 'dropdown') return 'dropdown';
+  return 'checkbox';
 }
 
 export function isSystemTemplate(template: ChecklistTemplate): boolean {

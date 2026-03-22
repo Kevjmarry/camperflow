@@ -8,7 +8,7 @@ type ChecklistType = 'handover' | 'return' | 'cleaning' | 'mechanical';
 export interface ChecklistInstance {
   id: string;
   checklist_type: ChecklistType;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'not_started' | 'pending' | 'in_progress' | 'completed';
   template: {
     id: string;
     name: string | null;
@@ -44,11 +44,13 @@ export function BookingChecklistsSection({ instances, locale, t }: Props) {
     );
   };
 
-  const getChecklistStatusLabel = (status: 'pending' | 'in_progress' | 'completed') => {
+  const getChecklistStatusLabel = (status: 'not_started' | 'pending' | 'in_progress' | 'completed') => {
     switch (status) {
+      case 'not_started':
       case 'pending':     return t("checklists.status.notStarted");
       case 'in_progress': return t("checklists.status.inProgress");
       case 'completed':   return t("checklists.status.completed");
+      default:            return t("checklists.status.notStarted");
     }
   };
 

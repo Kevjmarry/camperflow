@@ -36,6 +36,11 @@ export default async function ChecklistDetailPage({
       completed_at,
       completed_by,
       created_at,
+      office_contract_signed,
+      office_id_verified,
+      office_deposit_collected,
+      handover_documents_given,
+      handover_keys_given,
       booking:bookings (
         id,
         booking_number,
@@ -76,7 +81,9 @@ export default async function ChecklistDetailPage({
       template:checklist_template_items (
         label,
         sort_order,
-        section
+        section,
+        ui_section,
+        options
       )
     `
     )
@@ -115,6 +122,8 @@ export default async function ChecklistDetailPage({
           label: tpl?.label ?? 'Untitled item',
           sort_order: tpl?.sort_order ?? 0,
           section: tpl?.section ?? null,
+          ui_section: tpl?.ui_section ?? null,
+          options: tpl?.options ?? null,
         },
       };
     }) ?? [];

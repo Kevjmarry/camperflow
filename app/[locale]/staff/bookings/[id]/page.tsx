@@ -638,10 +638,15 @@ export default function BookingDetailPage() {
     try {
       setReverting(true);
       setRevertError("");
-      const { error } = await supabase.rpc('revert_booking_handover', {
-        p_booking_id: booking!.id,
+      const res = await fetch(`/api/staff/bookings/${booking!.id}/revert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revert_reason: revertReason }),
       });
-      if (error) throw new Error(error.message || t("revert.errorFailed"));
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json?.error || t("revert.errorFailed"));
+      }
       setRevertModalOpen(false);
       setRevertReason("");
       await fetchBooking();      // refreshes booking data + checklist data
