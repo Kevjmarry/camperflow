@@ -10,9 +10,10 @@ type EvidenceBlockProps = {
   onRemove: (group: 'general' | 'damage', index: number) => void;
   isLocked: boolean;
   highlight?: boolean;
+  title?: string;
 };
 
-export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight }: EvidenceBlockProps) {
+export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight, title }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
   const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
 
@@ -32,7 +33,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
         }}
       >
         <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
-          {t('auditEvidenceTitle')}
+          {title ?? t('auditEvidenceTitle')}
         </span>
       </div>
 

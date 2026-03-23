@@ -22,13 +22,15 @@ import OfficeSectionCard from './OfficeSectionCard';
 import HandoverFooter from './HandoverFooter';
 import StandardChecklistSections from './StandardChecklistSections';
 import ReopenHistorySection from './ReopenHistorySection';
+import ReturnOfficeSectionCard from './ReturnOfficeSectionCard';
 
 import { useChecklistUser } from './useChecklistUser';
 import { useChecklistStatusSync } from './useChecklistStatusSync';
 import { useChecklistFlags } from './useChecklistFlags';
 import { useChecklistReopen } from './useChecklistReopen';
 import { useHandoverCompletion } from './useHandoverCompletion';
-import { isLockError, parseSyncError, getPickupAuditDisplayLabel } from './helpers';
+import { useReturnCompletion } from './useReturnCompletion';
+import { isLockError, parseSyncError, getPickupAuditDisplayLabel, getReturnAuditDisplayLabel } from './helpers';
 
 import type {
   ChecklistInstanceType,
@@ -290,6 +292,27 @@ export default function ChecklistDetailClient({
     t,
   });
 
+  const {
+    returnCompleting,
+    returnBlockedError,
+    setReturnBlockedError,
+    handleReturnCompleteButton,
+  } = useReturnCompletion({
+    supabase,
+    instance,
+    localInstance,
+    setLocalInstance,
+    localItems,
+    isChecklistLocked,
+    setSyncError,
+    setLockNotice,
+    lockMessageFromError,
+    showHandoverSafetyModal,
+    setHandoverSafetyModal,
+    navigateAfterCompletion,
+    t,
+  });
+
   // ── Safety modal handlers ─────────────────────────────────────────────────────
 
   const handleSafetyConfirm = async () => {
@@ -425,6 +448,65 @@ export default function ChecklistDetailClient({
         started_by: localInstance.started_by ?? (user?.id ?? null),
       };
       setLocalInstance((prev) => ({ ...prev, ...statusUpdate }));
+      await supabase.from('checklist_instances').update(statusUpdate).eq('id', instance.id);
+    }
+  };
+
+  // ── Return field toggle / deposit status ─────────────────────────────────────
+
+  type ReturnBooleanField = 'return_keys_received' | 'return_documents_received' | 'return_contract_closed';
+
+  const handleReturnFieldToggle = async (field: ReturnBooleanField) => {
+    if (isChecklistLocked) return;
+    const current = !!(localInstance as any)[field];
+    const newValue = !current;
+    setLocalInstance((prev) => ({ ...prev, [field]: newValue }));
+    const { error } = await supabase
+      .from('checklist_instances')
+      .update({ [field]: newValue })
+      .eq('id', instance.id);
+    if (error) {
+      setLocalInstance((prev) => ({ ...prev, [field]: current }));
+      setSyncError(parseSyncError(error, 'status_sync_failed'));
+      return;
+    }
+    const isPending = localInstance.status === 'pending' || localInstance.status === 'not_started';
+    if (newValue && isPending) {
+      const now = new Date().toISOString();
+      const { data: { user } } = await supabase.auth.getUser();
+      const statusUpdate = {
+        status: 'in_progress',
+        started_at: localInstance.started_at ?? now,
+        started_by: localInstance.started_by ?? (user?.id ?? null),
+      };
+      setLocalInstance((prev) => ({ ...prev, ...statusUpdate }));
+      await supabase.from('checklist_instances').update(statusUpdate).eq('id', instance.id);
+    }
+  };
+
+  const handleReturnDepositStatus = async (value: string) => {
+    if (isChecklistLocked) return;
+    const prev = localInstance.return_deposit_status;
+    setLocalInstance((prev) => ({ ...prev, return_deposit_status: value }));
+    const { error } = await supabase
+      .from('checklist_instances')
+      .update({ return_deposit_status: value })
+      .eq('id', instance.id);
+    if (error) {
+      setLocalInstance((p) => ({ ...p, return_deposit_status: prev }));
+      setSyncError(parseSyncError(error, 'status_sync_failed'));
+      return;
+    }
+    const isPending = localInstance.status === 'pending' || localInstance.status === 'not_started';
+    if (isPending) {
+      const now = new Date().toISOString();
+      const { data: { user } } = await supabase.auth.getUser();
+      const statusUpdate = {
+        status: 'in_progress',
+        started_at: localInstance.started_at ?? now,
+        started_by: localInstance.started_by ?? (user?.id ?? null),
+      };
+      setLocalInstance((p) => ({ ...p, ...statusUpdate }));
       await supabase.from('checklist_instances').update(statusUpdate).eq('id', instance.id);
     }
   };
@@ -863,6 +945,94 @@ export default function ChecklistDetailClient({
                 onComplete={handleHandoverCompleteValidated}
               />
             )}
+        </div>
+      ) : instance.checklist_type === 'return' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <PhaseSummaryStrip />
+
+          {/* Phase 1: Vehicle Intake */}
+          <PhaseCard phase={1} label={t('phase1Label')}>
+            <div style={{ padding: '16px' }}>
+              <VehicleDataBlock
+                vehicleData={vehicleData}
+                onChange={(field, value) => setVehicleData((prev) => ({ ...prev, [field]: value }))}
+                isLocked={isChecklistLocked}
+                highlight={false}
+                fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
+                adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
+              />
+            </div>
+          </PhaseCard>
+
+          {/* Phase 2: Condition & Inspection */}
+          <PhaseCard phase={2} label={t('phase2Label')}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <EvidenceBlock
+                evidencePhotos={evidencePhotos}
+                onAdd={(group, files) =>
+                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }))
+                }
+                onRemove={(group, index) =>
+                  setEvidencePhotos((prev) => ({
+                    ...prev,
+                    [group]: prev[group].filter((_, i) => i !== index),
+                  }))
+                }
+                isLocked={isChecklistLocked}
+                highlight={false}
+              />
+              <AuditChecklistBlock
+                sections={sections}
+                isChecklistLocked={isChecklistLocked}
+                collapsedSections={collapsedSections}
+                onToggleSection={toggleSection}
+                onCompleteSection={handleCompleteSection}
+                renderItemProps={renderItemProps}
+                getDisplayLabel={getReturnAuditDisplayLabel}
+                highlight={false}
+              />
+            </div>
+          </PhaseCard>
+
+          {/* Phase 3: Office / Return Close */}
+          <PhaseCard phase={3} label={t('phase3Label')}>
+            <ReturnOfficeSectionCard
+              localInstance={localInstance}
+              isChecklistLocked={isChecklistLocked}
+              onToggleField={handleReturnFieldToggle}
+              onSetDepositStatus={handleReturnDepositStatus}
+            />
+          </PhaseCard>
+
+          {/* Phase 4: Complete button */}
+          {!isChecklistLocked && localInstance.status !== 'completed' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {returnBlockedError && (
+                <p style={{ color: 'rgb(239,68,68)', fontSize: '13px', margin: 0, textAlign: 'center' }}>
+                  {returnBlockedError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => { setReturnBlockedError(null); handleReturnCompleteButton(); }}
+                disabled={returnCompleting}
+                style={{
+                  padding: '14px 24px',
+                  backgroundColor: 'rgb(var(--brand))',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  cursor: returnCompleting ? 'not-allowed' : 'pointer',
+                  opacity: returnCompleting ? 0.7 : 1,
+                  width: '100%',
+                }}
+              >
+                {returnCompleting ? t('completing') : t('completeChecklist')}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <StandardChecklistSections

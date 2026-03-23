@@ -144,3 +144,31 @@ export function getPickupAuditDisplayLabel(label: string): string | null {
 
   return label;
 }
+
+/**
+ * Returns null → hide from interactive Audit checklist (covered by Phase 1 VehicleDataBlock or Phase 3 ReturnOfficeSectionCard).
+ * Returns string → display this label instead of the DB template label.
+ */
+export function getReturnAuditDisplayLabel(label: string): string | null {
+  const l = label.toLowerCase();
+  // Hide vehicle data items — covered by Phase 1 VehicleDataBlock
+  if (l.includes('fuel') || l.includes('fluid') || l.includes('adblue') || l.includes('kilometre') || l.includes('kilometer') || l.includes('odometer') || l.includes('mileage')) return null;
+  // Hide return office close-out items — covered by Phase 3 ReturnOfficeSectionCard
+  if (l.includes('key') && (l.includes('return') || l.includes('received') || l.includes('hand'))) return null;
+  if (l.includes('document') && (l.includes('return') || l.includes('received') || l.includes('hand'))) return null;
+  if (l.includes('contract') && (l.includes('close') || l.includes('sign') || l.includes('complete'))) return null;
+  if (l.includes('deposit') && (l.includes('return') || l.includes('refund') || l.includes('held') || l.includes('status'))) return null;
+
+  // Normalise condition/inspection labels
+  if (l.includes('exterior')) return 'Exterior condition checked';
+  if (l.includes('interior') && l.includes('condition')) return 'Interior condition checked';
+  if (l.includes('damage') && (l.includes('inspect') || l.includes('check') || l.includes('assess'))) return 'Damage assessment completed';
+  if (
+    (l.includes('standard') && (l.includes('kit') || l.includes('equipment'))) ||
+    (l.includes('kit') && !l.includes('first aid') && !l.includes('tool'))
+  ) return 'Standard kit returned';
+  if (l.includes('add-on') || l.includes('addon') || l.includes('add on') || l.includes('extra') || l.includes('optional'))
+    return 'Special add-ons returned';
+
+  return label;
+}

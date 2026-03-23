@@ -1972,7 +1972,18 @@
     "handoverErrorOfficeIncomplete": "All office confirmations (deposit, ID, contract) must be completed.",
     "handoverErrorHandoverIncomplete": "All handover confirmations (keys and documents) must be completed.",
     "handoverErrorBlockingFlags": "There are urgent open issues on this checklist. Resolve all urgent flags before completing handover.",
-    "handoverErrorAllRequired": "All audit items, vehicle data, photo evidence, and office/handover confirmations must be completed before handover can be completed."
+    "handoverErrorAllRequired": "All audit items, vehicle data, photo evidence, and office/handover confirmations must be completed before handover can be completed.",
+    "returnCloseConfirmationsTitle": "Return close-out",
+    "returnKeysReceived": "Keys received",
+    "returnDocumentsReceived": "Documents received",
+    "returnContractClosed": "Contract closed",
+    "returnDepositStatusTitle": "Deposit status",
+    "returnDepositReturned": "Returned to customer",
+    "returnDepositPendingAdmin": "Pending admin return",
+    "returnDepositHeldDamage": "Held for damage",
+    "returnErrorAuditIncomplete": "All return audit items must be checked before the return can be completed.",
+    "returnErrorCloseIncomplete": "All return close-out confirmations (keys, documents, contract) must be completed.",
+    "returnErrorDepositRequired": "Deposit status must be set before the return can be completed."
   },
   "bookingsImport": {
     "backToBookings": "← Back to bookings",

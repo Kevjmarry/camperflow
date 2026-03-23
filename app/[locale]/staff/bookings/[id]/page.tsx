@@ -716,6 +716,22 @@ export default function BookingDetailPage() {
     );
   }
 
+  // ── Checklist gating ──────────────────────────────────────────────────────
+
+  const handoverCompleted = checklistInstances.some(
+    (i) => i.checklist_type === 'handover' && i.status === 'completed'
+  );
+  const returnInstances = checklistInstances.filter((i) => i.checklist_type === 'return');
+  const nonReturnInstances = checklistInstances.filter((i) => i.checklist_type !== 'return');
+  const handoverBlockerInstance = nonReturnInstances.find((i) => i.checklist_type === 'handover');
+  const returnBlockerLabel = handoverBlockerInstance
+    ? `${handoverBlockerInstance.template?.name ?? handoverBlockerInstance.template?.title ?? handoverBlockerInstance.checklist_type}: ${
+        handoverBlockerInstance.status === 'in_progress'
+          ? t('checklists.status.inProgress')
+          : t('checklists.status.notStarted')
+      }`
+    : null;
+
   // ── Early returns ─────────────────────────────────────────────────────────
 
   if (notFound) {
@@ -867,10 +883,38 @@ export default function BookingDetailPage() {
             )}
 
             <BookingChecklistsSection
-              instances={checklistInstances}
+              instances={nonReturnInstances}
               locale={locale}
               t={t as (key: string, values?: Record<string, unknown>) => string}
             />
+            {returnInstances.map((instance) => {
+              const statusLabel = instance.status === 'completed' ? t('checklists.status.completed') : instance.status === 'in_progress' ? t('checklists.status.inProgress') : t('checklists.status.notStarted');
+              const actionLabel = instance.status === 'completed' ? t('checklists.viewReport') : instance.status === 'in_progress' ? t('checklists.continueChecklist') : t('checklists.openChecklist');
+              return (
+                <div key={instance.id} style={{ padding: 'var(--space-4)', background: 'rgb(var(--border) / 0.3)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap', marginTop: 'var(--space-3)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', marginBottom: 'var(--space-1)' }}>{instance.template?.name ?? instance.template?.title ?? instance.checklist_type}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                      <span style={getStatusChipStyle(instance.status)}>{statusLabel}</span>
+                      {!handoverCompleted && returnBlockerLabel && (
+                        <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                          {returnBlockerLabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {handoverCompleted ? (
+                    <Link href={`/${locale}/staff/checklists/${instance.id}?from=booking`} className="btn btn-secondary" style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px' }}>
+                      {actionLabel}
+                    </Link>
+                  ) : (
+                    <span className="btn btn-secondary" style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px', opacity: 0.5, cursor: 'not-allowed', userSelect: 'none' }}>
+                      {t('checklists.openChecklist')}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </PageContainer>
@@ -1359,7 +1403,7 @@ export default function BookingDetailPage() {
           </form>
 
           {/* Checklists sit outside the form — read-only, no submit relation */}
-          {booking.status === 'confirmed' && checklistInstances.some(i => i.checklist_type === 'handover' && i.status === 'completed') && selectedVehicle?.status !== 'preparing' && (
+          {booking.status === 'confirmed' && handoverCompleted && selectedVehicle?.status !== 'preparing' && (
             <div style={{
               padding: 'var(--space-3) var(--space-4)',
               background: 'rgb(var(--warning) / 0.1)',
@@ -1372,10 +1416,38 @@ export default function BookingDetailPage() {
             </div>
           )}
           <BookingChecklistsSection
-            instances={checklistInstances}
+            instances={nonReturnInstances}
             locale={locale}
             t={t as (key: string, values?: Record<string, unknown>) => string}
           />
+          {returnInstances.map((instance) => {
+            const statusLabel = instance.status === 'completed' ? t('checklists.status.completed') : instance.status === 'in_progress' ? t('checklists.status.inProgress') : t('checklists.status.notStarted');
+            const actionLabel = instance.status === 'completed' ? t('checklists.viewReport') : instance.status === 'in_progress' ? t('checklists.continueChecklist') : t('checklists.openChecklist');
+            return (
+              <div key={instance.id} style={{ padding: 'var(--space-4)', background: 'rgb(var(--border) / 0.3)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap', marginTop: 'var(--space-3)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', marginBottom: 'var(--space-1)' }}>{instance.template?.name ?? instance.template?.title ?? instance.checklist_type}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                    <span style={getStatusChipStyle(instance.status)}>{statusLabel}</span>
+                    {!handoverCompleted && returnBlockerLabel && (
+                      <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                        {returnBlockerLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {handoverCompleted ? (
+                  <Link href={`/${locale}/staff/checklists/${instance.id}?from=booking`} className="btn btn-secondary" style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px' }}>
+                    {actionLabel}
+                  </Link>
+                ) : (
+                  <span className="btn btn-secondary" style={{ fontSize: '14px', padding: 'var(--space-2) var(--space-4)', minHeight: '36px', opacity: 0.5, cursor: 'not-allowed', userSelect: 'none' }}>
+                    {t('checklists.openChecklist')}
+                  </span>
+                )}
+              </div>
+            );
+          })}
 
         </div>
       </div>

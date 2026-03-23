@@ -22,6 +22,10 @@ export type ChecklistInstanceType = {
   office_deposit_collected: boolean | null;
   handover_documents_given: boolean | null;
   handover_keys_given: boolean | null;
+  return_keys_received: boolean | null;
+  return_documents_received: boolean | null;
+  return_contract_closed: boolean | null;
+  return_deposit_status: string | null;
   bookings: {
     id: string;
     booking_number: string;
@@ -109,6 +113,12 @@ export type HandoverField =
   | 'office_deposit_collected'
   | 'handover_documents_given'
   | 'handover_keys_given';
+
+export type ReturnField =
+  | 'return_keys_received'
+  | 'return_documents_received'
+  | 'return_contract_closed'
+  | 'return_deposit_status';
 
 /** Map DB severity → UI severity for badge rendering */
 export function dbToUiSeverity(db: DbIssueSeverity | null | undefined): IssueSeverity {

@@ -1972,7 +1972,18 @@
     "handoverErrorOfficeIncomplete": "Alle Büro-Bestätigungen (Kaution, Ausweis, Vertrag) müssen abgeschlossen sein.",
     "handoverErrorHandoverIncomplete": "Alle Übergabe-Bestätigungen (Schlüssel und Dokumente) müssen abgeschlossen sein.",
     "handoverErrorBlockingFlags": "Es gibt dringende offene Probleme in dieser Checkliste. Bitte alle dringenden Markierungen lösen, bevor die Übergabe abgeschlossen wird.",
-    "handoverErrorAllRequired": "Alle Audit-Prüfpunkte, Fahrzeugdaten, Beweisfotos sowie Büro- und Übergabe-Bestätigungen müssen abgeschlossen sein, bevor die Übergabe abgeschlossen werden kann."
+    "handoverErrorAllRequired": "Alle Audit-Prüfpunkte, Fahrzeugdaten, Beweisfotos sowie Büro- und Übergabe-Bestätigungen müssen abgeschlossen sein, bevor die Übergabe abgeschlossen werden kann.",
+    "returnCloseConfirmationsTitle": "Rückgabe-Abschluss",
+    "returnKeysReceived": "Schlüssel erhalten",
+    "returnDocumentsReceived": "Dokumente erhalten",
+    "returnContractClosed": "Vertrag abgeschlossen",
+    "returnDepositStatusTitle": "Kautionsstatus",
+    "returnDepositReturned": "An Kunden zurückgegeben",
+    "returnDepositPendingAdmin": "Ausstehende Rückgabe (Verwaltung)",
+    "returnDepositHeldDamage": "Einbehalten wegen Schaden",
+    "returnErrorAuditIncomplete": "Alle Rückgabe-Prüfpunkte müssen abgehakt sein, bevor die Rückgabe abgeschlossen werden kann.",
+    "returnErrorCloseIncomplete": "Alle Rückgabe-Abschlussbestätigungen (Schlüssel, Dokumente, Vertrag) müssen abgeschlossen sein.",
+    "returnErrorDepositRequired": "Der Kautionsstatus muss gesetzt werden, bevor die Rückgabe abgeschlossen werden kann."
   },
   "bookingsImport": {
     "backToBookings": "← Zurück zu Buchungen",
