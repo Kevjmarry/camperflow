@@ -67,6 +67,7 @@ export default function ChecklistDetailClient({
 
   // ── Vehicle / evidence state ─────────────────────────────────────────────────
   const [vehicleData, setVehicleData] = useState({ km: '', fuel: '', adblue: '' });
+  const [extrasChecked, setExtrasChecked] = useState<Record<string, boolean>>({});
   const [evidencePhotos, setEvidencePhotos] = useState<{ general: File[]; damage: File[] }>({
     general: [],
     damage: [],
@@ -766,6 +767,20 @@ export default function ChecklistDetailClient({
 
   // ── Render helpers ────────────────────────────────────────────────────────────
 
+  // ── Return extras ─────────────────────────────────────────────────────────────
+  const returnExtras = (() => {
+    if (instance.checklist_type !== 'return') return [];
+    const bookings = instance.bookings as (typeof instance.bookings & {
+      staff_metadata?: { extras?: string[] };
+      company_settings?: { extras_catalog?: { id: string; name: string }[] };
+    }) | null;
+    const selectedIds: string[] = bookings?.staff_metadata?.extras ?? [];
+    const catalog: { id: string; name: string }[] = bookings?.company_settings?.extras_catalog ?? [];
+    return selectedIds
+      .map((id) => catalog.find((e) => e.id === id))
+      .filter((e): e is { id: string; name: string } => e !== undefined);
+  })();
+
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);
   const sectionMap = new Map<string, ChecklistItemType[]>();
   for (const item of sortedItems) {
@@ -948,10 +963,13 @@ export default function ChecklistDetailClient({
         </div>
       ) : instance.checklist_type === 'return' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <PhaseSummaryStrip />
+          <PhaseSummaryStrip
+            introText="This return follows three phases: inspection, condition & evidence, and final close-out."
+            phaseLabels={['Inspection', 'Condition & Evidence', 'Close-out']}
+          />
 
-          {/* Phase 1: Vehicle Intake */}
-          <PhaseCard phase={1} label={t('phase1Label')}>
+          {/* Phase 1: Inspection */}
+          <PhaseCard phase={1} label="Inspection / Vehicle intake">
             <div style={{ padding: '16px' }}>
               <VehicleDataBlock
                 vehicleData={vehicleData}
@@ -964,8 +982,8 @@ export default function ChecklistDetailClient({
             </div>
           </PhaseCard>
 
-          {/* Phase 2: Condition & Inspection */}
-          <PhaseCard phase={2} label={t('phase2Label')}>
+          {/* Phase 2: Condition & Evidence */}
+          <PhaseCard phase={2} label="Condition & Evidence">
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
@@ -980,6 +998,7 @@ export default function ChecklistDetailClient({
                 }
                 isLocked={isChecklistLocked}
                 highlight={false}
+                variant="return"
               />
               <AuditChecklistBlock
                 sections={sections}
@@ -990,12 +1009,84 @@ export default function ChecklistDetailClient({
                 renderItemProps={renderItemProps}
                 getDisplayLabel={getReturnAuditDisplayLabel}
                 highlight={false}
+                footerContent={returnExtras.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
+                      Extras returned
+                    </span>
+                    {returnExtras.map((extra) => (
+                      <div
+                        key={extra.id}
+                        style={{
+                          border: '1px solid rgb(var(--border))',
+                          borderRadius: '6px',
+                          padding: '12px',
+                          opacity: isChecklistLocked ? 0.75 : 1,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <label
+                            htmlFor={isChecklistLocked ? undefined : `extras-check-${extra.id}`}
+                            style={{
+                              marginTop: '2px',
+                              cursor: isChecklistLocked ? 'default' : 'pointer',
+                              flexShrink: 0,
+                              position: 'relative',
+                              display: 'block',
+                            }}
+                          >
+                            {!isChecklistLocked && (
+                              <input
+                                type="checkbox"
+                                id={`extras-check-${extra.id}`}
+                                checked={!!extrasChecked[extra.id]}
+                                onChange={() =>
+                                  setExtrasChecked((prev) => ({ ...prev, [extra.id]: !prev[extra.id] }))
+                                }
+                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                              />
+                            )}
+                            <div
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                border: extrasChecked[extra.id]
+                                  ? '2px solid rgb(var(--brand))'
+                                  : '2px solid rgb(var(--border))',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgb(var(--surface))',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {extrasChecked[extra.id] && (
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path
+                                    d="M13.3332 4L5.99984 11.3333L2.6665 8"
+                                    stroke="rgb(var(--brand))"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </label>
+                          <span style={{ fontWeight: 500, marginTop: '2px' }}>
+                            {extra.name} returned
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : undefined}
               />
             </div>
           </PhaseCard>
 
-          {/* Phase 3: Office / Return Close */}
-          <PhaseCard phase={3} label={t('phase3Label')}>
+          {/* Phase 3: Close-out */}
+          <PhaseCard phase={3} label="Close-out">
             <ReturnOfficeSectionCard
               localInstance={localInstance}
               isChecklistLocked={isChecklistLocked}

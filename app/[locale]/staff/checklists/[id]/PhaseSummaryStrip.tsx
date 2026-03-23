@@ -2,14 +2,21 @@
 
 import { useTranslations } from 'next-intl';
 
-export default function PhaseSummaryStrip() {
+interface PhaseSummaryStripProps {
+  introText?: string;
+  phaseLabels?: [string, string, string];
+}
+
+export default function PhaseSummaryStrip({ introText, phaseLabels }: PhaseSummaryStripProps = {}) {
   const t = useTranslations('checklistDetail');
 
   const phases = [
-    { n: '1', label: t('phase1Label') },
-    { n: '2', label: t('phase2Label') },
-    { n: '3', label: t('phase3Label') },
+    { n: '1', label: phaseLabels?.[0] ?? t('phase1Label') },
+    { n: '2', label: phaseLabels?.[1] ?? t('phase2Label') },
+    { n: '3', label: phaseLabels?.[2] ?? t('phase3Label') },
   ];
+
+  const intro = introText ?? t('pickupModeIntro');
 
   return (
     <div
@@ -21,7 +28,7 @@ export default function PhaseSummaryStrip() {
       }}
     >
       <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: '0 0 10px' }}>
-        {t('pickupModeIntro')}
+        {intro}
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {phases.map(({ n, label }, idx) => (

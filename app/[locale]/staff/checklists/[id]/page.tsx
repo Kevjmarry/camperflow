@@ -41,11 +41,17 @@ export default async function ChecklistDetailPage({
       office_deposit_collected,
       handover_documents_given,
       handover_keys_given,
+      return_keys_received,
+      return_documents_received,
+      return_contract_closed,
+      return_deposit_status,
       booking:bookings (
         id,
         booking_number,
         customer_name,
-        status
+        status,
+        company_id,
+        staff_metadata
       ),
       vehicle:vehicles (
         id,
@@ -92,11 +98,29 @@ export default async function ChecklistDetailPage({
 
   // Normalize booking (array -> single object)
   const bk = Array.isArray(instance.booking) ? instance.booking[0] : instance.booking;
+
+  // Fetch company_settings for return checklists (needed for extras_catalog)
+  let extrasCatalog: { id: string; name: string }[] | null = null;
+  const companyId = (bk as any)?.company_id ?? null;
+  if (instance.checklist_type === 'return' && companyId) {
+    const { data: cs } = await supabase
+      .from('company_settings')
+      .select('extras_catalog')
+      .eq('id', companyId)
+      .maybeSingle();
+    extrasCatalog = (cs as any)?.extras_catalog ?? null;
+  }
+
   // Normalize vehicle (array -> single object)
   const veh = Array.isArray((instance as any).vehicle) ? (instance as any).vehicle[0] : (instance as any).vehicle;
   const normalizedInstance = {
     ...instance,
-    bookings: bk ?? null,
+    bookings: bk
+      ? {
+          ...bk,
+          company_settings: extrasCatalog !== null ? { extras_catalog: extrasCatalog } : null,
+        }
+      : null,
     vehicles: veh ? { id: veh.id, name: veh.name } : null,
   };
 

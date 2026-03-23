@@ -158,15 +158,27 @@ export function getReturnAuditDisplayLabel(label: string): string | null {
   if (l.includes('document') && (l.includes('return') || l.includes('received') || l.includes('hand'))) return null;
   if (l.includes('contract') && (l.includes('close') || l.includes('sign') || l.includes('complete'))) return null;
   if (l.includes('deposit') && (l.includes('return') || l.includes('refund') || l.includes('held') || l.includes('status'))) return null;
+  // Hide return-specific items not surfaced in this stage
+  if (l.includes('deposit') && (l.includes('decision') || l.includes('ready'))) return null;
+  if ((l.includes('issue') || l.includes('flagged')) && l.includes('follow')) return null;
+  if (l.includes('return') && (l.includes('complete') || l.includes('signed off')) && (l.includes('sign') || l.includes('customer'))) return null;
 
   // Normalise condition/inspection labels
-  if (l.includes('exterior')) return 'Exterior condition checked';
-  if (l.includes('interior') && l.includes('condition')) return 'Interior condition checked';
+  if (l.includes('awning')) return 'Awning checked';
+  if (l.includes('bike') && l.includes('rack')) return 'Bike rack checked';
+  if (l.includes('bumper') || l.includes('bodywork')) return 'Bumper and bodywork checked';
+  if (l.includes('cassette') || (l.includes('toilet') && !l.includes('paper'))) return 'Cassette toilet emptied';
+  if (l.includes('grey water') || l.includes('gray water') || l.includes('greywater') || l.includes('graywater')) return 'Grey water emptied';
+  if (l.includes('exterior') && (l.includes('clean') || l.includes('wash'))) return 'Exterior cleaned';
+  if (l.includes('exterior')) return 'Exterior checked for new damage';
+  if (l.includes('interior') && (l.includes('clean'))) return 'Interior cleaned';
+  if (l.includes('interior')) return 'Interior checked for damage';
   if (l.includes('damage') && (l.includes('inspect') || l.includes('check') || l.includes('assess'))) return 'Damage assessment completed';
   if (
     (l.includes('standard') && (l.includes('kit') || l.includes('equipment'))) ||
-    (l.includes('kit') && !l.includes('first aid') && !l.includes('tool'))
-  ) return 'Standard kit returned';
+    (l.includes('kit') && !l.includes('first aid') && !l.includes('tool')) ||
+    (l.includes('equipment') && (l.includes('return') || l.includes('verify') || l.includes('check')))
+  ) return 'Equipment returned and verified';
   if (l.includes('add-on') || l.includes('addon') || l.includes('add on') || l.includes('extra') || l.includes('optional'))
     return 'Special add-ons returned';
 

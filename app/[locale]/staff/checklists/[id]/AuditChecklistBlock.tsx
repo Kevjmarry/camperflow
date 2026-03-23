@@ -15,6 +15,7 @@ type AuditChecklistBlockProps = {
   renderItemProps: (item: ChecklistItemType) => React.ComponentProps<typeof ChecklistItem>;
   getDisplayLabel: (label: string) => string | null;
   highlight?: boolean;
+  footerContent?: React.ReactNode;
 };
 
 export default function AuditChecklistBlock({
@@ -26,6 +27,7 @@ export default function AuditChecklistBlock({
   renderItemProps,
   getDisplayLabel,
   highlight,
+  footerContent,
 }: AuditChecklistBlockProps) {
   const t = useTranslations('checklistDetail');
 
@@ -185,6 +187,11 @@ export default function AuditChecklistBlock({
           );
         })}
       </div>
+      {footerContent && (
+        <div style={{ borderTop: '1px solid rgb(var(--border))', padding: '12px 16px' }}>
+          {footerContent}
+        </div>
+      )}
     </div>
   );
 }

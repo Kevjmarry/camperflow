@@ -11,9 +11,10 @@ type EvidenceBlockProps = {
   isLocked: boolean;
   highlight?: boolean;
   title?: string;
+  variant?: 'return';
 };
 
-export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight, title }: EvidenceBlockProps) {
+export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight, title, variant }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
   const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
 
@@ -47,7 +48,9 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
         }}
       >
         <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0, lineHeight: '1.5' }}>
-          {t('auditEvidenceDesc')}
+          {variant === 'return'
+            ? <>Photograph the vehicle&apos;s general condition on return, then document any <strong style={{ fontWeight: 600, color: 'rgb(var(--text))' }}>new damage found</strong>.</>
+            : t('auditEvidenceDesc')}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
           <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', fontWeight: 500 }}>
@@ -56,11 +59,18 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
         </div>
       </div>
 
-      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '0' }}>
         {(['general', 'damage'] as const).map((group) => (
-          <div key={group} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div key={group} style={{
+            display: 'flex', flexDirection: 'column', gap: '6px',
+            ...(group === 'damage'
+              ? { borderTop: '1px solid rgb(var(--border))', marginTop: '12px', paddingTop: '12px' }
+              : {}),
+          }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
-              {group === 'general' ? 'General photos' : 'Damage photos'}
+              {group === 'general'
+                ? 'General condition photos'
+                : variant === 'return' ? <><strong style={{ fontWeight: 700 }}>New</strong> damage photos</> : 'Damage photos'}
             </span>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               {evidencePhotos[group].map((file, idx) => (
