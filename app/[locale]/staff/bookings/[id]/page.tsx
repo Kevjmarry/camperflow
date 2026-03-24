@@ -659,11 +659,29 @@ export default function BookingDetailPage() {
   };
 
   const getSelectedVehicle = (): Vehicle | null => {
+    let vehicle: Vehicle | null;
     if (canManage) {
       if (!formData.vehicle_id) return null;
-      return vehicles.find(v => v.id === formData.vehicle_id) ?? null;
+      vehicle = vehicles.find(v => v.id === formData.vehicle_id) ?? null;
+    } else {
+      vehicle = vehicleInfo;
     }
-    return vehicleInfo;
+
+    // Display override: if DB says ready but return is done and post-return
+    // checklists (cleaning/mechanical) are still incomplete, show preparing.
+    if (vehicle?.status === 'ready') {
+      const returnCompleted = checklistInstances.some(
+        (i) => i.checklist_type === 'return' && i.status === 'completed'
+      );
+      const postReturnIncomplete = checklistInstances.some(
+        (i) => ['cleaning', 'mechanical'].includes(i.checklist_type) && i.status !== 'completed'
+      );
+      if (returnCompleted && postReturnIncomplete) {
+        return { ...vehicle, status: 'preparing' };
+      }
+    }
+
+    return vehicle;
   };
 
   // ── Trip Details helpers ───────────────────────────────────────────────────
@@ -721,8 +739,15 @@ export default function BookingDetailPage() {
   const handoverCompleted = checklistInstances.some(
     (i) => i.checklist_type === 'handover' && i.status === 'completed'
   );
-  const returnInstances = checklistInstances.filter((i) => i.checklist_type === 'return');
-  const nonReturnInstances = checklistInstances.filter((i) => i.checklist_type !== 'return');
+  const statusOrder: Record<string, number> = { in_progress: 0, not_started: 1, pending: 1, completed: 2 };
+  const typeOrder: Record<string, number> = { handover: 0, pickup: 0, return: 1, cleaning: 2, mechanical: 3 };
+  const sortChecklists = (a: ChecklistInstance, b: ChecklistInstance) => {
+    const sd = (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1);
+    if (sd !== 0) return sd;
+    return (typeOrder[a.checklist_type] ?? 99) - (typeOrder[b.checklist_type] ?? 99);
+  };
+  const returnInstances = checklistInstances.filter((i) => i.checklist_type === 'return').sort(sortChecklists);
+  const nonReturnInstances = checklistInstances.filter((i) => i.checklist_type !== 'return').sort(sortChecklists);
   const handoverBlockerInstance = nonReturnInstances.find((i) => i.checklist_type === 'handover');
   const returnBlockerLabel = handoverBlockerInstance
     ? `${handoverBlockerInstance.template?.name ?? handoverBlockerInstance.template?.title ?? handoverBlockerInstance.checklist_type}: ${
@@ -1415,6 +1440,7 @@ export default function BookingDetailPage() {
               {t("pickupChecklistReopenHint")}
             </div>
           )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           <BookingChecklistsSection
             instances={nonReturnInstances}
             locale={locale}
@@ -1424,7 +1450,7 @@ export default function BookingDetailPage() {
             const statusLabel = instance.status === 'completed' ? t('checklists.status.completed') : instance.status === 'in_progress' ? t('checklists.status.inProgress') : t('checklists.status.notStarted');
             const actionLabel = instance.status === 'completed' ? t('checklists.viewReport') : instance.status === 'in_progress' ? t('checklists.continueChecklist') : t('checklists.openChecklist');
             return (
-              <div key={instance.id} style={{ padding: 'var(--space-4)', background: 'rgb(var(--border) / 0.3)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap', marginTop: 'var(--space-3)' }}>
+              <div key={instance.id} style={{ padding: 'var(--space-4)', background: 'rgb(var(--border) / 0.3)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', marginBottom: 'var(--space-1)' }}>{instance.template?.name ?? instance.template?.title ?? instance.checklist_type}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
@@ -1448,6 +1474,7 @@ export default function BookingDetailPage() {
               </div>
             );
           })}
+          </div>
 
         </div>
       </div>

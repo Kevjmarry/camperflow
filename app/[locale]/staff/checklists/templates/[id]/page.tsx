@@ -94,6 +94,14 @@ export default function ChecklistTemplateDetailPage() {
   const [newItemSectionChoiceOffice, setNewItemSectionChoiceOffice] = useState<string>(GENERAL_SENTINEL);
   const [newItemNewSectionNameOffice, setNewItemNewSectionNameOffice] = useState('');
 
+  // ── Return-block add-section state ─────────────────────────────────────────
+  const [newItemSectionChoiceEvidence, setNewItemSectionChoiceEvidence] = useState<string>(GENERAL_SENTINEL);
+  const [newItemNewSectionNameEvidence, setNewItemNewSectionNameEvidence] = useState('');
+  const [newItemSectionChoiceReturnCloseOut, setNewItemSectionChoiceReturnCloseOut] = useState<string>(GENERAL_SENTINEL);
+  const [newItemNewSectionNameReturnCloseOut, setNewItemNewSectionNameReturnCloseOut] = useState('');
+  const [newItemSectionChoiceDepositStatus, setNewItemSectionChoiceDepositStatus] = useState<string>(GENERAL_SENTINEL);
+  const [newItemNewSectionNameDepositStatus, setNewItemNewSectionNameDepositStatus] = useState('');
+
   // ─── Init ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -586,6 +594,60 @@ export default function ChecklistTemplateDetailPage() {
     }
   }
 
+  async function handleAddItemEvidence() {
+    if (!template) return;
+    let targetDbSection: string | null;
+    if (newItemSectionChoiceEvidence === GENERAL_SENTINEL) {
+      targetDbSection = null;
+    } else if (newItemSectionChoiceEvidence === NEW_SECTION_SENTINEL) {
+      const trimmed = newItemNewSectionNameEvidence.trim();
+      targetDbSection = (trimmed === '' || trimmed.toLowerCase() === 'general') ? null : trimmed;
+    } else {
+      targetDbSection = newItemSectionChoiceEvidence;
+    }
+    const ok = await insertItemWithUiSection(targetDbSection, 'evidence', false);
+    if (ok && newItemSectionChoiceEvidence === NEW_SECTION_SENTINEL) {
+      setNewItemSectionChoiceEvidence(GENERAL_SENTINEL);
+      setNewItemNewSectionNameEvidence('');
+    }
+  }
+
+  async function handleAddItemReturnCloseOut() {
+    if (!template) return;
+    let targetDbSection: string | null;
+    if (newItemSectionChoiceReturnCloseOut === GENERAL_SENTINEL) {
+      targetDbSection = null;
+    } else if (newItemSectionChoiceReturnCloseOut === NEW_SECTION_SENTINEL) {
+      const trimmed = newItemNewSectionNameReturnCloseOut.trim();
+      targetDbSection = (trimmed === '' || trimmed.toLowerCase() === 'general') ? null : trimmed;
+    } else {
+      targetDbSection = newItemSectionChoiceReturnCloseOut;
+    }
+    const ok = await insertItemWithUiSection(targetDbSection, 'return_close_out', false);
+    if (ok && newItemSectionChoiceReturnCloseOut === NEW_SECTION_SENTINEL) {
+      setNewItemSectionChoiceReturnCloseOut(GENERAL_SENTINEL);
+      setNewItemNewSectionNameReturnCloseOut('');
+    }
+  }
+
+  async function handleAddItemDepositStatus() {
+    if (!template) return;
+    let targetDbSection: string | null;
+    if (newItemSectionChoiceDepositStatus === GENERAL_SENTINEL) {
+      targetDbSection = null;
+    } else if (newItemSectionChoiceDepositStatus === NEW_SECTION_SENTINEL) {
+      const trimmed = newItemNewSectionNameDepositStatus.trim();
+      targetDbSection = (trimmed === '' || trimmed.toLowerCase() === 'general') ? null : trimmed;
+    } else {
+      targetDbSection = newItemSectionChoiceDepositStatus;
+    }
+    const ok = await insertItemWithUiSection(targetDbSection, 'deposit_status', false);
+    if (ok && newItemSectionChoiceDepositStatus === NEW_SECTION_SENTINEL) {
+      setNewItemSectionChoiceDepositStatus(GENERAL_SENTINEL);
+      setNewItemNewSectionNameDepositStatus('');
+    }
+  }
+
   // ─── Section drag-and-drop reorder ────────────────────────────────────────
 
   async function handleDndReorderSections(newSectionOrder: string[]) {
@@ -979,6 +1041,42 @@ export default function ChecklistTemplateDetailPage() {
     await handleDndReorder([...items.filter((i) => i.ui_section !== 'office'), ...newItems]);
   }
 
+  // ─── Return-block reorder wrappers ────────────────────────────────────────
+
+  async function handleDndReorderReturnVehicleData(newItems: ChecklistTemplateItem[]) {
+    await handleDndReorder([...newItems, ...items.filter((i) => i.ui_section !== 'vehicle_data')]);
+  }
+
+  async function handleDndReorderEvidence(newItems: ChecklistTemplateItem[]) {
+    await handleDndReorder([
+      ...items.filter((i) => i.ui_section === 'vehicle_data'),
+      ...newItems,
+      ...items.filter((i) => i.ui_section !== 'vehicle_data' && i.ui_section !== 'evidence'),
+    ]);
+  }
+
+  async function handleDndReorderReturnChecklistActions(newItems: ChecklistTemplateItem[]) {
+    const before = ['vehicle_data', 'evidence'];
+    const after = ['return_close_out', 'deposit_status'];
+    await handleDndReorder([
+      ...items.filter((i) => before.includes(i.ui_section ?? '')),
+      ...newItems,
+      ...items.filter((i) => after.includes(i.ui_section ?? '')),
+    ]);
+  }
+
+  async function handleDndReorderReturnCloseOut(newItems: ChecklistTemplateItem[]) {
+    await handleDndReorder([
+      ...items.filter((i) => i.ui_section !== 'return_close_out' && i.ui_section !== 'deposit_status'),
+      ...newItems,
+      ...items.filter((i) => i.ui_section === 'deposit_status'),
+    ]);
+  }
+
+  async function handleDndReorderDepositStatus(newItems: ChecklistTemplateItem[]) {
+    await handleDndReorder([...items.filter((i) => i.ui_section !== 'deposit_status'), ...newItems]);
+  }
+
   // ─── Derived data ──────────────────────────────────────────────────────────
 
   const allGrouped = groupItemsBySection(items);
@@ -1002,6 +1100,7 @@ export default function ChecklistTemplateDetailPage() {
 
   // ── Pickup-specific block data ─────────────────────────────────────────────
   const isPickup = type === 'pickup';
+  const isReturn = type === 'return';
   const vehicleDataItems = isPickup ? items.filter((i) => i.ui_section === 'vehicle_data') : [];
   const actionItems = isPickup ? items.filter((i) => i.ui_section === 'checklist_actions') : items;
   const officeItems = isPickup ? items.filter((i) => i.ui_section === 'office') : [];
@@ -1040,6 +1139,58 @@ export default function ChecklistTemplateDetailPage() {
   const existingNamedSectionsOffice: string[] = [];
   for (const item of officeItems) {
     if (item.section && !existingNamedSectionsOffice.includes(item.section)) existingNamedSectionsOffice.push(item.section);
+  }
+
+  // ── Return-specific block data ──────────────────────────────────────────────
+  const returnVehicleDataItems = isReturn ? items.filter((i) => i.ui_section === 'vehicle_data') : [];
+  const evidenceItems = isReturn ? items.filter((i) => i.ui_section === 'evidence') : [];
+  const returnChecklistActionItems = isReturn ? items.filter((i) => i.ui_section === 'checklist_actions') : [];
+  const returnCloseOutItems = isReturn ? items.filter((i) => i.ui_section === 'return_close_out') : [];
+  const depositStatusItems = isReturn ? items.filter((i) => i.ui_section === 'deposit_status') : [];
+  const filteredReturnVehicleDataItems = filteredItems.filter((i) => i.ui_section === 'vehicle_data');
+  const filteredEvidenceItems = filteredItems.filter((i) => i.ui_section === 'evidence');
+  const filteredReturnChecklistActionItems = filteredItems.filter((i) => i.ui_section === 'checklist_actions');
+  const filteredReturnCloseOutItems = filteredItems.filter((i) => i.ui_section === 'return_close_out');
+  const filteredDepositStatusItems = filteredItems.filter((i) => i.ui_section === 'deposit_status');
+  const returnVehicleDataSectionOrder = groupItemsBySection(returnVehicleDataItems).map((g) => g.section);
+  const evidenceSectionOrder = groupItemsBySection(evidenceItems).map((g) => g.section);
+  const returnChecklistActionSectionOrder = groupItemsBySection(returnChecklistActionItems).map((g) => g.section);
+  const returnCloseOutSectionOrder = groupItemsBySection(returnCloseOutItems).map((g) => g.section);
+  const depositStatusSectionOrder = groupItemsBySection(depositStatusItems).map((g) => g.section);
+  const groupedReturnVehicleDataItems = returnVehicleDataSectionOrder
+    .map((section) => ({ section, items: filteredReturnVehicleDataItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position) }))
+    .filter((g) => g.items.length > 0);
+  const groupedEvidenceItems = evidenceSectionOrder
+    .map((section) => ({ section, items: filteredEvidenceItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position) }))
+    .filter((g) => g.items.length > 0);
+  const groupedReturnChecklistActionItems = returnChecklistActionSectionOrder
+    .map((section) => ({ section, items: filteredReturnChecklistActionItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position) }))
+    .filter((g) => g.items.length > 0);
+  const groupedReturnCloseOutItems = returnCloseOutSectionOrder
+    .map((section) => ({ section, items: filteredReturnCloseOutItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position) }))
+    .filter((g) => g.items.length > 0);
+  const groupedDepositStatusItems = depositStatusSectionOrder
+    .map((section) => ({ section, items: filteredDepositStatusItems.filter((i) => sectionKey(i) === section).sort((a, b) => a.position - b.position) }))
+    .filter((g) => g.items.length > 0);
+  const existingNamedSectionsReturnVehicle: string[] = [];
+  for (const item of returnVehicleDataItems) {
+    if (item.section && !existingNamedSectionsReturnVehicle.includes(item.section)) existingNamedSectionsReturnVehicle.push(item.section);
+  }
+  const existingNamedSectionsEvidence: string[] = [];
+  for (const item of evidenceItems) {
+    if (item.section && !existingNamedSectionsEvidence.includes(item.section)) existingNamedSectionsEvidence.push(item.section);
+  }
+  const existingNamedSectionsReturnActions: string[] = [];
+  for (const item of returnChecklistActionItems) {
+    if (item.section && !existingNamedSectionsReturnActions.includes(item.section)) existingNamedSectionsReturnActions.push(item.section);
+  }
+  const existingNamedSectionsReturnCloseOut: string[] = [];
+  for (const item of returnCloseOutItems) {
+    if (item.section && !existingNamedSectionsReturnCloseOut.includes(item.section)) existingNamedSectionsReturnCloseOut.push(item.section);
+  }
+  const existingNamedSectionsDepositStatus: string[] = [];
+  for (const item of depositStatusItems) {
+    if (item.section && !existingNamedSectionsDepositStatus.includes(item.section)) existingNamedSectionsDepositStatus.push(item.section);
   }
 
   // ─── Early returns ─────────────────────────────────────────────────────────
@@ -1223,7 +1374,7 @@ export default function ChecklistTemplateDetailPage() {
                           onCancelEdit={cancelEditing}
                           onUpdateEditField={updateEditField}
                           onSaveItem={handleSaveItem}
-                          onAddItemToSection={(sec) => insertItemWithUiSection(sec, 'vehicle_data', true)}
+                          onAddItemToSection={async (sec) => { await insertItemWithUiSection(sec, 'vehicle_data', true); }}
                           onReorderSections={handleDndReorderSections}
                         />
                       )}
@@ -1275,7 +1426,7 @@ export default function ChecklistTemplateDetailPage() {
                           onCancelEdit={cancelEditing}
                           onUpdateEditField={updateEditField}
                           onSaveItem={handleSaveItem}
-                          onAddItemToSection={(sec) => insertItemWithUiSection(sec, 'checklist_actions', true)}
+                          onAddItemToSection={async (sec) => { await insertItemWithUiSection(sec, 'checklist_actions', true); }}
                           onReorderSections={handleDndReorderSections}
                         />
                       )}
@@ -1327,7 +1478,156 @@ export default function ChecklistTemplateDetailPage() {
                           onCancelEdit={cancelEditing}
                           onUpdateEditField={updateEditField}
                           onSaveItem={handleSaveItem}
-                          onAddItemToSection={(sec) => insertItemWithUiSection(sec, 'office', true)}
+                          onAddItemToSection={async (sec) => { await insertItemWithUiSection(sec, 'office', true); }}
+                          onReorderSections={handleDndReorderSections}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ) : isReturn ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+
+                  {/* Shared search + filter header */}
+                  <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', background: 'rgb(var(--background))', overflow: 'hidden' }}>
+                    <div style={{ padding: 'var(--space-3) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                      {(sectionMoveError || addItemError) && (
+                        <div style={{ ...ERROR_BOX }}>
+                          {sectionMoveError ?? addItemError}
+                          <button onClick={() => { setSectionMoveError(null); setAddItemError(null); }} style={{ marginLeft: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '12px', textDecoration: 'underline', padding: 0 }}>
+                            {t('dismissError')}
+                          </button>
+                        </div>
+                      )}
+                      <input
+                        className="input"
+                        type="search"
+                        placeholder={t('searchPlaceholder')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ fontSize: '14px' }}
+                        aria-label={t('searchAriaLabel')}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '13px', color: 'rgb(var(--muted))', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={showOnlyRequired} onChange={(e) => setShowOnlyRequired(e.target.checked)} style={{ width: '14px', height: '14px', cursor: 'pointer' }} />
+                          {t('filterShowRequired')}
+                        </label>
+                        {!itemsLoading && (groupedReturnVehicleDataItems.length + groupedEvidenceItems.length + groupedReturnChecklistActionItems.length + groupedReturnCloseOutItems.length + groupedDepositStatusItems.length) > 1 && (
+                          <button
+                            style={{ background: 'none', border: 'none', padding: 0, fontSize: '13px', color: 'rgb(var(--brand))', cursor: 'pointer', marginLeft: 'auto' }}
+                            onClick={() => {
+                              const allSecs = [...returnVehicleDataSectionOrder, ...evidenceSectionOrder, ...returnChecklistActionSectionOrder, ...returnCloseOutSectionOrder, ...depositStatusSectionOrder];
+                              const allCollapsed = allSecs.every((s) => collapsedSections.has(s));
+                              setCollapsedSections(allCollapsed ? new Set() : new Set(allSecs));
+                            }}
+                          >
+                            {[...returnVehicleDataSectionOrder, ...evidenceSectionOrder, ...returnChecklistActionSectionOrder, ...returnCloseOutSectionOrder, ...depositStatusSectionOrder].every((s) => collapsedSections.has(s)) ? t('btnExpandAll') : t('btnCollapseAll')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Block 1: Vehicle Data */}
+                  <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', background: 'rgb(var(--background))', overflow: 'hidden' }}>
+                    <div style={{ padding: 'var(--space-3) var(--space-5)', borderBottom: '1px solid rgb(var(--border))', background: 'rgb(var(--surface))' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('returnVehicleDataTitle')}</h2>
+                        {!itemsLoading && <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{filteredReturnVehicleDataItems.length}/{returnVehicleDataItems.length}</span>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', display: 'block', marginBottom: 'var(--space-2)' }}>{t('returnVehicleDataDesc')}</span>
+                      {!itemsLoading && !itemsError && (
+                        newItemSectionChoiceVehicle !== NEW_SECTION_SENTINEL ? (
+                          <button className="btn" onClick={() => setNewItemSectionChoiceVehicle(NEW_SECTION_SENTINEL)} disabled={addingItem} style={{ fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}>
+                            + {t('sectionOptionNewSection').replace('…', '')}
+                          </button>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input className="input" type="text" placeholder={t('newSectionNamePlaceholder')} value={newItemNewSectionNameVehicle} onChange={(e) => setNewItemNewSectionNameVehicle(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && newItemNewSectionNameVehicle.trim()) handleAddItemVehicleData(); if (e.key === 'Escape') { setNewItemSectionChoiceVehicle(GENERAL_SENTINEL); setNewItemNewSectionNameVehicle(''); } }} disabled={addingItem} style={{ fontSize: '13px', flex: '1 1 160px', minWidth: 0 }} autoFocus />
+                            <button className="btn btn-primary" onClick={handleAddItemVehicleData} disabled={addingItem || !newItemNewSectionNameVehicle.trim()} style={{ fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}>{addingItem ? t('btnSaving') : t('btnAddItem')}</button>
+                            <button className="btn" onClick={() => { setNewItemSectionChoiceVehicle(GENERAL_SENTINEL); setNewItemNewSectionNameVehicle(''); }} disabled={addingItem} style={{ fontSize: '13px', padding: '5px 14px', height: '32px' }}>{t('btnCancel')}</button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
+                      {itemsLoading && <div style={{ textAlign: 'center', padding: 'var(--space-6) 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('loadingItems')}</div>}
+                      {!itemsLoading && itemsError && <div style={ERROR_BOX}>{itemsError}</div>}
+                      {!itemsLoading && !itemsError && returnVehicleDataItems.length === 0 && <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>{t('emptyItems')}</div>}
+                      {!itemsLoading && !itemsError && returnVehicleDataItems.length > 0 && filteredReturnVehicleDataItems.length === 0 && <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>{t('emptyFiltered')}</div>}
+                      {!itemsLoading && !itemsError && filteredReturnVehicleDataItems.length > 0 && (
+                        <ChecklistItemsEditor
+                          allItems={returnVehicleDataItems}
+                          visibleItems={filteredReturnVehicleDataItems}
+                          onReorder={handleDndReorderReturnVehicleData}
+                          collapsedSections={collapsedSections}
+                          onToggleSection={toggleSection}
+                          editingItemId={editingItemId}
+                          itemEditStates={itemEditStates}
+                          isSystem={isSystem}
+                          existingNamedSections={existingNamedSectionsReturnVehicle}
+                          reordering={reordering}
+                          movingSection={movingSection}
+                          addingItem={addingItem}
+                          onStartEdit={startEditing}
+                          onCancelEdit={cancelEditing}
+                          onUpdateEditField={updateEditField}
+                          onSaveItem={handleSaveItem}
+                          onAddItemToSection={async (sec) => { await insertItemWithUiSection(sec, 'vehicle_data', true); }}
+                          onReorderSections={handleDndReorderSections}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Block 3: Checklist Actions */}
+                  <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', background: 'rgb(var(--background))', overflow: 'hidden' }}>
+                    <div style={{ padding: 'var(--space-3) var(--space-5)', borderBottom: '1px solid rgb(var(--border))', background: 'rgb(var(--surface))' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('returnChecklistActionsTitle')}</h2>
+                        {!itemsLoading && <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{filteredReturnChecklistActionItems.length}/{returnChecklistActionItems.length}</span>}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', display: 'block', marginBottom: 'var(--space-2)' }}>{t('returnChecklistActionsDesc')}</span>
+                      {!itemsLoading && !itemsError && (
+                        newItemSectionChoiceActions !== NEW_SECTION_SENTINEL ? (
+                          <button className="btn" onClick={() => setNewItemSectionChoiceActions(NEW_SECTION_SENTINEL)} disabled={addingItem} style={{ fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}>
+                            + {t('sectionOptionNewSection').replace('…', '')}
+                          </button>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input className="input" type="text" placeholder={t('newSectionNamePlaceholder')} value={newItemNewSectionNameActions} onChange={(e) => setNewItemNewSectionNameActions(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && newItemNewSectionNameActions.trim()) handleAddItemActions(); if (e.key === 'Escape') { setNewItemSectionChoiceActions(GENERAL_SENTINEL); setNewItemNewSectionNameActions(''); } }} disabled={addingItem} style={{ fontSize: '13px', flex: '1 1 160px', minWidth: 0 }} autoFocus />
+                            <button className="btn btn-primary" onClick={handleAddItemActions} disabled={addingItem || !newItemNewSectionNameActions.trim()} style={{ fontSize: '13px', padding: '5px 14px', height: '32px', whiteSpace: 'nowrap' }}>{addingItem ? t('btnSaving') : t('btnAddItem')}</button>
+                            <button className="btn" onClick={() => { setNewItemSectionChoiceActions(GENERAL_SENTINEL); setNewItemNewSectionNameActions(''); }} disabled={addingItem} style={{ fontSize: '13px', padding: '5px 14px', height: '32px' }}>{t('btnCancel')}</button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
+                      {itemsLoading && <div style={{ textAlign: 'center', padding: 'var(--space-6) 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('loadingItems')}</div>}
+                      {!itemsLoading && itemsError && <div style={ERROR_BOX}>{itemsError}</div>}
+                      {!itemsLoading && !itemsError && returnChecklistActionItems.length === 0 && <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>{t('emptyItems')}</div>}
+                      {!itemsLoading && !itemsError && returnChecklistActionItems.length > 0 && filteredReturnChecklistActionItems.length === 0 && <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'rgb(var(--muted))', fontSize: '14px', border: '1px dashed rgb(var(--border))', borderRadius: 'var(--radius)' }}>{t('emptyFiltered')}</div>}
+                      {!itemsLoading && !itemsError && filteredReturnChecklistActionItems.length > 0 && (
+                        <ChecklistItemsEditor
+                          allItems={returnChecklistActionItems}
+                          visibleItems={filteredReturnChecklistActionItems}
+                          onReorder={handleDndReorderReturnChecklistActions}
+                          collapsedSections={collapsedSections}
+                          onToggleSection={toggleSection}
+                          editingItemId={editingItemId}
+                          itemEditStates={itemEditStates}
+                          isSystem={isSystem}
+                          existingNamedSections={existingNamedSectionsReturnActions}
+                          reordering={reordering}
+                          movingSection={movingSection}
+                          addingItem={addingItem}
+                          onStartEdit={startEditing}
+                          onCancelEdit={cancelEditing}
+                          onUpdateEditField={updateEditField}
+                          onSaveItem={handleSaveItem}
+                          onAddItemToSection={async (sec) => { await insertItemWithUiSection(sec, 'checklist_actions', true); }}
                           onReorderSections={handleDndReorderSections}
                         />
                       )}

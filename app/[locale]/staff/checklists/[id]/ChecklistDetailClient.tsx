@@ -66,12 +66,35 @@ export default function ChecklistDetailClient({
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
   // ── Vehicle / evidence state ─────────────────────────────────────────────────
-  const [vehicleData, setVehicleData] = useState({ km: '', fuel: '', adblue: '' });
-  const [extrasChecked, setExtrasChecked] = useState<Record<string, boolean>>({});
+  const [vehicleData, setVehicleData] = useState(() => {
+    if (instance.checklist_type === 'return') {
+      const rvd = (instance.bookings as any)?.staff_metadata?.return_vehicle_data;
+      return { km: rvd?.km ?? '', fuel: rvd?.fuel ?? '', adblue: rvd?.adblue ?? '' };
+    }
+    if (instance.checklist_type === 'handover') {
+      const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
+      return { km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' };
+    }
+    return { km: '', fuel: '', adblue: '' };
+  });
+  const [extrasChecked, setExtrasChecked] = useState<Record<string, boolean>>(() => {
+    if (instance.checklist_type !== 'return') return {};
+    const bk = instance.bookings as (typeof instance.bookings & { staff_metadata?: { extras_returned?: string[] } }) | null;
+    const returnedIds: string[] = bk?.staff_metadata?.extras_returned ?? [];
+    return Object.fromEntries(returnedIds.map((id) => [id, true]));
+  });
   const [evidencePhotos, setEvidencePhotos] = useState<{ general: File[]; damage: File[] }>({
     general: [],
     damage: [],
   });
+
+  // ── Return km validation ──────────────────────────────────────────────────────
+  const [returnKmError, setReturnKmError] = useState<string | null>(null);
+  const lastSavedReturnKmRef = useRef<string>(
+    instance.checklist_type === 'return'
+      ? ((instance.bookings as any)?.staff_metadata?.return_vehicle_data?.km ?? '')
+      : ''
+  );
 
   // ── Handover validation UI state ─────────────────────────────────────────────
   const [handoverValidating, setHandoverValidating] = useState(false);
@@ -98,9 +121,59 @@ export default function ChecklistDetailClient({
   const pendingCompletionRef = useRef<(() => Promise<void>) | null>(null);
 
   const localInstanceRef = useRef(localInstance);
+  // Tracks the latest known staff_metadata for the booking (return checklists only).
+  // Used as the merge base when writing return_vehicle_data or extras_returned so
+  // neither writer clobbers the other's changes.
+  const staffMetaRef = useRef<Record<string, unknown>>(
+    (instance.checklist_type === 'return' || instance.checklist_type === 'handover')
+      ? ((instance.bookings as any)?.staff_metadata ?? {})
+      : {}
+  );
+
   useEffect(() => { localInstanceRef.current = localInstance; }, [localInstance]);
   useEffect(() => { setLocalItems(initialItems); }, [initialItems]);
   useEffect(() => { setLocalInstance(instance); }, [instance]);
+  useEffect(() => {
+    if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover') return;
+    staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
+
+    const toFile = async (dataUrl: string, filename: string): Promise<File> => {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      return new File([blob], filename, { type: blob.type });
+    };
+
+    if (instance.checklist_type === 'return') {
+      const rvd = (instance.bookings as any)?.staff_metadata?.return_vehicle_data;
+      setVehicleData({ km: rvd?.km ?? '', fuel: rvd?.fuel ?? '', adblue: rvd?.adblue ?? '' });
+      lastSavedReturnKmRef.current = rvd?.km ?? '';
+      const returnedIds: string[] = (instance.bookings as any)?.staff_metadata?.extras_returned ?? [];
+      setExtrasChecked(Object.fromEntries(returnedIds.map((id: string) => [id, true])));
+      const rep = (instance.bookings as any)?.staff_metadata?.return_evidence_photos as { general?: string[]; damage?: string[] } | undefined;
+      if (rep) {
+        Promise.all([
+          Promise.all((rep.general ?? []).map((u, i) => toFile(u, `general_${i}.jpg`))),
+          Promise.all((rep.damage ?? []).map((u, i) => toFile(u, `damage_${i}.jpg`))),
+        ]).then(([general, damage]) => setEvidencePhotos({ general, damage }));
+      } else {
+        setEvidencePhotos({ general: [], damage: [] });
+      }
+    }
+
+    if (instance.checklist_type === 'handover') {
+      const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
+      setVehicleData({ km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' });
+      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: string[]; damage?: string[] } | undefined;
+      if (hep) {
+        Promise.all([
+          Promise.all((hep.general ?? []).map((u, i) => toFile(u, `general_${i}.jpg`))),
+          Promise.all((hep.damage ?? []).map((u, i) => toFile(u, `damage_${i}.jpg`))),
+        ]).then(([general, damage]) => setEvidencePhotos({ general, damage }));
+      } else {
+        setEvidencePhotos({ general: [], damage: [] });
+      }
+    }
+  }, [instance]);
 
   // ── Derived flags ────────────────────────────────────────────────────────────
   const isChecklistLocked =
@@ -308,8 +381,8 @@ export default function ChecklistDetailClient({
     setSyncError,
     setLockNotice,
     lockMessageFromError,
-    showHandoverSafetyModal,
-    setHandoverSafetyModal,
+    showReturnModal: (urgentItems, onConfirm) =>
+      showHandoverSafetyModal(urgentItems, onConfirm, [], '', ''),
     navigateAfterCompletion,
     t,
   });
@@ -320,6 +393,9 @@ export default function ChecklistDetailClient({
     const flaggedItems = handoverSafetyModal?.flaggedItems ?? [];
     setHandoverSafetyModal(null);
 
+    // Clear the blocking gate for all checklist types. For return checklists this is required
+    // because the DB rejects status:'completed' while issue_blocking=true rows exist.
+    // Only issue_blocking is cleared — issue notes, severity, title, and description are preserved.
     const blockingIds = flaggedItems
       .filter((it) => it.issue_blocking === true)
       .map((it) => it.id);
@@ -510,6 +586,77 @@ export default function ChecklistDetailClient({
       setLocalInstance((p) => ({ ...p, ...statusUpdate }));
       await supabase.from('checklist_instances').update(statusUpdate).eq('id', instance.id);
     }
+  };
+
+  // ── Return: promote to in_progress ───────────────────────────────────────────
+  // Promotes the checklist status from pending/not_started → in_progress when
+  // any meaningful return data is entered (vehicle intake, evidence, extras,
+  // flags). Called explicitly from the return-only handlers below.
+
+  const promoteReturnToInProgress = async () => {
+    if (instance.checklist_type !== 'return') return;
+    if (isChecklistLocked) return;
+    const isPending = localInstance.status === 'pending' || localInstance.status === 'not_started';
+    if (!isPending) return;
+    const now = new Date().toISOString();
+    const { data: { user } } = await supabase.auth.getUser();
+    const statusUpdate = {
+      status: 'in_progress',
+      started_at: localInstance.started_at ?? now,
+      started_by: localInstance.started_by ?? (user?.id ?? null),
+    };
+    setLocalInstance((prev) => ({ ...prev, ...statusUpdate }));
+    await supabase.from('checklist_instances').update(statusUpdate).eq('id', instance.id);
+  };
+
+  // ── Return: save vehicle intake field into bookings.staff_metadata.return_vehicle_data ──
+  const saveReturnVehicleField = async (field: 'km' | 'fuel' | 'adblue', value: string) => {
+    if (instance.checklist_type !== 'return') return;
+    if (!instance.booking_id) return;
+    const currentRvd = (staffMetaRef.current as any)?.return_vehicle_data ?? {};
+    const newRvd = { ...currentRvd, [field]: value || null };
+    const newMeta = { ...staffMetaRef.current, return_vehicle_data: newRvd };
+    staffMetaRef.current = newMeta;
+    await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+    if (field === 'km' && value && instance.vehicle_id) {
+      const kmNum = parseInt(value, 10);
+      if (!isNaN(kmNum)) {
+        await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', instance.vehicle_id);
+      }
+    }
+  };
+
+  // ── Return: save evidence photos into bookings.staff_metadata.return_evidence_photos ──
+  const saveReturnEvidencePhotos = async (rep: { general: string[]; damage: string[] }) => {
+    if (!instance.booking_id) return;
+    const newMeta = { ...staffMetaRef.current, return_evidence_photos: rep };
+    staffMetaRef.current = newMeta;
+    await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+  };
+
+  // ── Handover: save vehicle data into bookings.staff_metadata.handover_vehicle_data ──
+  const saveHandoverVehicleField = async (field: 'km' | 'fuel' | 'adblue', value: string) => {
+    if (instance.checklist_type !== 'handover') return;
+    if (!instance.booking_id) return;
+    const currentHvd = (staffMetaRef.current as any)?.handover_vehicle_data ?? {};
+    const newHvd = { ...currentHvd, [field]: value || null };
+    const newMeta = { ...staffMetaRef.current, handover_vehicle_data: newHvd };
+    staffMetaRef.current = newMeta;
+    await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+    if (field === 'km' && value && instance.vehicle_id) {
+      const kmNum = parseInt(value, 10);
+      if (!isNaN(kmNum)) {
+        await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', instance.vehicle_id);
+      }
+    }
+  };
+
+  // ── Handover: save evidence photos into bookings.staff_metadata.handover_evidence_photos ──
+  const saveHandoverEvidencePhotos = async (rep: { general: string[]; damage: string[] }) => {
+    if (!instance.booking_id) return;
+    const newMeta = { ...staffMetaRef.current, handover_evidence_photos: rep };
+    staffMetaRef.current = newMeta;
+    await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
   };
 
   // ── Item toggle ───────────────────────────────────────────────────────────────
@@ -850,7 +997,7 @@ export default function ChecklistDetailClient({
       handleFlagDraftChange(item.id, field, value),
     onFlagAddPhotos: (files: FileList | null) => handleFlagAddPhotos(item.id, files),
     onFlagRemovePhoto: (idx: number) => handleFlagRemovePhoto(item.id, idx),
-    onSaveFlag: () => handleSaveFlag(item.id),
+    onSaveFlag: () => { handleSaveFlag(item.id); promoteReturnToInProgress(); },
     onNotesChange: (value: string) => handleNotesChange(item.id, value),
     onNotesBlur: (value: string) => handleNotesBlur(item.id, value),
   });
@@ -907,7 +1054,10 @@ export default function ChecklistDetailClient({
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <VehicleDataBlock
                 vehicleData={vehicleData}
-                onChange={(field, value) => setVehicleData((prev) => ({ ...prev, [field]: value }))}
+                onChange={(field, value) => {
+                  setVehicleData((prev) => ({ ...prev, [field]: value }));
+                  saveHandoverVehicleField(field as 'km' | 'fuel' | 'adblue', value);
+                }}
                 isLocked={isChecklistLocked}
                 highlight={validationHighlights.missingVehicleData}
                 fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
@@ -915,15 +1065,29 @@ export default function ChecklistDetailClient({
               />
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
-                onAdd={(group, files) =>
-                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }))
-                }
-                onRemove={(group, index) =>
+                onAdd={async (group, files) => {
+                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }));
+                  const toDataUrl = (file: File): Promise<string> =>
+                    new Promise((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    });
+                  const newDataUrls = await Promise.all(files.map(toDataUrl));
+                  const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [] };
+                  const newRep = { ...currentHep, [group]: [...(currentHep[group] ?? []), ...newDataUrls] };
+                  await saveHandoverEvidencePhotos(newRep);
+                }}
+                onRemove={async (group, index) => {
                   setEvidencePhotos((prev) => ({
                     ...prev,
                     [group]: prev[group].filter((_, i) => i !== index),
-                  }))
-                }
+                  }));
+                  const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [] };
+                  const newRep = { ...currentHep, [group]: (currentHep[group] ?? []).filter((_: unknown, i: number) => i !== index) };
+                  await saveHandoverEvidencePhotos(newRep);
+                }}
                 isLocked={isChecklistLocked}
                 highlight={validationHighlights.missingPhotos}
               />
@@ -973,11 +1137,56 @@ export default function ChecklistDetailClient({
             <div style={{ padding: '16px' }}>
               <VehicleDataBlock
                 vehicleData={vehicleData}
-                onChange={(field, value) => setVehicleData((prev) => ({ ...prev, [field]: value }))}
+                onChange={(field, value) => {
+                  setVehicleData((prev) => ({ ...prev, [field]: value }));
+                  if (field === 'km') {
+                    const retKm = value !== '' ? parseFloat(value) : NaN;
+                    const hvdKmStr: string = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? '';
+                    const hvdKm = hvdKmStr !== '' ? parseFloat(hvdKmStr) : NaN;
+                    if (!isNaN(retKm) && !isNaN(hvdKm) && retKm < hvdKm) {
+                      setReturnKmError(t('returnKmBelowHandover', { handoverKm: hvdKm }));
+                      return;
+                    }
+                    setReturnKmError(null);
+                    if (!isNaN(retKm) && !isNaN(hvdKm) && (retKm - hvdKm) > 10000) {
+                      return; // defer save to onKmBlur confirm
+                    }
+                    saveReturnVehicleField('km', value);
+                    lastSavedReturnKmRef.current = value;
+                    promoteReturnToInProgress();
+                    return;
+                  }
+                  saveReturnVehicleField(field as 'km' | 'fuel' | 'adblue', value);
+                  promoteReturnToInProgress();
+                }}
+                onKmBlur={() => {
+                  const retKm = vehicleData.km !== '' ? parseFloat(vehicleData.km) : NaN;
+                  const hvdKmStr: string = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? '';
+                  const hvdKm = hvdKmStr !== '' ? parseFloat(hvdKmStr) : NaN;
+                  if (!isNaN(retKm) && !isNaN(hvdKm) && retKm < hvdKm) {
+                    setVehicleData((prev) => ({ ...prev, km: lastSavedReturnKmRef.current }));
+                    return;
+                  }
+                  setReturnKmError(null);
+                  if (!isNaN(retKm) && !isNaN(hvdKm) && retKm >= hvdKm && (retKm - hvdKm) > 10000) {
+                    const confirmed = window.confirm(
+                      t('returnKmHighJumpConfirm', { returnKm: retKm, handoverKm: hvdKm, diff: Math.round(retKm - hvdKm) })
+                    );
+                    if (!confirmed) {
+                      setVehicleData((prev) => ({ ...prev, km: lastSavedReturnKmRef.current }));
+                      return;
+                    }
+                    saveReturnVehicleField('km', vehicleData.km);
+                    lastSavedReturnKmRef.current = vehicleData.km;
+                    promoteReturnToInProgress();
+                  }
+                }}
+                kmError={returnKmError ?? undefined}
                 isLocked={isChecklistLocked}
                 highlight={false}
                 fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
                 adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
+                handoverKm={(instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? ''}
               />
             </div>
           </PhaseCard>
@@ -987,15 +1196,31 @@ export default function ChecklistDetailClient({
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
-                onAdd={(group, files) =>
-                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }))
-                }
-                onRemove={(group, index) =>
+                onAdd={async (group, files) => {
+                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }));
+                  promoteReturnToInProgress();
+                  const toDataUrl = (file: File): Promise<string> =>
+                    new Promise((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    });
+                  const newDataUrls = await Promise.all(files.map(toDataUrl));
+                  const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
+                  const newRep = { ...currentRep, [group]: [...(currentRep[group] ?? []), ...newDataUrls] };
+                  await saveReturnEvidencePhotos(newRep);
+                }}
+                onRemove={async (group, index) => {
                   setEvidencePhotos((prev) => ({
                     ...prev,
                     [group]: prev[group].filter((_, i) => i !== index),
-                  }))
-                }
+                  }));
+                  promoteReturnToInProgress();
+                  const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
+                  const newRep = { ...currentRep, [group]: (currentRep[group] ?? []).filter((_: unknown, i: number) => i !== index) };
+                  await saveReturnEvidencePhotos(newRep);
+                }}
                 isLocked={isChecklistLocked}
                 highlight={false}
                 variant="return"
@@ -1040,9 +1265,17 @@ export default function ChecklistDetailClient({
                                 type="checkbox"
                                 id={`extras-check-${extra.id}`}
                                 checked={!!extrasChecked[extra.id]}
-                                onChange={() =>
-                                  setExtrasChecked((prev) => ({ ...prev, [extra.id]: !prev[extra.id] }))
-                                }
+                                onChange={() => {
+                                  const next = { ...extrasChecked, [extra.id]: !extrasChecked[extra.id] };
+                                  setExtrasChecked(next);
+                                  promoteReturnToInProgress();
+                                  if (instance.booking_id) {
+                                    const returnedIds = Object.entries(next).filter(([, v]) => v).map(([k]) => k);
+                                    const newMeta = { ...staffMetaRef.current, extras_returned: returnedIds };
+                                    staffMetaRef.current = newMeta;
+                                    supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+                                  }
+                                }}
                                 style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
                               />
                             )}
@@ -1163,6 +1396,7 @@ export default function ChecklistDetailClient({
         onConfirm={handleSafetyConfirm}
         onMarkUrgent={handleSafetyMarkUrgent}
         onCancel={handleSafetyCancel}
+        isReturn={instance.checklist_type === 'return'}
       />
 
       <PickupDataWarningModal

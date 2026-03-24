@@ -49,6 +49,7 @@ export function useChecklistStatusSync({
         started_by: localInstanceRef.current.started_by,
         completed_at: localInstanceRef.current.completed_at,
         completed_by: localInstanceRef.current.completed_by,
+        checklist_type: localInstanceRef.current.checklist_type,
       };
       const update = computeInstanceUpdate(nextItems, snapshot, uid, now);
       setLocalInstance((prev) => ({ ...prev, ...update }));

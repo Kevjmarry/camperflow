@@ -11,6 +11,12 @@ type VehicleDataBlockProps = {
   highlight?: boolean;
   fuelOptions?: string[];
   adblueOptions?: string[];
+  /** Handover km — when provided, a read-only "Distance driven" row is shown on return checklists. */
+  handoverKm?: string;
+  /** Inline validation error for the km field (return checklist only). */
+  kmError?: string;
+  /** Called on blur of the km input (return checklist validation). */
+  onKmBlur?: () => void;
 };
 
 const LEVEL_OPTIONS = [
@@ -21,7 +27,21 @@ const LEVEL_OPTIONS = [
   { value: 'empty', label: 'Empty' },
 ];
 
-export default function VehicleDataBlock({ vehicleData, onChange, isLocked, highlight, fuelOptions, adblueOptions }: VehicleDataBlockProps) {
+// Shared style applied to all three editable controls (input + both selects) so
+// they render at the same height as the read-only Distance driven div.
+// The div renders at ≈ 30px (fontSize 13px × lineHeight 1.4 + 6px×2 padding).
+// Native input/select ignore padding-based sizing due to UA min-height and
+// internal chrome, so we override with an explicit height + boxSizing.
+const CONTROL_STYLE: React.CSSProperties = {
+  fontSize: '13px',
+  height: '30px',
+  minHeight: '30px',
+  padding: '0 8px',
+  lineHeight: '30px',
+  boxSizing: 'border-box',
+};
+
+export default function VehicleDataBlock({ vehicleData, onChange, isLocked, highlight, fuelOptions, adblueOptions, handoverKm, kmError, onKmBlur }: VehicleDataBlockProps) {
   // When template options are provided, value === label (plain strings).
   // When falling back to defaults, preserve the original { value, label } pairs.
   const resolvedFuelOpts = fuelOptions
@@ -31,6 +51,17 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
     ? adblueOptions.map((o) => ({ value: o, label: o }))
     : LEVEL_OPTIONS;
   const t = useTranslations('checklistDetail');
+
+  // Derived "Distance driven" — read-only, shown only on return when both km values are valid and result is >= 0.
+  const returnKmNum = vehicleData.km !== '' ? parseFloat(vehicleData.km) : NaN;
+  const handoverKmNum = handoverKm !== undefined && handoverKm !== '' ? parseFloat(handoverKm) : NaN;
+  const distanceDriven =
+    handoverKm !== undefined &&
+    !isNaN(returnKmNum) &&
+    !isNaN(handoverKmNum) &&
+    returnKmNum - handoverKmNum >= 0
+      ? returnKmNum - handoverKmNum
+      : null;
 
   return (
     <div style={{
@@ -71,11 +102,17 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               min="0"
               value={vehicleData.km}
               onChange={(e) => onChange('km', e.target.value)}
+              onBlur={onKmBlur}
               disabled={isLocked}
               placeholder="e.g. 45200"
               className="input"
-              style={{ fontSize: '13px', padding: '6px 8px' }}
+              style={CONTROL_STYLE}
             />
+            {kmError && (
+              <span style={{ fontSize: '11px', color: 'rgb(239,68,68)', marginTop: '2px' }}>
+                {kmError}
+              </span>
+            )}
           </div>
 
           {/* Fuel */}
@@ -96,7 +133,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               onChange={(e) => onChange('fuel', e.target.value)}
               disabled={isLocked}
               className="input"
-              style={{ fontSize: '13px', padding: '6px 8px' }}
+              style={CONTROL_STYLE}
             >
               <option value="">— Select —</option>
               {resolvedFuelOpts.map((opt) => (
@@ -123,7 +160,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               onChange={(e) => onChange('adblue', e.target.value)}
               disabled={isLocked}
               className="input"
-              style={{ fontSize: '13px', padding: '6px 8px' }}
+              style={CONTROL_STYLE}
             >
               <option value="">— Select —</option>
               {resolvedAdblueOpts.map((opt) => (
@@ -131,6 +168,36 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               ))}
             </select>
           </div>
+
+          {/* Distance driven — read-only derived field, return only */}
+          {distanceDriven !== null && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                flex: '1 1 120px',
+                minWidth: '100px',
+              }}
+            >
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
+                {t('distanceDriven')}
+              </label>
+              <div
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 8px',
+                  border: '1px solid rgb(var(--border))',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(var(--muted), 0.06)',
+                  color: 'rgb(var(--text))',
+                  fontWeight: 500,
+                }}
+              >
+                {distanceDriven.toLocaleString()} km
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -119,29 +119,43 @@ export default function VehiclesPage() {
         checklists = r3.data || [];
       }
 
-      // ── Block B: vehicle-scope checklist check for ready vehicles ───────────
-      // Vehicle-scope instances: vehicle_id set, booking_id IS NULL.
+      // ── Block B: checklist checks for ready vehicles ─────────────────────────
+      // 1. Vehicle-scope instances (booking_id IS NULL, in_progress).
+      // 2. Booking-linked cleaning/mechanical instances not yet completed.
       const vehicleScopeBlockers = new Set<string>();
+      const postReturnBlockers    = new Set<string>();
 
       if (readyIds.length > 0) {
-        const { data: vscData, error: vscError } = await supabase
-          .from('checklist_instances')
-          .select('vehicle_id, status')
-          .in('vehicle_id', readyIds)
-          .is('booking_id', null)
-          .eq('status', 'in_progress');
+        const [vscResult, postReturnResult] = await Promise.all([
+          supabase
+            .from('checklist_instances')
+            .select('vehicle_id, status')
+            .in('vehicle_id', readyIds)
+            .is('booking_id', null)
+            .eq('status', 'in_progress'),
+          supabase
+            .from('checklist_instances')
+            .select('checklist_type, bookings!inner(vehicle_id)')
+            .in('bookings.vehicle_id', readyIds)
+            .in('checklist_type', ['cleaning', 'mechanical'])
+            .neq('status', 'completed'),
+        ]);
 
-        if (vscError) {
-          console.error('[VehiclesPage] vehicle-scope checklist query failed:', vscError);
+        if (vscResult.error) {
+          console.error('[VehiclesPage] vehicle-scope checklist query failed:', vscResult.error);
         }
-
-        for (const r of (vscData || []) as any[]) {
-          if (
-            r.vehicle_id &&
-            r.status === 'in_progress'
-          ) {
+        for (const r of (vscResult.data || []) as any[]) {
+          if (r.vehicle_id && r.status === 'in_progress') {
             vehicleScopeBlockers.add(r.vehicle_id);
           }
+        }
+
+        if (postReturnResult.error) {
+          console.error('[VehiclesPage] post-return checklist query failed:', postReturnResult.error);
+        }
+        for (const r of (postReturnResult.data || []) as any[]) {
+          const vid = r.bookings?.vehicle_id;
+          if (vid) postReturnBlockers.add(vid);
         }
       }
 
@@ -161,7 +175,8 @@ export default function VehiclesPage() {
 
       const withReasons = vehicleList.map(v => {
         // Override ready → preparing when a vehicle-scope checklist is incomplete
-        if (v.status === 'ready' && vehicleScopeBlockers.has(v.id)) {
+        // or when booking-linked cleaning/mechanical checklists are not yet completed
+        if (v.status === 'ready' && (vehicleScopeBlockers.has(v.id) || postReturnBlockers.has(v.id))) {
           return {
             ...v,
             status: 'preparing' as const,

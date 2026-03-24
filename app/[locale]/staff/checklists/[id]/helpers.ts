@@ -13,6 +13,8 @@ export type InstanceStatusSnapshot = {
   started_by: string | null;
   completed_at: string | null;
   completed_by: string | null;
+  /** When present, guards pickup ('handover') and return checklists from item-sync auto-completion. */
+  checklist_type?: string | null;
 };
 
 export type InstanceUpdate = {
@@ -51,7 +53,12 @@ export function computeInstanceUpdate(
   const noneChecked = checkedCount === 0;
   const isPending = snapshot.status === 'pending' || snapshot.status === 'not_started';
 
-  if (allChecked) {
+  // Pickup ('handover') and return checklists require a dedicated completion flow
+  // (signature, deposit, close-out steps). Item-based sync must never auto-complete them.
+  const requiresDedicatedCompletion =
+    snapshot.checklist_type === 'handover' || snapshot.checklist_type === 'return';
+
+  if (allChecked && !requiresDedicatedCompletion) {
     return {
       status: 'completed',
       started_at: snapshot.started_at ?? now,

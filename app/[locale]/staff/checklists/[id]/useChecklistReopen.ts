@@ -186,6 +186,24 @@ export function useChecklistReopen({
       return;
     }
 
+    // Step 3c: For return checklists, clear return_vehicle_data from bookings.staff_metadata.
+    // The vehicle data (km/fuel/adblue) is stored there, not in checklist_instances, so the
+    // checklist reset above does not touch it. We preserve all other staff_metadata keys.
+    if (instance.checklist_type === 'return' && instance.booking_id) {
+      const currentMeta = (instance.bookings as any)?.staff_metadata ?? {};
+      const newMeta = { ...currentMeta, return_vehicle_data: null };
+      console.log('[REOPEN] Step 3c: instance.checklist_type =', instance.checklist_type);
+      console.log('[REOPEN] Step 3c: instance.booking_id =', instance.booking_id);
+      console.log('[REOPEN] Step 3c: return_vehicle_data exists =', !!(instance.bookings as any)?.staff_metadata?.return_vehicle_data);
+      console.log('[REOPEN] Step 3c: clearing return_vehicle_data on booking', instance.booking_id);
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .update({ staff_metadata: newMeta })
+        .eq('id', instance.booking_id)
+        .select('id, staff_metadata');
+      console.log('[REOPEN] Step 3c result | rows:', bookingData?.length ?? 'n/a', '| data:', bookingData, '| error:', bookingError);
+    }
+
     // Step 3b: Re-read the instance from DB to confirm what was actually written.
     const { data: verifyData, error: verifyError } = await supabase
       .from('checklist_instances')

@@ -3,29 +3,7 @@
 import type { CSSProperties, Dispatch, SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import ChecklistItemsEditor from '@/components/checklists/ChecklistItemsEditor';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ChecklistTemplateItem {
-  id: string;
-  template_id: string;
-  label: string;
-  section: string | null;
-  sort_order: number;
-  position: number;
-  required: boolean;
-  input_type: string;
-}
-
-interface ItemEditState {
-  label: string;
-  required: boolean;
-  input_type: string;
-  section: string | null;
-  newSectionName: string;
-  saving: boolean;
-  error: string | null;
-}
+import type { ChecklistTemplateItem, ItemEditState } from '@/app/[locale]/staff/checklists/templates/[id]/_pageHelpers';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -94,15 +72,15 @@ interface ChecklistTemplateItemsPanelProps {
   isSystem: boolean;
 
   // Handlers
-  handleAddItem: () => void;
-  handleAddItemToSection: (targetDbSection: string | null) => void;
-  handleDndReorder: (newItems: ChecklistTemplateItem[]) => void;
-  handleDndReorderSections: (newSectionOrder: string[]) => void;
+  handleAddItem: () => void | Promise<void>;
+  handleAddItemToSection: (targetDbSection: string | null) => void | Promise<void>;
+  handleDndReorder: (newItems: ChecklistTemplateItem[]) => void | Promise<void>;
+  handleDndReorderSections: (newSectionOrder: string[]) => void | Promise<void>;
   toggleSection: (section: string) => void;
   startEditing: (item: ChecklistTemplateItem) => void;
   cancelEditing: () => void;
   updateEditField: <K extends keyof ItemEditState>(itemId: string, field: K, value: ItemEditState[K]) => void;
-  handleSaveItem: (item: ChecklistTemplateItem) => void;
+  handleSaveItem: (item: ChecklistTemplateItem) => void | Promise<void>;
 
   // i18n
   t: ReturnType<typeof useTranslations>;

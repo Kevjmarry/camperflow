@@ -16,19 +16,7 @@ interface UseReturnCompletionProps {
   setSyncError: Dispatch<SetStateAction<SyncError | null>>;
   setLockNotice: Dispatch<SetStateAction<string | null>>;
   lockMessageFromError: (error: any) => string;
-  showHandoverSafetyModal: (
-    flaggedItems: ChecklistItemType[],
-    onConfirm: () => Promise<void>,
-    triggerCheckedIds: string[],
-    triggerCheckedAt: string,
-    triggerCheckedBy: string
-  ) => void;
-  setHandoverSafetyModal: Dispatch<SetStateAction<{
-    flaggedItems: ChecklistItemType[];
-    triggerCheckedIds: string[];
-    triggerCheckedAt: string;
-    triggerCheckedBy: string;
-  } | null>>;
+  showReturnModal: (urgentItems: ChecklistItemType[], onConfirm: () => Promise<void>) => void;
   navigateAfterCompletion: () => void;
   t: (key: string, ...args: any[]) => string;
 }
@@ -43,8 +31,7 @@ export function useReturnCompletion({
   setSyncError,
   setLockNotice,
   lockMessageFromError,
-  showHandoverSafetyModal,
-  setHandoverSafetyModal,
+  showReturnModal,
   navigateAfterCompletion,
   t,
 }: UseReturnCompletionProps) {
@@ -124,36 +111,20 @@ export function useReturnCompletion({
       return;
     }
 
-    // 4. Blocking flagged items prevent completion (urgent modal — dismiss only)
-    const blockingFlagged = localItems.filter((it) => it.issue_blocking === true);
-    if (blockingFlagged.length > 0) {
-      setReturnBlockedError(t('handoverErrorBlockingFlags'));
-      setHandoverSafetyModal({
-        flaggedItems: blockingFlagged,
-        triggerCheckedIds: [],
-        triggerCheckedAt: '',
-        triggerCheckedBy: '',
-      });
-      return;
-    }
-
     setReturnBlockedError(null);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const proceedComplete = async () => { await doReturnButtonComplete(user.id); };
-
-    // 5. Non-blocking flagged items: safety confirmation modal
-    const nonBlockingFlagged = localItems.filter(
-      (it) => !!it.issue_flag && it.issue_blocking !== true
-    );
-    if (nonBlockingFlagged.length > 0) {
-      showHandoverSafetyModal(nonBlockingFlagged, proceedComplete, [], '', '');
+    // Urgent/blocking flags: show notification modal (both buttons still complete).
+    // Attention-only flags: complete immediately with no modal.
+    const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+    if (urgentItems.length > 0) {
+      showReturnModal(urgentItems, async () => doReturnButtonComplete(user.id));
       return;
     }
 
-    await proceedComplete();
+    await doReturnButtonComplete(user.id);
   };
 
   return {

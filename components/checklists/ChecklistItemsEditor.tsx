@@ -17,35 +17,12 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ChecklistTemplateItem {
-  id: string;
-  template_id: string;
-  label: string;
-  section: string | null;
-  sort_order: number;
-  position: number;
-  required: boolean;
-  input_type: string;
-}
-
-interface ItemEditState {
-  label: string;
-  required: boolean;
-  input_type: string;
-  options: string[];
-  section: string | null;
-  newSectionName: string;
-  saving: boolean;
-  error: string | null;
-}
+import type { ChecklistTemplateItem, ItemEditState } from '@/app/[locale]/staff/checklists/templates/[id]/_pageHelpers';
 
 interface ChecklistItemsEditorProps {
   allItems: ChecklistTemplateItem[];
   visibleItems: ChecklistTemplateItem[];
-  onReorder: (newAllItems: ChecklistTemplateItem[]) => void;
+  onReorder: (newAllItems: ChecklistTemplateItem[]) => void | Promise<void>;
   collapsedSections: Set<string>;
   onToggleSection: (section: string) => void;
   // Item editing
@@ -59,10 +36,10 @@ interface ChecklistItemsEditorProps {
   onStartEdit: (item: ChecklistTemplateItem) => void;
   onCancelEdit: () => void;
   onUpdateEditField: <K extends keyof ItemEditState>(itemId: string, field: K, value: ItemEditState[K]) => void;
-  onSaveItem: (item: ChecklistTemplateItem) => void;
+  onSaveItem: (item: ChecklistTemplateItem) => void | Promise<void>;
   // Section drag reorder + per-section add
-  onAddItemToSection: (targetDbSection: string | null) => void;
-  onReorderSections: (newSectionOrder: string[]) => void;
+  onAddItemToSection: (targetDbSection: string | null) => void | Promise<void>;
+  onReorderSections: (newSectionOrder: string[]) => void | Promise<void>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ interface Vehicle {
   notes: string | null;
   photo_url: string | null;
   status: "ready" | "preparing" | "on_rent";
+  latest_odometer: number | null;
 }
 
 interface ComplianceTypeShape {
@@ -200,7 +201,7 @@ export default function VehicleDetailPage({
 
         const { data: vehicleData, error: vehicleError } = await supabase
           .from("vehicles")
-          .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status")
+          .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer")
           .eq("id", id)
           .single();
 
@@ -675,6 +676,7 @@ export default function VehicleDetailPage({
                   <Field label={t("fields.model")} value={vehicle.model || "—"} />
                   <Field label={t("fields.year")}  value={vehicle.year ? String(vehicle.year) : "—"} />
                   <Field label={t("fields.vin")}   value={vehicle.vin   || "—"} />
+                  <Field label={t("fields.latestOdometer")} value={vehicle.latest_odometer != null ? `${vehicle.latest_odometer.toLocaleString()} km` : "—"} />
                 </div>
               </div>
             </div>
@@ -728,6 +730,12 @@ export default function VehicleDetailPage({
                   </button>
                 )}
               </div>
+
+              {vehicle.latest_odometer != null && (
+                <div style={{ fontSize: "13px", color: "rgb(var(--muted))", marginBottom: "var(--space-3)" }}>
+                  {t("fields.latestOdometer")}: <span style={{ fontWeight: 600, color: "rgb(var(--text))" }}>{vehicle.latest_odometer.toLocaleString()} km</span>
+                </div>
+              )}
 
               {complianceLoading ? (
                 <div
