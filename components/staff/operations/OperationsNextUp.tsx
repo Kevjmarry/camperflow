@@ -82,6 +82,18 @@ export default function OperationsNextUp({ nextPickup, nextReturn }: Props) {
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(nextPickup.pickupAt)}, {formatTime(nextPickup.pickupAt)}
             </span>
+            {nextPickup.vehicleBlocked && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+            )}
+            {nextPickup.hasBlockingIssue && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
+            )}
+            {nextPickup.hasExpiredCompliance && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+            )}
+            {nextPickup.hasOpenVehicleIssue && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+            )}
             <Link
               href={`/${locale}/staff/bookings/${nextPickup.id}`}
               style={{
@@ -111,6 +123,15 @@ export default function OperationsNextUp({ nextPickup, nextReturn }: Props) {
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(nextReturn.returnAt)}, {formatTime(nextReturn.returnAt)}
             </span>
+            {nextReturn.vehicleBlocked && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+            )}
+            {nextReturn.hasExpiredCompliance && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+            )}
+            {nextReturn.hasOpenVehicleIssue && (
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+            )}
             <Link
               href={`/${locale}/staff/bookings/${nextReturn.id}`}
               style={{

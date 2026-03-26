@@ -6,6 +6,9 @@ export interface OpsVehiclePreparing {
   plate: string
   bookingNumber: string
   pickupAt: string
+  vehicleBlocked: boolean
+  hasOpenVehicleIssue: boolean
+  hasExpiredCompliance: boolean
 }
 
 export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> {
@@ -34,11 +37,41 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
 
   const { data, error } = await supabase
     .from('vehicles')
-    .select('id, name, registration_plate, bookings(booking_number, pickup_at, status)')
+    .select('id, name, registration_plate, operational_hold, bookings(booking_number, pickup_at, status)')
     .eq('status', 'preparing')
     .eq('company_id', companyId)
 
   if (error) throw error
+
+  const vehicleIds = (data ?? []).map((v) => v.id)
+
+  const { data: openIssues, error: issueError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_issues')
+        .select('vehicle_id')
+        .in('vehicle_id', vehicleIds)
+        .eq('resolved', false)
+    : { data: [], error: null }
+
+  if (issueError) throw issueError
+
+  const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
+
+  const todayStr = now.toISOString().slice(0, 10)
+
+  const { data: expiredCompliance, error: complianceError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_compliance')
+        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .in('vehicle_id', vehicleIds)
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', todayStr)
+        .eq('compliance_types.blocks_readiness', true)
+    : { data: [], error: null }
+
+  if (complianceError) throw complianceError
+
+  const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
 
   return (data ?? [])
     .map((v) => {
@@ -63,6 +96,9 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
         plate: v.registration_plate ?? '',
         bookingNumber: next.booking_number,
         pickupAt: next.pickup_at,
+        vehicleBlocked: v.operational_hold === true,
+        hasOpenVehicleIssue: vehiclesWithOpenIssues.has(v.id),
+        hasExpiredCompliance: vehiclesWithExpiredCompliance.has(v.id),
       }
     })
     .filter((v): v is OpsVehiclePreparing => v !== null)

@@ -9,6 +9,9 @@ export interface OpsUpcomingReturn {
   returnAt: string
   nights: number | null
   daysUntil: number
+  vehicleBlocked: boolean
+  hasExpiredCompliance: boolean
+  hasOpenVehicleIssue: boolean
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -84,7 +87,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked')
     .eq('company_id', companyId)
     .gt('return_at', endOfToday.toISOString())
     .order('return_at', { ascending: true })
@@ -104,6 +107,35 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
       staff: b.staff_metadata as Record<string, unknown> | null,
     }])
   )
+
+  const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const { data: expiredCompliance, error: ecError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_compliance')
+        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .in('vehicle_id', vehicleIds)
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', todayStr)
+        .eq('compliance_types.blocks_readiness', true)
+    : { data: [], error: null }
+
+  if (ecError) throw ecError
+
+  const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
+
+  const { data: openIssues, error: oiError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_issues')
+        .select('vehicle_id')
+        .in('vehicle_id', vehicleIds)
+        .eq('resolved', false)
+    : { data: [], error: null }
+
+  if (oiError) throw oiError
+
+  const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -133,6 +165,9 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
       returnAt: b.return_at,
       nights,
       daysUntil,
+      vehicleBlocked: b.vehicle_blocked === true,
+      hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
+      hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
       ...extras,
     }
   })

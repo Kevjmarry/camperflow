@@ -189,6 +189,15 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {r.customerName} · {r.bookingNumber}
                   </span>
+                  {r.vehicleBlocked && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                  )}
+                  {r.hasExpiredCompliance && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                  )}
+                  {r.hasOpenVehicleIssue && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                  )}
                   <MetaBadges r={r} t={t} />
                 </div>
 

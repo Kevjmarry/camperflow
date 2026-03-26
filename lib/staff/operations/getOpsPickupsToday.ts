@@ -16,6 +16,9 @@ export interface OpsPickup {
   vehicleBlocked?: boolean
   handoverItemsDone: number | null
   handoverItemsTotal: number | null
+  hasBlockingIssue: boolean
+  hasExpiredCompliance: boolean
+  hasOpenVehicleIssue: boolean
 }
 
 export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
@@ -34,7 +37,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, booking_status, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, handover_items_done, handover_items_total')
+    .select('id, booking_number, customer_name, pickup_at, booking_status, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, handover_items_done, handover_items_total')
     .eq('company_id', companyId)
     .eq('ops_flag', 'pickup_today')
     .order('ops_priority', { ascending: true, nullsFirst: false })
@@ -58,6 +61,49 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
     (instances ?? []).map((ci) => [ci.booking_id, ci])
   )
 
+  const instanceIds = (instances ?? []).map((ci) => ci.id)
+
+  const { data: blockingItems, error: biError } = instanceIds.length
+    ? await supabase
+        .from('checklist_instance_items')
+        .select('instance_id')
+        .in('instance_id', instanceIds)
+        .eq('issue_blocking', true)
+    : { data: [], error: null }
+
+  if (biError) throw biError
+
+  const blockingInstanceIds = new Set((blockingItems ?? []).map((i) => i.instance_id))
+
+  const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const { data: expiredCompliance, error: ecError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_compliance')
+        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .in('vehicle_id', vehicleIds)
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', todayStr)
+        .eq('compliance_types.blocks_readiness', true)
+    : { data: [], error: null }
+
+  if (ecError) throw ecError
+
+  const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
+
+  const { data: openIssues, error: oiError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_issues')
+        .select('vehicle_id')
+        .in('vehicle_id', vehicleIds)
+        .eq('resolved', false)
+    : { data: [], error: null }
+
+  if (oiError) throw oiError
+
+  const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
+
   return (data ?? []).map((b) => {
     const handover = instancesByBooking.get(b.id)
     return {
@@ -78,6 +124,9 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       vehicleBlocked: b.vehicle_blocked === true,
       handoverItemsDone: b.handover_items_done ?? null,
       handoverItemsTotal: b.handover_items_total ?? null,
+      hasBlockingIssue: handover ? blockingInstanceIds.has(handover.id) : false,
+      hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
+      hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
     }
   })
 }

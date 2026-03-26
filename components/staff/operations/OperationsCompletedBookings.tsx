@@ -78,6 +78,15 @@ export default function OperationsCompletedBookings({ bookings }: Props) {
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {b.customerName} · {b.bookingNumber}
                   </span>
+                  {b.vehicleBlocked && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                  )}
+                  {b.hasExpiredCompliance && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                  )}
+                  {b.hasOpenVehicleIssue && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>

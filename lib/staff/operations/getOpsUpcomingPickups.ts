@@ -14,6 +14,9 @@ export interface OpsUpcomingPickup {
   nextAction?: string | null
   hoursToPickup?: number | null
   vehicleBlocked?: boolean
+  hasBlockingIssue: boolean
+  hasExpiredCompliance: boolean
+  hasOpenVehicleIssue: boolean
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -86,7 +89,7 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
     .eq('company_id', companyId)
     .is('ops_flag', null)
     .gt('pickup_at', new Date().toISOString())
@@ -97,9 +100,11 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const bookingIds = (data ?? []).map((b) => b.id)
 
-  const { data: bookingsData } = bookingIds.length
+  const { data: bookingsData, error: bookingsError } = bookingIds.length
     ? await supabase.from('bookings').select('id, source_metadata, staff_metadata').in('id', bookingIds)
-    : { data: [] }
+    : { data: [], error: null }
+
+  if (bookingsError) throw bookingsError
 
   const metaByBooking = new Map(
     (bookingsData ?? []).map((b) => [b.id, {
@@ -107,6 +112,63 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       staff: b.staff_metadata as Record<string, unknown> | null,
     }])
   )
+
+  const { data: instances, error: ciError } = bookingIds.length
+    ? await supabase
+        .from('checklist_instances')
+        .select('id, booking_id')
+        .in('booking_id', bookingIds)
+    : { data: [], error: null }
+
+  if (ciError) throw ciError
+
+  const instanceIds = (instances ?? []).map((ci) => ci.id)
+
+  const { data: blockingItems, error: biError } = instanceIds.length
+    ? await supabase
+        .from('checklist_instance_items')
+        .select('instance_id')
+        .in('instance_id', instanceIds)
+        .eq('issue_blocking', true)
+    : { data: [], error: null }
+
+  if (biError) throw biError
+
+  const blockingInstanceIds = new Set((blockingItems ?? []).map((i) => i.instance_id))
+  const bookingsWithBlockingIssue = new Set(
+    (instances ?? [])
+      .filter((ci) => blockingInstanceIds.has(ci.id))
+      .map((ci) => ci.booking_id)
+  )
+
+  const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const { data: expiredCompliance, error: ecError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_compliance')
+        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .in('vehicle_id', vehicleIds)
+        .not('expiry_date', 'is', null)
+        .lt('expiry_date', todayStr)
+        .eq('compliance_types.blocks_readiness', true)
+    : { data: [], error: null }
+
+  if (ecError) throw ecError
+
+  const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
+
+  const { data: openIssues, error: oiError } = vehicleIds.length
+    ? await supabase
+        .from('vehicle_issues')
+        .select('vehicle_id')
+        .in('vehicle_id', vehicleIds)
+        .eq('resolved', false)
+    : { data: [], error: null }
+
+  if (oiError) throw oiError
+
+  const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -141,6 +203,9 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       nextAction: b.next_action ?? null,
       hoursToPickup: b.hours_to_pickup ?? null,
       vehicleBlocked: b.vehicle_blocked === true,
+      hasBlockingIssue: bookingsWithBlockingIssue.has(b.id),
+      hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
+      hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
       ...extras,
     }
   })

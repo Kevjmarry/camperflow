@@ -119,6 +119,15 @@ export default function OperationsPickups({ pickups, quiet }: Props) {
                 {p.vehicleBlocked && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
                 )}
+                {p.hasBlockingIssue && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
+                )}
+                {p.hasExpiredCompliance && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                )}
+                {p.hasOpenVehicleIssue && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                )}
                 {p.handoverItemsTotal != null && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                     Handover: {p.handoverStatus === 'completed' ? `${p.handoverItemsTotal} / ${p.handoverItemsTotal}` : `${p.handoverItemsDone ?? 0} / ${p.handoverItemsTotal}`}

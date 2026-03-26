@@ -124,6 +124,18 @@ export default function OperationsReturns({ returns, quiet }: Props) {
                 {r.nextAction && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(r.nextAction)}</span>
                 )}
+                {r.vehicleBlocked && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                )}
+                {r.hasBlockingIssue && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
+                )}
+                {r.hasExpiredCompliance && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                )}
+                {r.hasOpenVehicleIssue && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                )}
                 {r.returnItemsTotal != null && r.returnItemsTotal > 0 && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                     Return: {r.returnItemsDone ?? 0} / {r.returnItemsTotal}

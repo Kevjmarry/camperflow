@@ -18,14 +18,20 @@ import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPick
 import { getOpsUpcomingReturns } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
-import { getTranslations } from 'next-intl/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OperationsPage() {
   const [
-    summary, pickups, returns, vehicles, vehicleBlocks,
-    upcoming, upcomingReturns, invoiceReminders, completed, t,
+    summary,
+    pickups,
+    returns,
+    vehicles,
+    vehicleBlocks,
+    upcomingPickups,
+    upcomingReturns,
+    invoiceReminders,
+    completed,
   ] = await Promise.all([
     getOpsSummary(),
     getOpsPickupsToday(),
@@ -36,13 +42,7 @@ export default async function OperationsPage() {
     getOpsUpcomingReturns(),
     getOpsInvoiceReminders(),
     getOpsCompletedBookings(),
-    getTranslations('staff.operations'),
   ])
-
-  const quietToday =
-    pickups.length === 0 && returns.length === 0 && invoiceReminders.length === 0
-
-  const hasUpcoming = upcoming.length > 0 || upcomingReturns.length > 0
 
   return (
     <PageContainer maxWidth="1400px">
@@ -58,48 +58,18 @@ export default async function OperationsPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            {summary && <OperationsSummary data={summary} />}
-
-            {/* Quiet-day: banner + next-up highlight cards, above today sections */}
-            {quietToday && hasUpcoming && (
-              <>
-                <div
-                  style={{
-                    padding: 'var(--space-4) var(--space-5)',
-                    background: 'rgb(var(--brand-light))',
-                    border: '1px solid rgb(var(--border))',
-                    borderRadius: 'var(--radius)',
-                    fontSize: '14px',
-                    color: 'rgb(var(--text))',
-                  }}
-                >
-                  <strong>{t('quietDay.title')}</strong>
-                  <span style={{ color: 'rgb(var(--muted))', marginLeft: 'var(--space-2)' }}>
-                    {t('quietDay.subtitle')}
-                  </span>
-                </div>
-
-                <OperationsNextUp
-                  nextPickup={upcoming[0] ?? null}
-                  nextReturn={upcomingReturns[0] ?? null}
-                />
-              </>
-            )}
-
-            {/* Today sections — dimmed to status lines when quiet and empty */}
-            <OperationsPickups pickups={pickups} quiet={quietToday} />
-            <OperationsReturns returns={returns} quiet={quietToday} />
-            <OperationsInvoiceReminders reminders={invoiceReminders} />
-            <OperationsVehiclesPreparing vehicles={vehicles} />
-
-            {/* Upcoming vehicle blocks (from external platform imports) */}
+            <OperationsSummary data={summary} />
             <OperationsVehicleBlocks blocks={vehicleBlocks} />
-
-            {/* Upcoming lists — capped at 5 with expand/collapse */}
-            <OperationsUpcomingPickups pickups={upcoming} />
+            <OperationsInvoiceReminders reminders={invoiceReminders} />
+            <OperationsNextUp
+              nextPickup={upcomingPickups[0] ?? null}
+              nextReturn={upcomingReturns[0] ?? null}
+            />
+            <OperationsPickups pickups={pickups} quiet={false} />
+            <OperationsReturns returns={returns} quiet={false} />
+            <OperationsVehiclesPreparing vehicles={vehicles} />
+            <OperationsUpcomingPickups pickups={upcomingPickups} />
             <OperationsUpcomingReturns returns={upcomingReturns} />
-
-            {/* Recently completed */}
             <OperationsCompletedBookings bookings={completed} />
           </div>
 

@@ -64,6 +64,15 @@ export default function OperationsVehiclesPreparing({ vehicles }: Props) {
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                   {v.plate} · {v.bookingNumber}
                 </span>
+                {v.vehicleBlocked && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                )}
+                {v.hasOpenVehicleIssue && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                )}
+                {v.hasExpiredCompliance && (
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
