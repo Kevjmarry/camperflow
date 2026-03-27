@@ -85,6 +85,38 @@ function IconPlane() {
   )
 }
 
+// ── StatusChip ────────────────────────────────────────────────────────────────
+
+function StatusChip({ label, severity }: { label: string; severity: 'critical' | 'warning' }) {
+  const style: React.CSSProperties =
+    severity === 'critical'
+      ? {
+          color: 'rgb(var(--danger))',
+          background: 'rgb(var(--danger) / 0.14)',
+          border: '1px solid rgb(var(--danger) / 0.28)',
+        }
+      : {
+          color: 'rgb(var(--warning))',
+          background: 'rgb(var(--warning) / 0.14)',
+          border: '1px solid rgb(var(--warning) / 0.28)',
+        }
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        fontSize: '11px',
+        fontWeight: 500,
+        borderRadius: '4px',
+        padding: '3px 8px',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
 // ── Operational metadata badges ───────────────────────────────────────────────
 
 const badgeStyle: React.CSSProperties = {
@@ -212,17 +244,15 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                   {p.nextAction && (
                     <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(p.nextAction)}</span>
                   )}
-                  {p.vehicleBlocked && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
-                  )}
-                  {p.hasBlockingIssue && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
-                  )}
-                  {p.hasExpiredCompliance && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
-                  )}
-                  {p.hasOpenVehicleIssue && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                  {(p.vehicleBlocked || p.hasUrgentIssue || p.hasAttentionIssue || p.hasBlockingIssue || p.hasExpiredCompliance || p.hasOpenVehicleIssue) && (
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                      {p.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
+                      {p.hasUrgentIssue && <StatusChip label="Urgent issue" severity="critical" />}
+                      {p.hasAttentionIssue && <StatusChip label="Attention issue" severity="warning" />}
+                      {!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue && <StatusChip label="Blocking checklist issue" severity="critical" />}
+                      {p.hasExpiredCompliance && <StatusChip label="Expired compliance" severity="critical" />}
+                      {p.hasOpenVehicleIssue && <StatusChip label="Open vehicle issue" severity="warning" />}
+                    </div>
                   )}
                   <MetaBadges p={p} t={t} />
                 </div>

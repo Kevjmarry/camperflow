@@ -87,15 +87,20 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
         )
         .sort((a, b) => a.pickup_at.localeCompare(b.pickup_at))[0]
 
-      // No relevant upcoming booking → this vehicle is stuck; exclude it.
-      if (!next) return null
+      // No relevant upcoming booking → exclude unless a blocking risk signal is present.
+      const isRisky =
+        v.operational_hold === true ||
+        vehiclesWithExpiredCompliance.has(v.id) ||
+        vehiclesWithOpenIssues.has(v.id)
+
+      if (!next && !isRisky) return null
 
       return {
         id: v.id,
         name: v.name ?? '',
         plate: v.registration_plate ?? '',
-        bookingNumber: next.booking_number,
-        pickupAt: next.pickup_at,
+        bookingNumber: next?.booking_number ?? '',
+        pickupAt: next?.pickup_at ?? '',
         vehicleBlocked: v.operational_hold === true,
         hasOpenVehicleIssue: vehiclesWithOpenIssues.has(v.id),
         hasExpiredCompliance: vehiclesWithExpiredCompliance.has(v.id),

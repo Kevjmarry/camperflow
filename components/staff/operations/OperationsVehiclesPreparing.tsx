@@ -17,6 +17,37 @@ function formatDateTime(iso: string) {
   })
 }
 
+function StatusChip({ label, severity }: { label: string; severity: 'critical' | 'warning' }) {
+  const style: React.CSSProperties =
+    severity === 'critical'
+      ? {
+          color: 'rgb(var(--danger))',
+          background: 'rgb(var(--danger) / 0.14)',
+          border: '1px solid rgb(var(--danger) / 0.28)',
+        }
+      : {
+          color: 'rgb(var(--warning))',
+          background: 'rgb(var(--warning) / 0.14)',
+          border: '1px solid rgb(var(--warning) / 0.28)',
+        }
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        fontSize: '11px',
+        fontWeight: 500,
+        borderRadius: '4px',
+        padding: '3px 8px',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        ...style,
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
 export default function OperationsVehiclesPreparing({ vehicles }: Props) {
   const { locale } = useParams<{ locale: string }>()
 
@@ -64,14 +95,12 @@ export default function OperationsVehiclesPreparing({ vehicles }: Props) {
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                   {v.plate} · {v.bookingNumber}
                 </span>
-                {v.vehicleBlocked && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
-                )}
-                {v.hasOpenVehicleIssue && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
-                )}
-                {v.hasExpiredCompliance && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                {(v.vehicleBlocked || v.hasOpenVehicleIssue || v.hasExpiredCompliance) && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                    {v.hasExpiredCompliance && <StatusChip label="Expired compliance" severity="critical" />}
+                    {v.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
+                    {v.hasOpenVehicleIssue && <StatusChip label="Open vehicle issue" severity="warning" />}
+                  </div>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>

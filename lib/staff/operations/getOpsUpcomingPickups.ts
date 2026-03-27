@@ -15,8 +15,11 @@ export interface OpsUpcomingPickup {
   hoursToPickup?: number | null
   vehicleBlocked?: boolean
   hasBlockingIssue: boolean
+  hasAttentionIssue: boolean
+  hasUrgentIssue: boolean
   hasExpiredCompliance: boolean
   hasOpenVehicleIssue: boolean
+  vehicleStatus: 'ready' | 'preparing' | 'on_rent' | null
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -124,22 +127,33 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const instanceIds = (instances ?? []).map((ci) => ci.id)
 
-  const { data: blockingItems, error: biError } = instanceIds.length
+  const { data: flaggedItems, error: biError } = instanceIds.length
     ? await supabase
         .from('checklist_instance_items')
-        .select('instance_id')
+        .select('instance_id, issue_blocking')
         .in('instance_id', instanceIds)
-        .eq('issue_blocking', true)
+        .eq('issue_flag', true)
     : { data: [], error: null }
 
   if (biError) throw biError
 
-  const blockingInstanceIds = new Set((blockingItems ?? []).map((i) => i.instance_id))
+  const blockingInstanceIds = new Set(
+    (flaggedItems ?? []).filter((i) => i.issue_blocking === true).map((i) => i.instance_id)
+  )
+  const attentionInstanceIds = new Set(
+    (flaggedItems ?? []).filter((i) => i.issue_blocking !== true).map((i) => i.instance_id)
+  )
   const bookingsWithBlockingIssue = new Set(
     (instances ?? [])
       .filter((ci) => blockingInstanceIds.has(ci.id))
       .map((ci) => ci.booking_id)
   )
+  const bookingsWithAttentionIssue = new Set(
+    (instances ?? [])
+      .filter((ci) => attentionInstanceIds.has(ci.id))
+      .map((ci) => ci.booking_id)
+  )
+  const bookingsWithUrgentIssue = bookingsWithBlockingIssue
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -169,6 +183,14 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   if (oiError) throw oiError
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
+
+  const ALLOWED_STATUSES = new Set(['ready', 'preparing', 'on_rent'])
+  const { data: vehicleStatuses } = vehicleIds.length
+    ? await supabase.from('vehicles').select('id, status').in('id', vehicleIds)
+    : { data: [] }
+  const vehicleStatusMap = new Map(
+    (vehicleStatuses ?? []).map((v) => [v.id, ALLOWED_STATUSES.has(v.status) ? v.status as 'ready' | 'preparing' | 'on_rent' : null])
+  )
 
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -204,8 +226,11 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       hoursToPickup: b.hours_to_pickup ?? null,
       vehicleBlocked: b.vehicle_blocked === true,
       hasBlockingIssue: bookingsWithBlockingIssue.has(b.id),
+      hasAttentionIssue: bookingsWithAttentionIssue.has(b.id),
+      hasUrgentIssue: bookingsWithUrgentIssue.has(b.id),
       hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
       hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
+      vehicleStatus: b.vehicle_id ? (vehicleStatusMap.get(b.vehicle_id) ?? null) : null,
       ...extras,
     }
   })

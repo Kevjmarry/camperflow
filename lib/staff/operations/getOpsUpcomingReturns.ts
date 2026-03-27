@@ -12,6 +12,7 @@ export interface OpsUpcomingReturn {
   vehicleBlocked: boolean
   hasExpiredCompliance: boolean
   hasOpenVehicleIssue: boolean
+  vehicleStatus: 'ready' | 'preparing' | 'on_rent' | null
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -137,6 +138,14 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
 
+  const ALLOWED_STATUSES = new Set(['ready', 'preparing', 'on_rent'])
+  const { data: vehicleStatuses } = vehicleIds.length
+    ? await supabase.from('vehicles').select('id, status').in('id', vehicleIds)
+    : { data: [] }
+  const vehicleStatusMap = new Map(
+    (vehicleStatuses ?? []).map((v) => [v.id, ALLOWED_STATUSES.has(v.status) ? v.status as 'ready' | 'preparing' | 'on_rent' : null])
+  )
+
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
@@ -168,6 +177,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
       vehicleBlocked: b.vehicle_blocked === true,
       hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
       hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
+      vehicleStatus: b.vehicle_id ? (vehicleStatusMap.get(b.vehicle_id) ?? null) : null,
       ...extras,
     }
   })
