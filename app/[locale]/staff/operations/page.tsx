@@ -9,6 +9,7 @@ import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPick
 import { getOpsUpcomingReturns } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
+import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,25 +49,50 @@ function StatusChip({ label, severity }: { label: string; severity: 'critical' |
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function OperationsPage() {
+  const loaders = [
+    { name: 'getOpsPickupsToday',      fn: getOpsPickupsToday },
+    { name: 'getOpsUpcomingPickups',   fn: getOpsUpcomingPickups },
+    { name: 'getOpsUpcomingReturns',   fn: getOpsUpcomingReturns },
+    { name: 'getOpsInvoiceReminders',  fn: getOpsInvoiceReminders },
+    { name: 'getOpsCompletedBookings', fn: getOpsCompletedBookings },
+    { name: 'getOpsBlockedVehicles',   fn: getOpsBlockedVehicles },
+  ] as const
+  const settled = await Promise.allSettled(loaders.map((l) => l.fn()))
+  settled.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      console.error(`[ops-debug] FAILED: ${loaders[i].name}`, result.reason)
+    } else {
+      console.log(`[ops-debug] OK: ${loaders[i].name} (${(result.value as unknown[]).length} rows)`)
+    }
+  })
+  // Re-throw if any loader failed so the page still errors visibly
+  const firstFailure = settled.find((r) => r.status === 'rejected')
+  if (firstFailure) throw (firstFailure as PromiseRejectedResult).reason
+
   const [
     pickups,
     upcomingPickups,
     upcomingReturns,
     invoiceReminders,
     completed,
-  ] = await Promise.all([
-    getOpsPickupsToday(),
-    getOpsUpcomingPickups(),
-    getOpsUpcomingReturns(),
-    getOpsInvoiceReminders(),
-    getOpsCompletedBookings(),
-  ])
+    blockedVehicles,
+  ] = settled.map((r) => (r as PromiseFulfilledResult<unknown>).value) as [
+    Awaited<ReturnType<typeof getOpsPickupsToday>>,
+    Awaited<ReturnType<typeof getOpsUpcomingPickups>>,
+    Awaited<ReturnType<typeof getOpsUpcomingReturns>>,
+    Awaited<ReturnType<typeof getOpsInvoiceReminders>>,
+    Awaited<ReturnType<typeof getOpsCompletedBookings>>,
+    Awaited<ReturnType<typeof getOpsBlockedVehicles>>,
+  ]
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning' }
   type AttentionItem = { key: string; line1: string; subtext?: string; chips: Chip[]; severity: 'block' | 'warn' }
   const attentionItems: AttentionItem[] = []
   const seenKeys = new Set<string>()
+  // Track vehicle names already covered by a booking-based attention item so
+  // the vehicle-based source below doesn't produce duplicates.
+  const seenVehicleNames = new Set<string>()
 
   const addItem = (dedupeKey: string, item: Omit<AttentionItem, 'key'>, prefixKey: string) => {
     if (seenKeys.has(dedupeKey)) return
@@ -83,6 +109,7 @@ export default async function OperationsPage() {
     if (p.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
     if (p.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
+    seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
       subtext: ctx || undefined,
@@ -108,12 +135,27 @@ export default async function OperationsPage() {
     if (p.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
     if (p.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
+    seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
       subtext: ctx || undefined,
       chips,
       severity: (p.vehicleBlocked || p.hasUrgentIssue || p.hasBlockingIssue) ? 'block' : 'warn',
     }, `upcoming-${p.id}`)
+  }
+
+  // Vehicle-based attention items: vehicles with blocking signals but no
+  // current booking-based entry (e.g. out-of-season fleet with expired compliance).
+  for (const v of blockedVehicles) {
+    if (seenVehicleNames.has(v.name)) continue
+    const chips: Chip[] = []
+    if (v.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
+    if (v.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
+    addItem(`vehicle-${v.id}`, {
+      line1: v.name,
+      chips,
+      severity: v.hasExpiredCompliance ? 'block' : 'warn',
+    }, `vehicle-${v.id}`)
   }
 
   console.log('[attention-debug] attentionItems count', attentionItems.length)

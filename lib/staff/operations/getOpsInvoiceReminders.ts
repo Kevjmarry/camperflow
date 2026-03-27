@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
+
 export interface OpsInvoiceReminder {
   id: string
   bookingId: string
@@ -13,16 +16,15 @@ export interface OpsInvoiceReminder {
 export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.id || !isUUID(user.id)) return []
   const { data: profile } = await supabase
     .from('staff_profiles')
     .select('company_id')
-    .eq('auth_user_id', user?.id)
+    .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
 
-  if (!companyId) {
-    return []
-  }
+  if (!isUUID(companyId)) return []
 
   const { data, error } = await supabase
     .from('staff_tasks')

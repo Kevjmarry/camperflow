@@ -497,6 +497,7 @@
     "empty": "No bookings found.",
     "emptyAdminSuffix": " Create your first booking to get started.",
     "noResults": "No bookings match your filters.",
+    "yearGroupBookings": "{count, plural, one {# booking} other {# bookings}}",
     "table": {
       "bookingNumber": "Booking #",
       "customer": "Customer",

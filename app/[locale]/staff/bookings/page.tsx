@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, CSSProperties } from "react";
+import { useState, useEffect, useMemo, Fragment, CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -56,6 +56,7 @@ export default function BookingsPage() {
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(() => new Set([new Date().getFullYear()]));
 
   useEffect(() => {
     checkUserCapabilities();
@@ -238,6 +239,26 @@ export default function BookingsPage() {
 
     return result;
   }, [bookings, statusFilter, vehicleFilter, sourceTypeFilter, dateFrom, dateTo, searchQuery, sortBy, canManage]);
+
+  const groupedBookings = useMemo(() => {
+    const map = new Map<number, Booking[]>();
+    for (const b of displayedBookings) {
+      const year = new Date(b.pickup_at).getFullYear();
+      if (!map.has(year)) map.set(year, []);
+      map.get(year)!.push(b);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, items]) => ({ year, items }));
+  }, [displayedBookings]);
+
+  const toggleYear = (year: number) => {
+    setExpandedYears(prev => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year); else next.add(year);
+      return next;
+    });
+  };
 
   const hasActiveFilters =
     statusFilter !== 'all' || vehicleFilter !== 'all' || sourceTypeFilter !== 'all' ||
@@ -747,55 +768,98 @@ export default function BookingsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {displayedBookings.map((booking) => {
-                      const timeToPickup = getTimeToPickup(booking.pickup_at);
+                    {groupedBookings.map(({ year, items }) => {
+                      const isExpanded = expandedYears.has(year);
+                      const colSpan = canManage ? 9 : 7;
                       return (
-                        <tr
-                          key={booking.id}
-                          style={{ borderBottom: '1px solid rgb(var(--border))' }}
-                        >
-                          {canManage && (
-                            <td style={td}>
-                              <Link
-                                href={`/${locale}/staff/bookings/${booking.id}`}
-                                style={{ color: 'rgb(var(--brand))', textDecoration: 'none', fontWeight: 500 }}
+                        <Fragment key={`year-${year}`}>
+                          <tr>
+                            <td
+                              colSpan={colSpan}
+                              style={{
+                                padding: 'var(--space-2) var(--space-3)',
+                                background: 'rgb(var(--surface-raised, var(--surface)))',
+                                borderBottom: '1px solid rgb(var(--border))',
+                                borderTop: '1px solid rgb(var(--border))',
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => toggleYear(year)}
+                                style={{
+                                  all: 'unset',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 'var(--space-2)',
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  color: 'rgb(var(--text))',
+                                  userSelect: 'none',
+                                }}
                               >
-                                {booking.booking_number}
-                              </Link>
+                                <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                                  {isExpanded ? '▾' : '▸'}
+                                </span>
+                                {year}
+                                <span style={{ fontWeight: 400, color: 'rgb(var(--muted))' }}>
+                                  · {t("yearGroupBookings", { count: items.length })}
+                                </span>
+                              </button>
                             </td>
-                          )}
-                          {canManage && (
-                            <td style={td}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.35' }}>
-                                <div style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
-                                <div style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
-                              </div>
-                            </td>
-                          )}
-                          <td style={td}>
-                            {getVehicleName(booking)}
-                          </td>
-                          <td style={td}>
-                            {formatDate(booking.pickup_at)}
-                          </td>
-                          <td style={tdMuted}>
-                            {timeToPickup ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
-                          </td>
-                          <td style={td}>
-                            {formatDate(booking.return_at)}
-                          </td>
-                          <td style={td}>
-                            <span style={getStatusChipStyle(booking.status)}>
-                              {getStatusLabel(booking.status)}
-                            </span>
-                          </td>
-                          <td style={td}>
-                            {getTaskSummary(booking) ?? <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}><span style={{ color: 'rgb(var(--muted))' }}>—</span></div>}
-                          </td>
-                          <td style={td}>
-                            {getNextAction(booking)}
-                          </td>
-                        </tr>
+                          </tr>
+                          {isExpanded && items.map((booking) => {
+                            const timeToPickup = getTimeToPickup(booking.pickup_at);
+                            return (
+                              <tr
+                                key={booking.id}
+                                style={{ borderBottom: '1px solid rgb(var(--border))' }}
+                              >
+                                {canManage && (
+                                  <td style={td}>
+                                    <Link
+                                      href={`/${locale}/staff/bookings/${booking.id}`}
+                                      style={{ color: 'rgb(var(--brand))', textDecoration: 'none', fontWeight: 500 }}
+                                    >
+                                      {booking.booking_number}
+                                    </Link>
+                                  </td>
+                                )}
+                                {canManage && (
+                                  <td style={td}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.35' }}>
+                                      <div style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                                      <div style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                                    </div>
+                                  </td>
+                                )}
+                                <td style={td}>
+                                  {getVehicleName(booking)}
+                                </td>
+                                <td style={td}>
+                                  {formatDate(booking.pickup_at)}
+                                </td>
+                                <td style={tdMuted}>
+                                  {timeToPickup ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
+                                </td>
+                                <td style={td}>
+                                  {formatDate(booking.return_at)}
+                                </td>
+                                <td style={td}>
+                                  <span style={getStatusChipStyle(booking.status)}>
+                                    {getStatusLabel(booking.status)}
+                                  </span>
+                                </td>
+                                <td style={td}>
+                                  {getTaskSummary(booking) ?? <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}><span style={{ color: 'rgb(var(--muted))' }}>—</span></div>}
+                                </td>
+                                <td style={td}>
+                                  {getNextAction(booking)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -804,7 +868,38 @@ export default function BookingsPage() {
 
               {/* Mobile Card View */}
               <div className="mobile-cards">
-                {displayedBookings.map((booking) => {
+                {groupedBookings.map(({ year, items }) => {
+                  const isExpanded = expandedYears.has(year);
+                  return (
+                    <div key={`year-mobile-${year}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggleYear(year)}
+                        style={{
+                          all: 'unset',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--space-2)',
+                          width: '100%',
+                          padding: 'var(--space-2) 0',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: 'rgb(var(--text))',
+                          userSelect: 'none',
+                          borderBottom: '1px solid rgb(var(--border))',
+                          marginBottom: isExpanded ? 'var(--space-3)' : 0,
+                        }}
+                      >
+                        <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                        {year}
+                        <span style={{ fontWeight: 400, color: 'rgb(var(--muted))' }}>
+                          · {t("yearGroupBookings", { count: items.length })}
+                        </span>
+                      </button>
+                      {isExpanded && items.map((booking) => {
                   const timeToPickup = getTimeToPickup(booking.pickup_at);
                   return (
                     <div
@@ -929,7 +1024,11 @@ export default function BookingsPage() {
                       </div>
                     </div>
                   );
+                      })}
+                    </div>
+                  );
                 })}
+
               </div>
             </>
           )}

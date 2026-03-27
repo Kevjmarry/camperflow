@@ -902,9 +902,20 @@ export default function BookingImportPage() {
                   onClick={handleImport}
                   style={{ fontSize: "14px", minWidth: "160px" }}
                 >
-                  {isImporting
-                    ? t("import.importing")
-                    : importResult !== null
+                  {isImporting ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                      <span className="animate-spin" style={{
+                        width: "14px",
+                        height: "14px",
+                        border: "2px solid currentColor",
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        display: "inline-block",
+                        flexShrink: 0,
+                      }} />
+                      {t("import.importing")}
+                    </span>
+                  ) : importResult !== null
                     ? t("import.buttonApplied")
                     : t("import.button", { count: rowsReady })}
                 </button>

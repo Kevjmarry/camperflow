@@ -64,6 +64,7 @@ interface Booking {
   customer_email: string | null;
   notes: string | null;
   company_id: string;
+  source_type: string | null;
   source_metadata: Record<string, unknown> | null;
   staff_metadata: Record<string, unknown> | null;
   internal_notes: string | null;
@@ -260,7 +261,10 @@ export default function BookingDetailPage() {
           customer_name: data.customer_name || "",
           customer_phone: data.customer_phone || "",
           customer_email: data.customer_email || "",
-          notes: data.notes || "",
+          // Do not pre-populate with machine-imported notes (iCal DESCRIPTION,
+          // Bookingmood CSV notes, etc.). Imported bookings have a source_type;
+          // manually created bookings do not.
+          notes: data.source_type ? "" : (data.notes || ""),
         });
 
         // Load staff_metadata — only keys present in the DB object become overrides.
@@ -694,6 +698,21 @@ export default function BookingDetailPage() {
    */
   function renderMetaStatus(staffVal: unknown, sourceVal: unknown): React.ReactElement {
     if (staffVal !== null && staffVal !== undefined) {
+      // When the booking is imported, values in staff_metadata were auto-parsed
+      // from the source (e.g. iCal DESCRIPTION) — not set by staff manually.
+      // Show a neutral "Imported" label instead of "Edited by staff".
+      if (booking?.source_type) {
+        return (
+          <span style={{
+            fontSize: '11px',
+            color: 'rgb(var(--muted))',
+            marginTop: '4px',
+            display: 'block',
+          }}>
+            {t("tripDetails.usingImported")}
+          </span>
+        );
+      }
       return (
         <span style={{
           fontSize: '11px',

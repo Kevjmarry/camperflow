@@ -76,9 +76,54 @@ function localToUtcIso(datePart: string, timePart: string, tz: string): string {
  * explicit source-provided times.
  */
 function applyDefaultTime(dateStr: string, defaultTime: string | null): string {
-  if (!defaultTime || !looksDateOnly(dateStr)) return dateStr;
-  const datePart = dateStr.trim().slice(0, 10); // always "YYYY-MM-DD"
-  return localToUtcIso(datePart, defaultTime, COMPANY_TIMEZONE);
+  if (!defaultTime) return dateStr;
+  if (looksDateOnly(dateStr)) {
+    const datePart = dateStr.trim().slice(0, 10); // always "YYYY-MM-DD"
+    return localToUtcIso(datePart, defaultTime, COMPANY_TIMEZONE);
+  }
+  // iCal TZID-midnight: the value is midnight in COMPANY_TIMEZONE but not literal
+  // UTC midnight (e.g. 2026-03-30T22:00:00.000Z = midnight Europe/Bratislava on
+  // 2026-03-31). Recover the *local* calendar date before applying the default
+  // time so the result lands on the correct booking day.
+  if (isMidnightInCompanyTz(dateStr)) {
+    const datePart = localDateInCompanyTz(dateStr);
+    return localToUtcIso(datePart, defaultTime, COMPANY_TIMEZONE);
+  }
+  return dateStr;
+}
+
+/**
+ * Returns true when a stored UTC datetime is a midnight placeholder — i.e. its
+ * wall-clock time in COMPANY_TIMEZONE is exactly 00:00:00. Null / unparseable
+ * values also return true so they are treated as "no meaningful time stored".
+ *
+ * Used to decide whether an existing stored pickup/return time should be
+ * preserved or replaced with the company default when the incoming iCal event
+ * carries only a date (no real time component).
+ */
+function isMidnightInCompanyTz(value: string | null): boolean {
+  if (!value) return true;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return true;
+  const offsetMs = tzOffsetMs(COMPANY_TIMEZONE, d);
+  const localMs = d.getTime() + offsetMs;
+  return localMs % 86_400_000 === 0;
+}
+
+/**
+ * Returns the local date string (YYYY-MM-DD) in COMPANY_TIMEZONE for a UTC
+ * ISO instant. Used when a TZID-midnight iCal value (e.g. 2026-03-30T22:00:00.000Z
+ * for Europe/Bratislava UTC+2) must be mapped back to the correct local calendar
+ * date ("2026-03-31") before a company default pickup/dropoff time is applied.
+ */
+function localDateInCompanyTz(utcIso: string): string {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COMPANY_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return fmt.format(new Date(utcIso));
 }
 
 function generateBookingNumber(): string {
@@ -171,19 +216,6 @@ function isBookingmoodRicherSource(existingSourceType: string): boolean {
   return existingSourceType === 'bookingmood_csv' || existingSourceType === 'bookingmood_json';
 }
 
-/**
- * Returns true when the raw iCal DTSTART is an all-day DATE value (8-digit
- * YYYYMMDD, no time component). This is the authoritative signal — checking the
- * raw value avoids false positives from midnight UTC strings that were produced
- * by the normalizer from a timed event that happened to land at midnight.
- */
-function isIcalAllDay(rawMetadata: Record<string, unknown>): boolean {
-  const raw = rawMetadata?.raw as Record<string, unknown> | undefined;
-  if (!raw) return false;
-  const dtstart = typeof raw.DTSTART === 'string' ? raw.DTSTART.trim() : '';
-  return /^\d{8}$/.test(dtstart);
-}
-
 // ── Customer find-or-create ────────────────────────────────────────────────────
 
 /**
@@ -241,6 +273,92 @@ async function findOrCreateCustomer(
   return created.id;
 }
 
+// ── Trip-detail extraction from freetext notes ────────────────────────────────
+
+type TripDetailsMeta = {
+  pets?: boolean;
+  guest_count?: number;
+  airport_transfer?: boolean;
+  extra_driver?: boolean;
+  whatsapp_optin?: boolean;
+};
+
+/**
+ * Parses freetext notes (e.g. Bookingmood iCal DESCRIPTION, CSV notes column)
+ * looking for "Label: Value" pairs that correspond to known trip-detail fields.
+ * Only returns fields that were clearly found; ignores unrecognised lines.
+ */
+function parseNotesForTripDetails(notes: string | null): TripDetailsMeta {
+  if (!notes?.trim()) return {};
+
+  // RFC 5545 text properties encode line-breaks as \n (backslash + n literal).
+  // Normalise both \n and \N to actual newlines before splitting so key-value
+  // pairs embedded in iCal DESCRIPTION values are correctly separated.
+  const normalised = notes.replace(/\\[nN]/g, '\n');
+  const result: TripDetailsMeta = {};
+  // Split on newlines or semicolons (some OTAs use semicolons as separators)
+  const lines = normalised.split(/[\n\r;]+/);
+
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+
+    const label = line.slice(0, colonIdx).trim();
+    const rawValue = line.slice(colonIdx + 1).trim();
+    if (!label || !rawValue) continue;
+
+    const l = label.toLowerCase();
+    const v = rawValue.toLowerCase();
+
+    const asBool =
+      v === 'yes' || v === 'true' || v === '1' ? true
+      : v === 'no' || v === 'false' || v === '0' ? false
+      : null;
+
+    if (/\bpets?\b/.test(l) || l.includes('travelling with pet') || l.includes('with pet')) {
+      if (asBool !== null && !('pets' in result)) result.pets = asBool;
+    } else if (l.includes('airport')) {
+      if (asBool !== null && !('airport_transfer' in result)) result.airport_transfer = asBool;
+    } else if (l.includes('extra driver') || l.includes('additional driver') || l.includes('second driver')) {
+      if (asBool !== null && !('extra_driver' in result)) result.extra_driver = asBool;
+    } else if (l.includes('whatsapp')) {
+      if (asBool !== null && !('whatsapp_optin' in result)) result.whatsapp_optin = asBool;
+    } else if (
+      l.includes('guest') || l.includes('adults') || l.includes('pax') ||
+      l.includes('persons') || l.includes('people') || l.includes('passenger')
+    ) {
+      const num = Number(rawValue);
+      if (!isNaN(num) && num > 0 && !('guest_count' in result)) result.guest_count = num;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Merges parsed trip-detail values into an existing staff_metadata object.
+ * Only fills keys that are absent from `existing` — never overwrites.
+ * Returns the merged object when at least one key was added, null otherwise.
+ */
+function mergeStaffMeta(
+  existing: Record<string, unknown> | null,
+  parsed: TripDetailsMeta,
+): Record<string, unknown> | null {
+  if (Object.keys(parsed).length === 0) return null;
+  const base = existing ?? {};
+  const merged: Record<string, unknown> = { ...base };
+  let changed = false;
+
+  for (const [k, v] of Object.entries(parsed)) {
+    if (!(k in merged)) {
+      merged[k] = v;
+      changed = true;
+    }
+  }
+
+  return changed ? merged : null;
+}
+
 // Shape of the existing row fields we need for merge decisions.
 interface ExistingBookingData {
   id: string;
@@ -252,6 +370,7 @@ interface ExistingBookingData {
   source_reference: string | null;
   pickup_at: string | null;
   return_at: string | null;
+  staff_metadata: Record<string, unknown> | null;
 }
 
 // ── route handler ─────────────────────────────────────────────────────────────
@@ -365,7 +484,7 @@ export async function POST(request: NextRequest) {
       const { data: existing } = await supabase
         .from('bookings')
         .select(
-          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at',
+          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at, staff_metadata',
         )
         .eq('company_id', companyId)
         .in('source_type', [...querySourceTypes])
@@ -389,6 +508,7 @@ export async function POST(request: NextRequest) {
             source_reference: e.source_reference ?? null,
             pickup_at: e.pickup_at ?? null,
             return_at: e.return_at ?? null,
+            staff_metadata: (e.staff_metadata as Record<string, unknown> | null) ?? null,
           };
         }
       }
@@ -443,18 +563,25 @@ export async function POST(request: NextRequest) {
           const mergedSourceRef = existing!.source_reference?.trim() || n.sourceReference || null;
 
           // ── Time precedence ───────────────────────────────────────────────
-          // If the iCal event is all-day (raw DTSTART is 8-digit DATE, no time),
-          // the normalizer emits midnight UTC — a weaker signal than the
-          // specific pickup/return times stored from the CSV/JSON import.
-          // In that case, keep the existing timestamps unchanged.
-          // Only overwrite if the iCal event carries an actual time component.
-          const icalIsAllDay = isIcalAllDay(n.rawMetadata);
+          // Treat the iCal value as date-only when it is either:
+          //   • a bare DATE (YYYYMMDD → T00:00:00.000Z after parseDtToIso), or
+          //   • a DATE-TIME with TZID whose wall-clock time is midnight in
+          //     COMPANY_TIMEZONE (e.g. 2026-03-30T22:00:00.000Z for
+          //     DTSTART;TZID=Europe/Bratislava:20260331T000000).
+          //
+          // When the iCal carries no real time:
+          //   • keep the existing stored time only if it is meaningful (non-midnight)
+          //   • if the existing stored time is midnight or null (a placeholder),
+          //     replace it with the company default so it is corrected on update
+          // Only explicit real iCal times may override unconditionally.
+          const pickupIsDateOnly = looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt);
+          const returnIsDateOnly = looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt);
           const mergedPickupAt =
-            icalIsAllDay && existing!.pickup_at
+            pickupIsDateOnly && existing!.pickup_at && !isMidnightInCompanyTz(existing!.pickup_at)
               ? existing!.pickup_at
               : applyDefaultTime(n.pickupAt, defaultPickupTime);
           const mergedReturnAt =
-            icalIsAllDay && existing!.return_at
+            returnIsDateOnly && existing!.return_at && !isMidnightInCompanyTz(existing!.return_at)
               ? existing!.return_at
               : applyDefaultTime(n.returnAt, defaultDropoffTime);
 
@@ -465,6 +592,11 @@ export async function POST(request: NextRequest) {
             mergedPhone,
             mergedEmail,
           );
+
+          // Fill any missing trip-detail keys in staff_metadata from notes text.
+          // Uses the merged notes (existing takes priority over incoming iCal notes).
+          const parsedMetaBmIcal = parseNotesForTripDetails(mergedNotes);
+          const updatedStaffMetaBmIcal = mergeStaffMeta(existing!.staff_metadata, parsedMetaBmIcal);
 
           // ── Allowed iCal updates ──────────────────────────────────────────
           // Only status, times (when richer), vehicle, and sync fields are
@@ -485,6 +617,7 @@ export async function POST(request: NextRequest) {
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
               ...(customerId ? { customer_id: customerId } : {}),
+              ...(updatedStaffMetaBmIcal ? { staff_metadata: updatedStaffMetaBmIcal } : {}),
             })
             .eq('id', existingId);
 
@@ -495,6 +628,25 @@ export async function POST(request: NextRequest) {
           }
         } else {
           // Standard update: full overwrite with incoming values.
+          // Exception for iCal: if the normalized time looks date-only or
+          // midnight (no real time component), keep the existing stored time
+          // only when it is meaningful (non-midnight). If the existing stored
+          // time is also midnight or null, replace it with the company default.
+          // Uses looksDateOnly — not isIcalAllDay — to catch both pure DATE
+          // (YYYYMMDD) and midnight DATE-TIME (YYYYMMDDTHHMMSSZ where
+          // HH:MM:SS = 00:00:00), which many platforms emit for all-day events
+          // even though the raw value is not 8 digits.
+          const pickupIsDateOnly = n.sourceType === 'ical' && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt));
+          const returnIsDateOnly = n.sourceType === 'ical' && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt));
+          const resolvedPickupAt =
+            pickupIsDateOnly && existing?.pickup_at && !isMidnightInCompanyTz(existing.pickup_at)
+              ? existing.pickup_at
+              : applyDefaultTime(n.pickupAt, defaultPickupTime);
+          const resolvedReturnAt =
+            returnIsDateOnly && existing?.return_at && !isMidnightInCompanyTz(existing.return_at)
+              ? existing.return_at
+              : applyDefaultTime(n.returnAt, defaultDropoffTime);
+
           const customerId = await findOrCreateCustomer(
             supabase,
             companyId,
@@ -503,13 +655,16 @@ export async function POST(request: NextRequest) {
             n.customerEmail ?? null,
           );
 
+          const parsedMetaUpdate = parseNotesForTripDetails(n.notes ?? null);
+          const updatedStaffMetaUpdate = mergeStaffMeta(existing?.staff_metadata ?? null, parsedMetaUpdate);
+
           const { error } = await supabase
             .from('bookings')
             .update({
               company_id: companyId,
               status: mapExternalStatus(n.externalStatus),
-              pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
-              return_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
+              pickup_at: resolvedPickupAt,
+              return_at: resolvedReturnAt,
               vehicle_id: row.matchedVehicleId,
               customer_name: n.customerName!,
               customer_phone: n.customerPhone ?? '',
@@ -521,6 +676,7 @@ export async function POST(request: NextRequest) {
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
               ...(customerId ? { customer_id: customerId } : {}),
+              ...(updatedStaffMetaUpdate ? { staff_metadata: updatedStaffMetaUpdate } : {}),
             })
             .eq('id', existingId);
 
@@ -532,6 +688,9 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Insert new booking.
+        // applyDefaultTime handles date-only/midnight values: if defaultPickupTime
+        // is configured it replaces midnight with the company's pickup/dropoff
+        // time; if not configured the date-only value is written as-is.
         const customerId = await findOrCreateCustomer(
           supabase,
           companyId,
@@ -539,6 +698,9 @@ export async function POST(request: NextRequest) {
           n.customerPhone ?? null,
           n.customerEmail ?? null,
         );
+
+        const parsedMetaInsert = parseNotesForTripDetails(n.notes ?? null);
+        const initialStaffMeta = mergeStaffMeta(null, parsedMetaInsert);
 
         const { error } = await supabase
           .from('bookings')
@@ -561,6 +723,7 @@ export async function POST(request: NextRequest) {
             booking_code: generateBookingCode(),
             imported_at: now,
             ...(customerId ? { customer_id: customerId } : {}),
+            ...(initialStaffMeta ? { staff_metadata: initialStaffMeta } : {}),
           });
 
         if (error) {

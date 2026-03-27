@@ -13,6 +13,64 @@ interface Customer {
   created_at: string | null;
 }
 
+const hasPhone = (c: Customer) => Boolean(c.phone && c.phone.trim().length > 0);
+
+function CustomerRow({
+  customer,
+  locale,
+}: {
+  customer: Customer;
+  locale: string;
+}) {
+  return (
+    <tr style={{ borderBottom: "1px solid rgb(var(--border))" }}>
+      <td style={{ padding: "var(--space-3) var(--space-4)" }}>
+        <Link
+          href={`/${locale}/staff/customers/${customer.id}`}
+          style={{
+            color: "rgb(var(--accent))",
+            textDecoration: "none",
+            fontWeight: 500,
+          }}
+        >
+          {customer.full_name ?? "—"}
+        </Link>
+      </td>
+      <td
+        style={{
+          padding: "var(--space-3) var(--space-4)",
+          color: "rgb(var(--text))",
+        }}
+      >
+        {customer.email ?? "—"}
+      </td>
+      <td
+        style={{
+          padding: "var(--space-3) var(--space-4)",
+          color: "rgb(var(--text))",
+        }}
+      >
+        {customer.phone ?? "—"}
+      </td>
+      <td
+        style={{
+          padding: "var(--space-3) var(--space-4)",
+          color: "rgb(var(--muted))",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {customer.created_at
+          ? new Date(customer.created_at).toLocaleDateString(locale, {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : "—"}
+      </td>
+    </tr>
+  );
+}
+
 export default async function CustomersPage({
   params,
 }: {
@@ -47,6 +105,20 @@ export default async function CustomersPage({
       .order("created_at", { ascending: false });
     customers = data ?? [];
   }
+
+  const withPhone = customers.filter(hasPhone);
+  const withoutPhone = customers.filter((c) => !hasPhone(c));
+
+  const tableStyle: React.CSSProperties = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "14px",
+  };
+
+  const thStyle: React.CSSProperties = {
+    padding: "var(--space-3) var(--space-4)",
+    fontWeight: 500,
+  };
 
   return (
     <PageContainer maxWidth="1400px" showSignOut={false}>
@@ -90,113 +162,108 @@ export default async function CustomersPage({
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "14px",
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      borderBottom: "1px solid rgb(var(--border))",
-                      color: "rgb(var(--muted))",
-                      textAlign: "left",
-                    }}
-                  >
-                    <th
-                      style={{
-                        padding: "var(--space-3) var(--space-4)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Name
-                    </th>
-                    <th
-                      style={{
-                        padding: "var(--space-3) var(--space-4)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Email
-                    </th>
-                    <th
-                      style={{
-                        padding: "var(--space-3) var(--space-4)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Phone
-                    </th>
-                    <th
-                      style={{
-                        padding: "var(--space-3) var(--space-4)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((customer) => (
+              {/* Customers with a phone number — always visible */}
+              {withPhone.length > 0 && (
+                <table style={tableStyle}>
+                  <thead>
                     <tr
-                      key={customer.id}
                       style={{
                         borderBottom: "1px solid rgb(var(--border))",
+                        color: "rgb(var(--muted))",
+                        textAlign: "left",
                       }}
                     >
-                      <td style={{ padding: "var(--space-3) var(--space-4)" }}>
-                        <Link
-                          href={`/${locale}/staff/customers/${customer.id}`}
+                      <th style={thStyle}>Name</th>
+                      <th style={thStyle}>Email</th>
+                      <th style={thStyle}>Phone</th>
+                      <th style={thStyle}>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {withPhone.map((customer) => (
+                      <CustomerRow
+                        key={customer.id}
+                        customer={customer}
+                        locale={locale}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Customers without a phone number — collapsed by default */}
+              {withoutPhone.length > 0 && (
+                <details
+                  style={{
+                    marginTop: withPhone.length > 0 ? "var(--space-4)" : 0,
+                  }}
+                >
+                  <summary
+                    style={{
+                      listStyle: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-2)",
+                      padding: "var(--space-2) var(--space-1)",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "rgb(var(--text))",
+                      userSelect: "none",
+                      borderTop: withPhone.length === 0
+                        ? "1px solid rgb(var(--border))"
+                        : "none",
+                    }}
+                  >
+                    <span style={{ fontSize: "11px", color: "rgb(var(--muted))" }}>▸</span>
+                    Missing phone number ({withoutPhone.length}) *
+                  </summary>
+
+                  {/* Asterisk note */}
+                  <p
+                    style={{
+                      margin: "var(--space-2) 0 var(--space-3)",
+                      fontSize: "13px",
+                      color: "rgb(var(--muted))",
+                      paddingLeft: "var(--space-1)",
+                    }}
+                  >
+                    * Customers imported from your booking system may be missing
+                    contact details. Open each record to add or update them so
+                    they display and work correctly in CamperFlow.
+                  </p>
+
+                  {/* Show header if the main table above is empty */}
+                  <table style={tableStyle}>
+                    {withPhone.length === 0 && (
+                      <thead>
+                        <tr
                           style={{
-                            color: "rgb(var(--accent))",
-                            textDecoration: "none",
-                            fontWeight: 500,
+                            borderBottom: "1px solid rgb(var(--border))",
+                            color: "rgb(var(--muted))",
+                            textAlign: "left",
                           }}
                         >
-                          {customer.full_name ?? "—"}
-                        </Link>
-                      </td>
-                      <td
-                        style={{
-                          padding: "var(--space-3) var(--space-4)",
-                          color: "rgb(var(--text))",
-                        }}
-                      >
-                        {customer.email ?? "—"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "var(--space-3) var(--space-4)",
-                          color: "rgb(var(--text))",
-                        }}
-                      >
-                        {customer.phone ?? "—"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "var(--space-3) var(--space-4)",
-                          color: "rgb(var(--muted))",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {customer.created_at
-                          ? new Date(customer.created_at).toLocaleDateString(
-                              locale,
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <th style={thStyle}>Name</th>
+                          <th style={thStyle}>Email</th>
+                          <th style={thStyle}>Phone</th>
+                          <th style={thStyle}>Created</th>
+                        </tr>
+                      </thead>
+                    )}
+                    <tbody>
+                      {withoutPhone.map((customer) => (
+                        <CustomerRow
+                          key={customer.id}
+                          customer={customer}
+                          locale={locale}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
+
             </div>
           )}
         </div>

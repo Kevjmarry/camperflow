@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
+
 export interface OpsPickup {
   id: string
   bookingNumber: string
@@ -24,16 +27,15 @@ export interface OpsPickup {
 export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.id || !isUUID(user.id)) return []
   const { data: profile } = await supabase
     .from('staff_profiles')
     .select('company_id')
-    .eq('auth_user_id', user?.id)
+    .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
 
-  if (!companyId) {
-    return []
-  }
+  if (!isUUID(companyId)) return []
 
   const { data, error } = await supabase
     .from('ops_bookings')
@@ -46,6 +48,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   if (error) throw error
 
   const bookingIds = (data ?? []).map((b) => b.id)
+  console.log('[uuid-debug] bookingIds invalid:', bookingIds.filter(id => !id || typeof id !== 'string' || !UUID_RE.test(id)))
 
   const { data: instances, error: ciError } = bookingIds.length
     ? await supabase
@@ -75,7 +78,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const blockingInstanceIds = new Set((blockingItems ?? []).map((i) => i.instance_id))
 
-  const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
+  const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length

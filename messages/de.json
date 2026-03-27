@@ -497,6 +497,7 @@
     "empty": "Keine Buchungen gefunden.",
     "emptyAdminSuffix": " Erstellen Sie Ihre erste Buchung, um zu starten.",
     "noResults": "Keine Buchungen entsprechen Ihren Filtern.",
+    "yearGroupBookings": "{count, plural, one {# Buchung} other {# Buchungen}}",
     "table": {
       "bookingNumber": "Buchungsnr.",
       "customer": "Kunde",
