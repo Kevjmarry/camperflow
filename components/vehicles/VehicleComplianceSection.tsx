@@ -189,6 +189,7 @@ export default function VehicleComplianceSection({
       {editingRow && (
         <EditComplianceModal
           row={editingRow}
+          locale={locale}
           onClose={() => onEditRow(null)}
           onSave={onEditSave}
         />
