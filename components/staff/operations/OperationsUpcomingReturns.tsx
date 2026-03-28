@@ -119,7 +119,7 @@ function MetaBadges({
   t,
 }: {
   r: OpsUpcomingReturn
-  t: (k: string, v?: Record<string, unknown>) => string
+  t: ReturnType<typeof useTranslations>
 }) {
   const badges: React.ReactNode[] = []
 
