@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import React, { useState, useEffect, useRef, FormEvent, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -31,6 +31,12 @@ interface StaffMeta {
   extra_driver: boolean | null;
   whatsapp_optin: boolean | null;
   marketing_optin: boolean | null;
+  // ops fields
+  payment_plan: 'split' | 'full' | null;
+  balance_invoice_sent_at: string | null;
+  pre_arrival_message_sent_at: string | null;
+  return_prep_message_sent_at: string | null;
+  invoice_reminder_dismissed_at: string | null;
 }
 
 const EMPTY_STAFF_META: StaffMeta = {
@@ -40,6 +46,11 @@ const EMPTY_STAFF_META: StaffMeta = {
   extra_driver: null,
   whatsapp_optin: null,
   marketing_optin: null,
+  payment_plan: null,
+  balance_invoice_sent_at: null,
+  pre_arrival_message_sent_at: null,
+  return_prep_message_sent_at: null,
+  invoice_reminder_dismissed_at: null,
 };
 
 // Config for the visible boolean trip-detail fields (marketing_optin kept in StaffMeta
@@ -122,6 +133,10 @@ export default function BookingDetailPage() {
     notes: "",
   });
   const [staffMeta, setStaffMeta] = useState<StaffMeta>(EMPTY_STAFF_META);
+  // Keys in staff_metadata that this form doesn't own (e.g. handover_vehicle_data,
+  // handover_evidence_photos, return_vehicle_data, return_evidence_photos).
+  // Preserved verbatim on every save to prevent overwrite data loss.
+  const staffMetaPassthroughRef = useRef<Record<string, unknown>>({});
   const [catalogExtras, setCatalogExtras] = useState<ExtraCatalogItem[]>([]);
   const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
   const [internalNotes, setInternalNotes] = useState("");
@@ -277,11 +292,31 @@ export default function BookingDetailPage() {
           extra_driver:     'extra_driver'     in sm ? Boolean(sm.extra_driver)    : null,
           whatsapp_optin:   'whatsapp_optin'   in sm ? Boolean(sm.whatsapp_optin)  : null,
           marketing_optin:  'marketing_optin'  in sm ? Boolean(sm.marketing_optin) : null,
+          payment_plan:     sm.payment_plan === 'split' || sm.payment_plan === 'full' ? sm.payment_plan : null,
+          balance_invoice_sent_at:      typeof sm.balance_invoice_sent_at === 'string' ? sm.balance_invoice_sent_at : null,
+          pre_arrival_message_sent_at:  typeof sm.pre_arrival_message_sent_at === 'string' ? sm.pre_arrival_message_sent_at : null,
+          return_prep_message_sent_at:  typeof sm.return_prep_message_sent_at === 'string' ? sm.return_prep_message_sent_at : null,
+          invoice_reminder_dismissed_at: typeof sm.invoice_reminder_dismissed_at === 'string' ? sm.invoice_reminder_dismissed_at : null,
         });
 
         // extras stored as array of catalog IDs; ignore old boolean-object format
         const rawExtras = sm.extras;
         setSelectedExtraIds(Array.isArray(rawExtras) ? (rawExtras as string[]) : []);
+
+        // Capture every key the booking form doesn't manage so we can round-trip
+        // them unchanged on save (prevents overwriting checklist-saved data).
+        const FORM_OWNED_KEYS = new Set([
+          'pets', 'guest_count', 'airport_transfer', 'extra_driver',
+          'whatsapp_optin', 'marketing_optin', 'payment_plan',
+          'balance_invoice_sent_at', 'pre_arrival_message_sent_at',
+          'return_prep_message_sent_at', 'invoice_reminder_dismissed_at',
+          'extras',
+        ]);
+        const passthrough: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(sm)) {
+          if (!FORM_OWNED_KEYS.has(k)) passthrough[k] = v;
+        }
+        staffMetaPassthroughRef.current = passthrough;
 
         setInternalNotes(data.internal_notes || "");
 
@@ -550,9 +585,10 @@ export default function BookingDetailPage() {
       }
     }
 
-    // Build staff_metadata: only persist keys that have an explicit override (non-null).
+    // Build staff_metadata: start with passthrough keys (checklist data etc.),
+    // then overlay form-owned keys that have an explicit override (non-null).
     // extras stored as array of selected catalog IDs.
-    const staffMetaObj: Record<string, unknown> = {};
+    const staffMetaObj: Record<string, unknown> = { ...staffMetaPassthroughRef.current };
     for (const [k, v] of Object.entries(staffMeta)) {
       if (v !== null) staffMetaObj[k] = v;
     }
@@ -1349,6 +1385,123 @@ export default function BookingDetailPage() {
                   No extras configured. Add extras in company settings.
                 </p>
               )}
+            </div>
+
+            {/* ── Operations ───────────────────────────────────────────────── */}
+            <div style={{
+              paddingTop: 'var(--space-2)',
+              borderTop: '1px solid rgb(var(--border) / 0.4)',
+            }}>
+              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
+                Operations
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <div>
+                  <label className="label">Invoice setup</label>
+                  <select
+                    className="input"
+                    style={{ width: '100%', maxWidth: '260px' }}
+                    value={staffMeta.payment_plan ?? ''}
+                    onChange={(e) => setStaffMeta(prev => ({
+                      ...prev,
+                      payment_plan: e.target.value === 'split' || e.target.value === 'full' ? e.target.value : null,
+                    }))}
+                  >
+                    <option value="">Not set</option>
+                    <option value="split">50% now + 50% later</option>
+                    <option value="full">100% upfront</option>
+                  </select>
+                  <p style={{ margin: 'var(--space-2) 0 0', fontSize: '13px', color: 'rgb(var(--muted))' }}>
+                    Determines whether CamperFlow should remind staff to send the remaining balance invoice before pickup.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                  <p style={{ margin: '0 0 var(--space-2)', fontSize: '13px', color: 'rgb(var(--muted))' }}>
+                    Operational tasks:{' '}
+                    <strong style={{ color: 'rgb(var(--text))' }}>
+                      {[staffMeta.balance_invoice_sent_at, staffMeta.pre_arrival_message_sent_at, staffMeta.return_prep_message_sent_at].filter(Boolean).length} / 3 completed
+                    </strong>
+                  </p>
+                  {/* Task: Remaining 50% invoice */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <span style={{ fontSize: '16px' }}>{staffMeta.balance_invoice_sent_at ? '✅' : '⬜'}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Remaining 50% invoice</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
+                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      {staffMeta.balance_invoice_sent_at ? (
+                        <>
+                          <span style={{ color: 'rgb(var(--text))' }}>
+                            Sent · {new Date(staffMeta.balance_invoice_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                          <button
+                            type="button"
+                            style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                            onClick={() => setStaffMeta(prev => ({ ...prev, balance_invoice_sent_at: null }))}
+                          >
+                            Clear
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Task: Pre-arrival WhatsApp message */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <span style={{ fontSize: '16px' }}>{staffMeta.pre_arrival_message_sent_at ? '✅' : '⬜'}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Pre-arrival WhatsApp message</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
+                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      {staffMeta.pre_arrival_message_sent_at ? (
+                        <>
+                          <span style={{ color: 'rgb(var(--text))' }}>
+                            Sent · {new Date(staffMeta.pre_arrival_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                          <button
+                            type="button"
+                            style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                            onClick={() => setStaffMeta(prev => ({ ...prev, pre_arrival_message_sent_at: null }))}
+                          >
+                            Clear
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Task: Return-prep WhatsApp message */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <span style={{ fontSize: '16px' }}>{staffMeta.return_prep_message_sent_at ? '✅' : '⬜'}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Return-prep WhatsApp message</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
+                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      {staffMeta.return_prep_message_sent_at ? (
+                        <>
+                          <span style={{ color: 'rgb(var(--text))' }}>
+                            Sent · {new Date(staffMeta.return_prep_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                          <button
+                            type="button"
+                            style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                            onClick={() => setStaffMeta(prev => ({ ...prev, return_prep_message_sent_at: null }))}
+                          >
+                            Clear
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* ── Internal Notes ───────────────────────────────────────────── */}

@@ -1,21 +1,24 @@
+import Link from 'next/link'
 import PageContainer from '@/components/PageContainer'
 import OperationsInvoiceReminders from '@/components/staff/operations/OperationsInvoiceReminders'
 import OperationsUpcomingPickups from '@/components/staff/operations/OperationsUpcomingPickups'
 import OperationsUpcomingReturns from '@/components/staff/operations/OperationsUpcomingReturns'
 import OperationsNextUp from '@/components/staff/operations/OperationsNextUp'
 import OperationsCompletedBookings from '@/components/staff/operations/OperationsCompletedBookings'
+import OperationsOnRentNow from '@/components/staff/operations/OperationsOnRentNow'
 import { getOpsPickupsToday } from '@/lib/staff/operations/getOpsPickupsToday'
 import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPickups'
 import { getOpsUpcomingReturns } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
+import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
 
 export const dynamic = 'force-dynamic'
 
 // ── StatusChip ────────────────────────────────────────────────────────────────
 
-function StatusChip({ label, severity }: { label: string; severity: 'critical' | 'warning' }) {
+function StatusChip({ label, severity, href }: { label: string; severity: 'critical' | 'warning'; href?: string }) {
   const style: React.CSSProperties =
     severity === 'critical'
       ? {
@@ -28,7 +31,7 @@ function StatusChip({ label, severity }: { label: string; severity: 'critical' |
           background: 'rgb(var(--warning) / 0.14)',
           border: '1px solid rgb(var(--warning) / 0.28)',
         }
-  return (
+  const inner = (
     <span
       style={{
         display: 'inline-flex',
@@ -44,11 +47,24 @@ function StatusChip({ label, severity }: { label: string; severity: 'critical' |
       {label}
     </span>
   )
+  if (href) {
+    return (
+      <Link href={href} style={{ textDecoration: 'none' }}>
+        {inner}
+      </Link>
+    )
+  }
+  return inner
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default async function OperationsPage() {
+export default async function OperationsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
   const loaders = [
     { name: 'getOpsPickupsToday',      fn: getOpsPickupsToday },
     { name: 'getOpsUpcomingPickups',   fn: getOpsUpcomingPickups },
@@ -56,6 +72,7 @@ export default async function OperationsPage() {
     { name: 'getOpsInvoiceReminders',  fn: getOpsInvoiceReminders },
     { name: 'getOpsCompletedBookings', fn: getOpsCompletedBookings },
     { name: 'getOpsBlockedVehicles',   fn: getOpsBlockedVehicles },
+    { name: 'getOpsOnRentNow',         fn: getOpsOnRentNow },
   ] as const
   const settled = await Promise.allSettled(loaders.map((l) => l.fn()))
   settled.forEach((result, i) => {
@@ -76,6 +93,7 @@ export default async function OperationsPage() {
     invoiceReminders,
     completed,
     blockedVehicles,
+    onRentNow,
   ] = settled.map((r) => (r as PromiseFulfilledResult<unknown>).value) as [
     Awaited<ReturnType<typeof getOpsPickupsToday>>,
     Awaited<ReturnType<typeof getOpsUpcomingPickups>>,
@@ -83,10 +101,11 @@ export default async function OperationsPage() {
     Awaited<ReturnType<typeof getOpsInvoiceReminders>>,
     Awaited<ReturnType<typeof getOpsCompletedBookings>>,
     Awaited<ReturnType<typeof getOpsBlockedVehicles>>,
+    Awaited<ReturnType<typeof getOpsOnRentNow>>,
   ]
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
-  type Chip = { label: string; severity: 'critical' | 'warning' }
+  type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
   type AttentionItem = { key: string; line1: string; subtext?: string; chips: Chip[]; severity: 'block' | 'warn' }
   const attentionItems: AttentionItem[] = []
   const seenKeys = new Set<string>()
@@ -106,8 +125,18 @@ export default async function OperationsPage() {
     const chips: Chip[] = []
     if (p.vehicleBlocked) chips.push({ label: 'Blocked', severity: 'warning' })
     if (p.hasBlockingIssue) chips.push({ label: 'Checklist issue', severity: 'critical' })
-    if (p.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
-    if (p.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
+    if (p.hasExpiredCompliance) chips.push({
+      label: 'Expired compliance',
+      severity: 'critical',
+      href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
+    })
+    if (p.hasOpenVehicleIssue) chips.push({
+      label: 'Vehicle issue',
+      severity: 'warning',
+      href: p.openVehicleIssueChecklistInstanceId
+        ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
+        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : undefined,
+    })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
@@ -132,8 +161,18 @@ export default async function OperationsPage() {
     if (p.hasUrgentIssue) chips.push({ label: 'Urgent issue', severity: 'critical' })
     if (p.hasAttentionIssue) chips.push({ label: 'Attention issue', severity: 'warning' })
     if (!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue) chips.push({ label: 'Checklist issue', severity: 'critical' })
-    if (p.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
-    if (p.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
+    if (p.hasExpiredCompliance) chips.push({
+      label: 'Expired compliance',
+      severity: 'critical',
+      href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
+    })
+    if (p.hasOpenVehicleIssue) chips.push({
+      label: 'Vehicle issue',
+      severity: 'warning',
+      href: p.openVehicleIssueChecklistInstanceId
+        ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
+        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : undefined,
+    })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
@@ -149,8 +188,18 @@ export default async function OperationsPage() {
   for (const v of blockedVehicles) {
     if (seenVehicleNames.has(v.name)) continue
     const chips: Chip[] = []
-    if (v.hasExpiredCompliance) chips.push({ label: 'Expired compliance', severity: 'critical' })
-    if (v.hasOpenVehicleIssue) chips.push({ label: 'Vehicle issue', severity: 'warning' })
+    if (v.hasExpiredCompliance) chips.push({
+      label: 'Expired compliance',
+      severity: 'critical',
+      href: `/${locale}/staff/vehicles/${v.id}#compliance`,
+    })
+    if (v.hasOpenVehicleIssue) chips.push({
+      label: 'Vehicle issue',
+      severity: 'warning',
+      href: v.openVehicleIssueChecklistInstanceId
+        ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
+        : `/${locale}/staff/vehicles/${v.id}`,
+    })
     addItem(`vehicle-${v.id}`, {
       line1: v.name,
       chips,
@@ -176,6 +225,7 @@ export default async function OperationsPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+            <OperationsOnRentNow rows={onRentNow} />
             <OperationsNextUp
               nextPickup={upcomingPickups[0] ?? null}
               nextReturn={upcomingReturns[0] ?? null}
@@ -226,7 +276,7 @@ export default async function OperationsPage() {
                       </div>
                       <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         {item.chips.map((chip) => (
-                          <StatusChip key={chip.label} label={chip.label} severity={chip.severity} />
+                          <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
                         ))}
                       </div>
                     </div>

@@ -105,7 +105,10 @@ export function useHandoverCompletion({
 
     // 1. All visible audit items must be checked (blocking)
     const hasUncheckedAudit = localItems.some(
-      (it) => !it.checked && getPickupAuditDisplayLabel(it.template.label) !== null
+      (it) =>
+        it.template.ui_section === 'checklist_actions' &&
+        !it.checked &&
+        getPickupAuditDisplayLabel(it.template.label) !== null
     );
     if (hasUncheckedAudit) {
       setHandoverBlockedError(t('handoverErrorAuditIncomplete'));
@@ -129,8 +132,11 @@ export function useHandoverCompletion({
     }
 
     // 4. Blocking flagged items prevent completion (urgent modal — dismiss only)
+    // Requires issue_flag=true so stale issue_blocking rows with no real issue data are ignored.
 
-    const blockingFlagged = localItems.filter((it) => it.issue_blocking === true);
+    const blockingFlagged = localItems.filter(
+      (it) => it.issue_flag === true && it.issue_blocking === true
+    );
     if (blockingFlagged.length > 0) {
       setHandoverBlockedError(t('handoverErrorBlockingFlags'));
       setHandoverSafetyModal({

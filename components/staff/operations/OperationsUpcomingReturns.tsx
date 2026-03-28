@@ -66,6 +66,38 @@ function IconPlane() {
   )
 }
 
+// ── StatusChip ────────────────────────────────────────────────────────────────
+
+function StatusChip({ label, severity }: { label: string; severity: 'critical' | 'warning' }) {
+  const style: React.CSSProperties =
+    severity === 'critical'
+      ? {
+          color: 'rgb(var(--danger))',
+          background: 'rgb(var(--danger) / 0.14)',
+          border: '1px solid rgb(var(--danger) / 0.28)',
+        }
+      : {
+          color: 'rgb(var(--warning))',
+          background: 'rgb(var(--warning) / 0.14)',
+          border: '1px solid rgb(var(--warning) / 0.28)',
+        }
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        fontSize: '11px',
+        fontWeight: 500,
+        borderRadius: '4px',
+        padding: '3px 8px',
+        whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
 // ── Operational metadata badges ───────────────────────────────────────────────
 
 const badgeStyle: React.CSSProperties = {
@@ -189,14 +221,22 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {r.customerName} · {r.bookingNumber}
                   </span>
-                  {r.vehicleBlocked && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
-                  )}
-                  {r.hasExpiredCompliance && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
-                  )}
-                  {r.hasOpenVehicleIssue && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                  {(r.vehicleBlocked || r.hasExpiredCompliance || r.hasOpenVehicleIssue) && (
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                      {r.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
+                      {r.hasExpiredCompliance && (r.vehicleId
+                        ? <Link href={`/${locale}/staff/vehicles/${r.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label="Expired compliance" severity="critical" /></Link>
+                        : <StatusChip label="Expired compliance" severity="critical" />
+                      )}
+                      {r.hasOpenVehicleIssue && (() => {
+                        const href = r.openVehicleIssueChecklistInstanceId
+                          ? `/${locale}/staff/checklists/${r.openVehicleIssueChecklistInstanceId}`
+                          : r.vehicleId ? `/${locale}/staff/vehicles/${r.vehicleId}` : null
+                        return href
+                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label="Open vehicle issue" severity="warning" /></Link>
+                          : <StatusChip label="Open vehicle issue" severity="warning" />
+                      })()}
+                    </div>
                   )}
                   <MetaBadges r={r} t={t} />
                 </div>

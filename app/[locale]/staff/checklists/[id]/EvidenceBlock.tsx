@@ -1,13 +1,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { EvidencePhoto } from './types';
 
-type EvidencePhotos = { general: File[]; damage: File[] };
+type EvidencePhotos = { general: EvidencePhoto[]; damage: EvidencePhoto[]; id: EvidencePhoto[] };
 
 type EvidenceBlockProps = {
   evidencePhotos: EvidencePhotos;
-  onAdd: (group: 'general' | 'damage', files: File[]) => void;
-  onRemove: (group: 'general' | 'damage', index: number) => void;
+  onAdd: (group: 'general' | 'damage' | 'id', files: File[]) => void;
+  onRemove: (group: 'general' | 'damage' | 'id', index: number) => void;
   isLocked: boolean;
   highlight?: boolean;
   title?: string;
@@ -16,7 +17,7 @@ type EvidenceBlockProps = {
 
 export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight, title, variant }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
-  const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
+  const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length + evidencePhotos.id.length;
 
   return (
     <div style={{
@@ -60,64 +61,86 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
       </div>
 
       <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '0' }}>
-        {(['general', 'damage'] as const).map((group) => (
+        {(['general', 'damage', 'id'] as const).filter((g) => g !== 'id' || variant !== 'return').map((group) => (
           <div key={group} style={{
             display: 'flex', flexDirection: 'column', gap: '6px',
-            ...(group === 'damage'
+            ...(group !== 'general'
               ? { borderTop: '1px solid rgb(var(--border))', marginTop: '12px', paddingTop: '12px' }
               : {}),
           }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
               {group === 'general'
                 ? 'General condition photos'
-                : variant === 'return' ? <><strong style={{ fontWeight: 700 }}>New</strong> damage photos</> : 'Damage photos'}
+                : group === 'damage'
+                  ? variant === 'return' ? <><strong style={{ fontWeight: 700 }}>New</strong> damage photos</> : 'Damage photos'
+                  : <>{t('evidenceGroupId')} <span style={{ fontWeight: 400 }}>{t('evidenceGroupIdHint')}</span></>}
             </span>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              {evidencePhotos[group].map((file, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    position: 'relative',
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '6px',
-                    overflow: 'hidden',
-                    border: '1px solid rgb(var(--border))',
-                    flexShrink: 0,
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`${group} ${idx + 1}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  {!isLocked && (
-                    <button
-                      type="button"
-                      onClick={() => onRemove(group, idx)}
-                      style={{
+              {evidencePhotos[group].map((photo, idx) => {
+                const src = photo.kind === 'new'
+                  ? URL.createObjectURL(photo.file)
+                  : photo.url;
+                const alt = `${group} ${idx + 1}`;
+                const isUploading = photo.kind === 'new';
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      position: 'relative',
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '6px',
+                      overflow: 'hidden',
+                      border: '1px solid rgb(var(--border))',
+                      flexShrink: 0,
+                      opacity: isUploading ? 0.6 : 1,
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt={alt}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {isUploading && (
+                      <div style={{
                         position: 'absolute',
-                        top: '3px',
-                        right: '3px',
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(0,0,0,0.55)',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '10px',
-                        lineHeight: '16px',
-                        textAlign: 'center',
-                        padding: 0,
-                      }}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.25)',
+                      }}>
+                        <span style={{ fontSize: '9px', color: '#fff', fontWeight: 600 }}>…</span>
+                      </div>
+                    )}
+                    {!isLocked && !isUploading && (
+                      <button
+                        type="button"
+                        onClick={() => onRemove(group, idx)}
+                        style={{
+                          position: 'absolute',
+                          top: '3px',
+                          right: '3px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(0,0,0,0.55)',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          lineHeight: '16px',
+                          textAlign: 'center',
+                          padding: 0,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
 
               {!isLocked && (
                 <label
@@ -144,6 +167,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
                     onChange={(e) => {
                       const files = Array.from(e.target.files ?? []);
                       if (files.length > 0) onAdd(group, files);
+                      e.target.value = '';
                     }}
                   />
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

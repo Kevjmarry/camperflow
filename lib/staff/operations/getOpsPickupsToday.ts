@@ -22,6 +22,8 @@ export interface OpsPickup {
   hasBlockingIssue: boolean
   hasExpiredCompliance: boolean
   hasOpenVehicleIssue: boolean
+  vehicleId: string | null
+  openVehicleIssueChecklistInstanceId: string | null
 }
 
 export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
@@ -98,7 +100,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   const { data: openIssues, error: oiError } = vehicleIds.length
     ? await supabase
         .from('vehicle_issues')
-        .select('vehicle_id')
+        .select('id, vehicle_id')
         .in('vehicle_id', vehicleIds)
         .eq('resolved', false)
     : { data: [], error: null }
@@ -106,6 +108,31 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   if (oiError) throw oiError
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
+
+  const issueIds = (openIssues ?? []).filter((i) => isUUID(i.id)).map((i) => i.id)
+  const { data: linkedItems } = issueIds.length
+    ? await supabase
+        .from('checklist_instance_items')
+        .select('linked_vehicle_issue_id, instance_id')
+        .in('linked_vehicle_issue_id', issueIds)
+    : { data: [] }
+
+  const issueChecklistMap = new Map<string, string>()
+  for (const item of (linkedItems ?? [])) {
+    if (item.linked_vehicle_issue_id && item.instance_id && isUUID(item.instance_id)) {
+      if (!issueChecklistMap.has(item.linked_vehicle_issue_id)) {
+        issueChecklistMap.set(item.linked_vehicle_issue_id, item.instance_id)
+      }
+    }
+  }
+  const vehicleIssueChecklistMap = new Map<string, string>()
+  for (const issue of (openIssues ?? [])) {
+    if (!isUUID(issue.id) || !isUUID(issue.vehicle_id)) continue
+    const checklistId = issueChecklistMap.get(issue.id)
+    if (checklistId && !vehicleIssueChecklistMap.has(issue.vehicle_id)) {
+      vehicleIssueChecklistMap.set(issue.vehicle_id, checklistId)
+    }
+  }
 
   return (data ?? []).map((b) => {
     const handover = instancesByBooking.get(b.id)
@@ -130,6 +157,8 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       hasBlockingIssue: handover ? blockingInstanceIds.has(handover.id) : false,
       hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
       hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
+      vehicleId: b.vehicle_id ?? null,
+      openVehicleIssueChecklistInstanceId: b.vehicle_id ? (vehicleIssueChecklistMap.get(b.vehicle_id) ?? null) : null,
     }
   })
 }

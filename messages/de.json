@@ -974,6 +974,22 @@
         "defaultLabel": "Gesperrter Zeitraum",
         "activeNow": "Aktuell aktiv",
         "until": "Bis {date}"
+      },
+      "onRentNow": {
+        "title": "Aktuell vermietet",
+        "empty": "Keine Fahrzeuge derzeit vermietet.",
+        "vehicle": "Fahrzeug",
+        "customer": "Kunde",
+        "comingBack": "Rückkehr",
+        "prepWindow": "Vorbereitungszeit",
+        "noUpcomingBooking": "Keine folgende Buchung",
+        "nextBookingAt": "Nächste: {date}, {time}",
+        "view": "Anzeigen",
+        "prepSeverity": {
+          "short": "Knapp",
+          "medium": "Mittel",
+          "comfortable": "Komfortabel"
+        }
       }
     },
     "checklistsPage": {
@@ -1973,6 +1989,8 @@
     "evidenceRequiredBadge": "Pflicht",
     "evidenceRequiredHint": "Mindestens ein Foto ist erforderlich. Ohne Beweisfotos kann keine Übergabe abgeschlossen werden.",
     "evidencePhotosCount": "Fotos hinzugefügt: {count}",
+    "evidenceGroupId": "Führerschein / Ausweisfotos",
+    "evidenceGroupIdHint": "(Vorder- und Rückseite)",
     "evidenceNoPhotos": "Noch keine Fotos hinzugefügt",
     "auditChecklistTitle": "Checkliste",
     "auditChecklistDesc": "Arbeite jeden Abschnitt sorgfältig durch. Nutze den Markier-Button nur für neu entdeckte Probleme oder Schäden. Alle Felder und Schritte auf dieser Seite müssen vor der Übergabe ausgefüllt sein.",

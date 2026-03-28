@@ -39,6 +39,7 @@ export default function CompanySettingsPage() {
     pickup_time: "",
     dropoff_time: "",
     final_payment_due_days: "",
+    final_payment_urgent_days: "",
     // Guest Information
     contact_phone: "",
     contact_whatsapp: "",
@@ -49,6 +50,8 @@ export default function CompanySettingsPage() {
     included_items: "",
   });
   const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
+  const [preArrivalRemindersEnabled, setPreArrivalRemindersEnabled] = useState(true);
+  const [returnPrepRemindersEnabled, setReturnPrepRemindersEnabled] = useState(true);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +119,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_reminders_enabled, contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, included_items, faq_items, extras_catalog")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, included_items, faq_items, extras_catalog")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -132,6 +135,9 @@ export default function CompanySettingsPage() {
           dropoff_time:           (data as any).dropoff_time           ?? "",
           final_payment_due_days: (data as any).final_payment_due_days != null
                                     ? String((data as any).final_payment_due_days)
+                                    : "",
+          final_payment_urgent_days: (data as any).final_payment_urgent_days != null
+                                    ? String((data as any).final_payment_urgent_days)
                                     : "",
           contact_phone:      (data as any).contact_phone      ?? "",
           contact_whatsapp:   (data as any).contact_whatsapp   ?? "",
@@ -150,6 +156,8 @@ export default function CompanySettingsPage() {
       }));
       if (data) {
         setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
+        setPreArrivalRemindersEnabled((data as any).pre_arrival_reminders_enabled ?? true);
+        setReturnPrepRemindersEnabled((data as any).return_prep_reminders_enabled ?? true);
         setFaqItems((data as any).faq_items ?? []);
         setExtrasCatalog((data as any).extras_catalog ?? []);
       }
@@ -205,6 +213,9 @@ export default function CompanySettingsPage() {
       const parsedDueDays = formData.final_payment_due_days.trim()
         ? parseInt(formData.final_payment_due_days, 10)
         : null;
+      const parsedUrgentDays = formData.final_payment_urgent_days.trim()
+        ? parseInt(formData.final_payment_urgent_days, 10)
+        : null;
 
       // Save branding + contact fields to companies
       const { data: companiesRows, error: saveErr } = await supabase
@@ -231,7 +242,10 @@ export default function CompanySettingsPage() {
           pickup_time:                     formData.pickup_time.trim()  || null,
           dropoff_time:                    formData.dropoff_time.trim() || null,
           final_payment_due_days:          parsedDueDays,
+          final_payment_urgent_days:       parsedUrgentDays,
           final_payment_reminders_enabled: finalPaymentRemindersEnabled,
+          pre_arrival_reminders_enabled:   preArrivalRemindersEnabled,
+          return_prep_reminders_enabled:   returnPrepRemindersEnabled,
           contact_phone:                   formData.contact_phone.trim()       || null,
           contact_whatsapp:                formData.contact_whatsapp.trim()    || null,
           pickup_info:                     formData.pickup_info.trim()         || null,
@@ -501,41 +515,107 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
-            {/* Payment Reminders */}
+            {/* Reminders */}
             <div>
-              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
-                Payment reminders
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
+                Reminders
               </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
+                Controls which reminders appear for staff in the Operations dashboard.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+
+                {/* Balance invoice reminder */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                      <input
+                        type="checkbox"
+                        checked={finalPaymentRemindersEnabled}
+                        onChange={(e) => setFinalPaymentRemindersEnabled(e.target.checked)}
+                        disabled={!isAdmin}
+                      />
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                        Enable balance invoice reminders
+                      </span>
+                    </label>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      Reminds staff to send the remaining 50% invoice for bookings set to <strong>50% now + 50% later</strong>. Bookings set to <strong>100% upfront</strong> are always excluded.
+                    </p>
+                  </div>
+                  {finalPaymentRemindersEnabled && (
+                    <>
+                      <div style={{ marginLeft: "calc(16px + var(--space-3))", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                        <div>
+                          <label htmlFor="final_payment_due_days" className="label">Reminder window starts (days before pickup)</label>
+                          <input
+                            id="final_payment_due_days" name="final_payment_due_days" type="number"
+                            min="0" step="1" className="input"
+                            placeholder="e.g. 35"
+                            value={formData.final_payment_due_days} onChange={handleChange}
+                            disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                          />
+                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                            The reminder appears this many days before pickup.
+                          </p>
+                        </div>
+                        <div>
+                          <label htmlFor="final_payment_urgent_days" className="label">100% upfront cutoff (days before pickup)</label>
+                          <input
+                            id="final_payment_urgent_days" name="final_payment_urgent_days" type="number"
+                            min="0" step="1" className="input"
+                            placeholder="e.g. 30"
+                            value={formData.final_payment_urgent_days} onChange={handleChange}
+                            disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                          />
+                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                            Bookings with pickup this soon are treated as <strong>100% upfront</strong> — no remaining-balance reminder is shown, even if the booking is set to 50% now + 50% later.
+                          </p>
+                        </div>
+                        <p className="helper-text" style={{ fontStyle: "italic" }}>
+                          Example: with 35 and 30, reminders appear for split bookings 31–35 days before pickup.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Pre-arrival WhatsApp reminder */}
                 <div>
                   <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
                     <input
                       type="checkbox"
-                      checked={finalPaymentRemindersEnabled}
-                      onChange={(e) => setFinalPaymentRemindersEnabled(e.target.checked)}
+                      checked={preArrivalRemindersEnabled}
+                      onChange={(e) => setPreArrivalRemindersEnabled(e.target.checked)}
                       disabled={!isAdmin}
                     />
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      Enable final payment reminders
+                      Enable pre-arrival WhatsApp reminders
                     </span>
                   </label>
                   <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                    When enabled, customers are sent a reminder to complete their final payment before the rental starts.
+                    Reminds staff to send a WhatsApp message to the customer the day before pickup.
                   </p>
                 </div>
+
+                {/* Return-prep WhatsApp reminder */}
                 <div>
-                  <label htmlFor="final_payment_due_days" className="label">Final payment due (days before pickup)</label>
-                  <input
-                    id="final_payment_due_days" name="final_payment_due_days" type="number"
-                    min="0" step="1" className="input"
-                    placeholder="e.g. 14"
-                    value={formData.final_payment_due_days} onChange={handleChange}
-                    disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
-                  />
-                  <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
-                    Number of days before pick-up that the final payment is due.
+                  <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                    <input
+                      type="checkbox"
+                      checked={returnPrepRemindersEnabled}
+                      onChange={(e) => setReturnPrepRemindersEnabled(e.target.checked)}
+                      disabled={!isAdmin}
+                    />
+                    <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                      Enable return-prep WhatsApp reminders
+                    </span>
+                  </label>
+                  <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                    Reminds staff to send a WhatsApp message to the customer the day before return.
                   </p>
                 </div>
+
               </div>
             </div>
 

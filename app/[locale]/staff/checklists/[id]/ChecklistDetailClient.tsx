@@ -36,6 +36,7 @@ import type {
   ChecklistInstanceType,
   ChecklistItemType,
   DbIssueSeverity,
+  EvidencePhoto,
   HandoverField,
 } from './types';
 
@@ -83,9 +84,10 @@ export default function ChecklistDetailClient({
     const returnedIds: string[] = bk?.staff_metadata?.extras_returned ?? [];
     return Object.fromEntries(returnedIds.map((id) => [id, true]));
   });
-  const [evidencePhotos, setEvidencePhotos] = useState<{ general: File[]; damage: File[] }>({
+  const [evidencePhotos, setEvidencePhotos] = useState<{ general: EvidencePhoto[]; damage: EvidencePhoto[]; id: EvidencePhoto[] }>({
     general: [],
     damage: [],
+    id: [],
   });
 
   // ── Return km validation ──────────────────────────────────────────────────────
@@ -137,10 +139,9 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover') return;
     staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
 
-    const toFile = async (dataUrl: string, filename: string): Promise<File> => {
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      return new File([blob], filename, { type: blob.type });
+    const pathToStored = (path: string): EvidencePhoto => {
+      const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(path);
+      return { kind: 'stored', path, url: data.publicUrl };
     };
 
     if (instance.checklist_type === 'return') {
@@ -150,28 +151,22 @@ export default function ChecklistDetailClient({
       const returnedIds: string[] = (instance.bookings as any)?.staff_metadata?.extras_returned ?? [];
       setExtrasChecked(Object.fromEntries(returnedIds.map((id: string) => [id, true])));
       const rep = (instance.bookings as any)?.staff_metadata?.return_evidence_photos as { general?: string[]; damage?: string[] } | undefined;
-      if (rep) {
-        Promise.all([
-          Promise.all((rep.general ?? []).map((u, i) => toFile(u, `general_${i}.jpg`))),
-          Promise.all((rep.damage ?? []).map((u, i) => toFile(u, `damage_${i}.jpg`))),
-        ]).then(([general, damage]) => setEvidencePhotos({ general, damage }));
-      } else {
-        setEvidencePhotos({ general: [], damage: [] });
-      }
+      setEvidencePhotos({
+        general: (rep?.general ?? []).map(pathToStored),
+        damage: (rep?.damage ?? []).map(pathToStored),
+        id: [],
+      });
     }
 
     if (instance.checklist_type === 'handover') {
       const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
       setVehicleData({ km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' });
-      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: string[]; damage?: string[] } | undefined;
-      if (hep) {
-        Promise.all([
-          Promise.all((hep.general ?? []).map((u, i) => toFile(u, `general_${i}.jpg`))),
-          Promise.all((hep.damage ?? []).map((u, i) => toFile(u, `damage_${i}.jpg`))),
-        ]).then(([general, damage]) => setEvidencePhotos({ general, damage }));
-      } else {
-        setEvidencePhotos({ general: [], damage: [] });
-      }
+      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: string[]; damage?: string[]; id?: string[] } | undefined;
+      setEvidencePhotos({
+        general: (hep?.general ?? []).map(pathToStored),
+        damage: (hep?.damage ?? []).map(pathToStored),
+        id: (hep?.id ?? []).map(pathToStored),
+      });
     }
   }, [instance]);
 
@@ -224,7 +219,7 @@ export default function ChecklistDetailClient({
     if (!vehicleData.km) missing.push('km');
     if (!vehicleData.fuel) missing.push('fuel');
     if (!vehicleData.adblue) missing.push('adblue');
-    const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length;
+    const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length + evidencePhotos.id.length;
     if (totalPhotos === 0) missing.push('photos');
     return missing;
   };
@@ -241,7 +236,10 @@ export default function ChecklistDetailClient({
 
     const missingPickupFields = getMissingPickupData();
     const missingAudit = localItems.some(
-      (it) => !it.checked && getPickupAuditDisplayLabel(it.template.label) !== null
+      (it) =>
+        it.template.ui_section === 'checklist_actions' &&
+        !it.checked &&
+        getPickupAuditDisplayLabel(it.template.label) !== null
     );
     const missingVehicleData = missingPickupFields.some((f) => f !== 'photos');
     const missingPhotos = missingPickupFields.includes('photos');
@@ -652,11 +650,68 @@ export default function ChecklistDetailClient({
   };
 
   // ── Handover: save evidence photos into bookings.staff_metadata.handover_evidence_photos ──
-  const saveHandoverEvidencePhotos = async (rep: { general: string[]; damage: string[] }) => {
+  const saveHandoverEvidencePhotos = async (rep: { general: string[]; damage: string[]; id: string[] }) => {
     if (!instance.booking_id) return;
     const newMeta = { ...staffMetaRef.current, handover_evidence_photos: rep };
     staffMetaRef.current = newMeta;
     await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+  };
+
+  // ── Compress an image file before upload (canvas-based, JPEG, max 1800px) ──────
+  const compressImage = (file: File): Promise<File> =>
+    new Promise((resolve) => {
+      const MAX_DIM = 1800;
+      const QUALITY = 0.82;
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+        if (width <= MAX_DIM && height <= MAX_DIM) {
+          resolve(file);
+          return;
+        }
+        if (width > height) {
+          height = Math.round((height / width) * MAX_DIM);
+          width = MAX_DIM;
+        } else {
+          width = Math.round((width / height) * MAX_DIM);
+          height = MAX_DIM;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          QUALITY,
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+      img.src = objectUrl;
+    });
+
+  // ── Upload a single evidence photo to Supabase Storage ────────────────────────
+  // Path shape: {company_id}/{booking_id}/{checklist_type}/{group}/{timestamp}_{random}.{ext}
+  const uploadEvidencePhoto = async (
+    file: File,
+    group: 'general' | 'damage' | 'id',
+  ): Promise<{ path: string; url: string }> => {
+    const compressed = await compressImage(file).catch(() => file);
+    const companyId = (instance.bookings as any)?.company_id ?? 'unknown';
+    const bookingId = instance.booking_id ?? 'unknown';
+    const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const path = `${companyId}/${bookingId}/${instance.checklist_type}/${group}/${unique}.jpg`;
+    const { error } = await supabase.storage
+      .from('checklist-evidence')
+      .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(path);
+    return { path, url: data.publicUrl };
   };
 
   // ── Item toggle ───────────────────────────────────────────────────────────────
@@ -938,6 +993,19 @@ export default function ChecklistDetailClient({
   const sections: { name: string; items: ChecklistItemType[] }[] = [];
   sectionMap.forEach((items, name) => sections.push({ name, items }));
 
+  const checklistActionsSections: { name: string; items: ChecklistItemType[] }[] = (() => {
+    const filtered = sortedItems.filter((item) => item.template.ui_section === 'checklist_actions');
+    const map = new Map<string, ChecklistItemType[]>();
+    for (const item of filtered) {
+      const name = item.template.section?.trim() || t('sectionOther');
+      if (!map.has(name)) map.set(name, []);
+      map.get(name)!.push(item);
+    }
+    const result: { name: string; items: ChecklistItemType[] }[] = [];
+    map.forEach((items, name) => result.push({ name, items }));
+    return result;
+  })();
+
   const CHECKLIST_TYPE_LABELS: Record<string, string> = {
     handover: t('type_handover'),
     pickup: t('type_pickup'),
@@ -1066,33 +1134,61 @@ export default function ChecklistDetailClient({
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
                 onAdd={async (group, files) => {
-                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }));
-                  const toDataUrl = (file: File): Promise<string> =>
-                    new Promise((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onload = () => resolve(reader.result as string);
-                      reader.onerror = reject;
-                      reader.readAsDataURL(file);
-                    });
-                  const newDataUrls = await Promise.all(files.map(toDataUrl));
-                  const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [] };
-                  const newRep = { ...currentHep, [group]: [...(currentHep[group] ?? []), ...newDataUrls] };
-                  await saveHandoverEvidencePhotos(newRep);
+                  // Optimistically show new photos while uploading
+                  setEvidencePhotos((prev) => ({
+                    ...prev,
+                    [group]: [...prev[group], ...files.map((f) => ({ kind: 'new' as const, file: f }))],
+                  }));
+                  const results = await Promise.allSettled(files.map((f) => uploadEvidencePhoto(f, group)));
+                  const succeeded: Array<{ file: File; path: string; url: string }> = [];
+                  const failedFiles: File[] = [];
+                  results.forEach((r, i) => {
+                    if (r.status === 'fulfilled') succeeded.push({ file: files[i], ...r.value });
+                    else failedFiles.push(files[i]);
+                  });
+                  // Swap 'new' → 'stored' on success, remove on failure
+                  setEvidencePhotos((prev) => {
+                    const next = prev[group]
+                      .map((p) => {
+                        if (p.kind !== 'new') return p;
+                        const s = succeeded.find((r) => r.file === p.file);
+                        if (s) return { kind: 'stored' as const, path: s.path, url: s.url };
+                        if (failedFiles.includes(p.file)) return null;
+                        return p;
+                      })
+                      .filter((p): p is EvidencePhoto => p !== null);
+                    return { ...prev, [group]: next };
+                  });
+                  if (failedFiles.length > 0) {
+                    setSyncError(parseSyncError(
+                      new Error(`${failedFiles.length} photo(s) failed to upload`),
+                      'item_update_failed',
+                    ));
+                  }
+                  if (succeeded.length > 0) {
+                    const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [], id: [] };
+                    const newRep = { ...currentHep, [group]: [...(currentHep[group] ?? []), ...succeeded.map((s) => s.path)] };
+                    await saveHandoverEvidencePhotos(newRep);
+                  }
                 }}
                 onRemove={async (group, index) => {
+                  const photo = evidencePhotos[group][index];
                   setEvidencePhotos((prev) => ({
                     ...prev,
                     [group]: prev[group].filter((_, i) => i !== index),
                   }));
-                  const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [] };
-                  const newRep = { ...currentHep, [group]: (currentHep[group] ?? []).filter((_: unknown, i: number) => i !== index) };
-                  await saveHandoverEvidencePhotos(newRep);
+                  if (photo?.kind === 'stored') {
+                    const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [], id: [] };
+                    const newPaths = (currentHep[group] ?? []).filter((p: string) => p !== photo.path);
+                    await saveHandoverEvidencePhotos({ ...currentHep, [group]: newPaths });
+                    supabase.storage.from('checklist-evidence').remove([photo.path]).catch(() => {});
+                  }
                 }}
                 isLocked={isChecklistLocked}
                 highlight={validationHighlights.missingPhotos}
               />
               <AuditChecklistBlock
-                sections={sections}
+                sections={checklistActionsSections}
                 isChecklistLocked={isChecklistLocked}
                 collapsedSections={collapsedSections}
                 onToggleSection={toggleSection}
@@ -1197,29 +1293,55 @@ export default function ChecklistDetailClient({
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
                 onAdd={async (group, files) => {
-                  setEvidencePhotos((prev) => ({ ...prev, [group]: [...prev[group], ...files] }));
+                  setEvidencePhotos((prev) => ({
+                    ...prev,
+                    [group]: [...prev[group], ...files.map((f) => ({ kind: 'new' as const, file: f }))],
+                  }));
                   promoteReturnToInProgress();
-                  const toDataUrl = (file: File): Promise<string> =>
-                    new Promise((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onload = () => resolve(reader.result as string);
-                      reader.onerror = reject;
-                      reader.readAsDataURL(file);
-                    });
-                  const newDataUrls = await Promise.all(files.map(toDataUrl));
-                  const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
-                  const newRep = { ...currentRep, [group]: [...(currentRep[group] ?? []), ...newDataUrls] };
-                  await saveReturnEvidencePhotos(newRep);
+                  const results = await Promise.allSettled(files.map((f) => uploadEvidencePhoto(f, group)));
+                  const succeeded: Array<{ file: File; path: string; url: string }> = [];
+                  const failedFiles: File[] = [];
+                  results.forEach((r, i) => {
+                    if (r.status === 'fulfilled') succeeded.push({ file: files[i], ...r.value });
+                    else failedFiles.push(files[i]);
+                  });
+                  setEvidencePhotos((prev) => {
+                    const next = prev[group]
+                      .map((p) => {
+                        if (p.kind !== 'new') return p;
+                        const s = succeeded.find((r) => r.file === p.file);
+                        if (s) return { kind: 'stored' as const, path: s.path, url: s.url };
+                        if (failedFiles.includes(p.file)) return null;
+                        return p;
+                      })
+                      .filter((p): p is EvidencePhoto => p !== null);
+                    return { ...prev, [group]: next };
+                  });
+                  if (failedFiles.length > 0) {
+                    setSyncError(parseSyncError(
+                      new Error(`${failedFiles.length} photo(s) failed to upload`),
+                      'item_update_failed',
+                    ));
+                  }
+                  if (succeeded.length > 0) {
+                    const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
+                    const newRep = { ...currentRep, [group]: [...(currentRep[group] ?? []), ...succeeded.map((s) => s.path)] };
+                    await saveReturnEvidencePhotos(newRep);
+                  }
                 }}
                 onRemove={async (group, index) => {
+                  const photo = evidencePhotos[group][index];
                   setEvidencePhotos((prev) => ({
                     ...prev,
                     [group]: prev[group].filter((_, i) => i !== index),
                   }));
                   promoteReturnToInProgress();
-                  const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
-                  const newRep = { ...currentRep, [group]: (currentRep[group] ?? []).filter((_: unknown, i: number) => i !== index) };
-                  await saveReturnEvidencePhotos(newRep);
+                  if (photo?.kind === 'stored') {
+                    const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
+                    const newPaths = (currentRep[group] ?? []).filter((p: string) => p !== photo.path);
+                    await saveReturnEvidencePhotos({ ...currentRep, [group]: newPaths });
+                    supabase.storage.from('checklist-evidence').remove([photo.path]).catch(() => {});
+                  }
                 }}
                 isLocked={isChecklistLocked}
                 highlight={false}

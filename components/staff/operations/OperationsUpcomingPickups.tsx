@@ -250,8 +250,18 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                       {p.hasUrgentIssue && <StatusChip label="Urgent issue" severity="critical" />}
                       {p.hasAttentionIssue && <StatusChip label="Attention issue" severity="warning" />}
                       {!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue && <StatusChip label="Blocking checklist issue" severity="critical" />}
-                      {p.hasExpiredCompliance && <StatusChip label="Expired compliance" severity="critical" />}
-                      {p.hasOpenVehicleIssue && <StatusChip label="Open vehicle issue" severity="warning" />}
+                      {p.hasExpiredCompliance && (p.vehicleId
+                        ? <Link href={`/${locale}/staff/vehicles/${p.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label="Expired compliance" severity="critical" /></Link>
+                        : <StatusChip label="Expired compliance" severity="critical" />
+                      )}
+                      {p.hasOpenVehicleIssue && (() => {
+                        const href = p.openVehicleIssueChecklistInstanceId
+                          ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
+                          : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : null
+                        return href
+                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label="Open vehicle issue" severity="warning" /></Link>
+                          : <StatusChip label="Open vehicle issue" severity="warning" />
+                      })()}
                     </div>
                   )}
                   <MetaBadges p={p} t={t} />

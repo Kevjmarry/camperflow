@@ -938,18 +938,16 @@ export default function BookingImportPage() {
               <p style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))" }}>
                 {t("import.resultTitle")}
               </p>
-              <div style={{ display: "flex", gap: "var(--space-4)", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <span style={{ fontSize: "13px", color: "rgb(var(--success))" }}>
-                  {t("import.resultCreated", { count: importResult.created })}
+                  {"✓ "}{t("import.resultCreated", { count: importResult.created })}
                 </span>
                 <span style={{ fontSize: "13px", color: "rgb(var(--brand))" }}>
-                  {t("import.resultUpdated", { count: importResult.updated })}
+                  {"✓ "}{t("import.resultUpdated", { count: importResult.updated })}
                 </span>
-                {importResult.blocked > 0 && (
-                  <span style={{ fontSize: "13px", color: "rgb(161, 120, 0)" }}>
-                    {t("import.resultBlocked", { count: importResult.blocked })}
-                  </span>
-                )}
+                <span style={{ fontSize: "13px", color: "rgb(161, 120, 0)" }}>
+                  {"✓ "}{t("import.resultBlocked", { count: importResult.blocked })}
+                </span>
                 {importResult.errors.length > 0 && (
                   <span style={{ fontSize: "13px", color: "rgb(var(--error))" }}>
                     {t("import.resultErrors", { count: importResult.errors.length })}

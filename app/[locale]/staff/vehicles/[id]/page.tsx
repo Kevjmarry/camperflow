@@ -706,7 +706,7 @@ export default function VehicleDetailPage({
             </div>
 
             {/* Compliance */}
-            <div className="surface" style={{ padding: "var(--space-6)" }}>
+            <div id="compliance" className="surface" style={{ padding: "var(--space-6)" }}>
               <div
                 style={{
                   display: "flex",

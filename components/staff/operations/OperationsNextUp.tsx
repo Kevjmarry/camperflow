@@ -128,12 +128,18 @@ export default function OperationsNextUp({ nextPickup, nextReturn }: Props) {
             {nextPickup.hasBlockingIssue && (
               <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
             )}
-            {nextPickup.hasExpiredCompliance && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+            {nextPickup.hasExpiredCompliance && (nextPickup.vehicleId
+              ? <Link href={`/${locale}/staff/vehicles/${nextPickup.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span></Link>
+              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
             )}
-            {nextPickup.hasOpenVehicleIssue && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
-            )}
+            {nextPickup.hasOpenVehicleIssue && (() => {
+              const href = nextPickup.openVehicleIssueChecklistInstanceId
+                ? `/${locale}/staff/checklists/${nextPickup.openVehicleIssueChecklistInstanceId}`
+                : nextPickup.vehicleId ? `/${locale}/staff/vehicles/${nextPickup.vehicleId}` : null
+              return href
+                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span></Link>
+                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+            })()}
             <Link
               href={`/${locale}/staff/bookings/${nextPickup.id}`}
               style={{
@@ -173,12 +179,18 @@ export default function OperationsNextUp({ nextPickup, nextReturn }: Props) {
             {nextReturn.vehicleBlocked && (
               <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
             )}
-            {nextReturn.hasExpiredCompliance && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+            {nextReturn.hasExpiredCompliance && (nextReturn.vehicleId
+              ? <Link href={`/${locale}/staff/vehicles/${nextReturn.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span></Link>
+              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
             )}
-            {nextReturn.hasOpenVehicleIssue && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
-            )}
+            {nextReturn.hasOpenVehicleIssue && (() => {
+              const href = nextReturn.openVehicleIssueChecklistInstanceId
+                ? `/${locale}/staff/checklists/${nextReturn.openVehicleIssueChecklistInstanceId}`
+                : nextReturn.vehicleId ? `/${locale}/staff/vehicles/${nextReturn.vehicleId}` : null
+              return href
+                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span></Link>
+                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+            })()}
             <Link
               href={`/${locale}/staff/bookings/${nextReturn.id}`}
               style={{

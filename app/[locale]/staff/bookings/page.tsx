@@ -222,6 +222,9 @@ export default function BookingsPage() {
       switch (sortBy) {
         case 'pickup_asc': {
           const now = new Date().toISOString();
+          const aOnRent = a.status === 'on_rent';
+          const bOnRent = b.status === 'on_rent';
+          if (aOnRent !== bOnRent) return aOnRent ? -1 : 1;
           const aFuture = a.pickup_at >= now;
           const bFuture = b.pickup_at >= now;
           if (aFuture && bFuture) return a.pickup_at.localeCompare(b.pickup_at);

@@ -974,6 +974,22 @@
         "defaultLabel": "Blocked period",
         "activeNow": "Active now",
         "until": "Until {date}"
+      },
+      "onRentNow": {
+        "title": "On rent now",
+        "empty": "No vehicles currently on rent.",
+        "vehicle": "Vehicle",
+        "customer": "Customer",
+        "comingBack": "Coming back",
+        "prepWindow": "Prep window",
+        "noUpcomingBooking": "No upcoming booking",
+        "nextBookingAt": "Next: {date}, {time}",
+        "view": "View",
+        "prepSeverity": {
+          "short": "Short",
+          "medium": "Medium",
+          "comfortable": "Comfortable"
+        }
       }
     },
     "checklistsPage": {
@@ -1973,6 +1989,8 @@
     "evidenceRequiredBadge": "Mandatory",
     "evidenceRequiredHint": "At least one photo is required. No handover can be completed without evidence photos.",
     "evidencePhotosCount": "Photos added: {count}",
+    "evidenceGroupId": "Driver licence / ID photos",
+    "evidenceGroupIdHint": "(front and back)",
     "evidenceNoPhotos": "No photos added yet",
     "auditChecklistTitle": "Checklist Actions",
     "auditChecklistDesc": "Work through each section carefully. Use the flag button only for newly discovered issues or damage. All fields and steps on this page must be completed before handover.",
