@@ -37,7 +37,18 @@ export default function PageContainer({
         color: 'rgb(var(--text))',
       }}
     >
+      <style>{`
+        .page-container-inner {
+          padding-bottom: calc(var(--space-4) + 60px + env(safe-area-inset-bottom));
+        }
+        @media (min-width: 768px) {
+          .page-container-inner {
+            padding-bottom: var(--space-4);
+          }
+        }
+      `}</style>
       <div
+        className="page-container-inner"
         style={{
           width: '100%',
           maxWidth,

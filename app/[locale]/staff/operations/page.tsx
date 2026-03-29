@@ -212,86 +212,100 @@ export default async function OperationsPage({
   const urgentItems = attentionItems.slice(0, 5)
 
   return (
-    <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+    <PageContainer maxWidth="1280px">
+      <style>{`
+        .ops-page-inner {
+          padding: 32px;
+          padding-bottom: 80px;
+        }
+        .ops-section-card {
+          border: 1px solid rgb(var(--border));
+          border-radius: var(--radius);
+          background: rgb(var(--surface));
+          padding: 24px;
+        }
+        @media (max-width: 768px) {
+          .ops-page-inner {
+            padding: 20px;
+            padding-bottom: 80px;
+          }
+          .ops-section-card {
+            padding: 16px;
+          }
+        }
+      `}</style>
 
-          {/* Header */}
-          <div>
-            <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>Operations</h1>
-            <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>
-              Today's pickups, returns, and vehicle readiness at a glance.
-            </p>
-          </div>
+      <div className="ops-page-inner">
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <OperationsOnRentNow rows={onRentNow} />
-            <OperationsNextUp
-              nextPickup={upcomingPickups[0] ?? null}
-              nextReturn={upcomingReturns[0] ?? null}
-            />
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>Operations</h1>
+          <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))', margin: '8px 0 0' }}>
+            Today's pickups, returns, and vehicle readiness at a glance.
+          </p>
+        </div>
 
-            {/* Attention needed strip */}
-            {urgentItems.length > 0 && (
-              <div
-                style={{
-                  border: '1px solid rgb(var(--border))',
-                  borderRadius: 'var(--radius)',
-                  padding: 'var(--space-4) var(--space-5)',
-                  background: 'rgb(var(--surface))',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
-                    Attention needed
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {urgentItems.map((item) => (
-                    <div
-                      key={item.key}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '6px var(--space-3)',
-                        background: 'rgb(var(--surface))',
-                        border: '1px solid rgb(var(--border))',
-                        borderRadius: 'var(--radius)',
-                        gap: 'var(--space-4)',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                          <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {item.line1}
+        {/* Sections */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <OperationsOnRentNow rows={onRentNow} />
+          <OperationsNextUp
+            nextPickup={upcomingPickups[0] ?? null}
+            nextReturn={upcomingReturns[0] ?? null}
+          />
+
+          {/* Attention needed strip */}
+          {urgentItems.length > 0 && (
+            <div className="ops-section-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
+                  Attention needed
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {urgentItems.map((item) => (
+                  <div
+                    key={item.key}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '6px var(--space-3)',
+                      background: 'rgb(var(--surface))',
+                      border: '1px solid rgb(var(--border))',
+                      borderRadius: 'var(--radius)',
+                      gap: 'var(--space-4)',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.line1}
+                        </span>
+                        {item.subtext && (
+                          <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                            {item.subtext}
                           </span>
-                          {item.subtext && (
-                            <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
-                              {item.subtext}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                        {item.chips.map((chip) => (
-                          <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
-                        ))}
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {item.chips.map((chip) => (
+                        <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            <OperationsInvoiceReminders reminders={invoiceReminders} />
-            <OperationsUpcomingPickups pickups={upcomingPickups} />
-            <OperationsUpcomingReturns returns={upcomingReturns} />
-            <OperationsCompletedBookings bookings={completed} />
-          </div>
-
+          <OperationsInvoiceReminders reminders={invoiceReminders} />
+          <OperationsUpcomingPickups pickups={upcomingPickups} />
+          <OperationsUpcomingReturns returns={upcomingReturns} />
+          <OperationsCompletedBookings bookings={completed} />
         </div>
+
       </div>
     </PageContainer>
   )

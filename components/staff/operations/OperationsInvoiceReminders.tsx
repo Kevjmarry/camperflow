@@ -50,6 +50,37 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
+      <style>{`
+        /* ── Mobile card layout (<768px) ── */
+        @media (max-width: 767px) {
+          .ops-reminder-row {
+            align-items: flex-start !important;
+          }
+          .ops-reminder-mid {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 3px !important;
+          }
+          /* Hide the standalone end-of-row timing on mobile */
+          .ops-reminder-timing-desktop {
+            display: none !important;
+          }
+          /* Show timing inlined inside the stacked middle block on mobile */
+          .ops-reminder-timing-mobile {
+            display: inline !important;
+          }
+          .ops-reminder-view {
+            align-self: flex-start;
+            margin-top: 1px;
+          }
+        }
+        @media (min-width: 768px) {
+          .ops-reminder-timing-mobile {
+            display: none;
+          }
+        }
+      `}</style>
+
       <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
         Reminders
         <span
@@ -76,6 +107,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
             return (
               <div
                 key={r.id}
+                className="ops-reminder-row"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -93,7 +125,10 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   style={{ cursor: isLoading ? 'default' : 'pointer', flexShrink: 0 }}
                   aria-label={`Mark ${r.bookingNumber} handled`}
                 />
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                <div
+                  className="ops-reminder-mid"
+                  style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}
+                >
                   <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgb(var(--brand))', flexShrink: 0 }}>
                     {REMINDER_LABEL[r.type]}
                   </span>
@@ -103,12 +138,18 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {r.customerName} · {r.bookingNumber}
                   </span>
+                  {/* Timing shown here only on mobile */}
+                  <span className="ops-reminder-timing-mobile" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    {formatTiming(r)}
+                  </span>
                 </div>
-                <span style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>
+                {/* Timing shown here only on desktop */}
+                <span className="ops-reminder-timing-desktop" style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>
                   {formatTiming(r)}
                 </span>
                 <Link
                   href={`/${locale}/staff/bookings/${r.bookingId}`}
+                  className="ops-reminder-view"
                   style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none', flexShrink: 0 }}
                 >
                   View

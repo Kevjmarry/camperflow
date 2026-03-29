@@ -108,6 +108,106 @@ export default function OperationsOnRentNow({ rows }: Props) {
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
+      <style>{`
+        /* ── Desktop/tablet row (≥768px) ── */
+        .on-rent-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr auto;
+          align-items: center;
+          padding: var(--space-3);
+          border: 1px solid rgb(var(--border));
+          border-radius: var(--radius);
+          gap: var(--space-4);
+        }
+        /* ── Mobile card (<768px) ── */
+        @media (max-width: 767px) {
+          .on-rent-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: var(--space-3);
+          }
+          /* Vehicle + View action on one line */
+          .on-rent-col-vehicle {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--space-3);
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-2);
+            border-bottom: 1px solid rgb(var(--border));
+          }
+          .on-rent-col-vehicle .on-rent-vehicle-text {
+            min-width: 0;
+          }
+          /* Hide the standalone view column — view is shown inside vehicle col */
+          .on-rent-col-view {
+            display: none;
+          }
+          /* Hide desktop-only columns — mobile-only div renders them instead */
+          .on-rent-col-desktop {
+            display: none;
+          }
+          /* Each data row: label on left, value on right */
+          .on-rent-data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--space-3);
+            padding: 5px 0;
+          }
+          .on-rent-data-row + .on-rent-data-row {
+            border-top: 1px solid rgb(var(--border) / 0.5);
+          }
+          .on-rent-data-label {
+            font-size: 12px;
+            color: rgb(var(--muted));
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          .on-rent-data-value {
+            font-size: 13px;
+            color: rgb(var(--text));
+            text-align: right;
+            min-width: 0;
+          }
+          /* View link inline (shown next to vehicle name on mobile) */
+          .on-rent-view-inline {
+            display: inline-flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: rgb(var(--brand));
+            text-decoration: none;
+            padding: 4px 10px;
+            border: 1px solid rgb(var(--brand) / 0.4);
+            border-radius: var(--radius);
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+          /* Hide mobile-only elements on desktop */
+          .on-rent-mobile-only {
+            display: block;
+          }
+        }
+        @media (min-width: 768px) {
+          .on-rent-mobile-only {
+            display: none;
+          }
+          .on-rent-view-inline {
+            display: none;
+          }
+          /* On desktop keep label-above-value layout in each column */
+          .on-rent-data-row {
+            display: contents;
+          }
+          .on-rent-col-vehicle {
+            min-width: 0;
+          }
+        }
+      `}</style>
+
       <div
         style={{
           display: 'flex',
@@ -128,30 +228,31 @@ export default function OperationsOnRentNow({ rows }: Props) {
           {rows.map((r) => {
             const comingBack = formatComingBack(r.returnAt, r.isOverdue)
             return (
-              <div
-                key={r.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
-                  alignItems: 'center',
-                  padding: 'var(--space-3)',
-                  border: '1px solid rgb(var(--border))',
-                  borderRadius: 'var(--radius)',
-                  gap: 'var(--space-4)',
-                }}
-              >
-                {/* Vehicle */}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: '2px' }}>
-                    {t('vehicle')}
+              <div key={r.id} className="on-rent-row">
+
+                {/* ── Vehicle col (desktop) / Vehicle + View header (mobile) ── */}
+                <div className="on-rent-col-vehicle" style={{ minWidth: 0 }}>
+                  <div className="on-rent-vehicle-text" style={{ minWidth: 0 }}>
+                    {/* Desktop label */}
+                    <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: '2px' }}>
+                      {t('vehicle')}
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {r.vehicleName}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.vehicleName}
-                  </div>
+                  {/* View link shown inline with vehicle on mobile */}
+                  <Link
+                    href={`/${locale}/staff/bookings/${r.id}`}
+                    className="on-rent-view-inline"
+                  >
+                    {t('view')}
+                  </Link>
                 </div>
 
-                {/* Customer */}
-                <div style={{ minWidth: 0 }}>
+                {/* ── Customer ── */}
+                {/* Desktop column */}
+                <div className="on-rent-col-desktop" style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: '2px' }}>
                     {t('customer')}
                   </div>
@@ -163,8 +264,9 @@ export default function OperationsOnRentNow({ rows }: Props) {
                   </div>
                 </div>
 
-                {/* Coming back */}
-                <div style={{ minWidth: 0 }}>
+                {/* ── Coming back ── */}
+                {/* Desktop column */}
+                <div className="on-rent-col-desktop" style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: '2px' }}>
                     {t('comingBack')}
                   </div>
@@ -185,8 +287,9 @@ export default function OperationsOnRentNow({ rows }: Props) {
                   </div>
                 </div>
 
-                {/* Prep window */}
-                <div style={{ minWidth: 0 }}>
+                {/* ── Prep window ── */}
+                {/* Desktop column */}
+                <div className="on-rent-col-desktop" style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: '2px' }}>
                     {t('prepWindow')}
                   </div>
@@ -219,13 +322,71 @@ export default function OperationsOnRentNow({ rows }: Props) {
                   )}
                 </div>
 
-                {/* View link */}
+                {/* ── Desktop view link ── */}
                 <Link
                   href={`/${locale}/staff/bookings/${r.id}`}
+                  className="on-rent-col-view"
                   style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none', flexShrink: 0 }}
                 >
                   {t('view')}
                 </Link>
+
+                {/* ── Mobile-only stacked rows ── */}
+                <div className="on-rent-mobile-only">
+                  {/* Customer */}
+                  <div className="on-rent-data-row">
+                    <span className="on-rent-data-label">{t('customer')}</span>
+                    <span className="on-rent-data-value">
+                      {r.customerName}
+                      {r.bookingNumber ? (
+                        <span style={{ color: 'rgb(var(--muted))' }}> · {r.bookingNumber}</span>
+                      ) : null}
+                    </span>
+                  </div>
+
+                  {/* Coming back */}
+                  <div className="on-rent-data-row">
+                    <span className="on-rent-data-label">{t('comingBack')}</span>
+                    <span
+                      className="on-rent-data-value"
+                      style={{
+                        fontWeight: comingBack.overdueFlag ? 600 : 400,
+                        color: comingBack.overdueFlag ? 'rgb(var(--danger))' : 'rgb(var(--text))',
+                      }}
+                    >
+                      {comingBack.overdueFlag && <span style={{ marginRight: '3px' }}>⚠</span>}
+                      {comingBack.main}
+                    </span>
+                  </div>
+
+                  {/* Prep window */}
+                  <div className="on-rent-data-row">
+                    <span className="on-rent-data-label">{t('prepWindow')}</span>
+                    <span className="on-rent-data-value">
+                      {r.prepWindowMs === null ? (
+                        <span style={{ color: 'rgb(var(--muted))', fontStyle: 'italic' }}>{t('noUpcomingBooking')}</span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <span style={{ fontWeight: 600 }}>{formatPrepWindow(r.prepWindowMs)}</span>
+                          {r.prepSeverity && (
+                            <SeverityChip severity={r.prepSeverity} label={t(`prepSeverity.${r.prepSeverity}`)} />
+                          )}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Next pickup date (when prep window exists) */}
+                  {r.prepWindowMs !== null && r.nextBookingPickupAt && (
+                    <div className="on-rent-data-row">
+                      <span className="on-rent-data-label">Next pickup</span>
+                      <span className="on-rent-data-value" style={{ color: 'rgb(var(--muted))' }}>
+                        {formatDateShort(r.nextBookingPickupAt)}, {formatTime(r.nextBookingPickupAt)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
               </div>
             )
           })}

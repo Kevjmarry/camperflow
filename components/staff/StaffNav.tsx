@@ -54,8 +54,11 @@ export default function StaffNav() {
     updateFades()
   }, [pathname])
 
+  if (pathname.endsWith('/staff/login')) return null
+
   return (
     <nav
+      className="staff-top-nav"
       style={{
         width: '100%',
         background: 'rgb(var(--surface))',
@@ -99,6 +102,9 @@ export default function StaffNav() {
         }
         .staff-nav-arrow-left { left: 2px; }
         .staff-nav-arrow-right { right: 2px; }
+        @media (max-width: 767px) {
+          .staff-top-nav { display: none !important; }
+        }
         @media (min-width: 768px) {
           .staff-nav-fade, .staff-nav-arrow { display: none !important; }
         }

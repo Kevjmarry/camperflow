@@ -195,6 +195,41 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
+      <style>{`
+        /* ── Mobile card layout (<768px) ── */
+        @media (max-width: 767px) {
+          .ops-upcoming-row {
+            flex-direction: column !important;
+            gap: var(--space-2) !important;
+          }
+          .ops-upcoming-right {
+            flex-direction: row !important;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgb(var(--border) / 0.5);
+            padding-top: var(--space-2);
+          }
+          .ops-upcoming-time {
+            text-align: left !important;
+          }
+          .ops-upcoming-time-main {
+            font-size: 13px !important;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+          }
+          .ops-upcoming-time-sub {
+            display: none !important;
+          }
+          .ops-upcoming-time-countdown {
+            font-size: 12px;
+            color: rgb(var(--muted));
+          }
+        }
+      `}</style>
+
       <div
         style={{
           display: 'flex',
@@ -222,6 +257,7 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
             {visible.map((p) => (
               <div
                 key={p.id}
+                className="ops-upcoming-row"
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -234,7 +270,7 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                 }}
               >
                 {/* Left: booking identity + badges */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                <div className="ops-upcoming-left" style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
                   <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
                     {p.vehicleName}
                   </span>
@@ -268,15 +304,20 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                 </div>
 
                 {/* Right: time, date, countdown, link */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                <div className="ops-upcoming-right" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
+                  <div className="ops-upcoming-time" style={{ textAlign: 'right' }}>
+                    {/* On desktop: stacked time / date / countdown. On mobile: inline via CSS. */}
+                    <div className="ops-upcoming-time-main" style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
                       {formatTime(p.pickupAt)}
+                      {/* Mobile-only: date and countdown inline */}
+                      <span className="ops-upcoming-time-countdown">
+                        {formatDate(p.pickupAt)} · {formatHoursToPickup(p.hoursToPickup) || `in ${p.daysUntil}d`}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                       {formatDate(p.pickupAt)}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                    <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                       {formatHoursToPickup(p.hoursToPickup) || `in ${p.daysUntil}d`}
                     </div>
                   </div>

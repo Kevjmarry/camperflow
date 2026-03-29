@@ -1,4 +1,5 @@
 import StaffNav from '@/components/staff/StaffNav'
+import MobileBottomNav from '@/components/staff/MobileBottomNav'
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
@@ -81,6 +82,7 @@ export default async function StaffLayout({
     <>
       <StaffNav />
       {children}
+      <MobileBottomNav />
     </>
   );
 }
