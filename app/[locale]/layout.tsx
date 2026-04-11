@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "../globals.css";
 import { NextIntlClientProvider } from "next-intl";
@@ -8,9 +8,25 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+};
+
 export const metadata: Metadata = {
   title: "CamperFlow",
   description: "Campervan rental operations management",
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CamperFlow",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 const locales = ["en", "de"] as const;
