@@ -25,14 +25,14 @@ export function InstallBanner() {
   return (
     <div
       role="banner"
-      className="fixed bottom-4 left-1/2 z-[9999] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-lg ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+      className="fixed bottom-20 left-4 right-4 z-[9999] w-auto max-w-none translate-x-0 sm:left-auto sm:right-4 sm:max-w-sm flex items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-lg ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
     >
       {/* App icon */}
       <img
         src="/icons/icon-192.png"
         alt=""
         aria-hidden="true"
-        className="h-10 w-10 flex-shrink-0 rounded-xl"
+        className="h-8 w-8 flex-shrink-0 rounded-lg"
       />
 
       <div className="flex flex-1 flex-col gap-1">
