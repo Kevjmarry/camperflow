@@ -22,7 +22,6 @@ export function useInstallPrompt() {
     try {
       if (localStorage.getItem(DISMISSED_KEY)) {
         setDismissed(true);
-        return;
       }
     } catch {}
 
@@ -33,7 +32,6 @@ export function useInstallPrompt() {
       document.referrer.includes("android-app://")
     ) {
       setIsInstalled(true);
-      return;
     }
 
     // iOS / iPadOS detection (no beforeinstallprompt support)
