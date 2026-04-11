@@ -2168,5 +2168,15 @@
       "rowError": "Zeile {row}: {message}",
       "defaultBlockLabel": "Gesperrter Zeitraum"
     }
+  },
+  "installBanner": {
+    "title": "CamperFlow installieren",
+    "dismiss": "Schließen",
+    "chromiumHint": "Zum Startbildschirm hinzufügen für schnellen Zugriff",
+    "chromiumButton": "Installieren",
+    "iosBefore": "Tippe auf",
+    "iosAfter": "dann auf",
+    "iosAction": "Zum Home-Bildschirm",
+    "fallbackHint": "Öffne das Browsermenü und wähle „Installieren" oder „Zum Startbildschirm hinzufügen""
   }
 }

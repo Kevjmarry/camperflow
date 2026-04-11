@@ -2168,5 +2168,15 @@
       "rowError": "Row {row}: {message}",
       "defaultBlockLabel": "Blocked period"
     }
+  },
+  "installBanner": {
+    "title": "Install CamperFlow",
+    "dismiss": "Dismiss",
+    "chromiumHint": "Add to your home screen for quick access",
+    "chromiumButton": "Install",
+    "iosBefore": "Tap",
+    "iosAfter": "then",
+    "iosAction": "Add to Home Screen",
+    "fallbackHint": "Open your browser menu and choose \"Install\" or \"Add to Home Screen\""
   }
 }
