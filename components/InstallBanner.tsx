@@ -16,16 +16,16 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
  */
 export function InstallBanner() {
   const t = useTranslations("installBanner");
-  const { canPrompt, isIOS, isInstalled, dismissed, promptInstall, dismiss } =
+  const { ready, canPrompt, isIOS, isInstalled, dismissed, promptInstall, dismiss } =
     useInstallPrompt();
 
-  // Already installed or permanently dismissed — show nothing
-  if (isInstalled || dismissed) return null;
+  // Hide until install state is known, or once installed / permanently dismissed
+  if (!ready || isInstalled || dismissed) return null;
 
   return (
     <div
       role="banner"
-      className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-lg ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
+      className="fixed bottom-4 left-1/2 z-[9999] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start gap-3 rounded-xl bg-white px-4 py-3 shadow-lg ring-1 ring-black/10 dark:bg-zinc-900 dark:ring-white/10"
     >
       {/* App icon */}
       <img

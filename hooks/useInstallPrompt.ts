@@ -15,6 +15,7 @@ export function useInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // Already dismissed by the user
@@ -26,7 +27,11 @@ export function useInstallPrompt() {
     } catch {}
 
     // Already running as an installed PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true ||
+      document.referrer.includes("android-app://")
+    ) {
       setIsInstalled(true);
       return;
     }
@@ -51,6 +56,8 @@ export function useInstallPrompt() {
     };
     window.addEventListener("appinstalled", onInstalled);
 
+    setReady(true);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
@@ -73,6 +80,8 @@ export function useInstallPrompt() {
   };
 
   return {
+    /** true once the effect has run and install state is known */
+    ready,
     /** true when the Chromium native prompt is ready to fire */
     canPrompt: !!deferredPrompt,
     /** true on iOS/iPadOS where we show manual instructions instead */
