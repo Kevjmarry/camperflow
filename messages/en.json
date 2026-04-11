@@ -1626,7 +1626,39 @@
     "success": {
       "saved": "Company settings saved successfully!"
     },
-    "loading": "Loading company settings..."
+    "loading": "Loading company settings...",
+    "systemRecovery": {
+      "title": "System Recovery",
+      "description": "Administrative tools to recover system state after a period of inactivity.",
+      "backlogReview": {
+        "title": "Backlog review",
+        "description": "Review overdue bookings one by one and choose what to do with each: mark as completed, cancel, or skip for now. Force-closes associated checklist instances for any booking you act on. Vehicle issues, compliance blockers, and manual holds are not affected.",
+        "button": "Review stale backlog",
+        "errorLoad": "Failed to load stale bookings",
+        "errorSubmit": "Failed to apply decisions",
+        "modal": {
+          "title": "Backlog review",
+          "loading": "Loading stale bookings\u2026",
+          "empty": "No stale bookings found. Nothing to review.",
+          "listHint": "Choose an action for each booking. Skipped bookings are left unchanged.",
+          "markAllOnRentComplete": "Mark all on_rent as Completed",
+          "returnedLabel": "returned",
+          "instancesLabel": "{count} pending checklist(s)",
+          "action_complete": "Complete",
+          "action_cancel": "Cancel",
+          "action_skip": "Skip",
+          "warning": "Vehicle readiness is recomputed automatically after each booking is closed.",
+          "reasonLabel": "Reason (applies to all non-skipped bookings)",
+          "reasonPlaceholder": "e.g. System recovery after staff hiatus \u2014 closing backlog from March 2026",
+          "reasonMinLength": "Reason must be at least 10 characters",
+          "cancel": "Cancel",
+          "close": "Close",
+          "submit": "Apply decisions",
+          "submitting": "Applying\u2026",
+          "success": "Done: {completed} completed, {cancelled} cancelled, {skipped} skipped. {instances} checklist instance(s) closed."
+        }
+      }
+    }
   },
   "guestEmergency": {
     "noCodeTitle": "No Booking Code",
@@ -1991,6 +2023,9 @@
     "evidencePhotosCount": "Photos added: {count}",
     "evidenceGroupId": "Driver licence / ID photos",
     "evidenceGroupIdHint": "(front and back)",
+    "evidenceAdd": "Add",
+    "evidenceTakePhoto": "Take photo",
+    "evidenceChoosePhoto": "Choose existing",
     "evidenceNoPhotos": "No photos added yet",
     "auditChecklistTitle": "Checklist Actions",
     "auditChecklistDesc": "Work through each section carefully. Use the flag button only for newly discovered issues or damage. All fields and steps on this page must be completed before handover.",

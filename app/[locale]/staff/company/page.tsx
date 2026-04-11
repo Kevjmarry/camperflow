@@ -62,6 +62,32 @@ export default function CompanySettingsPage() {
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  // isRealAdmin: role === 'admin' only — used for the System Recovery section.
+  // isAdmin (above) also includes can_manage and gates the regular form fields.
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
+
+  // ── Backlog review ────────────────────────────────────────────────────────
+
+  type BacklogAction = 'complete' | 'cancel' | 'skip';
+  interface StaleBooking {
+    id: string;
+    status: 'draft' | 'confirmed' | 'on_rent';
+    customer_name: string | null;
+    vehicle_name: string | null;
+    return_at: string;
+    pending_instances: number;
+  }
+
+  const [backlogReviewOpen, setBacklogReviewOpen] = useState(false);
+  const [backlogLoading, setBacklogLoading] = useState(false);
+  const [backlogBookings, setBacklogBookings] = useState<StaleBooking[]>([]);
+  const [backlogDecisions, setBacklogDecisions] = useState<Record<string, BacklogAction>>({});
+  const [backlogReason, setBacklogReason] = useState('');
+  const [backlogExecuting, setBacklogExecuting] = useState(false);
+  const [backlogError, setBacklogError] = useState('');
+  const [backlogResult, setBacklogResult] = useState<{
+    completed: number; cancelled: number; skipped: number; instances: number;
+  } | null>(null);
 
   // ── Accordion state (all closed by default) ────────────────────────────────
 
@@ -84,6 +110,7 @@ export default function CompanySettingsPage() {
 
       if (profile) {
         setIsAdmin(profile.role === "admin" || profile.can_manage === true);
+        setIsRealAdmin(profile.role === "admin");
       }
     };
     init();
@@ -267,6 +294,64 @@ export default function CompanySettingsPage() {
       setError(err.message || t("errors.saveSettingsFailed"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Backlog review handlers ───────────────────────────────────────────────
+
+  const openBacklogReview = async () => {
+    setBacklogReviewOpen(true);
+    setBacklogBookings([]);
+    setBacklogDecisions({});
+    setBacklogReason('');
+    setBacklogResult(null);
+    setBacklogError('');
+    setBacklogLoading(true);
+    try {
+      const res = await fetch('/api/staff/admin/backlog-review');
+      if (!res.ok) throw new Error(t('systemRecovery.backlogReview.errorLoad'));
+      const data = await res.json();
+      const bookings: StaleBooking[] = data.bookings ?? [];
+      setBacklogBookings(bookings);
+      const defaults: Record<string, BacklogAction> = {};
+      for (const b of bookings) {
+        defaults[b.id] = b.status === 'on_rent' ? 'complete' : 'skip';
+      }
+      setBacklogDecisions(defaults);
+    } catch (err: any) {
+      setBacklogError(err.message || t('systemRecovery.backlogReview.errorLoad'));
+    } finally {
+      setBacklogLoading(false);
+    }
+  };
+
+  const executeBacklogReview = async () => {
+    if (backlogReason.trim().length < 10) return;
+    setBacklogExecuting(true);
+    setBacklogError('');
+    try {
+      const decisions = Object.entries(backlogDecisions).map(([id, action]) => ({ id, action }));
+      const res = await fetch('/api/staff/admin/backlog-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisions, reason: backlogReason.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || t('systemRecovery.backlogReview.errorSubmit'));
+      }
+      const data = await res.json();
+      setBacklogResult({
+        completed: data.closed.completed,
+        cancelled: data.closed.cancelled,
+        skipped: data.closed.skipped,
+        instances: data.instances_closed,
+      });
+      setBacklogBookings([]);
+    } catch (err: any) {
+      setBacklogError(err.message || t('systemRecovery.backlogReview.errorSubmit'));
+    } finally {
+      setBacklogExecuting(false);
     }
   };
 
@@ -858,8 +943,287 @@ export default function CompanySettingsPage() {
             )}
           </form>
 
+          {/* System Recovery — real admin only (role === 'admin'), outside the settings form */}
+          {isRealAdmin && (
+            <div style={{ borderTop: "2px solid rgb(var(--border))", paddingTop: "var(--space-6)" }}>
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
+                {t("systemRecovery.title")}
+              </h2>
+              <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
+                {t("systemRecovery.description")}
+              </p>
+              <div style={{
+                border: "1px solid rgb(var(--error) / 0.3)",
+                borderRadius: "var(--radius)",
+                padding: "var(--space-5)",
+                background: "rgb(var(--error) / 0.04)",
+              }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-2)" }}>
+                  {t("systemRecovery.backlogReview.title")}
+                </h3>
+                <p style={{ fontSize: "14px", color: "rgb(var(--muted))", marginBottom: "var(--space-4)", lineHeight: "1.5" }}>
+                  {t("systemRecovery.backlogReview.description")}
+                </p>
+                <button
+                  type="button"
+                  onClick={openBacklogReview}
+                  style={{
+                    padding: "var(--space-2) var(--space-4)",
+                    background: "rgb(var(--error))",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {t("systemRecovery.backlogReview.button")}
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
+
+      {/* Backlog review modal */}
+      {backlogReviewOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !backlogExecuting) setBacklogReviewOpen(false);
+          }}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-4)",
+          }}
+        >
+          <div className="surface" style={{
+            maxWidth: 680, width: "100%", maxHeight: "90vh",
+            padding: "var(--space-6)",
+            display: "flex", flexDirection: "column", gap: "var(--space-4)",
+            overflowY: "auto",
+          }}>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "rgb(var(--text))", margin: 0 }}>
+              {t("systemRecovery.backlogReview.modal.title")}
+            </h2>
+
+            {/* Loading */}
+            {backlogLoading && (
+              <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0 }}>
+                {t("systemRecovery.backlogReview.modal.loading")}
+              </p>
+            )}
+
+            {/* Empty state */}
+            {!backlogLoading && !backlogResult && backlogBookings.length === 0 && !backlogError && (
+              <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0 }}>
+                {t("systemRecovery.backlogReview.modal.empty")}
+              </p>
+            )}
+
+            {/* Booking list */}
+            {!backlogLoading && !backlogResult && backlogBookings.length > 0 && (
+              <>
+                {/* Bulk shortcut */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+                  <p style={{ fontSize: "13px", color: "rgb(var(--muted))", margin: 0 }}>
+                    {t("systemRecovery.backlogReview.modal.listHint")}
+                  </p>
+                  {backlogBookings.some((b) => b.status === 'on_rent') && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: "13px", whiteSpace: "nowrap" }}
+                      onClick={() => {
+                        setBacklogDecisions((prev) => {
+                          const next = { ...prev };
+                          for (const b of backlogBookings) {
+                            if (b.status === 'on_rent') next[b.id] = 'complete';
+                          }
+                          return next;
+                        });
+                      }}
+                    >
+                      {t("systemRecovery.backlogReview.modal.markAllOnRentComplete")}
+                    </button>
+                  )}
+                </div>
+
+                {/* Rows */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                  {backlogBookings.map((b) => {
+                    const decision = backlogDecisions[b.id] ?? 'skip';
+                    const returnDate = new Date(b.return_at).toLocaleDateString(locale, {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    });
+                    return (
+                      <div key={b.id} style={{
+                        border: "1px solid rgb(var(--border))",
+                        borderRadius: "var(--radius)",
+                        padding: "var(--space-3) var(--space-4)",
+                        display: "flex", flexDirection: "column", gap: "var(--space-2)",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                              {b.customer_name ?? '—'}
+                            </span>
+                            <span style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
+                              {b.vehicle_name ?? '—'} · {t("systemRecovery.backlogReview.modal.returnedLabel")} {returnDate}
+                              {b.pending_instances > 0 && (
+                                <> · {t("systemRecovery.backlogReview.modal.instancesLabel", { count: b.pending_instances })}</>
+                              )}
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: "11px", fontWeight: 600, padding: "2px 8px",
+                            borderRadius: "9999px",
+                            background: b.status === 'on_rent'
+                              ? "rgb(var(--warning) / 0.15)"
+                              : "rgb(var(--muted) / 0.15)",
+                            color: b.status === 'on_rent'
+                              ? "rgb(var(--warning))"
+                              : "rgb(var(--muted))",
+                          }}>
+                            {b.status}
+                          </span>
+                        </div>
+
+                        {/* Action selector */}
+                        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                          {(['complete', 'cancel', 'skip'] as BacklogAction[]).map((action) => (
+                            <button
+                              key={action}
+                              type="button"
+                              onClick={() => setBacklogDecisions((prev) => ({ ...prev, [b.id]: action }))}
+                              style={{
+                                padding: "var(--space-1) var(--space-3)",
+                                fontSize: "12px",
+                                fontWeight: 500,
+                                borderRadius: "var(--radius)",
+                                border: "1px solid",
+                                cursor: "pointer",
+                                borderColor: decision === action
+                                  ? action === 'complete' ? "rgb(var(--success))"
+                                    : action === 'cancel' ? "rgb(var(--error))"
+                                    : "rgb(var(--border))"
+                                  : "rgb(var(--border))",
+                                background: decision === action
+                                  ? action === 'complete' ? "rgb(var(--success) / 0.12)"
+                                    : action === 'cancel' ? "rgb(var(--error) / 0.12)"
+                                    : "rgb(var(--muted) / 0.12)"
+                                  : "transparent",
+                                color: decision === action
+                                  ? action === 'complete' ? "rgb(var(--success))"
+                                    : action === 'cancel' ? "rgb(var(--error))"
+                                    : "rgb(var(--muted))"
+                                  : "rgb(var(--muted))",
+                              }}
+                            >
+                              {t(`systemRecovery.backlogReview.modal.action_${action}`)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Reason */}
+                {Object.values(backlogDecisions).some((a) => a !== 'skip') && (
+                  <div>
+                    <label className="label">{t("systemRecovery.backlogReview.modal.reasonLabel")}</label>
+                    <textarea
+                      className="input"
+                      placeholder={t("systemRecovery.backlogReview.modal.reasonPlaceholder")}
+                      value={backlogReason}
+                      onChange={(e) => setBacklogReason(e.target.value)}
+                      rows={3}
+                      style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                    />
+                    {backlogReason.trim().length > 0 && backlogReason.trim().length < 10 && (
+                      <p style={{ fontSize: "12px", color: "rgb(var(--error))", marginTop: "var(--space-1)" }}>
+                        {t("systemRecovery.backlogReview.modal.reasonMinLength")}
+                      </p>
+                    )}
+                    <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: "var(--space-1)", fontStyle: "italic" }}>
+                      {t("systemRecovery.backlogReview.modal.warning")}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Success */}
+            {backlogResult && (
+              <p style={{ fontSize: "14px", color: "rgb(var(--success))", margin: 0 }}>
+                {t("systemRecovery.backlogReview.modal.success", {
+                  completed: backlogResult.completed,
+                  cancelled: backlogResult.cancelled,
+                  skipped: backlogResult.skipped,
+                  instances: backlogResult.instances,
+                })}
+              </p>
+            )}
+
+            {/* Error */}
+            {backlogError && (
+              <div style={{
+                padding: "var(--space-3) var(--space-4)",
+                background: "rgb(var(--error) / 0.1)",
+                border: "1px solid rgb(var(--error) / 0.3)",
+                borderRadius: "var(--radius)",
+                color: "rgb(var(--error))",
+                fontSize: "14px",
+              }}>
+                {backlogError}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "flex-end", paddingTop: "var(--space-2)" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setBacklogReviewOpen(false)}
+                disabled={backlogExecuting}
+              >
+                {backlogResult
+                  ? t("systemRecovery.backlogReview.modal.close")
+                  : t("systemRecovery.backlogReview.modal.cancel")}
+              </button>
+              {!backlogResult && backlogBookings.length > 0 &&
+               Object.values(backlogDecisions).some((a) => a !== 'skip') && (
+                <button
+                  type="button"
+                  onClick={executeBacklogReview}
+                  disabled={backlogExecuting || backlogReason.trim().length < 10}
+                  style={{
+                    padding: "var(--space-2) var(--space-4)",
+                    background: (backlogExecuting || backlogReason.trim().length < 10)
+                      ? "rgb(var(--error) / 0.45)"
+                      : "rgb(var(--error))",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "var(--radius)",
+                    cursor: (backlogExecuting || backlogReason.trim().length < 10)
+                      ? "not-allowed"
+                      : "pointer",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {backlogExecuting
+                    ? t("systemRecovery.backlogReview.modal.submitting")
+                    : t("systemRecovery.backlogReview.modal.submit")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </PageContainer>
   );
 }

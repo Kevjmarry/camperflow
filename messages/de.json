@@ -1626,7 +1626,39 @@
     "success": {
       "saved": "Unternehmenseinstellungen erfolgreich gespeichert!"
     },
-    "loading": "Unternehmenseinstellungen werden geladen..."
+    "loading": "Unternehmenseinstellungen werden geladen...",
+    "systemRecovery": {
+      "title": "Systemwiederherstellung",
+      "description": "Verwaltungstools zur Wiederherstellung des Systemzustands nach einer l\u00e4ngeren Inaktivit\u00e4tsphase.",
+      "backlogReview": {
+        "title": "Backlog-\u00dcberpr\u00fcfung",
+        "description": "Veraltete Buchungen einzeln \u00fcberpr\u00fcfen und entscheiden: als abgeschlossen markieren, stornieren oder vorerst \u00fcberspringen. Zugeh\u00f6rige Checklisten-Instanzen werden f\u00fcr jede bearbeitete Buchung zwangsweise geschlossen. Fahrzeugprobleme, Compliance-Sperren und manuelle Sperren sind nicht betroffen.",
+        "button": "Veralteten Backlog \u00fcberpr\u00fcfen",
+        "errorLoad": "Veraltete Buchungen konnten nicht geladen werden",
+        "errorSubmit": "Entscheidungen konnten nicht angewendet werden",
+        "modal": {
+          "title": "Backlog-\u00dcberpr\u00fcfung",
+          "loading": "Veraltete Buchungen werden geladen\u2026",
+          "empty": "Keine veralteten Buchungen gefunden. Nichts zu \u00fcberpr\u00fcfen.",
+          "listHint": "W\u00e4hlen Sie f\u00fcr jede Buchung eine Aktion. \u00dcbersprungene Buchungen bleiben unver\u00e4ndert.",
+          "markAllOnRentComplete": "Alle \u201eauf Reise\u201c als abgeschlossen markieren",
+          "returnedLabel": "zur\u00fcckgegeben",
+          "instancesLabel": "{count} offene Checkliste(n)",
+          "action_complete": "Abschlie\u00dfen",
+          "action_cancel": "Stornieren",
+          "action_skip": "\u00dcberspringen",
+          "warning": "Die Fahrzeugbereitschaft wird nach dem Schlie\u00dfen jeder Buchung automatisch neu berechnet.",
+          "reasonLabel": "Grund (gilt f\u00fcr alle nicht \u00fcbersprungenen Buchungen)",
+          "reasonPlaceholder": "z.B. Systemwiederherstellung nach Mitarbeiterpause \u2014 Backlog vom M\u00e4rz 2026 schlie\u00dfen",
+          "reasonMinLength": "Der Grund muss mindestens 10 Zeichen lang sein",
+          "cancel": "Abbrechen",
+          "close": "Schlie\u00dfen",
+          "submit": "Entscheidungen anwenden",
+          "submitting": "Wird angewendet\u2026",
+          "success": "Fertig: {completed} abgeschlossen, {cancelled} storniert, {skipped} \u00fcbersprungen. {instances} Checklisten-Instanz(en) geschlossen."
+        }
+      }
+    }
   },
   "guestEmergency": {
     "noCodeTitle": "Kein Buchungscode",
@@ -1991,6 +2023,9 @@
     "evidencePhotosCount": "Fotos hinzugefügt: {count}",
     "evidenceGroupId": "Führerschein / Ausweisfotos",
     "evidenceGroupIdHint": "(Vorder- und Rückseite)",
+    "evidenceAdd": "Hinzufügen",
+    "evidenceTakePhoto": "Foto aufnehmen",
+    "evidenceChoosePhoto": "Vorhandenes auswählen",
     "evidenceNoPhotos": "Noch keine Fotos hinzugefügt",
     "auditChecklistTitle": "Checkliste",
     "auditChecklistDesc": "Arbeite jeden Abschnitt sorgfältig durch. Nutze den Markier-Button nur für neu entdeckte Probleme oder Schäden. Alle Felder und Schritte auf dieser Seite müssen vor der Übergabe ausgefüllt sein.",
