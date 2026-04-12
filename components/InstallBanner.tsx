@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { usePathname } from "next/navigation";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 /**
@@ -16,46 +15,27 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
  * Hidden once installed or after the user dismisses it (persisted).
  */
 export function InstallBanner() {
-  console.log("INSTALL_BANNER_RENDERED");
   const t = useTranslations("installBanner");
-  const pathname = usePathname();
   const { ready, canPrompt, isIOS, isInstalled, dismissed, promptInstall, dismiss } =
     useInstallPrompt();
 
-  // DEBUG: show state instead of hiding so we can see which condition fires
-  if (!ready || isInstalled || dismissed) {
-    return (
-      <>
-        <div style={{position:'fixed',top:10,left:10,zIndex:99999,background:'red',color:'white',padding:'6px'}}>INSTALL_BANNER_MOUNTED</div>
-        <div className="fixed top-12 left-4 z-[9999] bg-red-600 text-white text-xs p-2 rounded">
-          <div>path={pathname}</div>
-          <div>ready={String(ready)}</div>
-          <div>isInstalled={String(isInstalled)}</div>
-          <div>dismissed={String(dismissed)}</div>
-          <div>canPrompt={String(canPrompt)}</div>
-          <div>isIOS={String(isIOS)}</div>
-        </div>
-      </>
-    );
-  }
+  if (!ready || isInstalled || dismissed) return null;
 
   return (
     <div
       role="banner"
-      data-testid="install-banner"
-      className="fixed inset-x-4 bottom-20 z-[9999] rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
+      className="fixed inset-x-4 bottom-24 z-[9999] rounded-2xl border border-zinc-200 bg-white/98 p-3 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/98"
     >
       <div className="flex items-start gap-3">
-        {/* App icon */}
         <img
           src="/icons/icon-192.png"
           alt=""
           aria-hidden="true"
-          className="h-8 w-8 flex-none rounded-lg"
+          className="h-10 w-10 flex-none rounded-xl"
         />
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <p className="text-sm font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
             {t("title")}
           </p>
 
@@ -106,16 +86,10 @@ export function InstallBanner() {
           )}
         </div>
 
-        {/* DEBUG — remove before ship */}
-        <pre className="mt-2 rounded bg-zinc-100 p-1 text-[10px] leading-4 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-          {`path=${pathname}\nready=${ready} installed=${isInstalled} dismissed=${dismissed}\ncanPrompt=${canPrompt} isIOS=${isIOS}`}
-        </pre>
-
-        {/* Dismiss */}
         <button
           onClick={dismiss}
           aria-label={t("dismiss")}
-          className="flex-none rounded p-1 text-zinc-400"
+          className="ml-1 flex-none rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
