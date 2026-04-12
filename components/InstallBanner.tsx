@@ -24,7 +24,7 @@ export function InstallBanner() {
   return (
     <div
       role="banner"
-      className="fixed inset-x-4 bottom-24 z-[9999] rounded-2xl border border-zinc-200 bg-white/98 p-3 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/98"
+      className="fixed inset-x-4 bottom-24 z-[9999] rounded-2xl border-4 border-red-600 bg-lime-400 text-black p-3 shadow-xl"
     >
       <div className="flex items-start gap-3">
         <img
@@ -36,7 +36,7 @@ export function InstallBanner() {
 
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
-            {t("title")}
+            INSTALL BANNER TEST 123
           </p>
 
           {/* ── iOS: tap Share → Add to Home Screen ── */}
