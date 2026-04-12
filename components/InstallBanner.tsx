@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
 /**
@@ -16,15 +17,28 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
  */
 export function InstallBanner() {
   const t = useTranslations("installBanner");
+  const pathname = usePathname();
   const { ready, canPrompt, isIOS, isInstalled, dismissed, promptInstall, dismiss } =
     useInstallPrompt();
 
-  // Hide until install state is known, or once installed / permanently dismissed
-  if (!ready || isInstalled || dismissed) return null;
+  // DEBUG: show state instead of hiding so we can see which condition fires
+  if (!ready || isInstalled || dismissed) {
+    return (
+      <div className="fixed top-4 left-4 z-[9999] bg-red-600 text-white text-xs p-2 rounded">
+        <div>path={pathname}</div>
+        <div>ready={String(ready)}</div>
+        <div>isInstalled={String(isInstalled)}</div>
+        <div>dismissed={String(dismissed)}</div>
+        <div>canPrompt={String(canPrompt)}</div>
+        <div>isIOS={String(isIOS)}</div>
+      </div>
+    );
+  }
 
   return (
     <div
       role="banner"
+      data-testid="install-banner"
       className="fixed inset-x-4 bottom-20 z-[9999] rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="flex items-start gap-3">
@@ -87,6 +101,11 @@ export function InstallBanner() {
             </p>
           )}
         </div>
+
+        {/* DEBUG — remove before ship */}
+        <pre className="mt-2 rounded bg-zinc-100 p-1 text-[10px] leading-4 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          {`path=${pathname}\nready=${ready} installed=${isInstalled} dismissed=${dismissed}\ncanPrompt=${canPrompt} isIOS=${isIOS}`}
+        </pre>
 
         {/* Dismiss */}
         <button
