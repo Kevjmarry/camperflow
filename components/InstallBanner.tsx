@@ -29,7 +29,7 @@ export function InstallBanner() {
         left: "50%",
         transform: "translateX(-50%)",
         width: "calc(100% - 32px)",
-        maxWidth: 560,
+        maxWidth: 460,
         bottom: 16,
         zIndex: 9999,
         background: "#ffffff",
