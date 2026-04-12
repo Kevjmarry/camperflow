@@ -16,6 +16,7 @@ import { useInstallPrompt } from "@/hooks/useInstallPrompt";
  * Hidden once installed or after the user dismisses it (persisted).
  */
 export function InstallBanner() {
+  console.log("INSTALL_BANNER_RENDERED");
   const t = useTranslations("installBanner");
   const pathname = usePathname();
   const { ready, canPrompt, isIOS, isInstalled, dismissed, promptInstall, dismiss } =
@@ -24,14 +25,17 @@ export function InstallBanner() {
   // DEBUG: show state instead of hiding so we can see which condition fires
   if (!ready || isInstalled || dismissed) {
     return (
-      <div className="fixed top-4 left-4 z-[9999] bg-red-600 text-white text-xs p-2 rounded">
-        <div>path={pathname}</div>
-        <div>ready={String(ready)}</div>
-        <div>isInstalled={String(isInstalled)}</div>
-        <div>dismissed={String(dismissed)}</div>
-        <div>canPrompt={String(canPrompt)}</div>
-        <div>isIOS={String(isIOS)}</div>
-      </div>
+      <>
+        <div style={{position:'fixed',top:10,left:10,zIndex:99999,background:'red',color:'white',padding:'6px'}}>INSTALL_BANNER_MOUNTED</div>
+        <div className="fixed top-12 left-4 z-[9999] bg-red-600 text-white text-xs p-2 rounded">
+          <div>path={pathname}</div>
+          <div>ready={String(ready)}</div>
+          <div>isInstalled={String(isInstalled)}</div>
+          <div>dismissed={String(dismissed)}</div>
+          <div>canPrompt={String(canPrompt)}</div>
+          <div>isIOS={String(isIOS)}</div>
+        </div>
+      </>
     );
   }
 
