@@ -24,24 +24,35 @@ export function InstallBanner() {
   return (
     <div
       role="banner"
-      className="fixed inset-x-4 bottom-4 z-[9999] rounded-2xl border border-zinc-200/80 bg-white/95 p-3 shadow-lg backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/95"
+      style={{
+        position: "fixed",
+        left: 16,
+        right: 16,
+        bottom: 16,
+        zIndex: 9999,
+        background: "#ffffff",
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 16,
+        padding: 12,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+      }}
     >
-      <div className="flex items-start gap-3">
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <img
           src="/icons/icon-192.png"
           alt=""
           aria-hidden="true"
-          className="h-8 w-8 flex-none rounded-lg"
+          style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: "block" }}
         />
 
-        <div className="min-w-0 flex-1 pr-1">
-          <p className="text-sm font-medium leading-tight text-zinc-900 dark:text-zinc-100">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "#111118" }}>
             {t("title")}
           </p>
 
           {/* ── iOS: tap Share → Add to Home Screen ── */}
           {isIOS && (
-            <p className="mt-1 text-xs leading-4 text-zinc-600 dark:text-zinc-300">
+            <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: "#52525b" }}>
               {t("iosBefore")}{" "}
               <span aria-label="Share">
                 <svg
@@ -52,7 +63,7 @@ export function InstallBanner() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="inline h-3.5 w-3.5 align-text-bottom"
+                  style={{ display: "inline", width: 14, height: 14, verticalAlign: "text-bottom" }}
                 >
                   <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                   <polyline points="16 6 12 2 8 6" />
@@ -66,12 +77,24 @@ export function InstallBanner() {
           {/* ── Chromium: native prompt available ── */}
           {!isIOS && canPrompt && (
             <>
-              <p className="mt-1 text-xs leading-4 text-zinc-600 dark:text-zinc-300">
+              <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: "#52525b" }}>
                 {t("chromiumHint")}
               </p>
               <button
                 onClick={promptInstall}
-                className="mt-2 inline-flex rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white"
+                style={{
+                  marginTop: 8,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
               >
                 {t("chromiumButton")}
               </button>
@@ -80,7 +103,7 @@ export function InstallBanner() {
 
           {/* ── Fallback: no prompt API and not iOS ── */}
           {!isIOS && !canPrompt && (
-            <p className="mt-1 text-xs leading-4 text-zinc-600 dark:text-zinc-300">
+            <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: "#52525b" }}>
               {t("fallbackHint")}
             </p>
           )}
@@ -89,7 +112,18 @@ export function InstallBanner() {
         <button
           onClick={dismiss}
           aria-label={t("dismiss")}
-          className="flex-none rounded-md p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          style={{
+            flexShrink: 0,
+            background: "none",
+            border: "none",
+            borderRadius: 6,
+            padding: 4,
+            cursor: "pointer",
+            color: "#a1a1aa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -99,7 +133,7 @@ export function InstallBanner() {
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-4 w-4"
+            style={{ width: 16, height: 16 }}
           >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
