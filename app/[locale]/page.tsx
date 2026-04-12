@@ -4,6 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { FormEvent, useMemo, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { InstallBanner } from "@/components/InstallBanner";
 
 type Locale = "en" | "de";
 
@@ -50,6 +51,8 @@ export default function AppEntryPage() {
   };
 
   return (
+    <>
+    <InstallBanner />
     <div className="min-h-screen flex flex-col">
       <header style={{ borderBottom: "1px solid rgb(var(--border))" }}>
         <div className="container">
@@ -193,5 +196,6 @@ export default function AppEntryPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }
