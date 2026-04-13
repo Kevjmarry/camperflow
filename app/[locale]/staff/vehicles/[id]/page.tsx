@@ -143,6 +143,9 @@ export default function VehicleDetailPage({
   const [vehicleChecklists, setVehicleChecklists] = useState<VehicleChecklist[]>([]);
   const [checklistsLoading, setChecklistsLoading] = useState(false);
 
+  const [vehicleIssues, setVehicleIssues] = useState<{ id: string; title: string | null; description: string | null; blocking: boolean; createdAt: string | null; checklistInstanceId: string | null }[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(false);
+
   const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -259,6 +262,48 @@ export default function VehicleDetailPage({
     };
 
     fetchCompliance();
+  }, [vehicle, supabase]);
+
+  useEffect(() => {
+    if (!vehicle) return;
+    const fetchIssues = async () => {
+      setIssuesLoading(true);
+      try {
+        const { data: issues } = await supabase
+          .from('vehicle_issues')
+          .select('id, created_at')
+          .eq('vehicle_id', vehicle.id)
+          .eq('resolved', false);
+        if (!issues || issues.length === 0) { setVehicleIssues([]); return; }
+        const issueIds = issues.map((i: any) => i.id);
+        const { data: linkedItems } = await supabase
+          .from('checklist_instance_items')
+          .select('linked_vehicle_issue_id, instance_id, issue_title, issue_description, issue_blocking')
+          .in('linked_vehicle_issue_id', issueIds);
+        const byIssue = new Map<string, { title: string | null; description: string | null; blocking: boolean; checklistInstanceId: string | null }>();
+        for (const item of (linkedItems ?? []) as any[]) {
+          if (item.linked_vehicle_issue_id && !byIssue.has(item.linked_vehicle_issue_id)) {
+            byIssue.set(item.linked_vehicle_issue_id, {
+              title: item.issue_title ?? null,
+              description: item.issue_description ?? null,
+              blocking: item.issue_blocking === true,
+              checklistInstanceId: item.instance_id ?? null,
+            });
+          }
+        }
+        setVehicleIssues((issues as any[]).map((i) => ({
+          id: i.id,
+          title: byIssue.get(i.id)?.title ?? null,
+          description: byIssue.get(i.id)?.description ?? null,
+          blocking: byIssue.get(i.id)?.blocking ?? false,
+          createdAt: i.created_at ?? null,
+          checklistInstanceId: byIssue.get(i.id)?.checklistInstanceId ?? null,
+        })));
+      } finally {
+        setIssuesLoading(false);
+      }
+    };
+    fetchIssues();
   }, [vehicle, supabase]);
 
   useEffect(() => {
@@ -867,6 +912,75 @@ export default function VehicleDetailPage({
                           )}
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Open Vehicle Issues */}
+            <div id="issues" className="surface" style={{ padding: "var(--space-6)" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                Open issues
+              </div>
+              {issuesLoading ? (
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>Loading…</div>
+              ) : vehicleIssues.length === 0 ? (
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No open issues</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  {vehicleIssues.map((issue) => {
+                    const cardStyle: React.CSSProperties = {
+                      padding: "var(--space-4)",
+                      background: issue.blocking ? "rgb(var(--error) / 0.06)" : "rgb(var(--warning) / 0.06)",
+                      border: `1px solid ${issue.blocking ? "rgb(var(--error) / 0.25)" : "rgb(var(--warning) / 0.25)"}`,
+                      borderRadius: "var(--radius)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-1)",
+                    };
+                    const inner = (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                            {issue.title || "Open vehicle issue"}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              padding: "2px 8px",
+                              borderRadius: "var(--radius)",
+                              background: issue.blocking ? "rgb(var(--error) / 0.15)" : "rgb(var(--warning) / 0.15)",
+                              color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
+                            }}
+                          >
+                            {issue.blocking ? "Blocking" : "Attention"}
+                          </span>
+                          {issue.checklistInstanceId && (
+                            <span style={{ fontSize: "11px", color: "rgb(var(--brand))", marginLeft: "auto" }}>View →</span>
+                          )}
+                        </div>
+                        {issue.description && (
+                          <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>{issue.description}</div>
+                        )}
+                        {issue.createdAt && (
+                          <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
+                            Reported {new Date(issue.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" })}
+                          </div>
+                        )}
+                      </>
+                    );
+                    return issue.checklistInstanceId ? (
+                      <Link
+                        key={issue.id}
+                        href={`/${locale}/staff/checklists/${issue.checklistInstanceId}`}
+                        style={{ textDecoration: "none", ...cardStyle }}
+                      >
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div key={issue.id} style={cardStyle}>{inner}</div>
                     );
                   })}
                 </div>

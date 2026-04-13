@@ -960,7 +960,10 @@
         "nextReturn": "Next return",
         "view": "View booking",
         "nonePickup": "No upcoming pickups",
-        "noneReturn": "No upcoming returns"
+        "noneReturn": "No upcoming returns",
+        "prev": "Previous",
+        "next": "Next",
+        "itemOf": "{current} of {total}"
       },
       "upcomingReturns": {
         "title": "Upcoming returns",

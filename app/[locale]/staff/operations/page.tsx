@@ -135,7 +135,7 @@ export default async function OperationsPage({
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
-        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : undefined,
+        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#issues` : undefined,
     })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
@@ -171,7 +171,7 @@ export default async function OperationsPage({
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
-        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : undefined,
+        : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#issues` : undefined,
     })
     const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
@@ -198,7 +198,7 @@ export default async function OperationsPage({
       severity: 'warning',
       href: v.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
-        : `/${locale}/staff/vehicles/${v.id}`,
+        : `/${locale}/staff/vehicles/${v.id}#issues`,
     })
     addItem(`vehicle-${v.id}`, {
       line1: v.name,
@@ -249,8 +249,8 @@ export default async function OperationsPage({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <OperationsOnRentNow rows={onRentNow} />
           <OperationsNextUp
-            nextPickup={upcomingPickups[0] ?? null}
-            nextReturn={upcomingReturns[0] ?? null}
+            pickups={upcomingPickups.slice(0, 3)}
+            returns={upcomingReturns.slice(0, 3)}
           />
 
           {/* Attention needed strip */}

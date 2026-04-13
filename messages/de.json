@@ -960,7 +960,10 @@
         "nextReturn": "Nächste Rückgabe",
         "view": "Buchung anzeigen",
         "nonePickup": "Keine bevorstehenden Abholungen",
-        "noneReturn": "Keine bevorstehenden Rückgaben"
+        "noneReturn": "Keine bevorstehenden Rückgaben",
+        "prev": "Zurück",
+        "next": "Weiter",
+        "itemOf": "{current} von {total}"
       },
       "upcomingReturns": {
         "title": "Bevorstehende Rückgaben",
