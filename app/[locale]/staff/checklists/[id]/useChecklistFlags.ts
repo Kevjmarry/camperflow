@@ -9,6 +9,8 @@ import { uiToDbSeverity, parseSyncError } from './helpers';
 
 interface UseChecklistFlagsProps {
   supabase: SupabaseClient<any>;
+  instanceId: string;
+  vehicleId: string | null;
   localItems: ChecklistItemType[];
   setLocalItems: Dispatch<SetStateAction<ChecklistItemType[]>>;
   isChecklistLocked: boolean;
@@ -18,6 +20,8 @@ interface UseChecklistFlagsProps {
 
 export function useChecklistFlags({
   supabase,
+  instanceId,
+  vehicleId,
   localItems,
   setLocalItems,
   isChecklistLocked,
@@ -91,13 +95,30 @@ export function useChecklistFlags({
 
     setFlagDraftById((prev) => ({ ...prev, [itemId]: { ...draft, saving: true, error: null } }));
 
+    // Create a vehicle_issues row so the issue is permanently traceable to its source.
+    // Only possible when the checklist is linked to a vehicle.
+    let vehicleIssueId: string | null = null;
+    if (vehicleId) {
+      const { data: newIssue } = await supabase
+        .from('vehicle_issues')
+        .insert({
+          vehicle_id: vehicleId,
+          resolved: false,
+          source_checklist_instance_id: instanceId,
+          source_checklist_item_id: itemId,
+        })
+        .select('id')
+        .single();
+      if (newIssue) vehicleIssueId = newIssue.id;
+    }
+
     const issueUpdate = {
       issue_flag: true,
       issue_title: item.template.label,
       issue_description: draft.note.trim(),
       issue_severity: uiToDbSeverity(draft.severity),
       issue_blocking: draft.severity === 'urgent',
-      linked_vehicle_issue_id: null,
+      linked_vehicle_issue_id: vehicleIssueId,
     };
 
     const { error } = await supabase

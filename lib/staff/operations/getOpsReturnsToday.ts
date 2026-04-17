@@ -64,6 +64,7 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
         .from('checklist_instance_items')
         .select('instance_id')
         .in('instance_id', instanceIds)
+        .eq('issue_flag', true)
         .eq('issue_blocking', true)
     : { data: [], error: null }
 

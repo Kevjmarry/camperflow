@@ -8,6 +8,7 @@ import OperationsCompletedBookings from '@/components/staff/operations/Operation
 import OperationsOnRentNow from '@/components/staff/operations/OperationsOnRentNow'
 import { getOpsPickupsToday } from '@/lib/staff/operations/getOpsPickupsToday'
 import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPickups'
+import type { OpsUpcomingPickup } from '@/lib/staff/operations/getOpsUpcomingPickups'
 import { getOpsUpcomingReturns } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
@@ -124,7 +125,11 @@ export default async function OperationsPage({
     if (!p.vehicleBlocked && !p.hasBlockingIssue && !p.hasExpiredCompliance && !p.hasOpenVehicleIssue) continue
     const chips: Chip[] = []
     if (p.vehicleBlocked) chips.push({ label: 'Blocked', severity: 'warning' })
-    if (p.hasBlockingIssue) chips.push({ label: 'Checklist issue', severity: 'critical' })
+    if (p.hasBlockingIssue) chips.push({
+      label: 'Checklist issue',
+      severity: 'critical',
+      href: p.checklistInstanceId ? `/${locale}/staff/checklists/${p.checklistInstanceId}?from=booking` : undefined,
+    })
     if (p.hasExpiredCompliance) chips.push({
       label: 'Expired compliance',
       severity: 'critical',
@@ -211,6 +216,41 @@ export default async function OperationsPage({
   console.log('[attention-debug] attentionItems', attentionItems.map((i) => ({ line1: i.line1, chips: i.chips.map((c) => c.label) })))
   const urgentItems = attentionItems.slice(0, 5)
 
+  // Build the Next pickup tile feed: today's active pickups first, then upcoming.
+  // This ensures pickups that are happening now or are overdue stay visible.
+  const todayPickupsAsUpcoming: OpsUpcomingPickup[] = pickups.map((p) => ({
+    id: p.id,
+    bookingNumber: p.bookingNumber,
+    customerName: p.customerName,
+    vehicleName: p.vehicleName,
+    pickupAt: p.pickupAt,
+    returnAt: null,
+    nights: null,
+    opsFlag: p.opsFlag,
+    opsPriority: p.opsPriority,
+    daysUntil: 0,
+    nextAction: p.nextAction ?? null,
+    hoursToPickup: p.hoursToPickup ?? null,
+    vehicleBlocked: p.vehicleBlocked ?? false,
+    hasBlockingIssue: p.hasBlockingIssue,
+    hasAttentionIssue: false,
+    hasUrgentIssue: p.hasBlockingIssue,
+    hasExpiredCompliance: p.hasExpiredCompliance,
+    hasOpenVehicleIssue: p.hasOpenVehicleIssue,
+    vehicleStatus: p.vehicleStatus,
+    vehicleId: p.vehicleId,
+    openVehicleIssueChecklistInstanceId: p.openVehicleIssueChecklistInstanceId,
+    guestCount: null,
+    hasPets: false,
+    hasAirportPickup: false,
+    hasExtraDriver: false,
+  }))
+  const todayPickupIds = new Set(pickups.map((p) => p.id))
+  const nextPickups = [
+    ...todayPickupsAsUpcoming,
+    ...upcomingPickups.filter((p) => !todayPickupIds.has(p.id)),
+  ].slice(0, 3)
+
   return (
     <PageContainer maxWidth="1280px">
       <style>{`
@@ -249,7 +289,7 @@ export default async function OperationsPage({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <OperationsOnRentNow rows={onRentNow} />
           <OperationsNextUp
-            pickups={upcomingPickups.slice(0, 3)}
+            pickups={nextPickups}
             returns={upcomingReturns.slice(0, 3)}
           />
 

@@ -78,7 +78,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   const { data: openIssues, error: oiError } = await supabase
     .from('vehicle_issues')
-    .select('id, vehicle_id')
+    .select('id, vehicle_id, source_checklist_instance_id')
     .in('vehicle_id', vehicleIds)
     .eq('resolved', false)
 
@@ -88,15 +88,22 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     (openIssues ?? []).filter((i) => isUUID(i.vehicle_id)).map((i) => i.vehicle_id)
   )
 
-  const issueIds = (openIssues ?? []).filter((i) => isUUID(i.id)).map((i) => i.id)
-  const { data: linkedItems } = issueIds.length
+  // Prefer the durable source column; fall back to reverse lookup for legacy rows.
+  const issueChecklistMap = new Map<string, string>()
+  for (const issue of (openIssues ?? [])) {
+    if (issue.source_checklist_instance_id && isUUID(issue.source_checklist_instance_id)) {
+      issueChecklistMap.set(issue.id, issue.source_checklist_instance_id)
+    }
+  }
+  const legacyIssueIds = (openIssues ?? [])
+    .filter((i) => isUUID(i.id) && !i.source_checklist_instance_id)
+    .map((i) => i.id)
+  const { data: linkedItems } = legacyIssueIds.length
     ? await supabase
         .from('checklist_instance_items')
         .select('linked_vehicle_issue_id, instance_id')
-        .in('linked_vehicle_issue_id', issueIds)
+        .in('linked_vehicle_issue_id', legacyIssueIds)
     : { data: [] }
-
-  const issueChecklistMap = new Map<string, string>()
   for (const item of (linkedItems ?? [])) {
     if (item.linked_vehicle_issue_id && item.instance_id && isUUID(item.instance_id)) {
       if (!issueChecklistMap.has(item.linked_vehicle_issue_id)) {

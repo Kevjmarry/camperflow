@@ -22,6 +22,7 @@ export interface OpsPickup {
   hasBlockingIssue: boolean
   hasExpiredCompliance: boolean
   hasOpenVehicleIssue: boolean
+  vehicleStatus: 'ready' | 'preparing' | 'on_rent' | null
   vehicleId: string | null
   openVehicleIssueChecklistInstanceId: string | null
 }
@@ -73,6 +74,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
         .from('checklist_instance_items')
         .select('instance_id')
         .in('instance_id', instanceIds)
+        .eq('issue_flag', true)
         .eq('issue_blocking', true)
     : { data: [], error: null }
 
@@ -100,7 +102,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   const { data: openIssues, error: oiError } = vehicleIds.length
     ? await supabase
         .from('vehicle_issues')
-        .select('id, vehicle_id')
+        .select('id, vehicle_id, source_checklist_instance_id')
         .in('vehicle_id', vehicleIds)
         .eq('resolved', false)
     : { data: [], error: null }
@@ -109,15 +111,22 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
 
-  const issueIds = (openIssues ?? []).filter((i) => isUUID(i.id)).map((i) => i.id)
-  const { data: linkedItems } = issueIds.length
+  // Prefer the durable source column; fall back to reverse lookup for legacy rows.
+  const issueChecklistMap = new Map<string, string>()
+  for (const issue of (openIssues ?? [])) {
+    if (issue.source_checklist_instance_id && isUUID(issue.source_checklist_instance_id)) {
+      issueChecklistMap.set(issue.id, issue.source_checklist_instance_id)
+    }
+  }
+  const legacyIssueIds = (openIssues ?? [])
+    .filter((i) => isUUID(i.id) && !i.source_checklist_instance_id)
+    .map((i) => i.id)
+  const { data: linkedItems } = legacyIssueIds.length
     ? await supabase
         .from('checklist_instance_items')
         .select('linked_vehicle_issue_id, instance_id')
-        .in('linked_vehicle_issue_id', issueIds)
+        .in('linked_vehicle_issue_id', legacyIssueIds)
     : { data: [] }
-
-  const issueChecklistMap = new Map<string, string>()
   for (const item of (linkedItems ?? [])) {
     if (item.linked_vehicle_issue_id && item.instance_id && isUUID(item.instance_id)) {
       if (!issueChecklistMap.has(item.linked_vehicle_issue_id)) {
@@ -133,6 +142,14 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       vehicleIssueChecklistMap.set(issue.vehicle_id, checklistId)
     }
   }
+
+  const ALLOWED_STATUSES = new Set(['ready', 'preparing', 'on_rent'])
+  const { data: vehicleStatuses } = vehicleIds.length
+    ? await supabase.from('vehicles').select('id, status').in('id', vehicleIds)
+    : { data: [] }
+  const vehicleStatusMap = new Map(
+    (vehicleStatuses ?? []).map((v) => [v.id, ALLOWED_STATUSES.has(v.status) ? v.status as 'ready' | 'preparing' | 'on_rent' : null])
+  )
 
   return (data ?? []).map((b) => {
     const handover = instancesByBooking.get(b.id)
@@ -157,6 +174,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       hasBlockingIssue: handover ? blockingInstanceIds.has(handover.id) : false,
       hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
       hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
+      vehicleStatus: b.vehicle_id ? (vehicleStatusMap.get(b.vehicle_id) ?? null) : null,
       vehicleId: b.vehicle_id ?? null,
       openVehicleIssueChecklistInstanceId: b.vehicle_id ? (vehicleIssueChecklistMap.get(b.vehicle_id) ?? null) : null,
     }

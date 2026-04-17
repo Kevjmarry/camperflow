@@ -145,6 +145,7 @@ export default function VehicleDetailPage({
 
   const [vehicleIssues, setVehicleIssues] = useState<{ id: string; title: string | null; description: string | null; blocking: boolean; createdAt: string | null; checklistInstanceId: string | null }[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(false);
+  const [resolvingIssueId, setResolvingIssueId] = useState<string | null>(null);
 
   const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -271,23 +272,48 @@ export default function VehicleDetailPage({
       try {
         const { data: issues } = await supabase
           .from('vehicle_issues')
-          .select('id, created_at')
+          .select('id, created_at, source_checklist_instance_id, source_checklist_item_id')
           .eq('vehicle_id', vehicle.id)
           .eq('resolved', false);
         if (!issues || issues.length === 0) { setVehicleIssues([]); return; }
-        const issueIds = issues.map((i: any) => i.id);
-        const { data: linkedItems } = await supabase
-          .from('checklist_instance_items')
-          .select('linked_vehicle_issue_id, instance_id, issue_title, issue_description, issue_blocking')
-          .in('linked_vehicle_issue_id', issueIds);
+
+        // Prefer durable source column; reverse-lookup only for legacy rows.
         const byIssue = new Map<string, { title: string | null; description: string | null; blocking: boolean; checklistInstanceId: string | null }>();
-        for (const item of (linkedItems ?? []) as any[]) {
-          if (item.linked_vehicle_issue_id && !byIssue.has(item.linked_vehicle_issue_id)) {
-            byIssue.set(item.linked_vehicle_issue_id, {
-              title: item.issue_title ?? null,
-              description: item.issue_description ?? null,
-              blocking: item.issue_blocking === true,
-              checklistInstanceId: item.instance_id ?? null,
+        const legacyIssueIds = (issues as any[])
+          .filter((i) => !i.source_checklist_instance_id)
+          .map((i) => i.id);
+        if (legacyIssueIds.length > 0) {
+          const { data: linkedItems } = await supabase
+            .from('checklist_instance_items')
+            .select('linked_vehicle_issue_id, instance_id, issue_title, issue_description, issue_blocking')
+            .in('linked_vehicle_issue_id', legacyIssueIds);
+          for (const item of (linkedItems ?? []) as any[]) {
+            if (item.linked_vehicle_issue_id && !byIssue.has(item.linked_vehicle_issue_id)) {
+              byIssue.set(item.linked_vehicle_issue_id, {
+                title: item.issue_title ?? null,
+                description: item.issue_description ?? null,
+                blocking: item.issue_blocking === true,
+                checklistInstanceId: item.instance_id ?? null,
+              });
+            }
+          }
+        }
+        // For new-style issues, fetch the item data via source_checklist_item_id
+        const newStyleIssues = (issues as any[]).filter((i) => i.source_checklist_item_id);
+        if (newStyleIssues.length > 0) {
+          const itemIds = newStyleIssues.map((i: any) => i.source_checklist_item_id);
+          const { data: sourceItems } = await supabase
+            .from('checklist_instance_items')
+            .select('id, issue_title, issue_description, issue_blocking')
+            .in('id', itemIds);
+          const sourceMap = new Map((sourceItems ?? []).map((it: any) => [it.id, it]));
+          for (const issue of newStyleIssues) {
+            const src = sourceMap.get(issue.source_checklist_item_id);
+            byIssue.set(issue.id, {
+              title: src?.issue_title ?? null,
+              description: src?.issue_description ?? null,
+              blocking: src?.issue_blocking === true,
+              checklistInstanceId: issue.source_checklist_instance_id ?? null,
             });
           }
         }
@@ -444,6 +470,20 @@ export default function VehicleDetailPage({
       next.sort((a, b) => a.compliance_types.sort_order - b.compliance_types.sort_order);
       return next;
     });
+  };
+
+  const handleResolveIssue = async (issueId: string) => {
+    setResolvingIssueId(issueId);
+    try {
+      const { error } = await supabase
+        .from("vehicle_issues")
+        .update({ resolved: true })
+        .eq("id", issueId);
+      if (error) throw new Error(error.message);
+      setVehicleIssues((prev) => prev.filter((i) => i.id !== issueId));
+    } finally {
+      setResolvingIssueId(null);
+    }
   };
 
   const trackedTypeIds = new Set(compliance.map((r) => r.compliance_type_id));
@@ -939,28 +979,30 @@ export default function VehicleDetailPage({
                       flexDirection: "column",
                       gap: "var(--space-1)",
                     };
-                    const inner = (
+                    const isResolving = resolvingIssueId === issue.id;
+
+                    const issueHeader = (
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                          {issue.title || "Open vehicle issue"}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            padding: "2px 8px",
+                            borderRadius: "var(--radius)",
+                            background: issue.blocking ? "rgb(var(--error) / 0.15)" : "rgb(var(--warning) / 0.15)",
+                            color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
+                          }}
+                        >
+                          {issue.blocking ? "Blocking" : "Attention"}
+                        </span>
+                      </div>
+                    );
+
+                    const issueBody = (
                       <>
-                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                            {issue.title || "Open vehicle issue"}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              padding: "2px 8px",
-                              borderRadius: "var(--radius)",
-                              background: issue.blocking ? "rgb(var(--error) / 0.15)" : "rgb(var(--warning) / 0.15)",
-                              color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
-                            }}
-                          >
-                            {issue.blocking ? "Blocking" : "Attention"}
-                          </span>
-                          {issue.checklistInstanceId && (
-                            <span style={{ fontSize: "11px", color: "rgb(var(--brand))", marginLeft: "auto" }}>View →</span>
-                          )}
-                        </div>
                         {issue.description && (
                           <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>{issue.description}</div>
                         )}
@@ -971,16 +1013,38 @@ export default function VehicleDetailPage({
                         )}
                       </>
                     );
-                    return issue.checklistInstanceId ? (
-                      <Link
-                        key={issue.id}
-                        href={`/${locale}/staff/checklists/${issue.checklistInstanceId}`}
-                        style={{ textDecoration: "none", ...cardStyle }}
-                      >
-                        {inner}
-                      </Link>
-                    ) : (
-                      <div key={issue.id} style={cardStyle}>{inner}</div>
+
+                    if (issue.checklistInstanceId) {
+                      return (
+                        <Link
+                          key={issue.id}
+                          href={`/${locale}/staff/checklists/${issue.checklistInstanceId}`}
+                          style={{ textDecoration: "none", ...cardStyle }}
+                        >
+                          {issueHeader}
+                          {issueBody}
+                          <div style={{ fontSize: "11px", color: "rgb(var(--brand))", marginTop: "var(--space-1)" }}>View checklist →</div>
+                        </Link>
+                      );
+                    }
+
+                    return (
+                      <div key={issue.id} style={cardStyle}>
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
+                            {issueHeader}
+                            {issueBody}
+                          </div>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ fontSize: "13px", padding: "4px 12px", flexShrink: 0, opacity: isResolving ? 0.6 : 1 }}
+                            disabled={isResolving}
+                            onClick={() => handleResolveIssue(issue.id)}
+                          >
+                            {isResolving ? "Resolving…" : "Mark resolved"}
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

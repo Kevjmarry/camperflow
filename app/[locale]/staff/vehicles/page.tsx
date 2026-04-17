@@ -76,88 +76,49 @@ export default function VehiclesPage() {
       if (error) throw error;
 
       const vehicleList: Vehicle[] = data || [];
+      // Enrich both preparing and ready vehicles with warning signals.
+      // on_rent vehicles are skipped — their status is authoritative and
+      // there's nothing actionable to surface here.
+      const enrichIds    = vehicleList.filter(v => v.status === 'preparing' || v.status === 'ready').map(v => v.id);
       const preparingIds = vehicleList.filter(v => v.status === 'preparing').map(v => v.id);
-      const readyIds     = vehicleList.filter(v => v.status === 'ready').map(v => v.id);
 
-      if (preparingIds.length === 0 && readyIds.length === 0) {
+      if (enrichIds.length === 0) {
         setVehicles(vehicleList);
         return;
       }
 
-      // ── Block A: enrichment queries for already-preparing vehicles ──────────
-      let issues:     any[] = [];
-      let compliance: any[] = [];
-      let checklists: any[] = [];
+      const today = new Date().toISOString().split('T')[0];
 
-      if (preparingIds.length > 0) {
-        const today = new Date().toISOString().split('T')[0];
+      // ── Enrichment queries ─────────────────────────────────────────────────
+      // Run across all preparing+ready vehicles so we can surface warning text
+      // without ever overriding the stored status.
+      const [r1, r2, r3] = await Promise.all([
+        // 1. Open unresolved vehicle issues
+        supabase
+          .from('vehicle_issues')
+          .select('vehicle_id')
+          .in('vehicle_id', enrichIds)
+          .eq('resolved', false),
+        // 2. Expired blocking compliance
+        supabase
+          .from('vehicle_compliance')
+          .select('vehicle_id, compliance_types!inner(name, slug, is_system, blocks_readiness)')
+          .in('vehicle_id', enrichIds)
+          .eq('compliance_types.blocks_readiness', true)
+          .lte('expiry_date', today),
+        // 3. Incomplete booking-linked checklist instances (preparing only)
+        preparingIds.length > 0
+          ? supabase
+              .from('checklist_instances')
+              .select('bookings!inner(vehicle_id)')
+              .in('bookings.vehicle_id', preparingIds)
+              .neq('status', 'completed')
+          : Promise.resolve({ data: [] as any[], error: null }),
+      ]);
 
-        const [r1, r2, r3] = await Promise.all([
-          // 1. Open unresolved vehicle issues
-          supabase
-            .from('vehicle_issues')
-            .select('vehicle_id')
-            .in('vehicle_id', preparingIds)
-            .eq('resolved', false),
-          // 2. Expired blocking compliance
-          supabase
-            .from('vehicle_compliance')
-            .select('vehicle_id, compliance_types!inner(name, slug, is_system, blocks_readiness)')
-            .in('vehicle_id', preparingIds)
-            .eq('compliance_types.blocks_readiness', true)
-            .lte('expiry_date', today),
-          // 3. Incomplete booking-linked checklist instances
-          supabase
-            .from('checklist_instances')
-            .select('bookings!inner(vehicle_id)')
-            .in('bookings.vehicle_id', preparingIds)
-            .neq('status', 'completed'),
-        ]);
-
-        issues     = r1.data || [];
-        compliance = r2.data || [];
-        checklists = r3.data || [];
-      }
-
-      // ── Block B: checklist checks for ready vehicles ─────────────────────────
-      // 1. Vehicle-scope instances (booking_id IS NULL, in_progress).
-      // 2. Booking-linked cleaning/mechanical instances not yet completed.
-      const vehicleScopeBlockers = new Set<string>();
-      const postReturnBlockers    = new Set<string>();
-
-      if (readyIds.length > 0) {
-        const [vscResult, postReturnResult] = await Promise.all([
-          supabase
-            .from('checklist_instances')
-            .select('vehicle_id, status')
-            .in('vehicle_id', readyIds)
-            .is('booking_id', null)
-            .eq('status', 'in_progress'),
-          supabase
-            .from('checklist_instances')
-            .select('checklist_type, bookings!inner(vehicle_id)')
-            .in('bookings.vehicle_id', readyIds)
-            .in('checklist_type', ['cleaning', 'mechanical'])
-            .neq('status', 'completed'),
-        ]);
-
-        if (vscResult.error) {
-          console.error('[VehiclesPage] vehicle-scope checklist query failed:', vscResult.error);
-        }
-        for (const r of (vscResult.data || []) as any[]) {
-          if (r.vehicle_id && r.status === 'in_progress') {
-            vehicleScopeBlockers.add(r.vehicle_id);
-          }
-        }
-
-        if (postReturnResult.error) {
-          console.error('[VehiclesPage] post-return checklist query failed:', postReturnResult.error);
-        }
-        for (const r of (postReturnResult.data || []) as any[]) {
-          const vid = r.bookings?.vehicle_id;
-          if (vid) postReturnBlockers.add(vid);
-        }
-      }
+      const issues     = r1.data || [];
+      const compliance = r2.data || [];
+      const checklists = r3.data || [];
 
       // ── Build enriched list ─────────────────────────────────────────────────
       const issueSet = new Set(issues.map((r: any) => r.vehicle_id));
@@ -174,16 +135,9 @@ export default function VehiclesPage() {
       );
 
       const withReasons = vehicleList.map(v => {
-        // Override ready → preparing when a vehicle-scope checklist is incomplete
-        // or when booking-linked cleaning/mechanical checklists are not yet completed
-        if (v.status === 'ready' && (vehicleScopeBlockers.has(v.id) || postReturnBlockers.has(v.id))) {
-          return {
-            ...v,
-            status: 'preparing' as const,
-            blockingReason: t("blockingReason.checklistIncomplete"),
-          };
-        }
-        if (v.status !== 'preparing') return v;
+        if (v.status === 'on_rent') return v;
+        // Never override the stored status — ready means ready, preparing means
+        // something is actively in progress. Only add warning text.
         let blockingReason = '';
         if (issueSet.has(v.id)) {
           blockingReason = t("blockingReason.openIssue");
@@ -191,11 +145,11 @@ export default function VehiclesPage() {
           const complianceName = complianceNameByVehicle.get(v.id);
           if (complianceName !== undefined) {
             blockingReason = t("blockingReason.expiredComplianceWithName", { name: complianceName });
-          } else if (bookingChecklistSet.has(v.id)) {
+          } else if (v.status === 'preparing' && bookingChecklistSet.has(v.id)) {
             blockingReason = t("blockingReason.checklistIncomplete");
           }
         }
-        return { ...v, blockingReason };
+        return blockingReason ? { ...v, blockingReason } : v;
       });
 
       setVehicles(withReasons);
@@ -429,7 +383,7 @@ export default function VehiclesPage() {
                       {getStatusLabel(vehicle.status)}
                     </span>
 
-                    {vehicle.status === 'preparing' && vehicle.blockingReason && !vehicle.operational_hold && (
+                    {vehicle.blockingReason && !vehicle.operational_hold && (
                       <span style={{
                         fontSize: '13px',
                         color: 'rgb(var(--warning, var(--muted)))',

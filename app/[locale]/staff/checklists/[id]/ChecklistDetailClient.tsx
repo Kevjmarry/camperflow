@@ -57,6 +57,7 @@ export default function ChecklistDetailClient({
   const from = searchParams.get('from');
   const listScope = searchParams.get('listScope') ?? 'all';
   const listStatus = searchParams.get('listStatus') ?? 'all';
+  const focusItemId = searchParams.get('focusItem') ?? searchParams.get('itemId') ?? null;
 
   const supabase = createClient();
 
@@ -122,6 +123,7 @@ export default function ChecklistDetailClient({
   } | null>(null);
   const pendingCompletionRef = useRef<(() => Promise<void>) | null>(null);
 
+  const hasFocusedRef = useRef(false);
   const localInstanceRef = useRef(localInstance);
   // Tracks the latest known staff_metadata for the booking (return checklists only).
   // Used as the merge base when writing return_vehicle_data or extras_returned so
@@ -135,6 +137,35 @@ export default function ChecklistDetailClient({
   useEffect(() => { localInstanceRef.current = localInstance; }, [localInstance]);
   useEffect(() => { setLocalItems(initialItems); }, [initialItems]);
   useEffect(() => { setLocalInstance(instance); }, [instance]);
+
+  // ── Focus a specific item from the focusItem / itemId query param ────────────
+  useEffect(() => {
+    if (!focusItemId || hasFocusedRef.current || localItems.length === 0) return;
+    hasFocusedRef.current = true;
+
+    const item = localItems.find((it) => it.id === focusItemId);
+    if (!item) return;
+
+    // Ensure the section containing this item is expanded
+    const sectionName = item.template.section?.trim() || t('sectionOther');
+    setCollapsedSections((prev) => (prev[sectionName] ? { ...prev, [sectionName]: false } : prev));
+
+    // Open notes so the issue description is immediately visible
+    setOpenNotesById((prev) => ({ ...prev, [focusItemId]: true }));
+
+    // If the item has a flag, open the flag detail panel too
+    if (item.issue_flag) openFlagPanel(focusItemId);
+
+    // Scroll into view after a short delay to let the section expand first
+    setTimeout(() => {
+      const el =
+        document.getElementById(`check-${focusItemId}`) ??
+        document.querySelector<HTMLElement>(`label[for="check-${focusItemId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+  // openFlagPanel identity is stable; t and setters are stable — safe to omit from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusItemId, localItems]);
   useEffect(() => {
     if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover') return;
     staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
@@ -311,6 +342,8 @@ export default function ChecklistDetailClient({
     handleResolveFlag,
   } = useChecklistFlags({
     supabase,
+    instanceId: instance.id,
+    vehicleId: instance.vehicle_id,
     localItems,
     setLocalItems,
     isChecklistLocked,
@@ -1074,6 +1107,21 @@ export default function ChecklistDetailClient({
 
   return (
     <PageContainer maxWidth="1400px">
+      {/* Transient highlight for deep-linked item — fades out after ~2.5 s */}
+      {focusItemId && (
+        <style>{`
+          @keyframes _cf_focus_pulse {
+            0%   { box-shadow: 0 0 0 3px rgb(var(--brand) / 0.5); }
+            60%  { box-shadow: 0 0 0 4px rgb(var(--brand) / 0.18); }
+            100% { box-shadow: none; }
+          }
+          div:has(> div > label[for="check-${focusItemId}"]) {
+            animation: _cf_focus_pulse 2.5s ease-out 0.3s both;
+            border-color: rgb(var(--brand) / 0.5) !important;
+            transition: border-color 0.2s;
+          }
+        `}</style>
+      )}
       <ChecklistHeader
         title={checklistTitle}
         backLabel={backButtonLabel}

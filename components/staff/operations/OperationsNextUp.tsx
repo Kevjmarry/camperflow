@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -36,6 +36,27 @@ function countdown(iso: string) {
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Tomorrow'
   return `in ${diffDays} days`
+}
+
+/** Returns touch event handlers that trigger onPrev/onNext on a deliberate horizontal swipe. */
+function useSwipeHandlers(onPrev: () => void, onNext: () => void) {
+  const startX = useRef(0)
+  const startY = useRef(0)
+
+  return {
+    onTouchStart: (e: React.TouchEvent) => {
+      startX.current = e.touches[0].clientX
+      startY.current = e.touches[0].clientY
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - startX.current
+      const dy = e.changedTouches[0].clientY - startY.current
+      // Ignore taps (< 40 px) and primarily-vertical gestures (scroll)
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
+      if (dx < 0) onNext()
+      else onPrev()
+    },
+  }
 }
 
 function NavDots({
@@ -100,9 +121,13 @@ function NextCard({
   children: React.ReactNode
 }) {
   const showNav = total > 1
+  const swipe = useSwipeHandlers(onPrev, onNext)
+
   return (
     <div
       className="surface"
+      onTouchStart={swipe.onTouchStart}
+      onTouchEnd={swipe.onTouchEnd}
       style={{
         padding: 'var(--space-5)',
         border: '1px solid rgb(var(--border))',
@@ -110,6 +135,7 @@ function NextCard({
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-2)',
+        touchAction: 'pan-y', // allow vertical scroll; horizontal is handled by swipe
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
