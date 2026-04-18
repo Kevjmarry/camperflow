@@ -1585,6 +1585,24 @@ export default function BookingDetailPage() {
                 {t("action.delete")}
               </button>
 
+              <a
+                href={`/api/staff/bookings/${id}/evidence-pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{ minWidth: '120px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {t("action.downloadEvidenceReport")}
+              </a>
+
+              <a
+                href={`/api/staff/bookings/${id}/evidence-zip`}
+                className="btn btn-secondary"
+                style={{ minWidth: '120px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {t("action.downloadEvidencePhotos")}
+              </a>
+
               {booking.status === 'on_rent' && (
                 <button
                   type="button"

@@ -1263,7 +1263,9 @@
       "saveChanges": "Save changes",
       "saving": "Saving...",
       "cancelBooking": "Cancel Booking",
-      "delete": "Delete"
+      "delete": "Delete",
+      "downloadEvidenceReport": "Download evidence report",
+      "downloadEvidencePhotos": "Download evidence photos (ZIP)"
     },
     "error": {
       "notAuthenticated": "Not authenticated",
@@ -2074,7 +2076,20 @@
     "returnChecklistActionsDesc": "Complete all required return checks before closing the rental.",
     "returnCloseOutTitle": "Return close-out",
     "returnCloseOutDesc": "Confirm keys, documents, and contract close-out items.",
-    "returnDepositStatusDesc": "Record the outcome of the security deposit."
+    "returnDepositStatusDesc": "Record the outcome of the security deposit.",
+    "evidenceLabelGeneral": "General condition",
+    "evidenceLabelDamage": "Damage",
+    "evidenceLabelId": "ID / Driver licence",
+    "lightboxClose": "Close photo viewer",
+    "lightboxPrev": "Previous photo",
+    "lightboxNext": "Next photo",
+    "lightboxDownload": "Download",
+    "lightboxRotateLeft": "Rotate left",
+    "lightboxRotateRight": "Rotate right",
+    "evidenceGroupGeneral": "General condition photos",
+    "evidenceGroupDamage": "Damage photos",
+    "evidenceGroupDamageReturn": "<strong>New</strong> damage photos",
+    "evidenceReturnDesc": "Photograph the vehicle's general condition on return, then document any <strong>new damage found</strong>."
   },
   "bookingsImport": {
     "backToBookings": "← Back to bookings",

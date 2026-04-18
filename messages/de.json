@@ -1263,7 +1263,9 @@
       "saveChanges": "Änderungen speichern",
       "saving": "Wird gespeichert...",
       "cancelBooking": "Buchung stornieren",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "downloadEvidenceReport": "Beweisbericht herunterladen",
+      "downloadEvidencePhotos": "Beweisfotos herunterladen (ZIP)"
     },
     "error": {
       "notAuthenticated": "Nicht authentifiziert",
@@ -2074,7 +2076,20 @@
     "returnChecklistActionsDesc": "Erledige alle erforderlichen Rückgabeprüfungen vor dem Abschluss der Miete.",
     "returnCloseOutTitle": "Rückgabe-Abschluss",
     "returnCloseOutDesc": "Bestätige Schlüssel, Dokumente und Abschluss-Punkte des Vertrags.",
-    "returnDepositStatusDesc": "Erfasse das Ergebnis der Sicherheitskaution."
+    "returnDepositStatusDesc": "Erfasse das Ergebnis der Sicherheitskaution.",
+    "evidenceLabelGeneral": "Allgemeiner Zustand",
+    "evidenceLabelDamage": "Schäden",
+    "evidenceLabelId": "Führerschein / Ausweis",
+    "lightboxClose": "Foto-Viewer schließen",
+    "lightboxPrev": "Vorheriges Foto",
+    "lightboxNext": "Nächstes Foto",
+    "lightboxDownload": "Herunterladen",
+    "lightboxRotateLeft": "Links drehen",
+    "lightboxRotateRight": "Rechts drehen",
+    "evidenceGroupGeneral": "Allgemeine Zustandsfotos",
+    "evidenceGroupDamage": "Schadensfotos",
+    "evidenceGroupDamageReturn": "<strong>Neue</strong> Schadensfotos",
+    "evidenceReturnDesc": "Fotografiere den allgemeinen Fahrzeugzustand bei der Rückgabe und dokumentiere alle <strong>neu festgestellten Schäden</strong>."
   },
   "bookingsImport": {
     "backToBookings": "← Zurück zu Buchungen",
