@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +31,23 @@ function formatDate(value: string | null, locale: string): string {
   });
 }
 
+
 export default async function CustomerDetailPage({
   params,
 }: {
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
+  const t = await getTranslations({ locale, namespace: "staffCustomerDetail" });
+
+  const statusLabels: Record<string, string> = {
+    pending: t("status.pending"),
+    confirmed: t("status.confirmed"),
+    blocked: t("status.blocked"),
+    on_rent: t("status.on_rent"),
+    completed: t("status.completed"),
+    cancelled: t("status.cancelled"),
+  };
 
   const supabase = await createClient();
 
@@ -78,13 +90,13 @@ export default async function CustomerDetailPage({
               gap: "var(--space-4)",
             }}
           >
-            <p style={{ color: "rgb(var(--muted))" }}>Customer not found.</p>
+            <p style={{ color: "rgb(var(--muted))" }}>{t("notFound")}</p>
             <Link
               href={`/${locale}/staff/customers`}
               className="btn btn-secondary"
               style={{ alignSelf: "flex-start" }}
             >
-              ← Back to Customers
+              {t("backToCustomers")}
             </Link>
           </div>
         </div>
@@ -124,7 +136,7 @@ export default async function CustomerDetailPage({
                 textDecoration: "none",
               }}
             >
-              ← Customers
+              {t("backLink")}
             </Link>
           </div>
 
@@ -152,14 +164,14 @@ export default async function CustomerDetailPage({
                   margin: 0,
                 }}
               >
-                {customer.full_name ?? "Unnamed customer"}
+                {customer.full_name ?? t("unnamedCustomer")}
               </h1>
               <Link
                 href={`/${locale}/staff/bookings`}
                 className="btn btn-secondary"
                 style={{ whiteSpace: "nowrap" }}
               >
-                View all bookings
+                {t("viewAllBookings")}
               </Link>
             </div>
             <div
@@ -173,7 +185,7 @@ export default async function CustomerDetailPage({
             >
               {customer.email && <span>{customer.email}</span>}
               {customer.phone && <span>{customer.phone}</span>}
-              {!customer.email && !customer.phone && <span>No contact info</span>}
+              {!customer.email && !customer.phone && <span>{t("noContactInfo")}</span>}
             </div>
 
             {/* Stats row */}
@@ -187,13 +199,13 @@ export default async function CustomerDetailPage({
               }}
             >
               <span style={{ color: "rgb(var(--muted))" }}>
-                Total bookings:{" "}
+                {t("totalBookings")}{" "}
                 <strong style={{ color: "rgb(var(--text))" }}>
                   {totalBookings}
                 </strong>
               </span>
               <span style={{ color: "rgb(var(--muted))" }}>
-                Last booking:{" "}
+                {t("lastBooking")}{" "}
                 <strong style={{ color: "rgb(var(--text))" }}>
                   {formatDate(lastBookingDate, locale)}
                 </strong>
@@ -217,7 +229,7 @@ export default async function CustomerDetailPage({
                 margin: 0,
               }}
             >
-              Bookings
+              {t("bookingsTitle")}
             </h2>
 
             {bookings.length === 0 ? (
@@ -231,7 +243,7 @@ export default async function CustomerDetailPage({
                   fontSize: "14px",
                 }}
               >
-                No bookings for this customer yet
+                {t("noBookings")}
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>
@@ -256,7 +268,7 @@ export default async function CustomerDetailPage({
                           fontWeight: 500,
                         }}
                       >
-                        Booking #
+                        {t("table.bookingNumber")}
                       </th>
                       <th
                         style={{
@@ -264,7 +276,7 @@ export default async function CustomerDetailPage({
                           fontWeight: 500,
                         }}
                       >
-                        Status
+                        {t("table.status")}
                       </th>
                       <th
                         style={{
@@ -272,7 +284,7 @@ export default async function CustomerDetailPage({
                           fontWeight: 500,
                         }}
                       >
-                        Pick-up
+                        {t("table.pickup")}
                       </th>
                       <th
                         style={{
@@ -280,7 +292,7 @@ export default async function CustomerDetailPage({
                           fontWeight: 500,
                         }}
                       >
-                        Return
+                        {t("table.return")}
                       </th>
                     </tr>
                   </thead>
@@ -308,10 +320,11 @@ export default async function CustomerDetailPage({
                           style={{
                             padding: "var(--space-3) var(--space-4)",
                             color: "rgb(var(--text))",
-                            textTransform: "capitalize",
                           }}
                         >
-                          {booking.status ?? "—"}
+                          {booking.status
+                            ? (statusLabels[booking.status] ?? booking.status)
+                            : "—"}
                         </td>
                         <td
                           style={{

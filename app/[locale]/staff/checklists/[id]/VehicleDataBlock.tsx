@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 type VehicleData = { km: string; fuel: string; adblue: string };
 
@@ -19,13 +19,6 @@ type VehicleDataBlockProps = {
   onKmBlur?: () => void;
 };
 
-const LEVEL_OPTIONS = [
-  { value: 'full', label: 'Full' },
-  { value: '3/4', label: '3/4' },
-  { value: '1/2', label: '1/2' },
-  { value: '1/4', label: '1/4' },
-  { value: 'empty', label: 'Empty' },
-];
 
 // Shared style applied to all three editable controls (input + both selects) so
 // they render at the same height as the read-only Distance driven div.
@@ -42,6 +35,17 @@ const CONTROL_STYLE: React.CSSProperties = {
 };
 
 export default function VehicleDataBlock({ vehicleData, onChange, isLocked, highlight, fuelOptions, adblueOptions, handoverKm, kmError, onKmBlur }: VehicleDataBlockProps) {
+  const t = useTranslations('checklistDetail');
+  const locale = useLocale();
+
+  const LEVEL_OPTIONS = [
+    { value: 'full', label: t('vehicleDataFull') },
+    { value: '3/4', label: '3/4' },
+    { value: '1/2', label: '1/2' },
+    { value: '1/4', label: '1/4' },
+    { value: 'empty', label: t('vehicleDataEmpty') },
+  ];
+
   // When template options are provided, value === label (plain strings).
   // When falling back to defaults, preserve the original { value, label } pairs.
   const resolvedFuelOpts = fuelOptions
@@ -50,7 +54,6 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
   const resolvedAdblueOpts = adblueOptions
     ? adblueOptions.map((o) => ({ value: o, label: o }))
     : LEVEL_OPTIONS;
-  const t = useTranslations('checklistDetail');
 
   // Derived "Distance driven" — read-only, shown only on return when both km values are valid and result is >= 0.
   const returnKmNum = vehicleData.km !== '' ? parseFloat(vehicleData.km) : NaN;
@@ -126,7 +129,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
             }}
           >
             <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
-              Fuel
+              {t('vehicleDataFuel')}
             </label>
             <select
               value={vehicleData.fuel}
@@ -135,7 +138,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               className="input"
               style={CONTROL_STYLE}
             >
-              <option value="">— Select —</option>
+              <option value="">{t('vehicleDataSelectPlaceholder')}</option>
               {resolvedFuelOpts.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -153,7 +156,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
             }}
           >
             <label style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--muted))' }}>
-              AdBlue
+              {t('vehicleDataAdblue')}
             </label>
             <select
               value={vehicleData.adblue}
@@ -162,7 +165,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
               className="input"
               style={CONTROL_STYLE}
             >
-              <option value="">— Select —</option>
+              <option value="">{t('vehicleDataSelectPlaceholder')}</option>
               {resolvedAdblueOpts.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -194,7 +197,7 @@ export default function VehicleDataBlock({ vehicleData, onChange, isLocked, high
                   fontWeight: 500,
                 }}
               >
-                {distanceDriven.toLocaleString()} km
+                {distanceDriven.toLocaleString(locale)} km
               </div>
             </div>
           )}

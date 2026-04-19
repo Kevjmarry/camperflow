@@ -25,7 +25,14 @@
       "Bash(node -e \"const en = JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/en.json','utf8'\\)\\); const ops = en.staff?.operations; console.log\\(JSON.stringify\\(ops, null, 2\\)\\)\")",
       "Bash(node -e \"const de = JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); const ops = de.staff?.operations; console.log\\(JSON.stringify\\(ops, null, 2\\)\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
-      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); console.log\\('de.json OK'\\)\")"
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); console.log\\('de.json OK'\\)\")",
+      "Bash(grep -r \"Loading\\\\|Error\\\\|Success\\\\|Failed\\\\|Not found\" /c/CamperFlow/camperflow/components --include=\"*.tsx\" ! -path \"*/operations/*\")",
+      "Bash(grep -r \"Loading\\\\|Error\\\\|Success\\\\|Failed\\\\|Not found\" /c/CamperFlow/camperflow/app --include=\"*.tsx\" ! -path \"*/operations/*\" ! -path \"*/.next/*\")",
+      "Bash(grep -rn \"toLocaleDateString\\\\|toLocaleTimeString\\\\|toLocaleString\" /c/CamperFlow/camperflow/app --include=\"*.tsx\" ! -path \"*/.next/*\" ! -path \"*/operations/*\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/messages/en.json','utf8'\\)\\); console.log\\('en.json valid'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/messages/de.json','utf8'\\)\\); console.log\\('de.json valid'\\)\")",
+      "Bash(cat)",
+      "Read(//tmp/**)"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"

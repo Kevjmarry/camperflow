@@ -26,6 +26,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
   const tBooking = await getTranslations("guestBooking");
+  const t = await getTranslations("guestFaq");
 
   if (!code) {
     return (
@@ -94,7 +95,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
           gap: "var(--space-4)",
         }}
       >
-        <h1>FAQ</h1>
+        <h1>{t("title")}</h1>
         <span
           style={{
             background: "rgb(var(--brand-light))",
@@ -113,7 +114,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
       <div className="surface" style={{ padding: "var(--space-6)" }}>
         {faqItems.length === 0 ? (
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-            No frequently asked questions have been added yet.
+            {t("empty")}
           </p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>

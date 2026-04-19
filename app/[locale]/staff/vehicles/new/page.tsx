@@ -1,7 +1,7 @@
 // app/[locale]/staff/vehicles/new/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
@@ -37,6 +37,7 @@ export default function NewVehiclePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -249,10 +250,21 @@ export default function NewVehiclePage() {
             <div>
               <label htmlFor="photo" style={labelStyle}>{t('photo.label')}</label>
               <input
+                ref={photoInputRef}
                 type="file" id="photo" accept="image/*"
                 onChange={handlePhotoChange} disabled={submitting}
-                style={inputStyle}
+                style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 }}
+                tabIndex={-1}
               />
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={submitting}
+                className="btn btn-secondary"
+                style={{ fontSize: '14px', cursor: submitting ? 'not-allowed' : 'pointer' }}
+              >
+                {t('photo.chooseFile')}
+              </button>
               <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginTop: 'var(--space-2)' }}>
                 {selectedPhoto ? `${t('photo.selectedPrefix')}${selectedPhoto.name}` : t('photo.hint')}
               </p>

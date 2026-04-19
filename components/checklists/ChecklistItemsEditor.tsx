@@ -184,7 +184,7 @@ function SortableItem({
               disabled={editState.saving}
               style={{ width: '14px', height: '14px', cursor: 'pointer' }}
             />
-            Required
+            {t('itemFieldRequired')}
           </label>
           <select
             className="input"
@@ -193,14 +193,14 @@ function SortableItem({
             disabled={editState.saving}
             style={{ fontSize: '13px', flex: '1 1 120px', minWidth: 0 }}
           >
-            <option value="checkbox">Checkbox</option>
-            <option value="number">Number</option>
-            <option value="dropdown">Dropdown</option>
+            <option value="checkbox">{t('inputTypeCheckbox')}</option>
+            <option value="number">{t('inputTypeNumber')}</option>
+            <option value="dropdown">{t('inputTypeDropdown')}</option>
           </select>
         </div>
         {editState.input_type === 'dropdown' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgb(var(--muted))' }}>Dropdown options</span>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgb(var(--muted))' }}>{t('itemDropdownOptions')}</span>
             {editState.options.map((opt, idx) => (
               <div key={idx} style={{ display: 'flex', gap: 'var(--space-1)' }}>
                 <input
@@ -213,14 +213,14 @@ function SortableItem({
                     onUpdateField('options', next);
                   }}
                   disabled={editState.saving}
-                  placeholder={`Option ${idx + 1}`}
+                  placeholder={t('dropdownOptionPlaceholder', { n: idx + 1 })}
                   style={{ fontSize: '13px', flex: 1 }}
                 />
                 <button
                   type="button"
                   onClick={() => onUpdateField('options', editState.options.filter((_, i) => i !== idx))}
                   disabled={editState.saving}
-                  aria-label="Remove option"
+                  aria-label={t('removeOptionAria')}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgb(var(--error))', padding: '0 6px', fontSize: '16px', lineHeight: 1 }}
                 >
                   ×
@@ -233,7 +233,7 @@ function SortableItem({
               disabled={editState.saving}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgb(var(--brand))', fontSize: '13px', padding: 0, textAlign: 'left' }}
             >
-              + Add option
+              {t('addOption')}
             </button>
           </div>
         )}
@@ -278,7 +278,7 @@ function SortableItem({
             disabled={!canSave}
             style={{ fontSize: '13px', padding: '4px 14px', height: '30px' }}
           >
-            {editState.saving ? t('btnSaving') : 'Save'}
+            {editState.saving ? t('btnSaving') : t('btnSave')}
           </button>
           <button
             className="btn"
@@ -286,7 +286,7 @@ function SortableItem({
             disabled={editState.saving}
             style={{ fontSize: '13px', padding: '4px 14px', height: '30px' }}
           >
-            Cancel
+            {t('btnCancel')}
           </button>
         </div>
       </div>
@@ -310,7 +310,7 @@ function SortableItem({
       <span
         {...attributes}
         {...listeners}
-        aria-label="Drag to reorder"
+        aria-label={t('dragToReorderAria')}
         style={{
           flexShrink: 0,
           width: '20px',
@@ -342,24 +342,24 @@ function SortableItem({
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexShrink: 0 }}>
         {item.input_type === 'number' && (
           <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
-            Number
+            {t('inputTypeNumber')}
           </span>
         )}
         {item.input_type === 'dropdown' && (
           <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--brand) / 0.08)', color: 'rgb(var(--brand))', fontWeight: 500, whiteSpace: 'nowrap' }}>
-            Dropdown
+            {t('inputTypeDropdown')}
           </span>
         )}
         {item.required && (
           <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '999px', background: 'rgb(var(--error) / 0.08)', color: 'rgb(var(--error))', fontWeight: 500, whiteSpace: 'nowrap' }}>
-            Required
+            {t('itemFieldRequired')}
           </span>
         )}
       </div>
       <button
         onClick={onStartEdit}
         disabled={disabled}
-        aria-label="Edit item"
+        aria-label={t('btnEdit')}
         style={{
           flexShrink: 0,
           background: 'none',
@@ -558,7 +558,7 @@ export default function ChecklistItemsEditor({
                       {/* Section drag handle */}
                       <span
                         {...handleAttrs}
-                        aria-label="Drag to reorder section"
+                        aria-label={t('dragToReorderSectionAria')}
                         style={{
                           flexShrink: 0,
                           width: '20px',
@@ -694,7 +694,7 @@ export default function ChecklistItemsEditor({
                               opacity: addingItem || isBusy ? 0.4 : 1,
                             }}
                           >
-                            + Add item
+                            + {t('btnAddItem')}
                           </button>
                         </div>
                       </>

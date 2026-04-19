@@ -1049,7 +1049,7 @@ export default function BookingDetailPage() {
           {/* ── Linked Customer ─────────────────────────────────────────── */}
           <div className="surface" style={{ padding: 'var(--space-5)', background: 'rgb(var(--border) / 0.15)' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--muted))', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Customer
+              {t("customer.title")}
             </h3>
             {linkedCustomer ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
@@ -1057,16 +1057,16 @@ export default function BookingDetailPage() {
                   href={`/${locale}/staff/customers/${linkedCustomer.id}`}
                   style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--accent))', textDecoration: 'none' }}
                 >
-                  {linkedCustomer.full_name ?? "Unnamed customer"}
+                  {linkedCustomer.full_name ?? t("customer.unnamed")}
                 </Link>
                 <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap', fontSize: '14px', color: 'rgb(var(--muted))' }}>
                   {linkedCustomer.email && <span>{linkedCustomer.email}</span>}
                   {linkedCustomer.phone && <span>{linkedCustomer.phone}</span>}
-                  {!linkedCustomer.email && !linkedCustomer.phone && <span>No contact info</span>}
+                  {!linkedCustomer.email && !linkedCustomer.phone && <span>{t("customer.noContactInfo")}</span>}
                 </div>
               </div>
             ) : (
-              <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>No customer linked</p>
+              <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>{t("customer.noLinked")}</p>
             )}
             <button
               type="button"
@@ -1080,7 +1080,7 @@ export default function BookingDetailPage() {
                 setLinkCustomerOpen(o => !o);
               }}
             >
-              Link / change customer
+              {t("customer.linkChangeButton")}
             </button>
             {linkCustomerOpen && (
               <div style={{ marginTop: 'var(--space-2)' }}>
@@ -1091,19 +1091,19 @@ export default function BookingDetailPage() {
                   disabled={linkingCustomer}
                   onChange={(e) => { if (e.target.value) handleLinkCustomer(e.target.value); }}
                 >
-                  <option value="">-- Select customer --</option>
+                  <option value="">{t("customer.selectPlaceholder")}</option>
                   {allCustomers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.full_name ?? "Unnamed"}</option>
+                    <option key={c.id} value={c.id}>{c.full_name ?? t("customer.unnamed")}</option>
                   ))}
                 </select>
                 <p style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: 'var(--space-1)', margin: '4px 0 0' }}>
-                  Changing the linked customer saves immediately.
+                  {t("customer.linkSavesImmediately")}
                 </p>
               </div>
             )}
             {linkCustomerSuccess && (
               <p style={{ fontSize: '13px', color: 'rgb(var(--success, 34 197 94))', marginTop: 'var(--space-2)', margin: '8px 0 0' }}>
-                Customer linked successfully.
+                {t("customer.linkedSuccess")}
               </p>
             )}
           </div>
@@ -1382,7 +1382,7 @@ export default function BookingDetailPage() {
                 </div>
               ) : (
                 <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
-                  No extras configured. Add extras in company settings.
+                  {t("extras.emptyHint")}
                 </p>
               )}
             </div>
@@ -1393,11 +1393,11 @@ export default function BookingDetailPage() {
               borderTop: '1px solid rgb(var(--border) / 0.4)',
             }}>
               <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                Operations
+                {t("section.operations")}
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div>
-                  <label className="label">Invoice setup</label>
+                  <label className="label">{t("operations.invoiceSetupLabel")}</label>
                   <select
                     className="input"
                     style={{ width: '100%', maxWidth: '260px' }}
@@ -1407,44 +1407,44 @@ export default function BookingDetailPage() {
                       payment_plan: e.target.value === 'split' || e.target.value === 'full' ? e.target.value : null,
                     }))}
                   >
-                    <option value="">Not set</option>
-                    <option value="split">50% now + 50% later</option>
-                    <option value="full">100% upfront</option>
+                    <option value="">{t("operations.paymentPlan.notSet")}</option>
+                    <option value="split">{t("operations.paymentPlan.split")}</option>
+                    <option value="full">{t("operations.paymentPlan.full")}</option>
                   </select>
                   <p style={{ margin: 'var(--space-2) 0 0', fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                    Determines whether CamperFlow should remind staff to send the remaining balance invoice before pickup.
+                    {t("operations.invoiceSetupHint")}
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                   <p style={{ margin: '0 0 var(--space-2)', fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                    Operational tasks:{' '}
-                    <strong style={{ color: 'rgb(var(--text))' }}>
-                      {[staffMeta.balance_invoice_sent_at, staffMeta.pre_arrival_message_sent_at, staffMeta.return_prep_message_sent_at].filter(Boolean).length} / 3 completed
-                    </strong>
+                    {t("operations.tasksProgress", {
+                      done: [staffMeta.balance_invoice_sent_at, staffMeta.pre_arrival_message_sent_at, staffMeta.return_prep_message_sent_at].filter(Boolean).length,
+                      total: 3,
+                    })}
                   </p>
                   {/* Task: Remaining 50% invoice */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <span style={{ fontSize: '16px' }}>{staffMeta.balance_invoice_sent_at ? '✅' : '⬜'}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Remaining 50% invoice</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.balanceInvoice")}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
-                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.statusLabel")}</span>
                       {staffMeta.balance_invoice_sent_at ? (
                         <>
                           <span style={{ color: 'rgb(var(--text))' }}>
-                            Sent · {new Date(staffMeta.balance_invoice_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                            {t("operations.task.sentAt", { date: new Date(staffMeta.balance_invoice_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}
                           </span>
                           <button
                             type="button"
                             style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                             onClick={() => setStaffMeta(prev => ({ ...prev, balance_invoice_sent_at: null }))}
                           >
-                            Clear
+                            {t("operations.task.clear")}
                           </button>
                         </>
                       ) : (
-                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                        <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.notSent")}</span>
                       )}
                     </div>
                   </div>
@@ -1452,25 +1452,25 @@ export default function BookingDetailPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <span style={{ fontSize: '16px' }}>{staffMeta.pre_arrival_message_sent_at ? '✅' : '⬜'}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Pre-arrival WhatsApp message</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.preArrivalMessage")}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
-                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.statusLabel")}</span>
                       {staffMeta.pre_arrival_message_sent_at ? (
                         <>
                           <span style={{ color: 'rgb(var(--text))' }}>
-                            Sent · {new Date(staffMeta.pre_arrival_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                            {t("operations.task.sentAt", { date: new Date(staffMeta.pre_arrival_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}
                           </span>
                           <button
                             type="button"
                             style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                             onClick={() => setStaffMeta(prev => ({ ...prev, pre_arrival_message_sent_at: null }))}
                           >
-                            Clear
+                            {t("operations.task.clear")}
                           </button>
                         </>
                       ) : (
-                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                        <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.notSent")}</span>
                       )}
                     </div>
                   </div>
@@ -1478,25 +1478,25 @@ export default function BookingDetailPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <span style={{ fontSize: '16px' }}>{staffMeta.return_prep_message_sent_at ? '✅' : '⬜'}</span>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>Return-prep WhatsApp message</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.returnPrepMessage")}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingLeft: 'calc(16px + var(--space-2))', fontSize: '13px' }}>
-                      <span style={{ color: 'rgb(var(--muted))' }}>Status:</span>
+                      <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.statusLabel")}</span>
                       {staffMeta.return_prep_message_sent_at ? (
                         <>
                           <span style={{ color: 'rgb(var(--text))' }}>
-                            Sent · {new Date(staffMeta.return_prep_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}
+                            {t("operations.task.sentAt", { date: new Date(staffMeta.return_prep_message_sent_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}
                           </span>
                           <button
                             type="button"
                             style={{ fontSize: '12px', color: 'rgb(var(--muted))', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                             onClick={() => setStaffMeta(prev => ({ ...prev, return_prep_message_sent_at: null }))}
                           >
-                            Clear
+                            {t("operations.task.clear")}
                           </button>
                         </>
                       ) : (
-                        <span style={{ color: 'rgb(var(--muted))' }}>Not sent</span>
+                        <span style={{ color: 'rgb(var(--muted))' }}>{t("operations.task.notSent")}</span>
                       )}
                     </div>
                   </div>

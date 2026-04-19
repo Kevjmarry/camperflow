@@ -761,7 +761,7 @@ export default function VehicleDetailPage({
                   <Field label={t("fields.model")} value={vehicle.model || "—"} />
                   <Field label={t("fields.year")}  value={vehicle.year ? String(vehicle.year) : "—"} />
                   <Field label={t("fields.vin")}   value={vehicle.vin   || "—"} />
-                  <Field label={t("fields.latestOdometer")} value={vehicle.latest_odometer != null ? `${vehicle.latest_odometer.toLocaleString()} km` : "—"} />
+                  <Field label={t("fields.latestOdometer")} value={vehicle.latest_odometer != null ? `${vehicle.latest_odometer.toLocaleString(locale)} km` : "—"} />
                 </div>
               </div>
             </div>
@@ -818,7 +818,7 @@ export default function VehicleDetailPage({
 
               {vehicle.latest_odometer != null && (
                 <div style={{ fontSize: "13px", color: "rgb(var(--muted))", marginBottom: "var(--space-3)" }}>
-                  {t("fields.latestOdometer")}: <span style={{ fontWeight: 600, color: "rgb(var(--text))" }}>{vehicle.latest_odometer.toLocaleString()} km</span>
+                  {t("fields.latestOdometer")}: <span style={{ fontWeight: 600, color: "rgb(var(--text))" }}>{vehicle.latest_odometer.toLocaleString(locale)} km</span>
                 </div>
               )}
 
@@ -961,12 +961,12 @@ export default function VehicleDetailPage({
             {/* Open Vehicle Issues */}
             <div id="issues" className="surface" style={{ padding: "var(--space-6)" }}>
               <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
-                Open issues
+                {t("issues.title")}
               </div>
               {issuesLoading ? (
-                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>Loading…</div>
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("issues.loading")}</div>
               ) : vehicleIssues.length === 0 ? (
-                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No open issues</div>
+                <div style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("issues.empty")}</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {vehicleIssues.map((issue) => {
@@ -984,7 +984,7 @@ export default function VehicleDetailPage({
                     const issueHeader = (
                       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
                         <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                          {issue.title || "Open vehicle issue"}
+                          {issue.title || t("issues.fallbackTitle")}
                         </span>
                         <span
                           style={{
@@ -996,7 +996,7 @@ export default function VehicleDetailPage({
                             color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
                           }}
                         >
-                          {issue.blocking ? "Blocking" : "Attention"}
+                          {issue.blocking ? t("issues.blocking") : t("issues.attention")}
                         </span>
                       </div>
                     );
@@ -1008,7 +1008,7 @@ export default function VehicleDetailPage({
                         )}
                         {issue.createdAt && (
                           <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
-                            Reported {new Date(issue.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" })}
+                            {t("issues.reported", { date: new Date(issue.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" }) })}
                           </div>
                         )}
                       </>
@@ -1023,7 +1023,7 @@ export default function VehicleDetailPage({
                         >
                           {issueHeader}
                           {issueBody}
-                          <div style={{ fontSize: "11px", color: "rgb(var(--brand))", marginTop: "var(--space-1)" }}>View checklist →</div>
+                          <div style={{ fontSize: "11px", color: "rgb(var(--brand))", marginTop: "var(--space-1)" }}>{t("issues.viewChecklist")}</div>
                         </Link>
                       );
                     }
@@ -1041,7 +1041,7 @@ export default function VehicleDetailPage({
                             disabled={isResolving}
                             onClick={() => handleResolveIssue(issue.id)}
                           >
-                            {isResolving ? "Resolving…" : "Mark resolved"}
+                            {isResolving ? t("issues.resolving") : t("issues.markResolved")}
                           </button>
                         </div>
                       </div>

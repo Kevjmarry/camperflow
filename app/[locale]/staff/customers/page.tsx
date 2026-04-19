@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,7 @@ export default async function CustomersPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "staffCustomers" });
 
   const supabase = await createClient();
 
@@ -140,10 +142,10 @@ export default async function CustomersPage({
             }}
           >
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))", margin: 0 }}>
-              Customers
+              {t("title")}
             </h1>
             <Link href="#" className="btn btn-primary">
-              + New Customer
+              {t("newCustomer")}
             </Link>
           </div>
 
@@ -158,7 +160,7 @@ export default async function CustomersPage({
                 borderRadius: "var(--radius-md)",
               }}
             >
-              No customers yet
+              {t("empty")}
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -173,10 +175,10 @@ export default async function CustomersPage({
                         textAlign: "left",
                       }}
                     >
-                      <th style={thStyle}>Name</th>
-                      <th style={thStyle}>Email</th>
-                      <th style={thStyle}>Phone</th>
-                      <th style={thStyle}>Created</th>
+                      <th style={thStyle}>{t("table.name")}</th>
+                      <th style={thStyle}>{t("table.email")}</th>
+                      <th style={thStyle}>{t("table.phone")}</th>
+                      <th style={thStyle}>{t("table.created")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -216,7 +218,7 @@ export default async function CustomersPage({
                     }}
                   >
                     <span style={{ fontSize: "11px", color: "rgb(var(--muted))" }}>▸</span>
-                    Missing phone number ({withoutPhone.length}) *
+                    {t("missingPhone", { count: withoutPhone.length })}
                   </summary>
 
                   {/* Asterisk note */}
@@ -228,9 +230,7 @@ export default async function CustomersPage({
                       paddingLeft: "var(--space-1)",
                     }}
                   >
-                    * Customers imported from your booking system may be missing
-                    contact details. Open each record to add or update them so
-                    they display and work correctly in CamperFlow.
+                    {t("missingPhoneNote")}
                   </p>
 
                   {/* Show header if the main table above is empty */}
@@ -244,10 +244,10 @@ export default async function CustomersPage({
                             textAlign: "left",
                           }}
                         >
-                          <th style={thStyle}>Name</th>
-                          <th style={thStyle}>Email</th>
-                          <th style={thStyle}>Phone</th>
-                          <th style={thStyle}>Created</th>
+                          <th style={thStyle}>{t("table.name")}</th>
+                          <th style={thStyle}>{t("table.email")}</th>
+                          <th style={thStyle}>{t("table.phone")}</th>
+                          <th style={thStyle}>{t("table.created")}</th>
                         </tr>
                       </thead>
                     )}

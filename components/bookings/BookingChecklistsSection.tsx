@@ -25,17 +25,18 @@ interface Props {
   t: (key: string, values?: Record<string, unknown>) => string;
 }
 
-const SYSTEM_CHECKLIST_LABELS: Record<string, string> = {
-  handover: 'Pickup Checklist',
-  return: 'Return Checklist',
-  cleaning: 'Cleaning Checklist',
-  mechanical: 'Mechanical Checklist',
+const SYSTEM_TYPE_TRANSLATION_KEYS: Record<string, string> = {
+  handover: 'checklists.systemTypes.handover',
+  return: 'checklists.systemTypes.return',
+  cleaning: 'checklists.systemTypes.cleaning',
+  mechanical: 'checklists.systemTypes.mechanical',
 };
 
 export function BookingChecklistsSection({ instances, locale, t }: Props) {
   const getChecklistDisplayName = (instance: ChecklistInstance): string => {
     if (instance.template?.is_system) {
-      return SYSTEM_CHECKLIST_LABELS[instance.checklist_type] ?? instance.checklist_type;
+      const key = SYSTEM_TYPE_TRANSLATION_KEYS[instance.checklist_type];
+      return key ? t(key) : instance.checklist_type;
     }
     return (
       instance.template?.name ??

@@ -341,7 +341,7 @@ export default function ChecklistsPage() {
       return map[s] ?? s;
     },
     fmtDate: (iso: string) =>
-      new Date(iso).toLocaleDateString(undefined, {
+      new Date(iso).toLocaleDateString(params.locale as string, {
         day: '2-digit', month: 'short', year: 'numeric',
       }),
     bookingRef: (num: string) => t('bookingRef', { number: num }),

@@ -1,14 +1,15 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
 import type { OpsVehicleBlock } from '@/lib/staff/operations/getOpsVehicleBlocks'
 
 interface Props {
   blocks: OpsVehicleBlock[]
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -17,6 +18,7 @@ function formatDate(iso: string) {
 
 export default function OperationsVehicleBlocks({ blocks }: Props) {
   const t = useTranslations('staff.operations.vehicleBlocks')
+  const { locale } = useParams<{ locale: string }>()
 
   if (blocks.length === 0) return null
 
@@ -66,10 +68,10 @@ export default function OperationsVehicleBlocks({ blocks }: Props) {
             {/* Right: date range */}
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))' }}>
-                {formatDate(block.startAt)}
+                {formatDate(block.startAt, locale)}
               </div>
               <div style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                {t('until', { date: formatDate(block.endAt) })}
+                {t('until', { date: formatDate(block.endAt, locale) })}
               </div>
             </div>
           </div>

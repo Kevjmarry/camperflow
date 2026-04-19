@@ -503,7 +503,7 @@ export default function ChecklistItem({
                         cursor: 'pointer',
                       }}
                     >
-                      + Add photo
+                      {t('addFlagPhoto')}
                     </label>
                   </>
                 )}

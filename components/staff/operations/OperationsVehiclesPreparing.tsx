@@ -9,8 +9,8 @@ interface Props {
   vehicles: OpsVehiclePreparing[]
 }
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDateTime(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -107,7 +107,7 @@ export default function OperationsVehiclesPreparing({ vehicles }: Props) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                  {t('vehiclesPreparing.pickup')} {formatDateTime(v.pickupAt)}
+                  {t('vehiclesPreparing.pickup')} {formatDateTime(v.pickupAt, locale)}
                 </span>
                 <Link
                   href={`/${locale}/staff/vehicles/${v.id}`}

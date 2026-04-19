@@ -64,11 +64,10 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   const { data: expiredCompliance, error: ecError } = await supabase
     .from('vehicle_compliance')
-    .select('vehicle_id, compliance_types!inner(blocks_readiness)')
+    .select('vehicle_id')
     .in('vehicle_id', vehicleIds)
     .not('expiry_date', 'is', null)
     .lt('expiry_date', todayStr)
-    .eq('compliance_types.blocks_readiness', true)
 
   if (ecError) throw ecError
 

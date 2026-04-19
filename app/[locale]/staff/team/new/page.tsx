@@ -697,13 +697,18 @@ export default function NewTeamMemberPage() {
                   accept="image/*"
                   onChange={handlePhotoChange}
                   disabled={submitting}
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    color: "rgb(var(--text))",
-                    cursor: submitting ? "not-allowed" : "pointer",
-                  }}
+                  style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
+                  tabIndex={-1}
                 />
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={submitting}
+                  className="btn btn-secondary"
+                  style={{ fontSize: "14px", cursor: submitting ? "not-allowed" : "pointer" }}
+                >
+                  {t("form.chooseFile")}
+                </button>
                 {photoPreview && (
                   <div style={{ marginTop: "var(--space-3)" }}>
                     <img

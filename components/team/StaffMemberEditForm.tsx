@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent } from "react";
+import { useRef, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 
 interface StaffFormData {
@@ -44,6 +44,7 @@ export default function StaffMemberEditForm({
   onFileUpload,
 }: StaffMemberEditFormProps) {
   const t = useTranslations("staffTeamMember");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
@@ -197,15 +198,23 @@ export default function StaffMemberEditForm({
           {t("fields.uploadPhoto")}
         </label>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           onChange={onFileUpload}
           disabled={isUploading}
-          style={{
-            fontSize: "14px",
-            cursor: isUploading ? "not-allowed" : "pointer",
-          }}
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
+          tabIndex={-1}
         />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="btn btn-secondary"
+          style={{ fontSize: "14px", cursor: isUploading ? "not-allowed" : "pointer" }}
+        >
+          {t("fields.chooseFile")}
+        </button>
         {isUploading && (
           <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 4 }}>
             {t("uploading")}

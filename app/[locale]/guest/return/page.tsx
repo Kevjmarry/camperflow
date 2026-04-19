@@ -47,14 +47,6 @@ type RawTemplateItem = {
   section: string | null;
 };
 
-const BEFORE_YOU_RETURN = [
-  "Complete the return checklist",
-  "Let us know your estimated arrival time",
-  "Allow extra travel time; motorhomes and caravans travel slower than a car",
-  "Empty the toilet cassette and wastewater tank",
-  "If applicable, refuel near our base before return",
-  "Allow enough time to wash and clean the vehicle before handover",
-];
 
 export default async function GuestReturnPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
@@ -135,7 +127,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         checked: null,
         notes: null,
         template: {
-          label: item.label ?? "Untitled item",
+          label: item.label ?? t("untitledItem"),
           sort_order: item.sort_order ?? 0,
           section: item.section ?? null,
         },
@@ -258,7 +250,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             margin: "0 0 var(--space-4) 0",
           }}
         >
-          Before you return
+          {t("beforeYouReturnTitle")}
         </p>
         <ul
           style={{
@@ -269,9 +261,9 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             gap: "var(--space-2)",
           }}
         >
-          {BEFORE_YOU_RETURN.map((item, i) => (
+          {([0, 1, 2, 3, 4, 5] as const).map((i) => (
             <li key={i} style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text))" }}>
-              {item}
+              {t(`beforeYouReturn${i}`)}
             </li>
           ))}
         </ul>
@@ -288,7 +280,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             marginBottom: "var(--space-5)",
           }}
         >
-          If items are not completed, additional charges may apply according to company policy.
+          {t("checklistPolicyNote")}
         </p>
         <p
           style={{

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { CSSProperties, ChangeEvent, FormEvent, Dispatch, SetStateAction } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -166,6 +166,8 @@ export default function VehicleEditForm({
   const t = useTranslations("staffVehicleEdit");
   const tCal = useTranslations("vehicleDetail.vehicleCalendar");
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [calendarSyncUrl, setCalendarSyncUrl] = useState(initialCalendarSyncUrl);
 
   // Sync when the page finishes loading the saved URL asynchronously
@@ -296,7 +298,7 @@ export default function VehicleEditForm({
           <input
             id="length_m" name="length_m" type="number" step="0.01" min="0"
             value={formData.length_m} onChange={onChange}
-            placeholder="e.g. 5.99" style={inputStyle}
+            placeholder={t("lengthPlaceholder")} style={inputStyle}
           />
         </div>
         <div>
@@ -304,7 +306,7 @@ export default function VehicleEditForm({
           <input
             id="width_m" name="width_m" type="number" step="0.01" min="0"
             value={formData.width_m} onChange={onChange}
-            placeholder="e.g. 2.10" style={inputStyle}
+            placeholder={t("widthPlaceholder")} style={inputStyle}
           />
         </div>
         <div>
@@ -312,7 +314,7 @@ export default function VehicleEditForm({
           <input
             id="height_m" name="height_m" type="number" step="0.01" min="0"
             value={formData.height_m} onChange={onChange}
-            placeholder="e.g. 2.85" style={inputStyle}
+            placeholder={t("heightPlaceholder")} style={inputStyle}
           />
         </div>
       </div>
@@ -336,10 +338,21 @@ export default function VehicleEditForm({
           </div>
         )}
         <input
+          ref={fileInputRef}
           id="photo" type="file" accept="image/*"
           onChange={onFileChange} disabled={uploading}
-          style={{ ...inputStyle, cursor: uploading ? "not-allowed" : "pointer" }}
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
+          tabIndex={-1}
         />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="btn btn-secondary"
+          style={{ fontSize: "14px", cursor: uploading ? "not-allowed" : "pointer" }}
+        >
+          {t("chooseFile")}
+        </button>
         <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: "var(--space-2)" }}>
           {uploading ? (
             <span>{t("uploading")}…</span>

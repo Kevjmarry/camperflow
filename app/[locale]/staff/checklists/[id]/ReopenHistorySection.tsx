@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { ReopenHistoryEntry, DbIssueSeverity, IssueSeverity } from './types';
 import { dbToUiSeverity } from './types';
 
@@ -27,6 +27,7 @@ export default function ReopenHistorySection({
   initialsByUserId,
 }: ReopenHistorySectionProps) {
   const t = useTranslations('checklistDetail');
+  const locale = useLocale();
 
   const severityLabel = (severity: IssueSeverity): string => {
     switch (severity) {
@@ -101,7 +102,7 @@ export default function ReopenHistorySection({
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                    {new Date(entry.reopened_at).toLocaleString()}
+                    {new Date(entry.reopened_at).toLocaleString(locale)}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: '2px' }}>
                     {t('historyReopenedAt')}
@@ -169,7 +170,7 @@ export default function ReopenHistorySection({
                       <span>
                         {t('historySnapshotCompletedAt')}:{' '}
                         <strong style={{ color: 'rgb(var(--text))' }}>
-                          {new Date(entry.snapshot.instance.completed_at).toLocaleString()}
+                          {new Date(entry.snapshot.instance.completed_at).toLocaleString(locale)}
                         </strong>
                       </span>
                     )}

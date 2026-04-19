@@ -635,26 +635,26 @@ export default function CompanySettingsPage() {
             {/* Booking Defaults */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
-                Booking defaults
+                {t("bookingDefaults.title")}
               </h2>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-4)" }}>
                 <div>
-                  <label htmlFor="pickup_time" className="label">Default pick-up time</label>
+                  <label htmlFor="pickup_time" className="label">{t("bookingDefaults.pickupTimeLabel")}</label>
                   <input
                     id="pickup_time" name="pickup_time" type="time" className="input"
                     value={formData.pickup_time} onChange={handleChange}
                     disabled={!isAdmin} style={{ width: "100%" }}
                   />
-                  <p className="helper-text">Applied to new bookings as the default pick-up time.</p>
+                  <p className="helper-text">{t("bookingDefaults.pickupTimeHelper")}</p>
                 </div>
                 <div>
-                  <label htmlFor="dropoff_time" className="label">Default drop-off time</label>
+                  <label htmlFor="dropoff_time" className="label">{t("bookingDefaults.dropoffTimeLabel")}</label>
                   <input
                     id="dropoff_time" name="dropoff_time" type="time" className="input"
                     value={formData.dropoff_time} onChange={handleChange}
                     disabled={!isAdmin} style={{ width: "100%" }}
                   />
-                  <p className="helper-text">Applied to new bookings as the default drop-off time.</p>
+                  <p className="helper-text">{t("bookingDefaults.dropoffTimeHelper")}</p>
                 </div>
               </div>
             </div>
@@ -662,10 +662,10 @@ export default function CompanySettingsPage() {
             {/* Reminders */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
-                Reminders
+                {t("reminders.title")}
               </h2>
               <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                Controls which reminders appear for staff in the Operations dashboard.
+                {t("reminders.subtitle")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
 
@@ -680,18 +680,17 @@ export default function CompanySettingsPage() {
                         disabled={!isAdmin}
                       />
                       <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                        Enable balance invoice reminders
+                        {t("reminders.balanceInvoice.label")}
                       </span>
                     </label>
-                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                      Reminds staff to send the remaining 50% invoice for bookings set to <strong>50% now + 50% later</strong>. Bookings set to <strong>100% upfront</strong> are always excluded.
-                    </p>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}
+                      dangerouslySetInnerHTML={{ __html: t("reminders.balanceInvoice.helper") }} />
                   </div>
                   {finalPaymentRemindersEnabled && (
                     <>
                       <div style={{ marginLeft: "calc(16px + var(--space-3))", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                         <div>
-                          <label htmlFor="final_payment_due_days" className="label">Reminder window starts (days before pickup)</label>
+                          <label htmlFor="final_payment_due_days" className="label">{t("reminders.balanceInvoice.windowLabel")}</label>
                           <input
                             id="final_payment_due_days" name="final_payment_due_days" type="number"
                             min="0" step="1" className="input"
@@ -700,11 +699,11 @@ export default function CompanySettingsPage() {
                             disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
                           />
                           <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
-                            The reminder appears this many days before pickup.
+                            {t("reminders.balanceInvoice.windowHelper")}
                           </p>
                         </div>
                         <div>
-                          <label htmlFor="final_payment_urgent_days" className="label">100% upfront cutoff (days before pickup)</label>
+                          <label htmlFor="final_payment_urgent_days" className="label">{t("reminders.balanceInvoice.cutoffLabel")}</label>
                           <input
                             id="final_payment_urgent_days" name="final_payment_urgent_days" type="number"
                             min="0" step="1" className="input"
@@ -712,12 +711,11 @@ export default function CompanySettingsPage() {
                             value={formData.final_payment_urgent_days} onChange={handleChange}
                             disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
                           />
-                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
-                            Bookings with pickup this soon are treated as <strong>100% upfront</strong> — no remaining-balance reminder is shown, even if the booking is set to 50% now + 50% later.
-                          </p>
+                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}
+                            dangerouslySetInnerHTML={{ __html: t("reminders.balanceInvoice.cutoffHelper") }} />
                         </div>
                         <p className="helper-text" style={{ fontStyle: "italic" }}>
-                          Example: with 35 and 30, reminders appear for split bookings 31–35 days before pickup.
+                          {t("reminders.balanceInvoice.exampleHint")}
                         </p>
                       </div>
                     </>
@@ -734,11 +732,11 @@ export default function CompanySettingsPage() {
                       disabled={!isAdmin}
                     />
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      Enable pre-arrival WhatsApp reminders
+                      {t("reminders.preArrival.label")}
                     </span>
                   </label>
                   <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                    Reminds staff to send a WhatsApp message to the customer the day before pickup.
+                    {t("reminders.preArrival.helper")}
                   </p>
                 </div>
 
@@ -752,11 +750,11 @@ export default function CompanySettingsPage() {
                       disabled={!isAdmin}
                     />
                     <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      Enable return-prep WhatsApp reminders
+                      {t("reminders.returnPrep.label")}
                     </span>
                   </label>
                   <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                    Reminds staff to send a WhatsApp message to the customer the day before return.
+                    {t("reminders.returnPrep.helper")}
                   </p>
                 </div>
 
@@ -766,10 +764,10 @@ export default function CompanySettingsPage() {
             {/* Extras Catalog */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
-                Extras catalog
+                {t("extrasCatalog.title")}
               </h2>
               <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                Define the extras available for bookings (e.g. child seat, bike rack). Staff select from this list when creating or editing a booking.
+                {t("extrasCatalog.subtitle")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                 {extrasCatalog.map((item) => (
@@ -784,7 +782,7 @@ export default function CompanySettingsPage() {
                     <input
                       type="text"
                       className="input"
-                      placeholder="Extra name"
+                      placeholder={t("extrasCatalog.namePlaceholder")}
                       value={item.name}
                       disabled={!isAdmin}
                       onChange={(e) =>
@@ -805,7 +803,7 @@ export default function CompanySettingsPage() {
                           ))
                         }
                       />
-                      <span style={{ fontSize: "13px", color: "rgb(var(--muted))", whiteSpace: "nowrap" }}>Active</span>
+                      <span style={{ fontSize: "13px", color: "rgb(var(--muted))", whiteSpace: "nowrap" }}>{t("extrasCatalog.activeLabel")}</span>
                     </label>
                     {isAdmin && (
                       <button
@@ -813,7 +811,7 @@ export default function CompanySettingsPage() {
                         onClick={() => setExtrasCatalog(extrasCatalog.filter((x) => x.id !== item.id))}
                         style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}
                       >
-                        Remove
+                        {t("extrasCatalog.removeButton")}
                       </button>
                     )}
                   </div>
@@ -827,11 +825,11 @@ export default function CompanySettingsPage() {
                     }
                     style={{ alignSelf: "flex-start", fontSize: "14px", marginTop: "var(--space-1)" }}
                   >
-                    Add extra
+                    {t("extrasCatalog.addButton")}
                   </button>
                 )}
                 {extrasCatalog.length === 0 && !isAdmin && (
-                  <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No extras configured.</p>
+                  <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("extrasCatalog.empty")}</p>
                 )}
               </div>
             </div>
@@ -839,16 +837,16 @@ export default function CompanySettingsPage() {
             {/* Guest Information */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
-                Guest Information
+                {t("guestInfo.title")}
               </h2>
               <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                Content shown to guests in their rental portal — pick-up instructions, house rules, etc.
+                {t("guestInfo.subtitle")}
               </p>
 
               {/* Contact numbers — always visible */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-2)" }}>
                 <div>
-                  <label htmlFor="contact_phone" className="label">Contact phone</label>
+                  <label htmlFor="contact_phone" className="label">{t("guestInfo.contactPhone")}</label>
                   <input
                     id="contact_phone" name="contact_phone" type="tel" className="input"
                     placeholder="+49 30 12345678"
@@ -857,7 +855,7 @@ export default function CompanySettingsPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact_whatsapp" className="label">WhatsApp number</label>
+                  <label htmlFor="contact_whatsapp" className="label">{t("guestInfo.whatsappNumber")}</label>
                   <input
                     id="contact_whatsapp" name="contact_whatsapp" type="tel" className="input"
                     placeholder="+49 30 12345678"
@@ -868,10 +866,10 @@ export default function CompanySettingsPage() {
               </div>
 
               {/* Accordion text sections */}
-              <AccordionSection sectionKey="pickup_info" title="Pick-up information" isOpen={!!openSections["pickup_info"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="pickup_info" title={t("guestInfo.accordions.pickupInfo")} isOpen={!!openSections["pickup_info"]} onToggle={toggleSection}>
                 <textarea
                   id="pickup_info" name="pickup_info" className="input"
-                  placeholder="Where to find keys, access codes, parking…"
+                  placeholder={t("guestInfo.accordions.pickupInfoPlaceholder")}
                   value={formData.pickup_info} onChange={handleChange}
                   disabled={!isAdmin}
                   rows={10}
@@ -879,10 +877,10 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="return_info" title="Return information" isOpen={!!openSections["return_info"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="return_info" title={t("guestInfo.accordions.returnInfo")} isOpen={!!openSections["return_info"]} onToggle={toggleSection}>
                 <textarea
                   id="return_info" name="return_info" className="input"
-                  placeholder="Where to drop keys, cleaning expectations…"
+                  placeholder={t("guestInfo.accordions.returnInfoPlaceholder")}
                   value={formData.return_info} onChange={handleChange}
                   disabled={!isAdmin}
                   rows={10}
@@ -890,10 +888,10 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="before_arrival_info" title="Before arrival" isOpen={!!openSections["before_arrival_info"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="before_arrival_info" title={t("guestInfo.accordions.beforeArrival")} isOpen={!!openSections["before_arrival_info"]} onToggle={toggleSection}>
                 <textarea
                   id="before_arrival_info" name="before_arrival_info" className="input"
-                  placeholder="What guests should prepare before they arrive…"
+                  placeholder={t("guestInfo.accordions.beforeArrivalPlaceholder")}
                   value={formData.before_arrival_info} onChange={handleChange}
                   disabled={!isAdmin}
                   rows={10}
@@ -901,10 +899,10 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="included_items" title="What's included" isOpen={!!openSections["included_items"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="included_items" title={t("guestInfo.accordions.whatsIncluded")} isOpen={!!openSections["included_items"]} onToggle={toggleSection}>
                 <textarea
                   id="included_items" name="included_items" className="input"
-                  placeholder="List items included with the rental…"
+                  placeholder={t("guestInfo.accordions.whatsIncludedPlaceholder")}
                   value={formData.included_items} onChange={handleChange}
                   disabled={!isAdmin}
                   rows={10}
@@ -912,10 +910,10 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="rules_and_tips" title="Rules & tips" isOpen={!!openSections["rules_and_tips"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="rules_and_tips" title={t("guestInfo.accordions.rulesAndTips")} isOpen={!!openSections["rules_and_tips"]} onToggle={toggleSection}>
                 <textarea
                   id="rules_and_tips" name="rules_and_tips" className="input"
-                  placeholder="House rules, tips for the road…"
+                  placeholder={t("guestInfo.accordions.rulesAndTipsPlaceholder")}
                   value={formData.rules_and_tips} onChange={handleChange}
                   disabled={!isAdmin}
                   rows={10}
@@ -923,29 +921,29 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="faq" title="FAQ" isOpen={!!openSections["faq"]} onToggle={toggleSection}>
+              <AccordionSection sectionKey="faq" title={t("guestInfo.accordions.faq")} isOpen={!!openSections["faq"]} onToggle={toggleSection}>
                 <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                  Frequently asked questions shown to guests in their rental portal.
+                  {t("guestInfo.accordions.faqHelper")}
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   {faqItems.map((item, i) => (
                     <div key={i} style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-                        <label className="label" style={{ margin: 0 }}>Question {i + 1}</label>
+                        <label className="label" style={{ margin: 0 }}>{t("guestInfo.accordions.questionLabel", { number: i + 1 })}</label>
                         {isAdmin && (
                           <button
                             type="button"
                             onClick={() => setFaqItems(faqItems.filter((_, idx) => idx !== i))}
                             style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                           >
-                            Remove
+                            {t("guestInfo.accordions.removeButton")}
                           </button>
                         )}
                       </div>
                       <input
                         type="text"
                         className="input"
-                        placeholder="Question"
+                        placeholder={t("guestInfo.accordions.questionPlaceholder")}
                         value={item.question}
                         disabled={!isAdmin}
                         onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, question: e.target.value } : f))}
@@ -953,7 +951,7 @@ export default function CompanySettingsPage() {
                       />
                       <textarea
                         className="input"
-                        placeholder="Answer"
+                        placeholder={t("guestInfo.accordions.answerPlaceholder")}
                         value={item.answer}
                         disabled={!isAdmin}
                         onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, answer: e.target.value } : f))}
@@ -969,11 +967,11 @@ export default function CompanySettingsPage() {
                       onClick={() => setFaqItems([...faqItems, { question: "", answer: "" }])}
                       style={{ alignSelf: "flex-start", fontSize: "14px" }}
                     >
-                      Add FAQ
+                      {t("guestInfo.accordions.addFaqButton")}
                     </button>
                   )}
                   {faqItems.length === 0 && !isAdmin && (
-                    <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No FAQ items configured.</p>
+                    <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("guestInfo.accordions.noFaq")}</p>
                   )}
                 </div>
               </AccordionSection>

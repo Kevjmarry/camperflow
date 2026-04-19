@@ -291,6 +291,18 @@
       "inProgress": "In progress",
       "completed": "Completed"
     },
+    "issues": {
+      "title": "Open issues",
+      "loading": "Loading…",
+      "empty": "No open issues",
+      "fallbackTitle": "Open vehicle issue",
+      "blocking": "Blocking",
+      "attention": "Attention",
+      "reported": "Reported {date}",
+      "viewChecklist": "View checklist →",
+      "markResolved": "Mark resolved",
+      "resolving": "Resolving…"
+    },
     "vehicleCalendar": {
       "title": "Calendar Sync",
       "connect": "Connect calendar",
@@ -1224,7 +1236,8 @@
         "photo": {
           "label": "Vehicle Photo (optional)",
           "hint": "Upload a photo of the vehicle",
-          "selectedPrefix": "Selected: "
+          "selectedPrefix": "Selected: ",
+          "chooseFile": "Choose file"
         },
         "field": {
           "name": "Vehicle Name *",
@@ -1315,13 +1328,44 @@
       "customerDetails": "Customer Details",
       "tripDetails": "Trip Details",
       "internalNotes": "Internal Notes",
-      "extras": "Extras"
+      "extras": "Extras",
+      "operations": "Operations"
+    },
+    "customer": {
+      "title": "Customer",
+      "unnamed": "Unnamed customer",
+      "noContactInfo": "No contact info",
+      "noLinked": "No customer linked",
+      "linkChangeButton": "Link / change customer",
+      "selectPlaceholder": "-- Select customer --",
+      "linkSavesImmediately": "Changing the linked customer saves immediately.",
+      "linkedSuccess": "Customer linked successfully."
     },
     "extras": {
       "coffeeMachine": "Coffee machine",
       "paddleboard": "Paddleboard",
       "electricGrill": "Electric grill",
-      "electricPaddleBoardPump": "Electric paddle board pump"
+      "electricPaddleBoardPump": "Electric paddle board pump",
+      "emptyHint": "No extras configured. Add extras in company settings."
+    },
+    "operations": {
+      "invoiceSetupLabel": "Invoice setup",
+      "invoiceSetupHint": "Determines whether CamperFlow should remind staff to send the remaining balance invoice before pickup.",
+      "tasksProgress": "Operational tasks: {done} / {total} completed",
+      "paymentPlan": {
+        "notSet": "Not set",
+        "split": "50% now + 50% later",
+        "full": "100% upfront"
+      },
+      "task": {
+        "balanceInvoice": "Remaining 50% invoice",
+        "preArrivalMessage": "Pre-arrival WhatsApp message",
+        "returnPrepMessage": "Return-prep WhatsApp message",
+        "statusLabel": "Status:",
+        "notSent": "Not sent",
+        "sentAt": "Sent · {date}",
+        "clear": "Clear"
+      }
     },
     "tripDetails": {
       "noOverride": "Use imported value",
@@ -1357,6 +1401,12 @@
         "notStarted": "Not started",
         "inProgress": "In progress",
         "completed": "Completed"
+      },
+      "systemTypes": {
+        "handover": "Pickup Checklist",
+        "return": "Return Checklist",
+        "cleaning": "Cleaning Checklist",
+        "mechanical": "Mechanical Checklist"
       }
     },
     "action": {
@@ -1471,6 +1521,7 @@
       "phone": "Phone",
       "email": "Email",
       "uploadPhoto": "Upload photo",
+      "chooseFile": "Choose file",
       "photoUrl": "Photo URL",
       "notes": "Notes",
       "active": "Active"
@@ -1583,7 +1634,11 @@
     "createdBanner": "Vehicle created successfully. You can now add compliance records below.",
     "operationalHoldLabel": "Operational hold",
     "holdReasonLabel": "Hold reason",
-    "holdReasonPlaceholder": "Reason for hold..."
+    "holdReasonPlaceholder": "Reason for hold...",
+    "lengthPlaceholder": "e.g. 5.99",
+    "widthPlaceholder": "e.g. 2.10",
+    "heightPlaceholder": "e.g. 2.85",
+    "chooseFile": "Choose file"
   },
   "staffTeamNew": {
     "checkingPermissions": "Checking permissions…",
@@ -1628,7 +1683,8 @@
       "cancel": "Cancel",
       "enableLogin": "Enable login (send invite)",
       "enableLoginDescription": "Send an email invitation allowing this person to log in and set their password",
-      "removePhoto": "Remove photo"
+      "removePhoto": "Remove photo",
+      "chooseFile": "Choose file"
     }
   },
   "guestPickup": {
@@ -1650,7 +1706,59 @@
     "contactWhatsapp": "WhatsApp",
     "checklistTitle": "Return Checklist",
     "noChecklist": "No return checklist has been created for this booking.",
-    "noItems": "This checklist has no items."
+    "noItems": "This checklist has no items.",
+    "beforeYouReturnTitle": "Before you return",
+    "beforeYouReturn0": "Complete the return checklist",
+    "beforeYouReturn1": "Let us know your estimated arrival time",
+    "beforeYouReturn2": "Allow extra travel time; motorhomes and caravans travel slower than a car",
+    "beforeYouReturn3": "Empty the toilet cassette and wastewater tank",
+    "beforeYouReturn4": "If applicable, refuel near our base before return",
+    "beforeYouReturn5": "Allow enough time to wash and clean the vehicle before handover",
+    "untitledItem": "Untitled item",
+    "checklistPolicyNote": "If items are not completed, additional charges may apply according to company policy."
+  },
+  "guestFaq": {
+    "title": "FAQ",
+    "empty": "No frequently asked questions have been added yet."
+  },
+  "guestHelp": {
+    "title": "Vehicle Guide",
+    "subtitle": "General guidance for using your campervan or motorhome. Exact features and controls vary between vehicles — always refer to any handover notes provided by the rental company for specifics.",
+    "warning": "<strong>Always follow the instructions given during handover.</strong> This guide is general and may not match your exact vehicle. When in doubt, contact the rental company.",
+    "sections": {
+      "water": {
+        "title": "Using water",
+        "body": "Fill the fresh water tank before departure — the filler point is usually on the exterior. Use the onboard pump (switch near the sink) to get water flowing. Only drink from the tank if it has been confirmed safe; otherwise use bottled water. Empty the grey waste tank at designated service points before returning the vehicle."
+      },
+      "toilet": {
+        "title": "Toilet basics",
+        "body": "Add the recommended chemical dose before first use (amount varies by product — check the label). Use toilet paper marked as cassette-safe or biodegradable. Empty the cassette at a designated chemical disposal point, not in a standard drain. Rinse with clean water after emptying and re-add chemical before replacing."
+      },
+      "electricity": {
+        "title": "Electricity & hookup",
+        "body": "Electrical setup varies by vehicle. Some run solely on a leisure battery (charged while driving); others support 230V shore power (EHU) via a campsite bollard; some include an inverter for running mains appliances from the battery. Check during handover which systems your vehicle has. High-draw appliances like kettles or hair dryers will drain a leisure battery quickly — use them on hookup where possible."
+      },
+      "gas": {
+        "title": "Gas / cooking safety",
+        "body": "Gas rules depend on your vehicle's setup — some have automatic crash shut-off valves, others require manual isolation. Check with the rental company whether gas should be turned off at the bottle while driving. If you smell gas: stop using burners, open windows and doors, avoid operating electrical switches, and leave the vehicle. Some vehicles have a gas detector fitted — do not obstruct or disable it."
+      },
+      "heating": {
+        "title": "Heating / hot water",
+        "body": "Heating and hot water systems vary widely — your vehicle may use LPG gas, diesel (e.g. Webasto or Eberspächer), electric hookup, or a combination. Ask during handover how to operate yours. Hot water may come from a dedicated boiler, via the engine coolant circuit, or from a combi system. Allow time for the system to heat up, and check the relevant switch or thermostat if hot water is slow."
+      },
+      "fridge": {
+        "title": "Fridge basics",
+        "body": "Turn the fridge on several hours before loading it — cooling from warm takes time. On the road the fridge typically runs from the vehicle alternator (12V); on a campsite switch to 230V hookup for efficiency. Keep the fridge level where possible. Do not overfill: air needs to circulate. Check the manual for the correct gas/electric mode if your fridge has a 3-way setting."
+      },
+      "beforeDriving": {
+        "title": "Before driving off",
+        "body": "Before moving off, complete these checks: retract and lock the step; close and secure all roof vents, windows, and skylights; stow loose items and secure cupboard latches; check that the TV aerial is lowered; disconnect EHU cable and stow it; check that the handbrake is released. Walk around the vehicle and check all storage compartments are locked."
+      },
+      "driving": {
+        "title": "While driving / height awareness",
+        "body": "Know your vehicle's height — it is usually marked on the cab sun visor. Low bridges, car parks, and drive-throughs are the most common hazards. Take wide corners slowly: the rear overhang swings outward on tight turns. Be aware that the vehicle is heavier and longer than a car — braking distances are greater. Avoid sudden lane changes and allow extra space in traffic."
+      }
+    }
   },
   "guestDashboard": {
     "title": "My Booking",
@@ -1743,6 +1851,69 @@
       "saved": "Company settings saved successfully!"
     },
     "loading": "Loading company settings...",
+    "bookingDefaults": {
+      "title": "Booking defaults",
+      "pickupTimeLabel": "Default pick-up time",
+      "pickupTimeHelper": "Applied to new bookings as the default pick-up time.",
+      "dropoffTimeLabel": "Default drop-off time",
+      "dropoffTimeHelper": "Applied to new bookings as the default drop-off time."
+    },
+    "reminders": {
+      "title": "Reminders",
+      "subtitle": "Controls which reminders appear for staff in the Operations dashboard.",
+      "balanceInvoice": {
+        "label": "Enable balance invoice reminders",
+        "helper": "Reminds staff to send the remaining 50% invoice for bookings set to <strong>50% now + 50% later</strong>. Bookings set to <strong>100% upfront</strong> are always excluded.",
+        "windowLabel": "Reminder window starts (days before pickup)",
+        "windowHelper": "The reminder appears this many days before pickup.",
+        "cutoffLabel": "100% upfront cutoff (days before pickup)",
+        "cutoffHelper": "Bookings with pickup this soon are treated as <strong>100% upfront</strong> — no remaining-balance reminder is shown, even if the booking is set to 50% now + 50% later.",
+        "exampleHint": "Example: with 35 and 30, reminders appear for split bookings 31–35 days before pickup."
+      },
+      "preArrival": {
+        "label": "Enable pre-arrival WhatsApp reminders",
+        "helper": "Reminds staff to send a WhatsApp message to the customer the day before pickup."
+      },
+      "returnPrep": {
+        "label": "Enable return-prep WhatsApp reminders",
+        "helper": "Reminds staff to send a WhatsApp message to the customer the day before return."
+      }
+    },
+    "extrasCatalog": {
+      "title": "Extras catalog",
+      "subtitle": "Define the extras available for bookings (e.g. child seat, bike rack). Staff select from this list when creating or editing a booking.",
+      "namePlaceholder": "Extra name",
+      "activeLabel": "Active",
+      "removeButton": "Remove",
+      "addButton": "Add extra",
+      "empty": "No extras configured."
+    },
+    "guestInfo": {
+      "title": "Guest Information",
+      "subtitle": "Content shown to guests in their rental portal — pick-up instructions, house rules, etc.",
+      "contactPhone": "Contact phone",
+      "whatsappNumber": "WhatsApp number",
+      "accordions": {
+        "pickupInfo": "Pick-up information",
+        "pickupInfoPlaceholder": "Where to find keys, access codes, parking…",
+        "returnInfo": "Return information",
+        "returnInfoPlaceholder": "Where to drop keys, cleaning expectations…",
+        "beforeArrival": "Before arrival",
+        "beforeArrivalPlaceholder": "What guests should prepare before they arrive…",
+        "whatsIncluded": "What's included",
+        "whatsIncludedPlaceholder": "List items included with the rental…",
+        "rulesAndTips": "Rules & tips",
+        "rulesAndTipsPlaceholder": "House rules, tips for the road…",
+        "faq": "FAQ",
+        "faqHelper": "Frequently asked questions shown to guests in their rental portal.",
+        "questionLabel": "Question {number}",
+        "questionPlaceholder": "Question",
+        "answerPlaceholder": "Answer",
+        "removeButton": "Remove",
+        "addFaqButton": "Add FAQ",
+        "noFaq": "No FAQ items configured."
+      }
+    },
     "systemRecovery": {
       "title": "System Recovery",
       "description": "Administrative tools to recover system state after a period of inactivity.",
@@ -2023,7 +2194,14 @@
     "returnCloseOutTitle": "Return Close-Out",
     "returnCloseOutDesc": "Confirm keys, documents, and contract close-out items.",
     "returnDepositStatusTitle": "Deposit Status",
-    "returnDepositStatusDesc": "Record the outcome of the security deposit."
+    "returnDepositStatusDesc": "Record the outcome of the security deposit.",
+    "inputTypeDropdown": "Dropdown",
+    "itemDropdownOptions": "Dropdown options",
+    "dropdownOptionPlaceholder": "Option {n}",
+    "removeOptionAria": "Remove option",
+    "addOption": "+ Add option",
+    "dragToReorderAria": "Drag to reorder",
+    "dragToReorderSectionAria": "Drag to reorder section"
   },
   "checklistDetail": {
     "backToBooking": "Back to booking",
@@ -2200,7 +2378,13 @@
     "evidenceGroupGeneral": "General condition photos",
     "evidenceGroupDamage": "Damage photos",
     "evidenceGroupDamageReturn": "<strong>New</strong> damage photos",
-    "evidenceReturnDesc": "Photograph the vehicle's general condition on return, then document any <strong>new damage found</strong>."
+    "evidenceReturnDesc": "Photograph the vehicle's general condition on return, then document any <strong>new damage found</strong>.",
+    "addFlagPhoto": "+ Add photo",
+    "vehicleDataFuel": "Fuel",
+    "vehicleDataAdblue": "AdBlue",
+    "vehicleDataSelectPlaceholder": "— Select —",
+    "vehicleDataFull": "Full",
+    "vehicleDataEmpty": "Empty"
   },
   "bookingsImport": {
     "backToBookings": "← Back to bookings",
@@ -2296,6 +2480,45 @@
       "resultErrors": "{count} errors",
       "rowError": "Row {row}: {message}",
       "defaultBlockLabel": "Blocked period"
+    }
+  },
+  "staffCustomers": {
+    "title": "Customers",
+    "newCustomer": "+ New Customer",
+    "empty": "No customers yet",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "created": "Created"
+    },
+    "missingPhone": "Missing phone number ({count}) *",
+    "missingPhoneNote": "* Customers imported from your booking system may be missing contact details. Open each record to add or update them so they display and work correctly in CamperFlow."
+  },
+  "staffCustomerDetail": {
+    "notFound": "Customer not found.",
+    "backToCustomers": "← Back to Customers",
+    "backLink": "← Customers",
+    "unnamedCustomer": "Unnamed customer",
+    "viewAllBookings": "View all bookings",
+    "noContactInfo": "No contact info",
+    "totalBookings": "Total bookings:",
+    "lastBooking": "Last booking:",
+    "bookingsTitle": "Bookings",
+    "noBookings": "No bookings for this customer yet",
+    "table": {
+      "bookingNumber": "Booking #",
+      "status": "Status",
+      "pickup": "Pick-up",
+      "return": "Return"
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "blocked": "Blocked",
+      "on_rent": "On Rent",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "installBanner": {

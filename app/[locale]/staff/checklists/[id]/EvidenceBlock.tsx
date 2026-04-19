@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, type CSSProperties, type ChangeEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import type { EvidencePhoto } from './types';
 
 type EvidencePhotos = { general: EvidencePhoto[]; damage: EvidencePhoto[]; id: EvidencePhoto[] };
@@ -44,13 +44,13 @@ const menuItemStyle: CSSProperties = {
 };
 
 /** Attempt to parse a Unix-ms timestamp from a storage filename like `1713456789000_abc.jpg`. */
-function tryParseTimestamp(path: string): string | null {
+function tryParseTimestamp(path: string, locale: string): string | null {
   try {
     const filename = path.split('/').pop() ?? '';
     const ts = parseInt(filename.split('_')[0], 10);
     // Must be a plausible ms timestamp (after 2001-09-09)
     if (!Number.isFinite(ts) || ts < 1_000_000_000_000) return null;
-    return new Date(ts).toLocaleString();
+    return new Date(ts).toLocaleString(locale);
   } catch {
     return null;
   }
@@ -72,11 +72,12 @@ function PhotoLightbox({
   onClose: () => void;
 }) {
   const t = useTranslations('checklistDetail');
+  const locale = useLocale();
   const [index, setIndex] = useState(initialIndex);
   const [rotation, setRotation] = useState(0);
   const total = photos.length;
   const photo = photos[Math.min(index, total - 1)];
-  const timestamp = photo.path ? tryParseTimestamp(photo.path) : null;
+  const timestamp = photo.path ? tryParseTimestamp(photo.path, locale) : null;
   const showNav = total > 1;
 
   // Reset rotation whenever the displayed photo changes
