@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import type { OpsReturn } from '@/lib/staff/operations/getOpsReturnsToday'
 
 interface Props {
@@ -9,27 +10,23 @@ interface Props {
   quiet?: boolean
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatHoursToPickup(hours: number | null | undefined): string {
+function formatHoursToPickup(
+  hours: number | null | undefined,
+  labels: { today: string; tomorrow: string; days: (n: number) => string },
+): string {
   if (hours == null) return ''
-  if (hours <= 24) return 'Today'
-  if (hours <= 48) return 'Tomorrow'
-  return `${Math.round(hours / 24)} days`
+  if (hours <= 24) return labels.today
+  if (hours <= 48) return labels.tomorrow
+  return labels.days(Math.round(hours / 24))
 }
 
-const nextActionLabels: Record<string, string> = {
-  prepare_for_pickup: 'Preparing',
-  start_handover: 'Start handover',
-  await_return: 'Await return',
-  start_return: 'Start return',
-}
-
-function formatNextAction(action: string | null | undefined): string {
+function formatNextAction(action: string | null | undefined, labels: Record<string, string>): string {
   if (!action) return ''
-  return nextActionLabels[action] ?? action
+  return labels[action] ?? action
 }
 
 function getUrgencyStyle(returnAt: string): React.CSSProperties {
@@ -53,6 +50,20 @@ function getUrgencyStyle(returnAt: string): React.CSSProperties {
 
 export default function OperationsReturns({ returns, quiet }: Props) {
   const { locale } = useParams<{ locale: string }>()
+  const t = useTranslations('staff.operations')
+
+  const countdownLabels = {
+    today: t('countdown.today'),
+    tomorrow: t('countdown.tomorrow'),
+    days: (n: number) => t('countdown.days', { count: n }),
+  }
+
+  const actionLabels: Record<string, string> = {
+    prepare_for_pickup: t('action.preparing'),
+    start_handover: t('action.startHandover'),
+    await_return: t('action.awaitReturn'),
+    start_return: t('action.startReturn'),
+  }
 
   // On quiet days with nothing scheduled, render a lightweight status line
   if (quiet && returns.length === 0) {
@@ -69,10 +80,10 @@ export default function OperationsReturns({ returns, quiet }: Props) {
         }}
       >
         <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))' }}>
-          Returns today
+          {t('returns.title')}
         </span>
         <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>
-        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>None scheduled</span>
+        <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{t('returns.noneScheduled')}</span>
       </div>
     )
   }
@@ -80,7 +91,7 @@ export default function OperationsReturns({ returns, quiet }: Props) {
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
       <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-        Returns today
+        {t('returns.title')}
         <span
           style={{
             marginLeft: 'var(--space-3)',
@@ -97,7 +108,7 @@ export default function OperationsReturns({ returns, quiet }: Props) {
       </h2>
 
       {returns.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No returns scheduled for today.</p>
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{t('returns.noneToday')}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {returns.map((r) => (
@@ -122,40 +133,40 @@ export default function OperationsReturns({ returns, quiet }: Props) {
                   {r.customerName} · {r.bookingNumber}
                 </span>
                 {r.nextAction && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(r.nextAction)}</span>
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(r.nextAction, actionLabels)}</span>
                 )}
                 {r.vehicleBlocked && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{t('status.blockedVehicle')}</span>
                 )}
                 {r.hasBlockingIssue && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{t('status.blockingChecklistIssue')}</span>
                 )}
                 {r.hasExpiredCompliance && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{t('status.expiredCompliance')}</span>
                 )}
                 {r.hasOpenVehicleIssue && (
-                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                  <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{t('status.openVehicleIssue')}</span>
                 )}
                 {r.returnItemsTotal != null && r.returnItemsTotal > 0 && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                    Return: {r.returnItemsDone ?? 0} / {r.returnItemsTotal}
+                    {t('returns.returnLabel')}: {r.returnItemsDone ?? 0} / {r.returnItemsTotal}
                   </span>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 {r.hoursToPickup != null && (
                   <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                    {formatHoursToPickup(r.hoursToPickup)}
+                    {formatHoursToPickup(r.hoursToPickup, countdownLabels)}
                   </span>
                 )}
                 <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--brand))' }}>
-                  {formatTime(r.returnAt)}
+                  {formatTime(r.returnAt, locale)}
                 </span>
                 <Link
                   href={`/${locale}/staff/bookings/${r.id}`}
                   style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
                 >
-                  View
+                  {t('returns.view')}
                 </Link>
               </div>
             </div>

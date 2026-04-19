@@ -992,7 +992,109 @@
           "short": "Short",
           "medium": "Medium",
           "comfortable": "Comfortable"
+        },
+        "sameDayPrep": "Same day",
+        "prepDayOne": "1 day",
+        "prepDays": "{count} days",
+        "overdueHours": "{count}h ago",
+        "overdueDays": "{count}d ago",
+        "inHours": "in {count}h",
+        "inDaysShort": "in {count}d",
+        "nextPickupLabel": "Next pickup"
+      },
+      "summary": {
+        "pickupsToday": "Pickups today",
+        "returnsToday": "Returns today",
+        "vehiclesPreparing": "Vehicles preparing",
+        "overdueReturns": "Overdue returns"
+      },
+      "status": {
+        "blockedVehicle": "Blocked vehicle",
+        "blockingChecklistIssue": "Blocking checklist issue",
+        "expiredCompliance": "Expired compliance",
+        "openVehicleIssue": "Open vehicle issue",
+        "readyForPickup": "Ready for pickup",
+        "urgentIssue": "Urgent issue",
+        "attentionIssue": "Attention issue"
+      },
+      "action": {
+        "preparing": "Preparing",
+        "startHandover": "Start handover",
+        "continueHandover": "Continue handover",
+        "awaitReturn": "Await return",
+        "startReturn": "Start return"
+      },
+      "pickups": {
+        "title": "Pickups today",
+        "noneScheduled": "None scheduled",
+        "noneToday": "No pickups scheduled for today.",
+        "view": "View",
+        "handover": "Handover"
+      },
+      "returns": {
+        "title": "Returns today",
+        "noneScheduled": "None scheduled",
+        "noneToday": "No returns scheduled for today.",
+        "view": "View",
+        "returnLabel": "Return"
+      },
+      "vehiclesPreparing": {
+        "title": "Vehicles preparing",
+        "none": "No vehicles currently preparing.",
+        "pickup": "Pickup",
+        "view": "View"
+      },
+      "upcomingPickups": {
+        "title": "Upcoming pickups",
+        "viewAll": "View all",
+        "empty": "No upcoming pickups.",
+        "view": "View",
+        "inDays": "in {count}d"
+      },
+      "countdown": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "days": "{count} days"
+      },
+      "pageTitle": "Operations",
+      "pageSubtitle": "Today's pickups, returns, and vehicle readiness at a glance.",
+      "attentionNeeded": "Attention needed",
+      "attentionChip": {
+        "blocked": "Blocked",
+        "checklistIssue": "Checklist issue",
+        "expiredCompliance": "Expired compliance",
+        "vehicleIssue": "Vehicle issue",
+        "urgentIssue": "Urgent issue",
+        "attentionIssue": "Attention issue"
+      },
+      "reminders": {
+        "title": "Reminders",
+        "empty": "No reminders pending.",
+        "view": "View",
+        "type": {
+          "balance_invoice": "Send remaining 50% invoice",
+          "pre_arrival": "Send pre-arrival WhatsApp",
+          "return_prep": "Send return-prep WhatsApp"
+        },
+        "timing": {
+          "returnTomorrow": "Return tomorrow",
+          "pickupTomorrow": "Pickup tomorrow",
+          "pickupToday": "Pickup today",
+          "pickupInDays": "Pickup in {count}d"
         }
+      },
+      "vehicleStatus": {
+        "ready": "Ready",
+        "preparing": "Preparing",
+        "blocked": "Blocked",
+        "on_rent": "On rent",
+        "in_progress": "In progress",
+        "confirmed": "Confirmed",
+        "cancelled": "Cancelled",
+        "completed": "Completed",
+        "not_started": "Not started",
+        "draft": "Draft",
+        "pending": "Pending"
       }
     },
     "checklistsPage": {
@@ -1591,18 +1693,27 @@
       "accidentNumbers": "Accident",
       "breakdownNumbers": "Breakdown",
       "primaryPhone": "Primary number",
-      "secondaryPhone": "Secondary number"
+      "secondaryPhone": "Secondary number",
+      "address": "Company address",
+      "companyEmail": "Company email",
+      "registrationId": "Company registration / ID",
+      "vatId": "VAT ID"
     },
     "placeholders": {
       "companyName": "Your company name",
       "yourCompany": "Your Company",
-      "phonePlaceholder": "+43 123 456 789"
+      "phonePlaceholder": "+43 123 456 789",
+      "address": "Street, City, Postcode, Country",
+      "companyEmail": "info@yourcompany.com",
+      "registrationId": "e.g. FN 123456a",
+      "vatId": "e.g. ATU12345678"
     },
     "helpers": {
       "logoRequirements": "PNG, JPG, or SVG. Max 2MB. Recommended: 200x80px",
       "primaryColorUsage": "Used for buttons and links",
       "secondaryColorUsage": "Used for accents and highlights",
-      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder."
+      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder.",
+      "addressUsage": "Printed on evidence reports and PDF documents."
     },
     "actions": {
       "uploadLogo": "Upload logo",
@@ -1643,7 +1754,7 @@
         "errorSubmit": "Failed to apply decisions",
         "modal": {
           "title": "Backlog review",
-          "loading": "Loading stale bookings\u2026",
+          "loading": "Loading stale bookings…",
           "empty": "No stale bookings found. Nothing to review.",
           "listHint": "Choose an action for each booking. Skipped bookings are left unchanged.",
           "markAllOnRentComplete": "Mark all on_rent as Completed",
@@ -1654,12 +1765,12 @@
           "action_skip": "Skip",
           "warning": "Vehicle readiness is recomputed automatically after each booking is closed.",
           "reasonLabel": "Reason (applies to all non-skipped bookings)",
-          "reasonPlaceholder": "e.g. System recovery after staff hiatus \u2014 closing backlog from March 2026",
+          "reasonPlaceholder": "e.g. System recovery after staff hiatus — closing backlog from March 2026",
           "reasonMinLength": "Reason must be at least 10 characters",
           "cancel": "Cancel",
           "close": "Close",
           "submit": "Apply decisions",
-          "submitting": "Applying\u2026",
+          "submitting": "Applying…",
           "success": "Done: {completed} completed, {cancelled} cancelled, {skipped} skipped. {instances} checklist instance(s) closed."
         }
       }

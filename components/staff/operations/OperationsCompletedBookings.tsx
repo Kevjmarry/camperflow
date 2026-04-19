@@ -12,9 +12,9 @@ interface Props {
 
 const LIMIT = 5
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, locale: string) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -79,18 +79,18 @@ export default function OperationsCompletedBookings({ bookings }: Props) {
                     {b.customerName} · {b.bookingNumber}
                   </span>
                   {b.vehicleBlocked && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockedVehicle')}</span>
                   )}
                   {b.hasExpiredCompliance && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.expiredCompliance')}</span>
                   )}
                   {b.hasOpenVehicleIssue && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.openVehicleIssue')}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                    {t('returnedOn', { date: formatDate(b.returnAt) })}
+                    {t('returnedOn', { date: formatDate(b.returnAt, locale) })}
                   </span>
                   <Link
                     href={`/${locale}/staff/bookings/${b.id}`}

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { OpsSummary } from '@/lib/staff/operations/getOpsSummary'
 
 interface Props {
@@ -7,11 +8,13 @@ interface Props {
 }
 
 export default function OperationsSummary({ data }: Props) {
+  const t = useTranslations('staff.operations.summary')
+
   const tiles = [
-    { label: 'Pickups today', value: data.pickupsToday, color: 'var(--brand)' },
-    { label: 'Returns today', value: data.returnsToday, color: 'var(--brand)' },
-    { label: 'Vehicles preparing', value: data.vehiclesPreparing, color: 'var(--warning)' },
-    { label: 'Overdue returns', value: data.overdueReturns, color: 'var(--error)' },
+    { label: t('pickupsToday'), value: data.pickupsToday, color: 'var(--brand)' },
+    { label: t('returnsToday'), value: data.returnsToday, color: 'var(--brand)' },
+    { label: t('vehiclesPreparing'), value: data.vehiclesPreparing, color: 'var(--warning)' },
+    { label: t('overdueReturns'), value: data.overdueReturns, color: 'var(--error)' },
   ]
 
   return (

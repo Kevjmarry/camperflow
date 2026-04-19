@@ -12,35 +12,31 @@ interface Props {
 
 const LIMIT = 5
 
-const nextActionLabels: Record<string, string> = {
-  prepare_for_pickup: 'Preparing',
-  start_handover: 'Start handover',
-  await_return: 'Await return',
-  start_return: 'Start return',
-}
-
-function formatNextAction(action: string | null | undefined): string {
+function formatNextAction(action: string | null | undefined, labels: Record<string, string>): string {
   if (!action) return ''
-  return nextActionLabels[action] ?? action
+  return labels[action] ?? action
 }
 
-function formatHoursToPickup(hours: number | null | undefined): string {
+function formatHoursToPickup(
+  hours: number | null | undefined,
+  labels: { today: string; tomorrow: string; days: (n: number) => string },
+): string {
   if (hours == null) return ''
-  if (hours <= 24) return 'Today'
-  if (hours <= 48) return 'Tomorrow'
-  return `${Math.round(hours / 24)} days`
+  if (hours <= 24) return labels.today
+  if (hours <= 48) return labels.tomorrow
+  return labels.days(Math.round(hours / 24))
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   })
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -190,6 +186,19 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
   const t = useTranslations('staff.operations')
   const [expanded, setExpanded] = useState(false)
 
+  const countdownLabels = {
+    today: t('countdown.today'),
+    tomorrow: t('countdown.tomorrow'),
+    days: (n: number) => t('countdown.days', { count: n }),
+  }
+
+  const actionLabels: Record<string, string> = {
+    prepare_for_pickup: t('action.preparing'),
+    start_handover: t('action.startHandover'),
+    await_return: t('action.awaitReturn'),
+    start_return: t('action.startReturn'),
+  }
+
   const visible = expanded ? pickups : pickups.slice(0, LIMIT)
   const hidden = pickups.length - LIMIT
 
@@ -228,6 +237,11 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
             color: rgb(var(--muted));
           }
         }
+        @media (min-width: 768px) {
+          .ops-upcoming-time-countdown {
+            display: none;
+          }
+        }
       `}</style>
 
       <div
@@ -239,18 +253,18 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
         }}
       >
         <h2 style={{ fontSize: '18px', margin: 0, color: 'rgb(var(--text))' }}>
-          Upcoming pickups
+          {t('upcomingPickups.title')}
         </h2>
         <Link
           href={`/${locale}/staff/bookings`}
           style={{ fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
         >
-          View all
+          {t('upcomingPickups.viewAll')}
         </Link>
       </div>
 
       {pickups.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No upcoming pickups.</p>
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{t('upcomingPickups.empty')}</p>
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -278,25 +292,25 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                     {p.customerName} · {p.bookingNumber}
                   </span>
                   {p.nextAction && (
-                    <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(p.nextAction)}</span>
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{formatNextAction(p.nextAction, actionLabels)}</span>
                   )}
                   {(p.vehicleBlocked || p.hasUrgentIssue || p.hasAttentionIssue || p.hasBlockingIssue || p.hasExpiredCompliance || p.hasOpenVehicleIssue) && (
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
-                      {p.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
-                      {p.hasUrgentIssue && <StatusChip label="Urgent issue" severity="critical" />}
-                      {p.hasAttentionIssue && <StatusChip label="Attention issue" severity="warning" />}
-                      {!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue && <StatusChip label="Blocking checklist issue" severity="critical" />}
+                      {p.vehicleBlocked && <StatusChip label={t('status.blockedVehicle')} severity="warning" />}
+                      {p.hasUrgentIssue && <StatusChip label={t('status.urgentIssue')} severity="critical" />}
+                      {p.hasAttentionIssue && <StatusChip label={t('status.attentionIssue')} severity="warning" />}
+                      {!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue && <StatusChip label={t('status.blockingChecklistIssue')} severity="critical" />}
                       {p.hasExpiredCompliance && (p.vehicleId
-                        ? <Link href={`/${locale}/staff/vehicles/${p.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label="Expired compliance" severity="critical" /></Link>
-                        : <StatusChip label="Expired compliance" severity="critical" />
+                        ? <Link href={`/${locale}/staff/vehicles/${p.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label={t('status.expiredCompliance')} severity="critical" /></Link>
+                        : <StatusChip label={t('status.expiredCompliance')} severity="critical" />
                       )}
                       {p.hasOpenVehicleIssue && (() => {
                         const href = p.openVehicleIssueChecklistInstanceId
                           ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
                           : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}` : null
                         return href
-                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label="Open vehicle issue" severity="warning" /></Link>
-                          : <StatusChip label="Open vehicle issue" severity="warning" />
+                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label={t('status.openVehicleIssue')} severity="warning" /></Link>
+                          : <StatusChip label={t('status.openVehicleIssue')} severity="warning" />
                       })()}
                     </div>
                   )}
@@ -308,24 +322,24 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                   <div className="ops-upcoming-time" style={{ textAlign: 'right' }}>
                     {/* On desktop: stacked time / date / countdown. On mobile: inline via CSS. */}
                     <div className="ops-upcoming-time-main" style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {formatTime(p.pickupAt)}
+                      {formatTime(p.pickupAt, locale)}
                       {/* Mobile-only: date and countdown inline */}
                       <span className="ops-upcoming-time-countdown">
-                        {formatDate(p.pickupAt)} · {formatHoursToPickup(p.hoursToPickup) || `in ${p.daysUntil}d`}
+                        {formatDate(p.pickupAt, locale)} · {formatHoursToPickup(p.hoursToPickup, countdownLabels) || t('upcomingPickups.inDays', { count: p.daysUntil })}
                       </span>
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatDate(p.pickupAt)}
+                      {formatDate(p.pickupAt, locale)}
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatHoursToPickup(p.hoursToPickup) || `in ${p.daysUntil}d`}
+                      {formatHoursToPickup(p.hoursToPickup, countdownLabels) || t('upcomingPickups.inDays', { count: p.daysUntil })}
                     </div>
                   </div>
                   <Link
                     href={`/${locale}/staff/bookings/${p.id}`}
                     style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
                   >
-                    View
+                    {t('upcomingPickups.view')}
                   </Link>
                 </div>
               </div>

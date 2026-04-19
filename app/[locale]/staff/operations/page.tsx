@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import PageContainer from '@/components/PageContainer'
 import OperationsInvoiceReminders from '@/components/staff/operations/OperationsInvoiceReminders'
 import OperationsUpcomingPickups from '@/components/staff/operations/OperationsUpcomingPickups'
@@ -66,6 +67,7 @@ export default async function OperationsPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const t = await getTranslations('staff.operations')
   const loaders = [
     { name: 'getOpsPickupsToday',      fn: getOpsPickupsToday },
     { name: 'getOpsUpcomingPickups',   fn: getOpsUpcomingPickups },
@@ -124,19 +126,19 @@ export default async function OperationsPage({
   for (const p of pickups) {
     if (!p.vehicleBlocked && !p.hasBlockingIssue && !p.hasExpiredCompliance && !p.hasOpenVehicleIssue) continue
     const chips: Chip[] = []
-    if (p.vehicleBlocked) chips.push({ label: 'Blocked', severity: 'warning' })
+    if (p.vehicleBlocked) chips.push({ label: t('attentionChip.blocked'), severity: 'warning' })
     if (p.hasBlockingIssue) chips.push({
-      label: 'Checklist issue',
+      label: t('attentionChip.checklistIssue'),
       severity: 'critical',
       href: p.checklistInstanceId ? `/${locale}/staff/checklists/${p.checklistInstanceId}?from=booking` : undefined,
     })
     if (p.hasExpiredCompliance) chips.push({
-      label: 'Expired compliance',
+      label: t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
     if (p.hasOpenVehicleIssue) chips.push({
-      label: 'Vehicle issue',
+      label: t('attentionChip.vehicleIssue'),
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
@@ -162,17 +164,17 @@ export default async function OperationsPage({
     if (!p.vehicleBlocked && !p.hasUrgentIssue && !p.hasAttentionIssue && !p.hasBlockingIssue && !p.hasExpiredCompliance && !p.hasOpenVehicleIssue) continue
     if (new Date(p.pickupAt) > fiveDaysCutoff) continue
     const chips: Chip[] = []
-    if (p.vehicleBlocked) chips.push({ label: 'Blocked', severity: 'warning' })
-    if (p.hasUrgentIssue) chips.push({ label: 'Urgent issue', severity: 'critical' })
-    if (p.hasAttentionIssue) chips.push({ label: 'Attention issue', severity: 'warning' })
-    if (!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue) chips.push({ label: 'Checklist issue', severity: 'critical' })
+    if (p.vehicleBlocked) chips.push({ label: t('attentionChip.blocked'), severity: 'warning' })
+    if (p.hasUrgentIssue) chips.push({ label: t('attentionChip.urgentIssue'), severity: 'critical' })
+    if (p.hasAttentionIssue) chips.push({ label: t('attentionChip.attentionIssue'), severity: 'warning' })
+    if (!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue) chips.push({ label: t('attentionChip.checklistIssue'), severity: 'critical' })
     if (p.hasExpiredCompliance) chips.push({
-      label: 'Expired compliance',
+      label: t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
     if (p.hasOpenVehicleIssue) chips.push({
-      label: 'Vehicle issue',
+      label: t('attentionChip.vehicleIssue'),
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
@@ -194,12 +196,12 @@ export default async function OperationsPage({
     if (seenVehicleNames.has(v.name)) continue
     const chips: Chip[] = []
     if (v.hasExpiredCompliance) chips.push({
-      label: 'Expired compliance',
+      label: t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: `/${locale}/staff/vehicles/${v.id}#compliance`,
     })
     if (v.hasOpenVehicleIssue) chips.push({
-      label: 'Vehicle issue',
+      label: t('attentionChip.vehicleIssue'),
       severity: 'warning',
       href: v.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
@@ -279,9 +281,9 @@ export default async function OperationsPage({
 
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>Operations</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
           <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))', margin: '8px 0 0' }}>
-            Today's pickups, returns, and vehicle readiness at a glance.
+            {t('pageSubtitle')}
           </p>
         </div>
 
@@ -298,7 +300,7 @@ export default async function OperationsPage({
             <div className="ops-section-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
-                  Attention needed
+                  {t('attentionNeeded')}
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

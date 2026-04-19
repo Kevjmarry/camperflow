@@ -3,7 +3,11 @@
     "allow": [
       "Bash(grep -rn from.*company_settings c:CamperFlowcamperflowapp)",
       "Bash(grep -r \"staff_metadata\\\\|internal_notes\\\\|booking_notes\" /c/CamperFlow/camperflow --include=*.ts --include=*.tsx --include=*.sql)",
-      "Bash(grep -r \"checklist_template\\\\|checklist_instance\\\\|issue_flag\" /c/CamperFlow/camperflow/supabase --include=*.sql)"
+      "Bash(grep -r \"checklist_template\\\\|checklist_instance\\\\|issue_flag\" /c/CamperFlow/camperflow/supabase --include=*.sql)",
+      "Bash(python3 -c \" import json with open\\('c:/CamperFlow/camperflow/messages/en.json'\\) as f: d = json.load\\(f\\) sc = d.get\\('staffCompany', {}\\) print\\(json.dumps\\(sc, indent=2\\)\\) \")",
+      "Bash(node -e \" const d = require\\('c:/CamperFlow/camperflow/messages/en.json'\\); const sc = d['staffCompany']; console.log\\(JSON.stringify\\(sc, null, 2\\)\\); \")",
+      "Bash(node -e \" const d = require\\('c:/CamperFlow/camperflow/messages/de.json'\\); const sc = d['staffCompany']; console.log\\(JSON.stringify\\(sc, null, 2\\)\\); \")",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -19,7 +19,13 @@
       "Bash(wc -l /c/CamperFlow/camperflow/app/[locale]/staff/company/page.tsx)",
       "Bash(find /c/CamperFlow/camperflow/app/api/staff -type f -name *.ts)",
       "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff/company -type f)",
-      "Bash(grep -l \"CREATE TABLE.*checklist\" \"c:\\\\CamperFlow\\\\camperflow\\\\supabase\\\\migrations\"/*.sql)"
+      "Bash(grep -l \"CREATE TABLE.*checklist\" \"c:\\\\CamperFlow\\\\camperflow\\\\supabase\\\\migrations\"/*.sql)",
+      "Bash(node -e ' *)",
+      "Bash(grep -r \"^\\\\s\\\\{2,4\\\\}const [A-Z]\" /c/CamperFlow/camperflow/components --include=\"*.tsx\")",
+      "Bash(node -e \"const en = JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/en.json','utf8'\\)\\); const ops = en.staff?.operations; console.log\\(JSON.stringify\\(ops, null, 2\\)\\)\")",
+      "Bash(node -e \"const de = JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); const ops = de.staff?.operations; console.log\\(JSON.stringify\\(ops, null, 2\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); console.log\\('de.json OK'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"

@@ -12,16 +12,16 @@ interface Props {
 
 const LIMIT = 5
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   })
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -208,6 +208,11 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
             color: rgb(var(--muted));
           }
         }
+        @media (min-width: 768px) {
+          .ops-upcoming-time-countdown {
+            display: none;
+          }
+        }
       `}</style>
 
       <div
@@ -259,18 +264,18 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                   </span>
                   {(r.vehicleBlocked || r.hasExpiredCompliance || r.hasOpenVehicleIssue) && (
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
-                      {r.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
+                      {r.vehicleBlocked && <StatusChip label={t('status.blockedVehicle')} severity="warning" />}
                       {r.hasExpiredCompliance && (r.vehicleId
-                        ? <Link href={`/${locale}/staff/vehicles/${r.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label="Expired compliance" severity="critical" /></Link>
-                        : <StatusChip label="Expired compliance" severity="critical" />
+                        ? <Link href={`/${locale}/staff/vehicles/${r.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><StatusChip label={t('status.expiredCompliance')} severity="critical" /></Link>
+                        : <StatusChip label={t('status.expiredCompliance')} severity="critical" />
                       )}
                       {r.hasOpenVehicleIssue && (() => {
                         const href = r.openVehicleIssueChecklistInstanceId
                           ? `/${locale}/staff/checklists/${r.openVehicleIssueChecklistInstanceId}`
                           : r.vehicleId ? `/${locale}/staff/vehicles/${r.vehicleId}` : null
                         return href
-                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label="Open vehicle issue" severity="warning" /></Link>
-                          : <StatusChip label="Open vehicle issue" severity="warning" />
+                          ? <Link href={href} style={{ textDecoration: 'none' }}><StatusChip label={t('status.openVehicleIssue')} severity="warning" /></Link>
+                          : <StatusChip label={t('status.openVehicleIssue')} severity="warning" />
                       })()}
                     </div>
                   )}
@@ -282,14 +287,14 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                   <div className="ops-upcoming-time" style={{ textAlign: 'right' }}>
                     {/* On desktop: stacked time / date / countdown. On mobile: inline via CSS. */}
                     <div className="ops-upcoming-time-main" style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {formatTime(r.returnAt)}
+                      {formatTime(r.returnAt, locale)}
                       {/* Mobile-only: date and countdown inline */}
                       <span className="ops-upcoming-time-countdown">
-                        {formatDate(r.returnAt)} · {tSection('inDays', { count: r.daysUntil })}
+                        {formatDate(r.returnAt, locale)} · {tSection('inDays', { count: r.daysUntil })}
                       </span>
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatDate(r.returnAt)}
+                      {formatDate(r.returnAt, locale)}
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                       {tSection('inDays', { count: r.daysUntil })}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import type { OpsVehiclePreparing } from '@/lib/staff/operations/getOpsVehiclesPreparing'
 
 interface Props {
@@ -50,11 +51,12 @@ function StatusChip({ label, severity }: { label: string; severity: 'critical' |
 
 export default function OperationsVehiclesPreparing({ vehicles }: Props) {
   const { locale } = useParams<{ locale: string }>()
+  const t = useTranslations('staff.operations')
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
       <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-        Vehicles preparing
+        {t('vehiclesPreparing.title')}
         <span
           style={{
             marginLeft: 'var(--space-3)',
@@ -71,7 +73,7 @@ export default function OperationsVehiclesPreparing({ vehicles }: Props) {
       </h2>
 
       {vehicles.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No vehicles currently preparing.</p>
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{t('vehiclesPreparing.none')}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {vehicles.map((v) => (
@@ -97,21 +99,21 @@ export default function OperationsVehiclesPreparing({ vehicles }: Props) {
                 </span>
                 {(v.vehicleBlocked || v.hasOpenVehicleIssue || v.hasExpiredCompliance) && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
-                    {v.hasExpiredCompliance && <StatusChip label="Expired compliance" severity="critical" />}
-                    {v.vehicleBlocked && <StatusChip label="Blocked vehicle" severity="warning" />}
-                    {v.hasOpenVehicleIssue && <StatusChip label="Open vehicle issue" severity="warning" />}
+                    {v.hasExpiredCompliance && <StatusChip label={t('status.expiredCompliance')} severity="critical" />}
+                    {v.vehicleBlocked && <StatusChip label={t('status.blockedVehicle')} severity="warning" />}
+                    {v.hasOpenVehicleIssue && <StatusChip label={t('status.openVehicleIssue')} severity="warning" />}
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexShrink: 0 }}>
                 <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-                  Pickup {formatDateTime(v.pickupAt)}
+                  {t('vehiclesPreparing.pickup')} {formatDateTime(v.pickupAt)}
                 </span>
                 <Link
                   href={`/${locale}/staff/vehicles/${v.id}`}
                   style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none' }}
                 >
-                  View
+                  {t('vehiclesPreparing.view')}
                 </Link>
               </div>
             </div>

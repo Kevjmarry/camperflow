@@ -13,29 +13,26 @@ interface Props {
   returns: OpsUpcomingReturn[]
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   })
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
-function countdown(iso: string) {
+function countdownDays(iso: string): number {
   const now = new Date()
   const target = new Date(iso)
-  const diffDays = Math.floor(
+  return Math.floor(
     (new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime() -
       new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) /
       86400000
   )
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Tomorrow'
-  return `in ${diffDays} days`
 }
 
 /** Returns touch event handlers that trigger onPrev/onNext on a deliberate horizontal swipe. */
@@ -217,6 +214,32 @@ function NextCard({
 export default function OperationsNextUp({ pickups, returns }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.nextUp')
+  const tOps = useTranslations('staff.operations')
+
+  const vehicleStatusLabels: Record<string, string> = {
+    ready: tOps('vehicleStatus.ready'),
+    preparing: tOps('vehicleStatus.preparing'),
+    blocked: tOps('vehicleStatus.blocked'),
+    on_rent: tOps('vehicleStatus.on_rent'),
+    in_progress: tOps('vehicleStatus.in_progress'),
+    confirmed: tOps('vehicleStatus.confirmed'),
+    cancelled: tOps('vehicleStatus.cancelled'),
+    completed: tOps('vehicleStatus.completed'),
+    not_started: tOps('vehicleStatus.not_started'),
+    draft: tOps('vehicleStatus.draft'),
+    pending: tOps('vehicleStatus.pending'),
+  }
+
+  function getVehicleStatusLabel(status: string): string {
+    return vehicleStatusLabels[status] ?? status.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
+  }
+
+  function countdown(iso: string): string {
+    const diff = countdownDays(iso)
+    if (diff === 0) return tOps('countdown.today')
+    if (diff === 1) return tOps('countdown.tomorrow')
+    return tOps('countdown.days', { count: diff })
+  }
 
   const [pickupIdx, setPickupIdx] = useState(0)
   const [returnIdx, setReturnIdx] = useState(0)
@@ -263,7 +286,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               </span>
               {pickup.vehicleStatus && (
                 <span style={getStatusChipStyle(pickup.vehicleStatus)}>
-                  {pickup.vehicleStatus.replace('_', ' ').replace(/^\w/, (c) => c.toUpperCase())}
+                  {getVehicleStatusLabel(pickup.vehicleStatus)}
                 </span>
               )}
             </div>
@@ -271,25 +294,25 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               {pickup.customerName} · {pickup.bookingNumber}
             </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
-              {formatDate(pickup.pickupAt)}, {formatTime(pickup.pickupAt)}
+              {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale)}
             </span>
             {pickup.vehicleBlocked && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockedVehicle')}</span>
             )}
             {pickup.hasBlockingIssue && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocking checklist issue</span>
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockingChecklistIssue')}</span>
             )}
             {pickup.hasExpiredCompliance && (pickup.vehicleId
-              ? <Link href={`/${locale}/staff/vehicles/${pickup.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span></Link>
-              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+              ? <Link href={`/${locale}/staff/vehicles/${pickup.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.expiredCompliance')}</span></Link>
+              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.expiredCompliance')}</span>
             )}
             {pickup.hasOpenVehicleIssue && (() => {
               const href = pickup.openVehicleIssueChecklistInstanceId
                 ? `/${locale}/staff/checklists/${pickup.openVehicleIssueChecklistInstanceId}`
                 : pickup.vehicleId ? `/${locale}/staff/vehicles/${pickup.vehicleId}#issues` : null
               return href
-                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span></Link>
-                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.openVehicleIssue')}</span></Link>
+                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.openVehicleIssue')}</span>
             })()}
             <Link
               href={`/${locale}/staff/bookings/${pickup.id}`}
@@ -328,7 +351,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               </span>
               {ret.vehicleStatus && (
                 <span style={getStatusChipStyle(ret.vehicleStatus)}>
-                  {ret.vehicleStatus.replace('_', ' ').replace(/^\w/, (c) => c.toUpperCase())}
+                  {getVehicleStatusLabel(ret.vehicleStatus)}
                 </span>
               )}
             </div>
@@ -336,22 +359,22 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               {ret.customerName} · {ret.bookingNumber}
             </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
-              {formatDate(ret.returnAt)}, {formatTime(ret.returnAt)}
+              {formatDate(ret.returnAt, locale)} · {formatTime(ret.returnAt, locale)}
             </span>
             {ret.vehicleBlocked && (
-              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Blocked vehicle</span>
+              <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockedVehicle')}</span>
             )}
             {ret.hasExpiredCompliance && (ret.vehicleId
-              ? <Link href={`/${locale}/staff/vehicles/${ret.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span></Link>
-              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Expired compliance</span>
+              ? <Link href={`/${locale}/staff/vehicles/${ret.vehicleId}#compliance`} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.expiredCompliance')}</span></Link>
+              : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.expiredCompliance')}</span>
             )}
             {ret.hasOpenVehicleIssue && (() => {
               const href = ret.openVehicleIssueChecklistInstanceId
                 ? `/${locale}/staff/checklists/${ret.openVehicleIssueChecklistInstanceId}`
                 : ret.vehicleId ? `/${locale}/staff/vehicles/${ret.vehicleId}#issues` : null
               return href
-                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span></Link>
-                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>Open vehicle issue</span>
+                ? <Link href={href} style={{ textDecoration: 'none' }}><span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.openVehicleIssue')}</span></Link>
+                : <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.openVehicleIssue')}</span>
             })()}
             <Link
               href={`/${locale}/staff/bookings/${ret.id}`}

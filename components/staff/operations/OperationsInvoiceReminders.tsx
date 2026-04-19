@@ -3,28 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import type { OpsInvoiceReminder } from '@/lib/staff/operations/getOpsInvoiceReminders'
 
 interface Props {
   reminders: OpsInvoiceReminder[]
 }
 
-const REMINDER_LABEL: Record<OpsInvoiceReminder['type'], string> = {
-  balance_invoice: 'Send remaining 50% invoice',
-  pre_arrival: 'Send pre-arrival WhatsApp',
-  return_prep: 'Send return-prep WhatsApp',
-}
-
-function formatTiming(r: OpsInvoiceReminder): string {
-  if (r.type === 'return_prep') return 'Return tomorrow'
-  if (r.type === 'pre_arrival') return 'Pickup tomorrow'
-  if (r.daysUntilPickup <= 0) return 'Pickup today'
-  if (r.daysUntilPickup === 1) return 'Pickup tomorrow'
-  return `Pickup in ${r.daysUntilPickup}d`
-}
-
 export default function OperationsInvoiceReminders({ reminders }: Props) {
   const { locale } = useParams<{ locale: string }>()
+  const t = useTranslations('staff.operations.reminders')
   const [visible, setVisible] = useState<OpsInvoiceReminder[]>(reminders)
   const [handling, setHandling] = useState<Set<string>>(new Set())
 
@@ -82,7 +70,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
       `}</style>
 
       <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-        Reminders
+        {t('title')}
         <span
           style={{
             marginLeft: 'var(--space-3)',
@@ -99,7 +87,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
       </h2>
 
       {visible.length === 0 ? (
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No reminders pending.</p>
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{t('empty')}</p>
       ) : (
         <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           {visible.map((r, idx) => {
@@ -130,7 +118,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}
                 >
                   <span style={{ fontSize: '12px', fontWeight: 500, color: 'rgb(var(--brand))', flexShrink: 0 }}>
-                    {REMINDER_LABEL[r.type]}
+                    {t(`type.${r.type}`)}
                   </span>
                   <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
                     {r.vehicleName}
@@ -140,19 +128,27 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   </span>
                   {/* Timing shown here only on mobile */}
                   <span className="ops-reminder-timing-mobile" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                    {formatTiming(r)}
+                    {r.type === 'return_prep' ? t('timing.returnTomorrow')
+                      : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
+                      : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
+                      : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
+                      : t('timing.pickupInDays', { count: r.daysUntilPickup })}
                   </span>
                 </div>
                 {/* Timing shown here only on desktop */}
                 <span className="ops-reminder-timing-desktop" style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>
-                  {formatTiming(r)}
+                  {r.type === 'return_prep' ? t('timing.returnTomorrow')
+                    : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
+                    : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
+                    : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
+                    : t('timing.pickupInDays', { count: r.daysUntilPickup })}
                 </span>
                 <Link
                   href={`/${locale}/staff/bookings/${r.bookingId}`}
                   className="ops-reminder-view"
                   style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none', flexShrink: 0 }}
                 >
-                  View
+                  {t('view')}
                 </Link>
               </div>
             )

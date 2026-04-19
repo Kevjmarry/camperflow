@@ -969,7 +969,7 @@
         "title": "Bevorstehende Rückgaben",
         "viewAll": "Alle anzeigen",
         "empty": "Keine bevorstehenden Rückgaben.",
-        "inDays": "in {count}T",
+        "inDays": "{count, plural, one {in 1 Tag} other {in # Tagen}}",
         "view": "Anzeigen"
       },
       "vehicleBlocks": {
@@ -992,7 +992,109 @@
           "short": "Knapp",
           "medium": "Mittel",
           "comfortable": "Komfortabel"
+        },
+        "sameDayPrep": "Gleicher Tag",
+        "prepDayOne": "1 Tag",
+        "prepDays": "{count} Tage",
+        "overdueHours": "vor {count}h",
+        "overdueDays": "{count, plural, one {vor 1 Tag} other {vor # Tagen}}",
+        "inHours": "in {count}h",
+        "inDaysShort": "{count, plural, one {in 1 Tag} other {in # Tagen}}",
+        "nextPickupLabel": "Nächste Abholung"
+      },
+      "summary": {
+        "pickupsToday": "Abholungen heute",
+        "returnsToday": "Rückgaben heute",
+        "vehiclesPreparing": "Fahrzeuge in Vorbereitung",
+        "overdueReturns": "Überfällige Rückgaben"
+      },
+      "status": {
+        "blockedVehicle": "Fahrzeug gesperrt",
+        "blockingChecklistIssue": "Blockierendes Checklisten-Problem",
+        "expiredCompliance": "Abgelaufene Prüfung",
+        "openVehicleIssue": "Offenes Fahrzeugproblem",
+        "readyForPickup": "Bereit zur Abholung",
+        "urgentIssue": "Dringendes Problem",
+        "attentionIssue": "Aufmerksamkeit erforderlich"
+      },
+      "action": {
+        "preparing": "In Vorbereitung",
+        "startHandover": "Übergabe starten",
+        "continueHandover": "Übergabe fortsetzen",
+        "awaitReturn": "Rückgabe abwarten",
+        "startReturn": "Rückgabe starten"
+      },
+      "pickups": {
+        "title": "Abholungen heute",
+        "noneScheduled": "Keine geplant",
+        "noneToday": "Heute keine Abholungen geplant.",
+        "view": "Anzeigen",
+        "handover": "Übergabe"
+      },
+      "returns": {
+        "title": "Rückgaben heute",
+        "noneScheduled": "Keine geplant",
+        "noneToday": "Heute keine Rückgaben geplant.",
+        "view": "Anzeigen",
+        "returnLabel": "Rückgabe"
+      },
+      "vehiclesPreparing": {
+        "title": "Fahrzeuge in Vorbereitung",
+        "none": "Aktuell keine Fahrzeuge in Vorbereitung.",
+        "pickup": "Abholung",
+        "view": "Anzeigen"
+      },
+      "upcomingPickups": {
+        "title": "Bevorstehende Abholungen",
+        "viewAll": "Alle anzeigen",
+        "empty": "Keine bevorstehenden Abholungen.",
+        "view": "Anzeigen",
+        "inDays": "{count, plural, one {in 1 Tag} other {in # Tagen}}"
+      },
+      "countdown": {
+        "today": "Heute",
+        "tomorrow": "Morgen",
+        "days": "{count} Tage"
+      },
+      "pageTitle": "Operations",
+      "pageSubtitle": "Heutige Abholungen, Rückgaben und Fahrzeugbereitschaft auf einen Blick.",
+      "attentionNeeded": "Handlungsbedarf",
+      "attentionChip": {
+        "blocked": "Gesperrt",
+        "checklistIssue": "Checklisten-Problem",
+        "expiredCompliance": "Abgelaufene Prüfung",
+        "vehicleIssue": "Fahrzeugproblem",
+        "urgentIssue": "Dringendes Problem",
+        "attentionIssue": "Aufmerksamkeit erforderlich"
+      },
+      "reminders": {
+        "title": "Erinnerungen",
+        "empty": "Keine ausstehenden Erinnerungen.",
+        "view": "Anzeigen",
+        "type": {
+          "balance_invoice": "Restrechnung (50%) senden",
+          "pre_arrival": "WhatsApp vor Ankunft senden",
+          "return_prep": "WhatsApp zur Rückgabevorbereitung senden"
+        },
+        "timing": {
+          "returnTomorrow": "Rückgabe morgen",
+          "pickupTomorrow": "Abholung morgen",
+          "pickupToday": "Abholung heute",
+          "pickupInDays": "Abholung in {count} Tagen"
         }
+      },
+      "vehicleStatus": {
+        "ready": "Bereit",
+        "preparing": "In Vorbereitung",
+        "blocked": "Gesperrt",
+        "on_rent": "Vermietet",
+        "in_progress": "In Bearbeitung",
+        "confirmed": "Bestätigt",
+        "cancelled": "Storniert",
+        "completed": "Abgeschlossen",
+        "not_started": "Nicht begonnen",
+        "draft": "Entwurf",
+        "pending": "Ausstehend"
       }
     },
     "checklistsPage": {
@@ -1591,18 +1693,27 @@
       "accidentNumbers": "Unfall",
       "breakdownNumbers": "Panne",
       "primaryPhone": "Hauptnummer",
-      "secondaryPhone": "Zweite Nummer"
+      "secondaryPhone": "Zweite Nummer",
+      "address": "Unternehmensadresse",
+      "companyEmail": "Unternehmens-E-Mail",
+      "registrationId": "Firmenbuchnummer / Unternehmens-ID",
+      "vatId": "USt-ID"
     },
     "placeholders": {
       "companyName": "Ihr Unternehmensname",
       "yourCompany": "Ihr Unternehmen",
-      "phonePlaceholder": "+43 123 456 789"
+      "phonePlaceholder": "+43 123 456 789",
+      "address": "Straße, Stadt, Postleitzahl, Land",
+      "companyEmail": "info@ihrunternehmen.com",
+      "registrationId": "z.B. FN 123456a",
+      "vatId": "z.B. ATU12345678"
     },
     "helpers": {
       "logoRequirements": "PNG, JPG oder SVG. Max. 2MB. Empfohlen: 200x80px",
       "primaryColorUsage": "Wird für Schaltflächen und Links verwendet",
       "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet",
-      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen."
+      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen.",
+      "addressUsage": "Wird auf Beweisberichten und PDF-Dokumenten gedruckt."
     },
     "actions": {
       "uploadLogo": "Logo hochladen",
@@ -1634,33 +1745,33 @@
     "loading": "Unternehmenseinstellungen werden geladen...",
     "systemRecovery": {
       "title": "Systemwiederherstellung",
-      "description": "Verwaltungstools zur Wiederherstellung des Systemzustands nach einer l\u00e4ngeren Inaktivit\u00e4tsphase.",
+      "description": "Verwaltungstools zur Wiederherstellung des Systemzustands nach einer längeren Inaktivitätsphase.",
       "backlogReview": {
-        "title": "Backlog-\u00dcberpr\u00fcfung",
-        "description": "Veraltete Buchungen einzeln \u00fcberpr\u00fcfen und entscheiden: als abgeschlossen markieren, stornieren oder vorerst \u00fcberspringen. Zugeh\u00f6rige Checklisten-Instanzen werden f\u00fcr jede bearbeitete Buchung zwangsweise geschlossen. Fahrzeugprobleme, Compliance-Sperren und manuelle Sperren sind nicht betroffen.",
-        "button": "Veralteten Backlog \u00fcberpr\u00fcfen",
+        "title": "Backlog-Überprüfung",
+        "description": "Veraltete Buchungen einzeln überprüfen und entscheiden: als abgeschlossen markieren, stornieren oder vorerst überspringen. Zugehörige Checklisten-Instanzen werden für jede bearbeitete Buchung zwangsweise geschlossen. Fahrzeugprobleme, Compliance-Sperren und manuelle Sperren sind nicht betroffen.",
+        "button": "Veralteten Backlog überprüfen",
         "errorLoad": "Veraltete Buchungen konnten nicht geladen werden",
         "errorSubmit": "Entscheidungen konnten nicht angewendet werden",
         "modal": {
-          "title": "Backlog-\u00dcberpr\u00fcfung",
-          "loading": "Veraltete Buchungen werden geladen\u2026",
-          "empty": "Keine veralteten Buchungen gefunden. Nichts zu \u00fcberpr\u00fcfen.",
-          "listHint": "W\u00e4hlen Sie f\u00fcr jede Buchung eine Aktion. \u00dcbersprungene Buchungen bleiben unver\u00e4ndert.",
-          "markAllOnRentComplete": "Alle \u201eauf Reise\u201c als abgeschlossen markieren",
-          "returnedLabel": "zur\u00fcckgegeben",
+          "title": "Backlog-Überprüfung",
+          "loading": "Veraltete Buchungen werden geladen…",
+          "empty": "Keine veralteten Buchungen gefunden. Nichts zu überprüfen.",
+          "listHint": "Wählen Sie für jede Buchung eine Aktion. Übersprungene Buchungen bleiben unverändert.",
+          "markAllOnRentComplete": "Alle „auf Reise“ als abgeschlossen markieren",
+          "returnedLabel": "zurückgegeben",
           "instancesLabel": "{count} offene Checkliste(n)",
-          "action_complete": "Abschlie\u00dfen",
+          "action_complete": "Abschließen",
           "action_cancel": "Stornieren",
-          "action_skip": "\u00dcberspringen",
-          "warning": "Die Fahrzeugbereitschaft wird nach dem Schlie\u00dfen jeder Buchung automatisch neu berechnet.",
-          "reasonLabel": "Grund (gilt f\u00fcr alle nicht \u00fcbersprungenen Buchungen)",
-          "reasonPlaceholder": "z.B. Systemwiederherstellung nach Mitarbeiterpause \u2014 Backlog vom M\u00e4rz 2026 schlie\u00dfen",
+          "action_skip": "Überspringen",
+          "warning": "Die Fahrzeugbereitschaft wird nach dem Schließen jeder Buchung automatisch neu berechnet.",
+          "reasonLabel": "Grund (gilt für alle nicht übersprungenen Buchungen)",
+          "reasonPlaceholder": "z.B. Systemwiederherstellung nach Mitarbeiterpause — Backlog vom März 2026 schließen",
           "reasonMinLength": "Der Grund muss mindestens 10 Zeichen lang sein",
           "cancel": "Abbrechen",
-          "close": "Schlie\u00dfen",
+          "close": "Schließen",
           "submit": "Entscheidungen anwenden",
-          "submitting": "Wird angewendet\u2026",
-          "success": "Fertig: {completed} abgeschlossen, {cancelled} storniert, {skipped} \u00fcbersprungen. {instances} Checklisten-Instanz(en) geschlossen."
+          "submitting": "Wird angewendet…",
+          "success": "Fertig: {completed} abgeschlossen, {cancelled} storniert, {skipped} übersprungen. {instances} Checklisten-Instanz(en) geschlossen."
         }
       }
     }

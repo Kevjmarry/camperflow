@@ -9,52 +9,7 @@ interface Props {
   rows: OpsOnRentRow[]
 }
 
-// ── Formatting helpers ────────────────────────────────────────────────────────
-
-function formatDateShort(iso: string) {
-  const d = new Date(iso)
-  const now = new Date()
-  const todayStr = now.toDateString()
-  const tomorrowStr = new Date(now.getTime() + 86_400_000).toDateString()
-  if (d.toDateString() === todayStr) return 'Today'
-  if (d.toDateString() === tomorrowStr) return 'Tomorrow'
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-}
-
-/** e.g. "Apr 2, 10:00 (in 6 days)" or "Today, 18:00 (in 4h)" */
-function formatComingBack(returnAt: string, isOverdue: boolean): { main: string; overdueFlag: boolean } {
-  const returnMs = new Date(returnAt).getTime()
-  const nowMs = Date.now()
-  const diffMs = returnMs - nowMs
-
-  const dateLabel = formatDateShort(returnAt)
-  const timeLabel = formatTime(returnAt)
-  const absDiffMs = Math.abs(diffMs)
-  const absDiffH = Math.round(absDiffMs / (1000 * 60 * 60))
-  const absDiffD = Math.round(absDiffMs / (1000 * 60 * 60 * 24))
-
-  let relLabel: string
-  if (isOverdue) {
-    relLabel = absDiffH < 24 ? `${absDiffH}h ago` : `${absDiffD}d ago`
-  } else {
-    relLabel = absDiffH < 24 ? `in ${absDiffH}h` : `in ${absDiffD}d`
-  }
-
-  return { main: `${dateLabel}, ${timeLabel} (${relLabel})`, overdueFlag: isOverdue }
-}
-
-/** Format prep window duration */
-function formatPrepWindow(prepWindowMs: number): string {
-  const hours = prepWindowMs / (1000 * 60 * 60)
-  if (hours < 1) return 'Same day'
-  if (hours < 24) return `${Math.round(hours)}h`
-  const days = Math.round(hours / 24)
-  return `${days} ${days === 1 ? 'day' : 'days'}`
-}
+// ── Formatting helpers (locale-aware, defined inside component via closures) ──
 
 // ── Severity chip ─────────────────────────────────────────────────────────────
 
@@ -105,6 +60,38 @@ function SeverityChip({
 export default function OperationsOnRentNow({ rows }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.onRentNow')
+  const tOps = useTranslations('staff.operations')
+
+  function formatDateShort(iso: string) {
+    const d = new Date(iso)
+    const now = new Date()
+    if (d.toDateString() === now.toDateString()) return tOps('countdown.today')
+    if (d.toDateString() === new Date(now.getTime() + 86_400_000).toDateString()) return tOps('countdown.tomorrow')
+    return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+  }
+
+  function formatTime(iso: string) {
+    return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function formatComingBack(returnAt: string, isOverdue: boolean): { main: string; overdueFlag: boolean } {
+    const diffMs = new Date(returnAt).getTime() - Date.now()
+    const absDiffMs = Math.abs(diffMs)
+    const absDiffH = Math.round(absDiffMs / (1000 * 60 * 60))
+    const absDiffD = Math.round(absDiffMs / (1000 * 60 * 60 * 24))
+    const relLabel = isOverdue
+      ? (absDiffH < 24 ? t('overdueHours', { count: absDiffH }) : t('overdueDays', { count: absDiffD }))
+      : (absDiffH < 24 ? t('inHours', { count: absDiffH }) : t('inDaysShort', { count: absDiffD }))
+    return { main: `${formatDateShort(returnAt)}, ${formatTime(returnAt)} (${relLabel})`, overdueFlag: isOverdue }
+  }
+
+  function formatPrepWindow(prepWindowMs: number): string {
+    const hours = prepWindowMs / (1000 * 60 * 60)
+    if (hours < 1) return t('sameDayPrep')
+    if (hours < 24) return `${Math.round(hours)}h`
+    const days = Math.round(hours / 24)
+    return days === 1 ? t('prepDayOne') : t('prepDays', { count: days })
+  }
 
   return (
     <div className="surface" style={{ padding: 'var(--space-6)' }}>
@@ -379,7 +366,7 @@ export default function OperationsOnRentNow({ rows }: Props) {
                   {/* Next pickup date (when prep window exists) */}
                   {r.prepWindowMs !== null && r.nextBookingPickupAt && (
                     <div className="on-rent-data-row">
-                      <span className="on-rent-data-label">Next pickup</span>
+                      <span className="on-rent-data-label">{t('nextPickupLabel')}</span>
                       <span className="on-rent-data-value" style={{ color: 'rgb(var(--muted))' }}>
                         {formatDateShort(r.nextBookingPickupAt)}, {formatTime(r.nextBookingPickupAt)}
                       </span>

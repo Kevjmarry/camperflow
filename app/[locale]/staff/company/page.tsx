@@ -16,6 +16,46 @@ interface FaqItem {
   answer: string;
 }
 
+// ─── AccordionSection ─────────────────────────────────────────────────────────
+
+function AccordionSection({
+  sectionKey,
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  sectionKey: string;
+  title: string;
+  isOpen: boolean;
+  onToggle: (key: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ borderTop: "1px solid rgb(var(--border))" }}>
+      <button
+        type="button"
+        onClick={() => onToggle(sectionKey)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", background: "none", border: "none", cursor: "pointer",
+          padding: "var(--space-4) 0", textAlign: "left",
+        }}
+      >
+        <span style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>{title}</span>
+        <span style={{ color: "rgb(var(--muted))", fontSize: "12px", flexShrink: 0, marginLeft: "var(--space-3)" }}>
+          {isOpen ? "▲" : "▼"}
+        </span>
+      </button>
+      {isOpen && (
+        <div style={{ paddingBottom: "var(--space-5)" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CompanySettingsPage() {
@@ -40,6 +80,11 @@ export default function CompanySettingsPage() {
     dropoff_time: "",
     final_payment_due_days: "",
     final_payment_urgent_days: "",
+    // Company identity (for reports)
+    address: "",
+    email: "",
+    registration_id: "",
+    vat_id: "",
     // Guest Information
     contact_phone: "",
     contact_whatsapp: "",
@@ -151,7 +196,7 @@ export default function CompanySettingsPage() {
           .maybeSingle(),
         supabase
           .from("companies")
-          .select("emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary")
+          .select("emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary, address, email, registration_id, vat_id")
           .eq("id", company.id)
           .maybeSingle(),
       ]);
@@ -179,6 +224,10 @@ export default function CompanySettingsPage() {
           emergency_accident_phone_secondary:  (companyRow as any).emergency_accident_phone_secondary  ?? "",
           emergency_breakdown_phone_primary:   (companyRow as any).emergency_breakdown_phone_primary   ?? "",
           emergency_breakdown_phone_secondary: (companyRow as any).emergency_breakdown_phone_secondary ?? "",
+          address:         (companyRow as any).address         ?? "",
+          email:           (companyRow as any).email           ?? "",
+          registration_id: (companyRow as any).registration_id ?? "",
+          vat_id:          (companyRow as any).vat_id          ?? "",
         } : {}),
       }));
       if (data) {
@@ -256,6 +305,10 @@ export default function CompanySettingsPage() {
           emergency_accident_phone_secondary:  formData.emergency_accident_phone_secondary.trim()  || null,
           emergency_breakdown_phone_primary:   formData.emergency_breakdown_phone_primary.trim()   || null,
           emergency_breakdown_phone_secondary: formData.emergency_breakdown_phone_secondary.trim() || null,
+          address:         formData.address.trim()         || null,
+          email:           formData.email.trim()           || null,
+          registration_id: formData.registration_id.trim() || null,
+          vat_id:          formData.vat_id.trim()          || null,
         })
         .eq("id", company?.id)
         .select("id");
@@ -369,43 +422,6 @@ export default function CompanySettingsPage() {
     );
   }
 
-  // ── Accordion helper ───────────────────────────────────────────────────────
-
-  const AccordionSection = ({
-    sectionKey,
-    title,
-    children,
-  }: {
-    sectionKey: string;
-    title: string;
-    children: React.ReactNode;
-  }) => {
-    const isOpen = !!openSections[sectionKey];
-    return (
-      <div style={{ borderTop: "1px solid rgb(var(--border))" }}>
-        <button
-          type="button"
-          onClick={() => toggleSection(sectionKey)}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            width: "100%", background: "none", border: "none", cursor: "pointer",
-            padding: "var(--space-4) 0", textAlign: "left",
-          }}
-        >
-          <span style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>{title}</span>
-          <span style={{ color: "rgb(var(--muted))", fontSize: "12px", flexShrink: 0, marginLeft: "var(--space-3)" }}>
-            {isOpen ? "▲" : "▼"}
-          </span>
-        </button>
-        {isOpen && (
-          <div style={{ paddingBottom: "var(--space-5)" }}>
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -434,15 +450,58 @@ export default function CompanySettingsPage() {
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
                 {t("sections.information")}
               </h2>
-              <div>
-                <label htmlFor="name" className="label">{t("labels.companyName")}</label>
-                <input
-                  id="name" name="name" type="text" className="input"
-                  placeholder={t("placeholders.companyName")}
-                  value={formData.name} onChange={handleChange}
-                  required disabled={!isAdmin}
-                  style={{ width: "100%", maxWidth: "400px" }}
-                />
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                <div>
+                  <label htmlFor="name" className="label">{t("labels.companyName")}</label>
+                  <input
+                    id="name" name="name" type="text" className="input"
+                    placeholder={t("placeholders.companyName")}
+                    value={formData.name} onChange={handleChange}
+                    required disabled={!isAdmin}
+                    style={{ width: "100%", maxWidth: "400px" }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="address" className="label">{t("labels.address")}</label>
+                  <textarea
+                    id="address" name="address" className="input"
+                    placeholder={t("placeholders.address")}
+                    value={formData.address} onChange={handleChange}
+                    disabled={!isAdmin}
+                    rows={3}
+                    style={{ width: "100%", maxWidth: "500px", resize: "vertical", fontFamily: "inherit" }}
+                  />
+                  <p className="helper-text">{t("helpers.addressUsage")}</p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)", maxWidth: "600px" }}>
+                  <div>
+                    <label htmlFor="email" className="label">{t("labels.companyEmail")}</label>
+                    <input
+                      id="email" name="email" type="email" className="input"
+                      placeholder={t("placeholders.companyEmail")}
+                      value={formData.email} onChange={handleChange}
+                      disabled={!isAdmin} style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="registration_id" className="label">{t("labels.registrationId")}</label>
+                    <input
+                      id="registration_id" name="registration_id" type="text" className="input"
+                      placeholder={t("placeholders.registrationId")}
+                      value={formData.registration_id} onChange={handleChange}
+                      disabled={!isAdmin} style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="vat_id" className="label">{t("labels.vatId")}</label>
+                    <input
+                      id="vat_id" name="vat_id" type="text" className="input"
+                      placeholder={t("placeholders.vatId")}
+                      value={formData.vat_id} onChange={handleChange}
+                      disabled={!isAdmin} style={{ width: "100%" }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -809,7 +868,7 @@ export default function CompanySettingsPage() {
               </div>
 
               {/* Accordion text sections */}
-              <AccordionSection sectionKey="pickup_info" title="Pick-up information">
+              <AccordionSection sectionKey="pickup_info" title="Pick-up information" isOpen={!!openSections["pickup_info"]} onToggle={toggleSection}>
                 <textarea
                   id="pickup_info" name="pickup_info" className="input"
                   placeholder="Where to find keys, access codes, parking…"
@@ -820,7 +879,7 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="return_info" title="Return information">
+              <AccordionSection sectionKey="return_info" title="Return information" isOpen={!!openSections["return_info"]} onToggle={toggleSection}>
                 <textarea
                   id="return_info" name="return_info" className="input"
                   placeholder="Where to drop keys, cleaning expectations…"
@@ -831,7 +890,7 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="before_arrival_info" title="Before arrival">
+              <AccordionSection sectionKey="before_arrival_info" title="Before arrival" isOpen={!!openSections["before_arrival_info"]} onToggle={toggleSection}>
                 <textarea
                   id="before_arrival_info" name="before_arrival_info" className="input"
                   placeholder="What guests should prepare before they arrive…"
@@ -842,7 +901,7 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="included_items" title="What's included">
+              <AccordionSection sectionKey="included_items" title="What's included" isOpen={!!openSections["included_items"]} onToggle={toggleSection}>
                 <textarea
                   id="included_items" name="included_items" className="input"
                   placeholder="List items included with the rental…"
@@ -853,7 +912,7 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="rules_and_tips" title="Rules & tips">
+              <AccordionSection sectionKey="rules_and_tips" title="Rules & tips" isOpen={!!openSections["rules_and_tips"]} onToggle={toggleSection}>
                 <textarea
                   id="rules_and_tips" name="rules_and_tips" className="input"
                   placeholder="House rules, tips for the road…"
@@ -864,7 +923,7 @@ export default function CompanySettingsPage() {
                 />
               </AccordionSection>
 
-              <AccordionSection sectionKey="faq" title="FAQ">
+              <AccordionSection sectionKey="faq" title="FAQ" isOpen={!!openSections["faq"]} onToggle={toggleSection}>
                 <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
                   Frequently asked questions shown to guests in their rental portal.
                 </p>
