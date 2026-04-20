@@ -139,6 +139,29 @@ function extractBlockLabel(row: Record<string, string>): string | undefined {
   return value || undefined;
 }
 
+// ── date helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Bookingmood CSV exports end_date as an *exclusive* checkout date (i.e. the
+ * day after the last rental night). Subtract one day to get the inclusive
+ * return date before the company drop-off time is applied downstream.
+ *
+ * Only accepts YYYY-MM-DD strings (what Bookingmood CSV emits). Returns the
+ * original value unchanged if it cannot be parsed, so a bad value surfaces as
+ * a missing-field error rather than a silent wrong date.
+ */
+function exclusiveEndToInclusiveReturn(endDate: string): string {
+  if (!endDate) return endDate;
+  const match = endDate.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return endDate;
+  const d = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  d.setUTCDate(d.getUTCDate() - 1);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ── main normalizer ────────────────────────────────────────────────────────
 
 export function normalizeBookingmoodCsvRow(
@@ -154,7 +177,7 @@ export function normalizeBookingmoodCsvRow(
       label: extractBlockLabel(row),
       vehicleReference: row.product || "",
       pickupAt: row.start_date || "",
-      returnAt: row.end_date || "",
+      returnAt: exclusiveEndToInclusiveReturn(row.end_date || ""),
       rawMetadata: buildNormalizedMetadata(row),
     };
   }
@@ -188,7 +211,7 @@ export function normalizeBookingmoodCsvRow(
     externalStatus: row.status || undefined,
     vehicleReference: row.product || "",
     pickupAt: row.start_date || "",
-    returnAt: row.end_date || "",
+    returnAt: exclusiveEndToInclusiveReturn(row.end_date || ""),
     customerName,
     customerEmail,
     customerPhone,

@@ -311,6 +311,7 @@
       "syncNow": "Jetzt synchronisieren",
       "syncing": "Synchronisierung…",
       "autoSyncInterval": "Auto-Sync-Intervall",
+      "cronScheduleLabel": "Täglich um 23:00 UTC",
       "intervalNone": "Deaktiviert",
       "interval1h": "Stündlich",
       "interval6h": "Alle 6 Stunden",
@@ -320,7 +321,14 @@
       "syncSuccess": "Erfolgreich",
       "syncError": "Fehlgeschlagen",
       "syncResultDetail": "{created} erstellt · {updated} aktualisiert · {blocked} blockiert",
-      "noUrlToSync": "Bitte zuerst eine iCal-URL eingeben und importieren, um die Synchronisierung zu aktivieren"
+      "noUrlToSync": "Bitte zuerst eine iCal-URL eingeben und importieren, um die Synchronisierung zu aktivieren",
+      "status": "Status",
+      "connected": "Verbunden",
+      "notConnected": "Nicht verbunden",
+      "syncInterval": "Sync-Intervall",
+      "never": "Nie",
+      "lastSyncResult": "Letztes Sync-Ergebnis",
+      "staleWarning": "Letzte Synchronisierung vor mehr als 26 Stunden — möglicherweise nicht aktuell"
     }
   },
   "vehicleEdit": {
@@ -1477,6 +1485,18 @@
       "cancel": "Abbrechen",
       "reverting": "Wird verarbeitet...",
       "errorFailed": "Buchung konnte nicht zurückgesetzt werden"
+    },
+    "guestAccess": {
+      "title": "Gastzugang",
+      "subtitle": "Buchungscode oder QR-Code mit dem Gast teilen",
+      "bookingCode": "Buchungscode",
+      "guestLink": "Gast-Link",
+      "copy": "Kopieren",
+      "copyLink": "Link kopieren",
+      "copied": "Kopiert!",
+      "downloadQr": "QR herunterladen",
+      "share": "Teilen",
+      "shareTitle": "Gast-Buchungszugang"
     }
   },
   "staffTeamMember": {

@@ -38,7 +38,9 @@
       "Bash(node -e \"require\\('./messages/en.json'\\); console.log\\('en.json OK'\\)\")",
       "Bash(node -e \"require\\('./messages/de.json'\\); console.log\\('de.json OK'\\)\")",
       "Bash(node -e \"const m = require\\('./messages/de.json'\\); const keys = ['guestPickup','guestReturn','guestBooking','guestHelp']; keys.forEach\\(k => { console.log\\('=== '+k+' ==='\\); console.log\\(JSON.stringify\\(m[k], null, 2\\)\\); }\\);\")",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(npm list *)",
+      "Bash(npm install *)"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"

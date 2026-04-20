@@ -150,7 +150,15 @@ export default function VehicleDetailPage({
   const [editingRow, setEditingRow] = useState<ComplianceRow | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const [calendarSyncUrl, setCalendarSyncUrl] = useState("");
+  const [calendarSource, setCalendarSource] = useState<{
+    ical_url: string | null;
+    sync_interval: string;
+    last_synced_at: string | null;
+    last_sync_status: string | null;
+  } | null>(null);
+
+  // Change this one key to update the displayed sync schedule site-wide (e.g. "interval1h" on Pro).
+  const CRON_SCHEDULE_KEY = "cronScheduleLabel" as const;
 
   const formatDate = (dateStr: string): string => {
     const d = new Date(dateStr);
@@ -203,11 +211,19 @@ export default function VehicleDetailPage({
         );
         setCompanyId(profile?.company_id ?? null);
 
-        const { data: vehicleData, error: vehicleError } = await supabase
-          .from("vehicles")
-          .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer")
-          .eq("id", id)
-          .single();
+        const [{ data: vehicleData, error: vehicleError }, { data: calSource }] =
+          await Promise.all([
+            supabase
+              .from("vehicles")
+              .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer")
+              .eq("id", id)
+              .single(),
+            supabase
+              .from("vehicle_calendar_sources")
+              .select("ical_url, sync_interval, last_synced_at, last_sync_status")
+              .eq("vehicle_id", id)
+              .maybeSingle(),
+          ]);
 
         if (vehicleError) {
           if (vehicleError.code === "PGRST116") {
@@ -219,6 +235,7 @@ export default function VehicleDetailPage({
         }
 
         setVehicle(vehicleData as Vehicle);
+        setCalendarSource(calSource ?? null);
       } catch (err: any) {
         setError(err?.message || t("errorLoad"));
       } finally {
@@ -620,6 +637,18 @@ export default function VehicleDetailPage({
 
   return (
     <>
+      <style>{`
+        .photo-fields-grid {
+          display: grid;
+          gap: var(--space-6);
+          grid-template-columns: minmax(0, 1fr);
+        }
+        @media (min-width: 481px) {
+          .photo-fields-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          }
+        }
+      `}</style>
       {editingRow && (
         <EditComplianceModal
           row={editingRow}
@@ -706,13 +735,7 @@ export default function VehicleDetailPage({
             </div>
 
             {/* Photo + Fields */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-                gap: "var(--space-6)",
-              }}
-            >
+            <div className="photo-fields-grid">
               <div className="surface" style={{ padding: "var(--space-6)" }}>
                 <div
                   style={{
@@ -1126,40 +1149,84 @@ export default function VehicleDetailPage({
               <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
                 {tCal("title")}
               </div>
-              <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: "1 1 280px" }}>
-                  <label
-                    htmlFor="calendar-sync-url"
-                    style={{ fontSize: "13px", fontWeight: 500, color: "rgb(var(--text))", display: "block", marginBottom: "var(--space-2)" }}
-                  >
-                    {tCal("title")}
-                  </label>
-                  <input
-                    id="calendar-sync-url"
-                    type="url"
-                    value={calendarSyncUrl}
-                    onChange={(e) => setCalendarSyncUrl(e.target.value)}
-                    placeholder={tCal("urlPlaceholder")}
-                    style={{
-                      width: "100%",
-                      padding: "var(--space-2) var(--space-3)",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: "var(--radius)",
-                      fontSize: "14px",
-                      color: "rgb(var(--text))",
-                      background: "rgb(var(--surface))",
-                      boxSizing: "border-box",
-                    }}
-                  />
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                <div style={{ display: "flex", gap: "var(--space-6)", flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{tCal("status")}</div>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "3px 10px",
+                        borderRadius: "var(--radius)",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        background: calendarSource?.ical_url
+                          ? "rgb(var(--success) / 0.12)"
+                          : "rgb(var(--muted) / 0.15)",
+                        color: calendarSource?.ical_url
+                          ? "rgb(var(--success))"
+                          : "rgb(var(--muted))",
+                      }}
+                    >
+                      {calendarSource?.ical_url ? tCal("connected") : tCal("notConnected")}
+                    </span>
+                  </div>
+                  {calendarSource?.ical_url && (
+                    <>
+                      <div>
+                        <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{tCal("syncInterval")}</div>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))" }}>
+                          {tCal(CRON_SCHEDULE_KEY)}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{tCal("lastSynced")}</div>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))" }}>
+                          {calendarSource.last_synced_at
+                            ? formatDate(calendarSource.last_synced_at)
+                            : tCal("never")}
+                        </div>
+                      </div>
+                      {calendarSource.last_sync_status && (
+                        <div>
+                          <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{tCal("lastSyncResult")}</div>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "3px 10px",
+                              borderRadius: "var(--radius)",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              background: calendarSource.last_sync_status === "success"
+                                ? "rgb(var(--success) / 0.12)"
+                                : "rgb(var(--error) / 0.12)",
+                              color: calendarSource.last_sync_status === "success"
+                                ? "rgb(var(--success))"
+                                : "rgb(var(--error))",
+                            }}
+                          >
+                            {calendarSource.last_sync_status === "success" ? tCal("syncSuccess") : tCal("syncError")}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled={!calendarSyncUrl.trim()}
-                  style={{ fontSize: "14px", whiteSpace: "nowrap" }}
-                >
-                  {tCal("connect")}
-                </button>
+                {calendarSource?.last_synced_at &&
+                  Date.now() - new Date(calendarSource.last_synced_at).getTime() > 26 * 60 * 60 * 1000 && (
+                  <div
+                    style={{
+                      padding: "var(--space-3) var(--space-4)",
+                      background: "rgb(var(--warning) / 0.1)",
+                      border: "1px solid rgb(var(--warning) / 0.3)",
+                      borderRadius: "var(--radius)",
+                      color: "rgb(var(--warning))",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {tCal("staleWarning")}
+                  </div>
+                )}
               </div>
             </div>
 

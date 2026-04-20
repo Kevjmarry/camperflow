@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, FormEvent, ChangeEvent } from "reac
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import QRCode from "qrcode";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusChipStyle } from "@/lib/statusChip";
@@ -108,6 +109,205 @@ const normalizeStatus = (raw: string): BookingStatus => {
   const trimmed = raw?.trim() || "confirmed";
   return (trimmed === "pending" ? "draft" : trimmed) as BookingStatus;
 };
+
+function GuestAccessBlock({
+  bookingNumber,
+  locale,
+  t,
+}: {
+  bookingNumber: string;
+  locale: string;
+  t: (key: string) => string;
+}) {
+  const guestUrl = `https://app.camperflow.io/${locale}/guest?code=${bookingNumber}`;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, guestUrl, { width: 148, margin: 1 });
+    }
+  }, [guestUrl]);
+
+  const copy = async (text: string, setCopied: (v: boolean) => void) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  const downloadPng = () => {
+    if (!canvasRef.current) return;
+    const a = document.createElement("a");
+    a.href = canvasRef.current.toDataURL("image/png");
+    a.download = `guest-qr-${bookingNumber}.png`;
+    a.click();
+  };
+
+  const share = async () => {
+    if (navigator.share) {
+      await navigator.share({ title: t("guestAccess.shareTitle"), url: guestUrl });
+    } else {
+      await copy(guestUrl, setCopiedLink);
+    }
+  };
+
+  return (
+    <div
+      className="surface"
+      style={{
+        padding: "var(--space-5)",
+        background: "rgb(var(--border) / 0.15)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-4)",
+      }}
+    >
+      {/* Header */}
+      <div>
+        <h3
+          style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "rgb(var(--muted))",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            margin: "0 0 2px",
+          }}
+        >
+          {t("guestAccess.title")}
+        </h3>
+        <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))" }}>
+          {t("guestAccess.subtitle")}
+        </p>
+      </div>
+
+      {/* Two-column layout: details left, QR right */}
+      <div style={{ display: "flex", gap: "var(--space-5)", flexWrap: "wrap", alignItems: "flex-start" }}>
+
+        {/* Left: booking code + guest link */}
+        <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+
+          {/* Booking code */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {t("guestAccess.bookingCode")}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <code
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "rgb(var(--text))",
+                  letterSpacing: "0.06em",
+                  lineHeight: 1,
+                }}
+              >
+                {bookingNumber}
+              </code>
+              <button
+                onClick={() => copy(bookingNumber, setCopiedCode)}
+                style={{
+                  fontSize: "12px",
+                  padding: "3px 10px",
+                  background: copiedCode ? "rgb(var(--success) / 0.12)" : "rgb(var(--border) / 0.5)",
+                  border: "1px solid " + (copiedCode ? "rgb(var(--success) / 0.3)" : "rgb(var(--border))"),
+                  borderRadius: "var(--radius)",
+                  cursor: "pointer",
+                  color: copiedCode ? "rgb(var(--success))" : "rgb(var(--text))",
+                  fontWeight: 500,
+                  transition: "all 0.15s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {copiedCode ? t("guestAccess.copied") : t("guestAccess.copy")}
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: "1px", background: "rgb(var(--border) / 0.5)" }} />
+
+          {/* Guest link */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {t("guestAccess.guestLink")}
+            </span>
+            <div
+              style={{
+                fontSize: "12px",
+                color: "rgb(var(--muted))",
+                background: "rgb(var(--border) / 0.3)",
+                border: "1px solid rgb(var(--border) / 0.6)",
+                borderRadius: "var(--radius)",
+                padding: "6px 10px",
+                wordBreak: "break-all",
+                lineHeight: 1.5,
+              }}
+            >
+              {guestUrl}
+            </div>
+            <div>
+              <button
+                onClick={() => copy(guestUrl, setCopiedLink)}
+                style={{
+                  fontSize: "12px",
+                  padding: "3px 10px",
+                  background: copiedLink ? "rgb(var(--success) / 0.12)" : "rgb(var(--border) / 0.5)",
+                  border: "1px solid " + (copiedLink ? "rgb(var(--success) / 0.3)" : "rgb(var(--border))"),
+                  borderRadius: "var(--radius)",
+                  cursor: "pointer",
+                  color: copiedLink ? "rgb(var(--success))" : "rgb(var(--text))",
+                  fontWeight: 500,
+                  transition: "all 0.15s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {copiedLink ? t("guestAccess.copied") : t("guestAccess.copyLink")}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: QR panel */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "var(--space-3)",
+            padding: "var(--space-3)",
+            background: "rgb(var(--surface, 255 255 255) / 0.6)",
+            border: "1px solid rgb(var(--border))",
+            borderRadius: "var(--radius)",
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            style={{ display: "block", borderRadius: "4px" }}
+          />
+          <div style={{ display: "flex", gap: "var(--space-2)", width: "100%" }}>
+            <button
+              className="btn btn-secondary"
+              onClick={downloadPng}
+              style={{ flex: 1, fontSize: "12px", padding: "5px 10px", minHeight: "unset", textAlign: "center" }}
+            >
+              {t("guestAccess.downloadQr")}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={share}
+              style={{ flex: 1, fontSize: "12px", padding: "5px 10px", minHeight: "unset", textAlign: "center" }}
+            >
+              {t("guestAccess.share")}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
 
 export default function BookingDetailPage() {
   const { locale, id } = useParams<{ locale: string; id: string }>();
@@ -1045,6 +1245,13 @@ export default function BookingDetailPage() {
               t={t as (key: string) => string}
             />
           </div>
+
+          {/* ── Guest Access ─────────────────────────────────────────────── */}
+          <GuestAccessBlock
+            bookingNumber={booking.booking_number}
+            locale={locale}
+            t={t as (key: string) => string}
+          />
 
           {/* ── Linked Customer ─────────────────────────────────────────── */}
           <div className="surface" style={{ padding: 'var(--space-5)', background: 'rgb(var(--border) / 0.15)' }}>

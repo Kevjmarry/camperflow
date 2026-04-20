@@ -311,6 +311,7 @@
       "syncNow": "Sync now",
       "syncing": "Syncing…",
       "autoSyncInterval": "Auto-sync interval",
+      "cronScheduleLabel": "Daily at 23:00 UTC",
       "intervalNone": "Disabled",
       "interval1h": "Every hour",
       "interval6h": "Every 6 hours",
@@ -320,7 +321,14 @@
       "syncSuccess": "Success",
       "syncError": "Failed",
       "syncResultDetail": "{created} created · {updated} updated · {blocked} blocked",
-      "noUrlToSync": "Enter and import an iCal URL first to enable Sync now"
+      "noUrlToSync": "Enter and import an iCal URL first to enable Sync now",
+      "status": "Status",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "syncInterval": "Sync interval",
+      "never": "Never",
+      "lastSyncResult": "Last sync result",
+      "staleWarning": "Last sync is older than 26 hours — may be out of date"
     }
   },
   "vehicleEdit": {
@@ -1477,6 +1485,18 @@
       "cancel": "Cancel",
       "reverting": "Reverting...",
       "errorFailed": "Failed to revert booking"
+    },
+    "guestAccess": {
+      "title": "Guest Access",
+      "subtitle": "Share the booking code or QR with your guest",
+      "bookingCode": "Booking code",
+      "guestLink": "Guest link",
+      "copy": "Copy",
+      "copyLink": "Copy link",
+      "copied": "Copied!",
+      "downloadQr": "Download QR",
+      "share": "Share",
+      "shareTitle": "Guest booking access"
     }
   },
   "staffTeamMember": {
