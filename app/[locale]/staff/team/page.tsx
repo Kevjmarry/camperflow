@@ -118,6 +118,7 @@ export default function StaffTeamPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                flexWrap: "wrap",
                 gap: "var(--space-4)",
               }}
             >

@@ -146,6 +146,7 @@ export default async function CustomersPage({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              flexWrap: "wrap",
               gap: "var(--space-4)",
             }}
           >
@@ -171,7 +172,7 @@ export default async function CustomersPage({
               {t("empty")}
             </div>
           ) : (
-            <div>
+            <div style={{ overflowX: "auto" }}>
               {/* Customers with a phone number — always visible */}
               {withPhone.length > 0 && (
                 <table style={tableStyle}>

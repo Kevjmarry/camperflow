@@ -366,6 +366,9 @@ export default function VehiclesPage() {
                         fontWeight: 700,
                         letterSpacing: '0.02em',
                         whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: 'min(280px, calc(100vw - 80px))',
                       }}>
                         {/* Stop-sign icon */}
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

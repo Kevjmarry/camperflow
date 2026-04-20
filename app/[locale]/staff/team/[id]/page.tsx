@@ -527,7 +527,7 @@ export default function StaffMemberPage() {
 
         {!loading && !error && member && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "var(--space-4)" }}>
               <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "flex-start" }}>
                 {member.photo_url && (
                   <Image
@@ -545,7 +545,7 @@ export default function StaffMemberPage() {
                   <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
                     {displayName}
                   </h1>
-                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginTop: 4 }}>
+                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
                     <p style={{ color: "rgb(var(--muted))", fontSize: "14px" }}>
                       {t('roleLabel')} {member.role}
                     </p>
