@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
+import LocalizedDateInput from "@/components/LocalizedDateInput";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusChipStyle } from "@/lib/statusChip";
 
@@ -304,9 +305,9 @@ export default function BookingsPage() {
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return null;
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Tomorrow";
-    return `${diffDays}d`;
+    if (diffDays === 0) return t("time.today");
+    if (diffDays === 1) return t("time.tomorrow");
+    return t("time.daysAhead", { count: diffDays });
   };
 
   const getVehicleReadinessChip = (booking: Booking) => {
@@ -324,9 +325,9 @@ export default function BookingsPage() {
     const style = colors[vStatus] ?? { bg: 'rgb(var(--muted) / 0.12)', text: 'rgb(var(--muted))' };
 
     const label =
-      vStatus === 'ready' ? 'Ready' :
-      vStatus === 'preparing' ? 'Preparing' :
-      vStatus === 'on_rent' ? 'On rent' :
+      vStatus === 'ready' ? t("vehicleReadiness.ready") :
+      vStatus === 'preparing' ? t("vehicleReadiness.preparing") :
+      vStatus === 'on_rent' ? t("vehicleReadiness.onRent") :
       vStatus;
 
     return (
@@ -382,7 +383,7 @@ export default function BookingsPage() {
       return (
         <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
           <Link href={`/${locale}/staff/bookings/${booking.id}`} style={{ fontSize: '14px', color: 'rgb(var(--brand))' }}>
-            Confirm booking
+            {t("nextAction.confirmBooking")}
           </Link>
         </div>
       );
@@ -396,7 +397,7 @@ export default function BookingsPage() {
           return (
             <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
               <Link href={`/${locale}/staff/checklists/${first.id}?from=booking`} style={{ fontSize: '14px', color: 'rgb(var(--brand))' }}>
-                Complete checklist
+                {t("nextAction.completeChecklist")}
               </Link>
             </div>
           );
@@ -405,7 +406,7 @@ export default function BookingsPage() {
       return (
         <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
           <Link href={`/${locale}/staff/bookings/${booking.id}`} style={{ fontSize: '14px', color: 'rgb(var(--brand))' }}>
-            View booking
+            {t("nextAction.viewBooking")}
           </Link>
         </div>
       );
@@ -419,7 +420,7 @@ export default function BookingsPage() {
           return (
             <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
               <Link href={`/${locale}/staff/checklists/${first.id}?from=booking`} style={{ fontSize: '14px', color: 'rgb(var(--brand))' }}>
-                Return checklist
+                {t("nextAction.returnChecklist")}
               </Link>
             </div>
           );
@@ -428,7 +429,7 @@ export default function BookingsPage() {
       return (
         <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
           <Link href={`/${locale}/staff/bookings/${booking.id}`} style={{ fontSize: '14px', color: 'rgb(var(--brand))' }}>
-            View booking
+            {t("nextAction.viewBooking")}
           </Link>
         </div>
       );
@@ -437,7 +438,7 @@ export default function BookingsPage() {
     return (
       <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
         <Link href={`/${locale}/staff/bookings/${booking.id}`} style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
-          View
+          {t("nextAction.view")}
         </Link>
       </div>
     );
@@ -499,7 +500,7 @@ export default function BookingsPage() {
         }
       `}</style>
 
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
+      <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div style={{
             display: 'flex',
@@ -637,22 +638,20 @@ export default function BookingsPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <label style={filterLabelStyle}>{t("filter.dateFromLabel")}</label>
-                <input
-                  type="date"
+                <LocalizedDateInput
                   className="input"
                   value={dateFrom}
-                  onChange={e => setDateFrom(e.target.value)}
+                  onChange={setDateFrom}
                   style={{ ...selectStyle, minWidth: '130px' }}
                 />
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <label style={filterLabelStyle}>{t("filter.dateToLabel")}</label>
-                <input
-                  type="date"
+                <LocalizedDateInput
                   className="input"
                   value={dateTo}
-                  onChange={e => setDateTo(e.target.value)}
+                  onChange={setDateTo}
                   style={{ ...selectStyle, minWidth: '130px' }}
                 />
               </div>
@@ -1022,7 +1021,7 @@ export default function BookingsPage() {
                           className="btn btn-secondary"
                           style={{ display: 'block', textAlign: 'center', fontSize: '14px' }}
                         >
-                          {canManage ? 'View & edit booking' : 'View booking'}
+                          {canManage ? t("action.viewEditBooking") : t("action.viewBooking")}
                         </Link>
                       </div>
                     </div>

@@ -161,6 +161,16 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <style>{`
+        .greturn-sp { padding: var(--space-4); }
+        .greturn-details summary { padding: var(--space-4); }
+        .greturn-details-body { padding: var(--space-4); }
+        @media (min-width: 768px) {
+          .greturn-sp { padding: var(--space-6); }
+          .greturn-details summary { padding: var(--space-5) var(--space-6); }
+          .greturn-details-body { padding: var(--space-5) var(--space-6); }
+        }
+      `}</style>
       {/* Back link */}
       <div>
         <Link
@@ -184,9 +194,8 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
       {/* Title bar */}
       <div
-        className="surface"
+        className="surface greturn-sp"
         style={{
-          padding: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -210,7 +219,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
       </div>
 
       {/* Booking info */}
-      <div className="surface" style={{ padding: "var(--space-6)" }}>
+      <div className="surface greturn-sp">
         <div
           style={{
             display: "grid",
@@ -233,9 +242,8 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
       {/* Reminder card — full width */}
       <div
-        className="surface"
+        className="surface greturn-sp"
         style={{
-          padding: "var(--space-6)",
           background: "rgb(var(--brand-light))",
           border: "1px solid rgb(var(--brand))",
         }}
@@ -270,7 +278,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
       </div>
 
       {/* Return checklist — full width */}
-      <div className="surface" style={{ padding: "var(--space-6)" }}>
+      <div className="surface greturn-sp">
         <h2 style={{ marginBottom: "var(--space-1)" }}>{t("checklistTitle")}</h2>
         <p
           style={{
@@ -290,7 +298,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             marginBottom: "var(--space-5)",
           }}
         >
-          You'll be able to complete this checklist here before return. For now, please use it as a guide.
+          {t("checklistGuideNote")}
         </p>
 
         {!checklistTemplate ? (
@@ -350,7 +358,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
                       textDecoration: item.checked ? "line-through" : "none",
                     }}
                   >
-                    {item.template?.label ?? "Untitled item"}
+                    {item.template?.label ?? t("untitledItem")}
                   </p>
                   {item.notes && (
                     <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)" }}>
@@ -367,12 +375,11 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
       {/* Detailed return instructions — collapsed by default */}
       {hasDetailSection && (
         <details
-          className="surface"
+          className="surface greturn-details"
           style={{ padding: 0, overflow: "hidden" }}
         >
           <summary
             style={{
-              padding: "var(--space-5) var(--space-6)",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "500",
@@ -384,15 +391,15 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
               listStyle: "none",
             }}
           >
-            Detailed return instructions
+            {t("detailedReturnInstructions")}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0, opacity: 0.45 }}>
               <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </summary>
 
           <div
+            className="greturn-details-body"
             style={{
-              padding: "var(--space-5) var(--space-6)",
               borderTop: "1px solid rgb(var(--border-light))",
             }}
           >

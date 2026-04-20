@@ -413,7 +413,7 @@ export default function CompanySettingsPage() {
   if (loading) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             {t("loading")}
           </div>
@@ -426,7 +426,7 @@ export default function CompanySettingsPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
           {/* Page header */}
@@ -683,8 +683,9 @@ export default function CompanySettingsPage() {
                         {t("reminders.balanceInvoice.label")}
                       </span>
                     </label>
-                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}
-                      dangerouslySetInnerHTML={{ __html: t("reminders.balanceInvoice.helper") }} />
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      {t.rich("reminders.balanceInvoice.helper", { strong: (chunks) => <strong>{chunks}</strong> })}
+                    </p>
                   </div>
                   {finalPaymentRemindersEnabled && (
                     <>
@@ -711,8 +712,9 @@ export default function CompanySettingsPage() {
                             value={formData.final_payment_urgent_days} onChange={handleChange}
                             disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
                           />
-                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}
-                            dangerouslySetInnerHTML={{ __html: t("reminders.balanceInvoice.cutoffHelper") }} />
+                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                            {t.rich("reminders.balanceInvoice.cutoffHelper", { strong: (chunks) => <strong>{chunks}</strong> })}
+                          </p>
                         </div>
                         <p className="helper-text" style={{ fontStyle: "italic" }}>
                           {t("reminders.balanceInvoice.exampleHint")}

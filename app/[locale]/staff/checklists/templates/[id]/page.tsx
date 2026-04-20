@@ -1198,7 +1198,7 @@ export default function ChecklistTemplateDetailPage() {
   if (loading) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>{t('loading')}</div>
         </div>
       </PageContainer>
@@ -1208,7 +1208,7 @@ export default function ChecklistTemplateDetailPage() {
   if (globalError || !template) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-4)' }}>
             ← {t('backToTemplates')}
           </Link>
@@ -1239,7 +1239,7 @@ export default function ChecklistTemplateDetailPage() {
         }
       `}</style>
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
             {/* ── Page header ── */}

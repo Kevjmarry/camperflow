@@ -26,6 +26,10 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <style>{`
+        .gh-sp { padding: var(--space-4); }
+        @media (min-width: 768px) { .gh-sp { padding: var(--space-6); } }
+      `}</style>
       {/* Back link */}
       <div>
         <Link
@@ -49,9 +53,8 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
 
       {/* Title bar */}
       <div
-        className="surface"
+        className="surface gh-sp"
         style={{
-          padding: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -95,12 +98,13 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--warning))" strokeWidth="2" style={{ flexShrink: 0, marginTop: "1px" }}>
           <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01" />
         </svg>
-        <p style={{ fontSize: "14px", lineHeight: "1.5", color: "rgb(var(--text-secondary))", margin: 0 }}
-          dangerouslySetInnerHTML={{ __html: t("warning") }} />
+        <p style={{ fontSize: "14px", lineHeight: "1.5", color: "rgb(var(--text-secondary))", margin: 0 }}>
+          {t.rich("warning", { strong: (chunks) => <strong>{chunks}</strong> })}
+        </p>
       </div>
 
       {/* Accordion sections */}
-      <div className="surface" style={{ padding: "var(--space-6)" }}>
+      <div className="surface gh-sp">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           {SECTION_KEYS.map((key) => (
             <details

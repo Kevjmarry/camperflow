@@ -117,7 +117,7 @@ function SectionCard({
   notConfigured: string;
 }) {
   return (
-    <div className="surface" style={{ padding: "var(--space-6)" }}>
+    <div className="surface gemergency-sp">
       <div
         style={{
           display: "flex",
@@ -215,10 +215,14 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
   };
 
   return (
-    <div style={{ maxWidth: "700px", margin: "0 auto", padding: "var(--space-6)" }}>
+    <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+      <style>{`
+        .gemergency-sp { padding: var(--space-4); }
+        @media (min-width: 768px) { .gemergency-sp { padding: var(--space-6); } }
+      `}</style>
 
       {/* Back link */}
-      <div style={{ marginBottom: "var(--space-5)" }}>
+      <div style={{ marginBottom: "var(--space-4)" }}>
         <Link
           href={`/${locale}/guest?code=${code}`}
           style={{
@@ -239,11 +243,8 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
 
       {/* Page header surface */}
       <div
-        className="surface"
-        style={{
-          padding: "var(--space-6)",
-          marginBottom: "var(--space-5)",
-        }}
+        className="surface gemergency-sp"
+        style={{ marginBottom: "var(--space-4)" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
           <div style={iconWrapError}>

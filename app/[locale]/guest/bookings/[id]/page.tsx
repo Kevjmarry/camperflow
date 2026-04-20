@@ -204,6 +204,14 @@ try{
 
   return (
     <div>
+      <style>{`
+        .gbooking-sp { padding: var(--space-4); }
+        .gbooking-title { padding: var(--space-4); margin-bottom: var(--space-4); }
+        @media (min-width: 768px) {
+          .gbooking-sp { padding: var(--space-8); }
+          .gbooking-title { padding: var(--space-6); margin-bottom: var(--space-6); }
+        }
+      `}</style>
       {themeObj && (
         <>
           <style dangerouslySetInnerHTML={{ __html: themeStyleTag }} />
@@ -245,10 +253,8 @@ try{
       </div>
 
       <div
-        className="surface"
+        className="surface gbooking-title"
         style={{
-          padding: "var(--space-6)",
-          marginBottom: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -272,7 +278,7 @@ try{
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface gbooking-sp">
           <h2
             style={{
               marginBottom: "var(--space-6)",
@@ -399,7 +405,7 @@ try{
         </div>
 
         {vehicle && (
-          <div className="surface" style={{ padding: "var(--space-8)" }}>
+          <div className="surface gbooking-sp">
             <h2
               style={{
                 marginBottom: "var(--space-6)",
@@ -503,7 +509,7 @@ try{
         )}
 
         {(booking.customer_name || booking.customer_email || booking.customer_phone) && (
-          <div className="surface" style={{ padding: "var(--space-8)" }}>
+          <div className="surface gbooking-sp">
             <h2
               style={{
                 marginBottom: "var(--space-6)",
@@ -579,7 +585,7 @@ try{
         )}
 
         {checklists.length > 0 && (
-          <div className="surface" style={{ padding: "var(--space-8)" }}>
+          <div className="surface gbooking-sp">
             <h2
               style={{
                 marginBottom: "var(--space-6)",

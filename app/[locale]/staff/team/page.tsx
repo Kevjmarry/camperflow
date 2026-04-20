@@ -92,7 +92,7 @@ export default function StaffTeamPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div
           style={{
             display: "flex",

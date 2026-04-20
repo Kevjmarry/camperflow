@@ -87,31 +87,35 @@ export default function GuestPage() {
     { key: "emergency",      functional: true, href: `/${locale}/guest/emergency?code=${code}` },
   ];
 
-  const sharedCardStyle = {
-    padding: "var(--space-6)",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "var(--space-3)",
-  };
-
   return (
-    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "var(--space-6)" }}>
+    <div className="gp-wrap">
+      <style>{`
+        .gp-wrap { max-width: 900px; margin: 0 auto; }
+        .gp-strip { padding: var(--space-3) var(--space-4); margin-bottom: var(--space-5); gap: var(--space-3); }
+        .gp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+        .gp-card { padding: var(--space-4); }
+        @media (min-width: 480px) {
+          .gp-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+        }
+        @media (min-width: 768px) {
+          .gp-strip { padding: var(--space-4) var(--space-6); margin-bottom: var(--space-8); gap: var(--space-6); }
+          .gp-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); }
+          .gp-card { padding: var(--space-6); }
+        }
+      `}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>{t("title")}</h1>
+      <div style={{ marginBottom: "var(--space-5)" }}>
+        <h1 style={{ color: "rgb(var(--text))" }}>{t("title")}</h1>
         <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>{t("subtitle")}</p>
       </div>
 
       {/* Booking summary strip */}
       <div
-        className="surface"
+        className="surface gp-strip"
         style={{
-          padding: "var(--space-4) var(--space-6)",
-          marginBottom: "var(--space-8)",
           display: "flex",
           alignItems: "center",
-          gap: "var(--space-6)",
           flexWrap: "wrap",
         }}
       >
@@ -159,22 +163,18 @@ export default function GuestPage() {
       </div>
 
       {/* Card grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "var(--space-4)",
-        }}
-      >
+      <div className="gp-grid">
         {cards.map(({ key, functional, href }) => {
           if (functional) {
             return (
               <Link
                 key={key}
                 href={href}
-                className="surface"
+                className="surface gp-card"
                 style={{
-                  ...sharedCardStyle,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
                   textDecoration: "none",
                   cursor: "pointer",
                 }}
@@ -192,9 +192,11 @@ export default function GuestPage() {
           return (
             <div
               key={key}
-              className="surface"
+              className="surface gp-card"
               style={{
-                ...sharedCardStyle,
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
                 opacity: 0.5,
                 cursor: "not-allowed",
                 position: "relative",

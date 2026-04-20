@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import LocalizedDateInput from "@/components/LocalizedDateInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -168,11 +169,10 @@ export default function AddComplianceModal({
           <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
             {t("compliance.addModal.expiryDateLabel")}
           </label>
-          <input
-            type="date"
+          <LocalizedDateInput
             className="input"
             value={expiryDate}
-            onChange={(e) => setExpiryDate(e.target.value)}
+            onChange={setExpiryDate}
             style={{ width: "100%" }}
           />
         </div>

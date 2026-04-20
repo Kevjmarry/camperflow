@@ -171,7 +171,7 @@ export default function VehiclesPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
+      <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/* Header */}
           <div style={{ 

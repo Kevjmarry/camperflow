@@ -62,6 +62,10 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <style>{`
+        .gfaq-sp { padding: var(--space-4); }
+        @media (min-width: 768px) { .gfaq-sp { padding: var(--space-6); } }
+      `}</style>
       {/* Back link */}
       <div>
         <Link
@@ -85,9 +89,8 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
 
       {/* Title bar */}
       <div
-        className="surface"
+        className="surface gfaq-sp"
         style={{
-          padding: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -111,7 +114,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
       </div>
 
       {/* FAQ list */}
-      <div className="surface" style={{ padding: "var(--space-6)" }}>
+      <div className="surface gfaq-sp">
         {faqItems.length === 0 ? (
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
             {t("empty")}

@@ -250,6 +250,16 @@
     margin-top: var(--space-2);
   }
 
+  /* Responsive padding for page-level surface cards */
+  .page-surface {
+    padding: var(--space-4);
+  }
+  @media (min-width: 768px) {
+    .page-surface {
+      padding: var(--space-8);
+    }
+  }
+
   .divider {
     position: relative;
     text-align: center;

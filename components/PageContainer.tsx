@@ -39,7 +39,7 @@ export default function PageContainer({
     >
       <style>{`
         .page-container-inner {
-          padding-bottom: calc(var(--space-4) + 60px + env(safe-area-inset-bottom));
+          padding-bottom: ${showSignOut ? 'calc(var(--space-4) + 60px + env(safe-area-inset-bottom))' : 'calc(var(--space-4) + env(safe-area-inset-bottom))'};
         }
         @media (min-width: 768px) {
           .page-container-inner {

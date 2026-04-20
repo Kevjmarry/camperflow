@@ -817,7 +817,7 @@ export default function BookingDetailPage() {
   if (notFound) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+        <div className="surface page-surface" style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '24px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
             {t("notFound.title")}
           </h1>
@@ -835,7 +835,7 @@ export default function BookingDetailPage() {
   if (loading) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+        <div className="surface page-surface" style={{ textAlign: 'center' }}>
           <p style={{ color: 'rgb(var(--muted))' }}>{t("loading")}</p>
         </div>
       </PageContainer>
@@ -845,7 +845,7 @@ export default function BookingDetailPage() {
   if (error && !booking && !redactedBooking) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{
             padding: 'var(--space-4)',
             background: 'rgb(var(--error) / 0.1)',
@@ -870,7 +870,7 @@ export default function BookingDetailPage() {
   if (!canManage && redactedBooking) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div>
               <Link
@@ -1021,7 +1021,7 @@ export default function BookingDetailPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
+      <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
           {/* Back link + summary card */}

@@ -476,7 +476,7 @@ export default function StaffMemberPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <Link
           href={`/${locale}/staff/team`}
           style={{

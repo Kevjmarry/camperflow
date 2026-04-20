@@ -99,14 +99,17 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
 
   const hasContactInfo = guestInfo.contact_phone || guestInfo.contact_whatsapp;
 
-  const BEFORE_YOU_ARRIVE = [
-    "Let us know your estimated arrival time",
-    "Please allow enough time; handover takes approximately 1 hour",
-    "If your deposit was not sent by bank transfer, it must be paid in cash",
-  ];
 
   return (
     <div>
+      <style>{`
+        .gpickup-sp { padding: var(--space-4); }
+        .gpickup-mb { margin-bottom: var(--space-4); }
+        @media (min-width: 768px) {
+          .gpickup-sp { padding: var(--space-6); }
+          .gpickup-mb { margin-bottom: var(--space-6); }
+        }
+      `}</style>
       <div style={{ marginBottom: "var(--space-4)" }}>
         <Link
           href={`/${locale}/guest?code=${encodeURIComponent(code)}`}
@@ -128,10 +131,8 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
       </div>
 
       <div
-        className="surface"
+        className="surface gpickup-sp gpickup-mb"
         style={{
-          padding: "var(--space-6)",
-          marginBottom: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -156,10 +157,8 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
 
       {/* Reminder card */}
       <div
-        className="surface"
+        className="surface gpickup-sp gpickup-mb"
         style={{
-          padding: "var(--space-6)",
-          marginBottom: "var(--space-6)",
           background: "rgb(var(--brand-light))",
           border: "1px solid rgb(var(--brand))",
         }}
@@ -174,7 +173,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
             margin: "0 0 var(--space-4) 0",
           }}
         >
-          Before you arrive
+          {t("beforeYouArriveTitle")}
         </p>
         <ul
           style={{
@@ -185,15 +184,15 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
             gap: "var(--space-2)",
           }}
         >
-          {BEFORE_YOU_ARRIVE.map((item, i) => (
+          {([0, 1, 2] as const).map((i) => (
             <li key={i} style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text))" }}>
-              {item}
+              {t(`beforeYouArrive${i}`)}
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface gpickup-sp">
         <div
           style={{
             display: "grid",

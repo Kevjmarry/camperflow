@@ -104,6 +104,14 @@ export default async function GuestChecklistPage({ params }: PageProps) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+      <style>{`
+        .gcl-sp { padding: var(--space-4); }
+        .gcl-notice { padding: var(--space-4); border-left: 3px solid rgb(var(--brand)); }
+        @media (min-width: 768px) {
+          .gcl-sp { padding: var(--space-6); }
+          .gcl-notice { padding: var(--space-5) var(--space-6); }
+        }
+      `}</style>
       {/* Back link */}
       <div>
         <Link
@@ -127,9 +135,8 @@ export default async function GuestChecklistPage({ params }: PageProps) {
 
       {/* Title bar */}
       <div
-        className="surface"
+        className="surface gcl-sp"
         style={{
-          padding: "var(--space-6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -153,13 +160,7 @@ export default async function GuestChecklistPage({ params }: PageProps) {
       </div>
 
       {/* Guide notice */}
-      <div
-        className="surface"
-        style={{
-          padding: "var(--space-5) var(--space-6)",
-          borderLeft: "3px solid rgb(var(--brand))",
-        }}
-      >
+      <div className="surface gcl-notice">
         <p style={{ fontSize: "14px", color: "rgb(var(--text-secondary))", margin: 0 }}>
           {locale === "de"
             ? "Diese Checkliste dient als Übersicht. Das digitale Ausfüllen wird in Kürze verfügbar sein."
@@ -168,7 +169,7 @@ export default async function GuestChecklistPage({ params }: PageProps) {
       </div>
 
       {/* Items */}
-      <div className="surface" style={{ padding: "var(--space-6)" }}>
+      <div className="surface gcl-sp">
         {items.length === 0 ? (
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
             {locale === "de" ? "Keine Einträge vorhanden." : "No checklist items available."}

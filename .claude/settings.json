@@ -32,7 +32,13 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/messages/en.json','utf8'\\)\\); console.log\\('en.json valid'\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/messages/de.json','utf8'\\)\\); console.log\\('de.json valid'\\)\")",
       "Bash(cat)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node -e \"const j=require\\('./messages/en.json'\\); const b=j.bookings; console.log\\(JSON.stringify\\(b, null, 2\\)\\)\")",
+      "Bash(node -e \"const j=require\\('./messages/de.json'\\); const b=j.bookings; console.log\\(JSON.stringify\\(b, null, 2\\)\\)\")",
+      "Bash(node -e \"require\\('./messages/en.json'\\); console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"require\\('./messages/de.json'\\); console.log\\('de.json OK'\\)\")",
+      "Bash(node -e \"const m = require\\('./messages/de.json'\\); const keys = ['guestPickup','guestReturn','guestBooking','guestHelp']; keys.forEach\\(k => { console.log\\('=== '+k+' ==='\\); console.log\\(JSON.stringify\\(m[k], null, 2\\)\\); }\\);\")",
+      "Bash(git diff *)"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"

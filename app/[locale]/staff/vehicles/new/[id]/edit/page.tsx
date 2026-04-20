@@ -198,7 +198,7 @@ export default function EditVehiclePage() {
   if (!authorized || loading) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <div style={{ textAlign: "center", color: "rgb(var(--muted))" }}>
             Loading...
           </div>
@@ -210,7 +210,7 @@ export default function EditVehiclePage() {
   if (notFound) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               Vehicle not found
@@ -233,7 +233,7 @@ export default function EditVehiclePage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>
             <Link

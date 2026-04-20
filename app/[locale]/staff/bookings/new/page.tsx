@@ -319,8 +319,8 @@ export default function NewBookingPage() {
     return (
       <PageContainer maxWidth="1400px">
         <div
-          className="surface"
-          style={{ padding: "var(--space-8)", textAlign: "center" }}
+          className="surface page-surface"
+          style={{ textAlign: "center" }}
         >
           <p style={{ color: "rgb(var(--muted))" }}>
             {t("checkingPermissions")}
@@ -336,7 +336,7 @@ export default function NewBookingPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>
             <Link

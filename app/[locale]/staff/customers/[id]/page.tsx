@@ -82,7 +82,7 @@ export default async function CustomerDetailPage({
   if (!customer) {
     return (
       <PageContainer maxWidth="1400px" showSignOut={false}>
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <div
             style={{
               display: "flex",
@@ -118,7 +118,7 @@ export default async function CustomerDetailPage({
 
   return (
     <PageContainer maxWidth="1400px" showSignOut={false}>
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div
           style={{
             display: "flex",

@@ -477,7 +477,9 @@
       "importBookings": "Import bookings",
       "edit": "Edit",
       "view": "View",
-      "viewEdit": "View / Edit"
+      "viewEdit": "View / Edit",
+      "viewBooking": "View booking",
+      "viewEditBooking": "View & edit booking"
     },
     "filter": {
       "statusLabel": "Status:",
@@ -542,6 +544,23 @@
       "notAuthenticated": "Not authenticated",
       "permissionsFailed": "Failed to check permissions",
       "loadFailed": "Failed to load bookings"
+    },
+    "nextAction": {
+      "confirmBooking": "Confirm booking",
+      "completeChecklist": "Complete checklist",
+      "returnChecklist": "Return checklist",
+      "viewBooking": "View booking",
+      "view": "View"
+    },
+    "time": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "daysAhead": "{count}d"
+    },
+    "vehicleReadiness": {
+      "ready": "Ready",
+      "preparing": "Preparing",
+      "onRent": "On rent"
     }
   },
   "bookingsDetail": {
@@ -822,7 +841,8 @@
       "confirmed": "Confirmed",
       "pending": "Pending",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "on_rent": "On Rent"
     },
     "pickupDate": "Pickup Date",
     "returnDate": "Return Date",
@@ -1694,7 +1714,11 @@
     "placeholder": "Pickup instructions will be available here once configured by the rental company.",
     "pickupInfo": "Pickup instructions",
     "contactPhone": "Phone",
-    "contactWhatsapp": "WhatsApp"
+    "contactWhatsapp": "WhatsApp",
+    "beforeYouArriveTitle": "Before you arrive",
+    "beforeYouArrive0": "Let us know your estimated arrival time",
+    "beforeYouArrive1": "Please allow enough time; handover takes approximately 1 hour",
+    "beforeYouArrive2": "If your deposit was not sent by bank transfer, it must be paid in cash"
   },
   "guestReturn": {
     "title": "Return Info",
@@ -1715,7 +1739,9 @@
     "beforeYouReturn4": "If applicable, refuel near our base before return",
     "beforeYouReturn5": "Allow enough time to wash and clean the vehicle before handover",
     "untitledItem": "Untitled item",
-    "checklistPolicyNote": "If items are not completed, additional charges may apply according to company policy."
+    "checklistPolicyNote": "If items are not completed, additional charges may apply according to company policy.",
+    "checklistGuideNote": "You'll be able to complete this checklist here before return. For now, please use it as a guide.",
+    "detailedReturnInstructions": "Detailed return instructions"
   },
   "guestFaq": {
     "title": "FAQ",

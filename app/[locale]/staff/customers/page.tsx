@@ -38,6 +38,7 @@ function CustomerRow({
         </Link>
       </td>
       <td
+        className="customers-col-email"
         style={{
           padding: "var(--space-3) var(--space-4)",
           color: "rgb(var(--text))",
@@ -54,6 +55,7 @@ function CustomerRow({
         {customer.phone ?? "—"}
       </td>
       <td
+        className="customers-col-created"
         style={{
           padding: "var(--space-3) var(--space-4)",
           color: "rgb(var(--muted))",
@@ -124,7 +126,13 @@ export default async function CustomersPage({
 
   return (
     <PageContainer maxWidth="1400px" showSignOut={false}>
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <style>{`
+        @media (max-width: 767px) {
+          .customers-col-email,
+          .customers-col-created { display: none; }
+        }
+      `}</style>
+      <div className="surface page-surface">
         <div
           style={{
             display: "flex",
@@ -163,7 +171,7 @@ export default async function CustomersPage({
               {t("empty")}
             </div>
           ) : (
-            <div style={{ overflowX: "auto" }}>
+            <div>
               {/* Customers with a phone number — always visible */}
               {withPhone.length > 0 && (
                 <table style={tableStyle}>
@@ -176,9 +184,9 @@ export default async function CustomersPage({
                       }}
                     >
                       <th style={thStyle}>{t("table.name")}</th>
-                      <th style={thStyle}>{t("table.email")}</th>
+                      <th className="customers-col-email" style={thStyle}>{t("table.email")}</th>
                       <th style={thStyle}>{t("table.phone")}</th>
-                      <th style={thStyle}>{t("table.created")}</th>
+                      <th className="customers-col-created" style={thStyle}>{t("table.created")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -245,9 +253,9 @@ export default async function CustomersPage({
                           }}
                         >
                           <th style={thStyle}>{t("table.name")}</th>
-                          <th style={thStyle}>{t("table.email")}</th>
+                          <th className="customers-col-email" style={thStyle}>{t("table.email")}</th>
                           <th style={thStyle}>{t("table.phone")}</th>
-                          <th style={thStyle}>{t("table.created")}</th>
+                          <th className="customers-col-created" style={thStyle}>{t("table.created")}</th>
                         </tr>
                       </thead>
                     )}

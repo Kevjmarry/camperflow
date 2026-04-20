@@ -191,7 +191,7 @@ export default function NewVehiclePage() {
   if (loading) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))' }}>
             {t('loading')}
           </div>
@@ -203,7 +203,7 @@ export default function NewVehiclePage() {
   if (error && !companyId) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface" style={{ padding: 'var(--space-8)' }}>
+        <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             <div>
               <Link
@@ -225,7 +225,7 @@ export default function NewVehiclePage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface" style={{ padding: 'var(--space-8)' }}>
+      <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div>
             <Link

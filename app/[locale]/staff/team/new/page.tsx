@@ -293,7 +293,7 @@ export default function NewTeamMemberPage() {
   if (error) {
     return (
       <PageContainer maxWidth="800px">
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <div
             style={{
               padding: "var(--space-3) var(--space-4)",
@@ -325,7 +325,7 @@ export default function NewTeamMemberPage() {
   if (!isAllowed) {
     return (
       <PageContainer maxWidth="800px">
-        <div className="surface" style={{ padding: "var(--space-8)" }}>
+        <div className="surface page-surface">
           <h1
             style={{
               fontSize: "28px",
@@ -358,7 +358,7 @@ export default function NewTeamMemberPage() {
 
   return (
     <PageContainer maxWidth="800px">
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+      <div className="surface page-surface">
         <div
           style={{
             display: "flex",
