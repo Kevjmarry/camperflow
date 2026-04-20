@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ImportPreviewRow, NormalizedImportBooking } from '@/lib/bookings/import/types';
@@ -377,28 +377,51 @@ interface ExistingBookingData {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get('authorization') ?? '';
+    const isInternalCronCall =
+      cronSecret && cronSecret.length > 0 && authHeader === `Bearer ${cronSecret}`;
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let supabase: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServiceClient>;
+    let companyId: string;
+
+    if (isInternalCronCall) {
+      supabase = createServiceClient();
+      // company_id is validated via vehicle ownership check below
+      const body = await request.clone().json().catch(() => ({}));
+      const rows: ImportPreviewRow[] = body?.rows ?? [];
+      const firstVehicleId = rows.find((r) => r.matchedVehicleId)?.matchedVehicleId;
+      if (!firstVehicleId) {
+        return NextResponse.json({ error: 'No rows provided' }, { status: 400 });
+      }
+      const { data: vehicle } = await supabase
+        .from('vehicles')
+        .select('company_id')
+        .eq('id', firstVehicleId)
+        .single();
+      if (!vehicle) {
+        return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+      }
+      companyId = vehicle.company_id;
+    } else {
+      supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const { data: staffProfile, error: profileError } = await supabase
+        .from('staff_profiles')
+        .select('company_id, role, can_manage')
+        .eq('auth_user_id', user.id)
+        .single();
+      if (profileError || !staffProfile) {
+        return NextResponse.json({ error: 'Staff profile not found' }, { status: 403 });
+      }
+      if (staffProfile.role !== 'admin' && !staffProfile.can_manage) {
+        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      }
+      companyId = staffProfile.company_id;
     }
-
-    const { data: staffProfile, error: profileError } = await supabase
-      .from('staff_profiles')
-      .select('company_id, role, can_manage')
-      .eq('auth_user_id', user.id)
-      .single();
-
-    if (profileError || !staffProfile) {
-      return NextResponse.json({ error: 'Staff profile not found' }, { status: 403 });
-    }
-
-    if (staffProfile.role !== 'admin' && !staffProfile.can_manage) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
-
-    const companyId: string = staffProfile.company_id;
 
     // Fetch company default pickup/return times to fill in date-only rows
     const { data: companySettings } = await supabase

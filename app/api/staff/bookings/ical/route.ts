@@ -26,7 +26,7 @@
  *   }
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { parseICalEvents } from "@/lib/bookings/import/parseICalEvents";
 import { normalizeICalEvent } from "@/lib/bookings/import/normalizeICalEvent";
@@ -112,34 +112,28 @@ async function fetchICalFeed(url: URL): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     // ── auth ──────────────────────────────────────────────────────────────────
-    const supabase = await createClient();
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization") ?? "";
+    const isInternalCronCall =
+      cronSecret && cronSecret.length > 0 && authHeader === `Bearer ${cronSecret}`;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: staffProfile, error: profileError } = await supabase
-      .from("staff_profiles")
-      .select("company_id, role, can_manage")
-      .eq("auth_user_id", user.id)
-      .single();
-
-    if (profileError || !staffProfile) {
-      return NextResponse.json(
-        { error: "Staff profile not found" },
-        { status: 403 }
-      );
-    }
-
-    if (staffProfile.role !== "admin" && !staffProfile.can_manage) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+    if (!isInternalCronCall) {
+      const supabase = await createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const { data: staffProfile, error: profileError } = await supabase
+        .from("staff_profiles")
+        .select("company_id, role, can_manage")
+        .eq("auth_user_id", user.id)
+        .single();
+      if (profileError || !staffProfile) {
+        return NextResponse.json({ error: "Staff profile not found" }, { status: 403 });
+      }
+      if (staffProfile.role !== "admin" && !staffProfile.can_manage) {
+        return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+      }
     }
 
     // ── request body ──────────────────────────────────────────────────────────

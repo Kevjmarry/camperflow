@@ -1,0 +1,92 @@
+/**
+ * GET /api/cron/sync-calendars
+ *
+ * Hourly Vercel cron job. Iterates every vehicle that has an iCal calendar URL
+ * configured and triggers a sync for each by calling the existing per-vehicle
+ * sync endpoint — no logic is duplicated here.
+ *
+ * Secured via CRON_SECRET (set in Vercel environment variables). Vercel
+ * automatically forwards this as "Authorization: Bearer <secret>" when invoking
+ * cron routes.
+ */
+
+import { createServiceClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 300; // 5 min — enough for many vehicles
+
+export async function GET(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization") ?? "";
+
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = createServiceClient();
+  const origin = new URL(request.url).origin;
+
+  // Fetch all vehicles that have an iCal URL configured
+  const { data: sources, error } = await supabase
+    .from("vehicle_calendar_sources")
+    .select("vehicle_id")
+    .not("ical_url", "is", null)
+    .neq("ical_url", "");
+
+  if (error) {
+    console.error("sync-calendars cron: failed to fetch calendar sources", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!sources || sources.length === 0) {
+    return NextResponse.json({ success: true, synced: 0 });
+  }
+
+  const results: { vehicleId: string; ok: boolean; error?: string }[] = [];
+
+  for (const source of sources) {
+    try {
+      const res = await fetch(
+        `${origin}/api/staff/vehicles/${source.vehicle_id}/sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cronSecret}`,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      if (res.ok) {
+        results.push({ vehicleId: source.vehicle_id, ok: true });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        results.push({
+          vehicleId: source.vehicle_id,
+          ok: false,
+          error: data?.error ?? `HTTP ${res.status}`,
+        });
+      }
+    } catch (err) {
+      results.push({
+        vehicleId: source.vehicle_id,
+        ok: false,
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }
+
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length > 0) {
+    console.error("sync-calendars cron: some vehicles failed to sync", failed);
+  }
+
+  return NextResponse.json({
+    success: true,
+    synced: results.filter((r) => r.ok).length,
+    failed: failed.length,
+    results,
+  });
+}
