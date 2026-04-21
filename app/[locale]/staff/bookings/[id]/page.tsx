@@ -112,14 +112,12 @@ const normalizeStatus = (raw: string): BookingStatus => {
 
 function GuestAccessBlock({
   bookingNumber,
-  locale,
   t,
 }: {
   bookingNumber: string;
-  locale: string;
   t: (key: string) => string;
 }) {
-  const guestUrl = `https://app.camperflow.io/${locale}/guest?code=${bookingNumber}`;
+  const guestUrl = `https://app.camperflow.io/guest?code=${bookingNumber}`;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -1244,7 +1242,6 @@ export default function BookingDetailPage() {
           {/* ── Guest Access ─────────────────────────────────────────────── */}
           <GuestAccessBlock
             bookingNumber={booking.booking_number}
-            locale={locale}
             t={t as (key: string) => string}
           />
 

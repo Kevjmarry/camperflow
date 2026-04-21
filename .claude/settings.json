@@ -40,7 +40,8 @@
       "Bash(node -e \"const m = require\\('./messages/de.json'\\); const keys = ['guestPickup','guestReturn','guestBooking','guestHelp']; keys.forEach\\(k => { console.log\\('=== '+k+' ==='\\); console.log\\(JSON.stringify\\(m[k], null, 2\\)\\); }\\);\")",
       "Bash(git diff *)",
       "Bash(npm list *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"
