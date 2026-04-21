@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -8,53 +8,6 @@ import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface FaqItem {
-  question: string;
-  answer: string;
-}
-
-// ─── AccordionSection ─────────────────────────────────────────────────────────
-
-function AccordionSection({
-  sectionKey,
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  sectionKey: string;
-  title: string;
-  isOpen: boolean;
-  onToggle: (key: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ borderTop: "1px solid rgb(var(--border))" }}>
-      <button
-        type="button"
-        onClick={() => onToggle(sectionKey)}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          width: "100%", background: "none", border: "none", cursor: "pointer",
-          padding: "var(--space-4) 0", textAlign: "left",
-        }}
-      >
-        <span style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>{title}</span>
-        <span style={{ color: "rgb(var(--muted))", fontSize: "12px", flexShrink: 0, marginLeft: "var(--space-3)" }}>
-          {isOpen ? "▲" : "▼"}
-        </span>
-      </button>
-      {isOpen && (
-        <div style={{ paddingBottom: "var(--space-5)" }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -72,10 +25,6 @@ export default function CompanySettingsPage() {
     logo_url: "",
     primary_color: "#368F8B",
     secondary_color: "#BC8235",
-    emergency_accident_phone_primary: "",
-    emergency_accident_phone_secondary: "",
-    emergency_breakdown_phone_primary: "",
-    emergency_breakdown_phone_secondary: "",
     pickup_time: "",
     dropoff_time: "",
     final_payment_due_days: "",
@@ -85,14 +34,6 @@ export default function CompanySettingsPage() {
     email: "",
     registration_id: "",
     vat_id: "",
-    // Guest Information
-    contact_phone: "",
-    contact_whatsapp: "",
-    pickup_info: "",
-    return_info: "",
-    rules_and_tips: "",
-    before_arrival_info: "",
-    included_items: "",
   });
   const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
   const [preArrivalRemindersEnabled, setPreArrivalRemindersEnabled] = useState(true);
@@ -104,7 +45,6 @@ export default function CompanySettingsPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   // isRealAdmin: role === 'admin' only — used for the System Recovery section.
@@ -133,12 +73,6 @@ export default function CompanySettingsPage() {
   const [backlogResult, setBacklogResult] = useState<{
     completed: number; cancelled: number; skipped: number; instances: number;
   } | null>(null);
-
-  // ── Accordion state (all closed by default) ────────────────────────────────
-
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const toggleSection = (key: string) =>
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // ── Auth / profile load ────────────────────────────────────────────────────
 
@@ -191,12 +125,12 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, included_items, faq_items, extras_catalog")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
           .from("companies")
-          .select("emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary, address, email, registration_id, vat_id")
+          .select("address, email, registration_id, vat_id")
           .eq("id", company.id)
           .maybeSingle(),
       ]);
@@ -211,19 +145,8 @@ export default function CompanySettingsPage() {
           final_payment_urgent_days: (data as any).final_payment_urgent_days != null
                                     ? String((data as any).final_payment_urgent_days)
                                     : "",
-          contact_phone:      (data as any).contact_phone      ?? "",
-          contact_whatsapp:   (data as any).contact_whatsapp   ?? "",
-          pickup_info:        (data as any).pickup_info        ?? "",
-          return_info:        (data as any).return_info        ?? "",
-          rules_and_tips:     (data as any).rules_and_tips     ?? "",
-          before_arrival_info:(data as any).before_arrival_info?? "",
-          included_items:     (data as any).included_items     ?? "",
         } : {}),
         ...(companyRow ? {
-          emergency_accident_phone_primary:    (companyRow as any).emergency_accident_phone_primary    ?? "",
-          emergency_accident_phone_secondary:  (companyRow as any).emergency_accident_phone_secondary  ?? "",
-          emergency_breakdown_phone_primary:   (companyRow as any).emergency_breakdown_phone_primary   ?? "",
-          emergency_breakdown_phone_secondary: (companyRow as any).emergency_breakdown_phone_secondary ?? "",
           address:         (companyRow as any).address         ?? "",
           email:           (companyRow as any).email           ?? "",
           registration_id: (companyRow as any).registration_id ?? "",
@@ -234,7 +157,6 @@ export default function CompanySettingsPage() {
         setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
         setPreArrivalRemindersEnabled((data as any).pre_arrival_reminders_enabled ?? true);
         setReturnPrepRemindersEnabled((data as any).return_prep_reminders_enabled ?? true);
-        setFaqItems((data as any).faq_items ?? []);
         setExtrasCatalog((data as any).extras_catalog ?? []);
       }
     };
@@ -297,14 +219,10 @@ export default function CompanySettingsPage() {
       const { data: companiesRows, error: saveErr } = await supabase
         .from("companies")
         .update({
-          name:                                formData.name.trim(),
-          logo_url:                            finalLogoUrl || null,
-          primary_color:                       formData.primary_color,
-          secondary_color:                     formData.secondary_color,
-          emergency_accident_phone_primary:    formData.emergency_accident_phone_primary.trim()    || null,
-          emergency_accident_phone_secondary:  formData.emergency_accident_phone_secondary.trim()  || null,
-          emergency_breakdown_phone_primary:   formData.emergency_breakdown_phone_primary.trim()   || null,
-          emergency_breakdown_phone_secondary: formData.emergency_breakdown_phone_secondary.trim() || null,
+          name:            formData.name.trim(),
+          logo_url:        finalLogoUrl || null,
+          primary_color:   formData.primary_color,
+          secondary_color: formData.secondary_color,
           address:         formData.address.trim()         || null,
           email:           formData.email.trim()           || null,
           registration_id: formData.registration_id.trim() || null,
@@ -326,14 +244,6 @@ export default function CompanySettingsPage() {
           final_payment_reminders_enabled: finalPaymentRemindersEnabled,
           pre_arrival_reminders_enabled:   preArrivalRemindersEnabled,
           return_prep_reminders_enabled:   returnPrepRemindersEnabled,
-          contact_phone:                   formData.contact_phone.trim()       || null,
-          contact_whatsapp:                formData.contact_whatsapp.trim()    || null,
-          pickup_info:                     formData.pickup_info.trim()         || null,
-          return_info:                     formData.return_info.trim()         || null,
-          rules_and_tips:                  formData.rules_and_tips.trim()      || null,
-          before_arrival_info:             formData.before_arrival_info.trim() || null,
-          included_items:                  formData.included_items.trim()      || null,
-          faq_items:                       faqItems.length > 0 ? faqItems : null,
           extras_catalog:                  extrasCatalog.length > 0 ? extrasCatalog : null,
         })
         .eq("id", company?.id)
@@ -584,54 +494,6 @@ export default function CompanySettingsPage() {
               </div>
             </div>
 
-            {/* Emergency Contacts */}
-            <div>
-              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
-                {t("sections.emergencyContacts")}
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-                <div>
-                  <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "var(--space-3)", color: "rgb(var(--text))" }}>
-                    {t("labels.accidentNumbers")}
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)" }}>
-                    <div>
-                      <label htmlFor="emergency_accident_phone_primary" className="label">{t("labels.primaryPhone")}</label>
-                      <input id="emergency_accident_phone_primary" name="emergency_accident_phone_primary" type="tel" className="input"
-                        placeholder={t("placeholders.phonePlaceholder")} value={formData.emergency_accident_phone_primary}
-                        onChange={handleChange} disabled={!isAdmin} style={{ width: "100%" }} />
-                    </div>
-                    <div>
-                      <label htmlFor="emergency_accident_phone_secondary" className="label">{t("labels.secondaryPhone")}</label>
-                      <input id="emergency_accident_phone_secondary" name="emergency_accident_phone_secondary" type="tel" className="input"
-                        placeholder={t("placeholders.phonePlaceholder")} value={formData.emergency_accident_phone_secondary}
-                        onChange={handleChange} disabled={!isAdmin} style={{ width: "100%" }} />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "var(--space-3)", color: "rgb(var(--text))" }}>
-                    {t("labels.breakdownNumbers")}
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)" }}>
-                    <div>
-                      <label htmlFor="emergency_breakdown_phone_primary" className="label">{t("labels.primaryPhone")}</label>
-                      <input id="emergency_breakdown_phone_primary" name="emergency_breakdown_phone_primary" type="tel" className="input"
-                        placeholder={t("placeholders.phonePlaceholder")} value={formData.emergency_breakdown_phone_primary}
-                        onChange={handleChange} disabled={!isAdmin} style={{ width: "100%" }} />
-                    </div>
-                    <div>
-                      <label htmlFor="emergency_breakdown_phone_secondary" className="label">{t("labels.secondaryPhone")}</label>
-                      <input id="emergency_breakdown_phone_secondary" name="emergency_breakdown_phone_secondary" type="tel" className="input"
-                        placeholder={t("placeholders.phonePlaceholder")} value={formData.emergency_breakdown_phone_secondary}
-                        onChange={handleChange} disabled={!isAdmin} style={{ width: "100%" }} />
-                    </div>
-                  </div>
-                  <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>{t("helpers.emergencyPhoneUsage")}</p>
-                </div>
-              </div>
-            </div>
-
             {/* Booking Defaults */}
             <div>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-4)", color: "rgb(var(--text))" }}>
@@ -834,149 +696,6 @@ export default function CompanySettingsPage() {
                   <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("extrasCatalog.empty")}</p>
                 )}
               </div>
-            </div>
-
-            {/* Guest Information */}
-            <div>
-              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
-                {t("guestInfo.title")}
-              </h2>
-              <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                {t("guestInfo.subtitle")}
-              </p>
-
-              {/* Contact numbers — always visible */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-2)" }}>
-                <div>
-                  <label htmlFor="contact_phone" className="label">{t("guestInfo.contactPhone")}</label>
-                  <input
-                    id="contact_phone" name="contact_phone" type="tel" className="input"
-                    placeholder="+49 30 12345678"
-                    value={formData.contact_phone} onChange={handleChange}
-                    disabled={!isAdmin} style={{ width: "100%" }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="contact_whatsapp" className="label">{t("guestInfo.whatsappNumber")}</label>
-                  <input
-                    id="contact_whatsapp" name="contact_whatsapp" type="tel" className="input"
-                    placeholder="+49 30 12345678"
-                    value={formData.contact_whatsapp} onChange={handleChange}
-                    disabled={!isAdmin} style={{ width: "100%" }}
-                  />
-                </div>
-              </div>
-
-              {/* Accordion text sections */}
-              <AccordionSection sectionKey="pickup_info" title={t("guestInfo.accordions.pickupInfo")} isOpen={!!openSections["pickup_info"]} onToggle={toggleSection}>
-                <textarea
-                  id="pickup_info" name="pickup_info" className="input"
-                  placeholder={t("guestInfo.accordions.pickupInfoPlaceholder")}
-                  value={formData.pickup_info} onChange={handleChange}
-                  disabled={!isAdmin}
-                  rows={10}
-                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                />
-              </AccordionSection>
-
-              <AccordionSection sectionKey="return_info" title={t("guestInfo.accordions.returnInfo")} isOpen={!!openSections["return_info"]} onToggle={toggleSection}>
-                <textarea
-                  id="return_info" name="return_info" className="input"
-                  placeholder={t("guestInfo.accordions.returnInfoPlaceholder")}
-                  value={formData.return_info} onChange={handleChange}
-                  disabled={!isAdmin}
-                  rows={10}
-                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                />
-              </AccordionSection>
-
-              <AccordionSection sectionKey="before_arrival_info" title={t("guestInfo.accordions.beforeArrival")} isOpen={!!openSections["before_arrival_info"]} onToggle={toggleSection}>
-                <textarea
-                  id="before_arrival_info" name="before_arrival_info" className="input"
-                  placeholder={t("guestInfo.accordions.beforeArrivalPlaceholder")}
-                  value={formData.before_arrival_info} onChange={handleChange}
-                  disabled={!isAdmin}
-                  rows={10}
-                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                />
-              </AccordionSection>
-
-              <AccordionSection sectionKey="included_items" title={t("guestInfo.accordions.whatsIncluded")} isOpen={!!openSections["included_items"]} onToggle={toggleSection}>
-                <textarea
-                  id="included_items" name="included_items" className="input"
-                  placeholder={t("guestInfo.accordions.whatsIncludedPlaceholder")}
-                  value={formData.included_items} onChange={handleChange}
-                  disabled={!isAdmin}
-                  rows={10}
-                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                />
-              </AccordionSection>
-
-              <AccordionSection sectionKey="rules_and_tips" title={t("guestInfo.accordions.rulesAndTips")} isOpen={!!openSections["rules_and_tips"]} onToggle={toggleSection}>
-                <textarea
-                  id="rules_and_tips" name="rules_and_tips" className="input"
-                  placeholder={t("guestInfo.accordions.rulesAndTipsPlaceholder")}
-                  value={formData.rules_and_tips} onChange={handleChange}
-                  disabled={!isAdmin}
-                  rows={10}
-                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                />
-              </AccordionSection>
-
-              <AccordionSection sectionKey="faq" title={t("guestInfo.accordions.faq")} isOpen={!!openSections["faq"]} onToggle={toggleSection}>
-                <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                  {t("guestInfo.accordions.faqHelper")}
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  {faqItems.map((item, i) => (
-                    <div key={i} style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-                        <label className="label" style={{ margin: 0 }}>{t("guestInfo.accordions.questionLabel", { number: i + 1 })}</label>
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => setFaqItems(faqItems.filter((_, idx) => idx !== i))}
-                            style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                          >
-                            {t("guestInfo.accordions.removeButton")}
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        className="input"
-                        placeholder={t("guestInfo.accordions.questionPlaceholder")}
-                        value={item.question}
-                        disabled={!isAdmin}
-                        onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, question: e.target.value } : f))}
-                        style={{ width: "100%" }}
-                      />
-                      <textarea
-                        className="input"
-                        placeholder={t("guestInfo.accordions.answerPlaceholder")}
-                        value={item.answer}
-                        disabled={!isAdmin}
-                        onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, answer: e.target.value } : f))}
-                        rows={5}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                    </div>
-                  ))}
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setFaqItems([...faqItems, { question: "", answer: "" }])}
-                      style={{ alignSelf: "flex-start", fontSize: "14px" }}
-                    >
-                      {t("guestInfo.accordions.addFaqButton")}
-                    </button>
-                  )}
-                  {faqItems.length === 0 && !isAdmin && (
-                    <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("guestInfo.accordions.noFaq")}</p>
-                  )}
-                </div>
-              </AccordionSection>
             </div>
 
             {/* Form feedback */}

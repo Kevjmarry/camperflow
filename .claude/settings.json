@@ -46,10 +46,18 @@
       "Bash(node -e \"const data = require\\('./messages/en.json'\\); console.log\\(Object.keys\\(data\\).join\\('\\\\n'\\)\\)\")",
       "Bash(node -e \"const data = require\\('./messages/de.json'\\); console.log\\(Object.keys\\(data\\).join\\('\\\\n'\\)\\)\")",
       "Bash(grep -E \"\\\\.\\(ts|tsx|js|jsx\\)$\")",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(grep -E \"\\\\.\\(ts|js|sql|prisma\\)$\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline --grep=\"guest\\\\|pickup_info\\\\|contact_phone\")",
+      "Bash(git -C /c/CamperFlow/camperflow show eba525b:supabase/migrations/)",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\('/c/CamperFlow/camperflow/messages/en.json'\\)\\); import pprint; pprint.pprint\\({k: v for k,v in data.items\\(\\) if 'guest' in k}, depth=1\\)\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline -- \"supabase/migrations/*\")",
+      "Bash(git -C /c/CamperFlow/camperflow show 2055cd7:supabase/migrations/)",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline --follow -S \"pickup_info\" -- \"app/*/staff/company/page.tsx\")"
     ],
     "additionalDirectories": [
-      "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"
+      "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest",
+      "C:\\CamperFlow\\camperflow\\app\\[locale]\\staff"
     ]
   }
 }

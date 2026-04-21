@@ -1,9 +1,20 @@
+import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ code?: string }>;
+}
+
+interface GuestBooking {
+  company_id: string | null;
+}
+
+interface CompanyHelpInfo {
+  included_items: string | null;
+  rules_and_tips: string | null;
 }
 
 const SECTION_KEYS = ["water", "toilet", "electricity", "gas", "heating", "fridge", "beforeDriving", "driving"] as const;
@@ -24,12 +35,31 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
     );
   }
 
+  const supabase = await createClient();
+
+  const { data: booking } = await supabase
+    .rpc("get_guest_booking_by_code", { p_code: code })
+    .maybeSingle<GuestBooking>();
+
+  let helpInfo: CompanyHelpInfo = { included_items: null, rules_and_tips: null };
+  if (booking?.company_id) {
+    const { data } = await supabase
+      .from("company_settings")
+      .select("included_items, rules_and_tips")
+      .eq("id", booking.company_id)
+      .maybeSingle<CompanyHelpInfo>();
+    if (data) helpInfo = data;
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
       <style>{`
         .gh-sp { padding: var(--space-4); }
+        .gh-md > *:last-child { margin-bottom: 0; }
+        .gh-md > *:first-child { margin-top: 0; }
         @media (min-width: 768px) { .gh-sp { padding: var(--space-6); } }
       `}</style>
+
       {/* Back link */}
       <div>
         <Link
@@ -83,6 +113,50 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
         </span>
       </div>
 
+      {/* Company-specific: What's included */}
+      {helpInfo.included_items && (
+        <div
+          className="surface gh-sp"
+          style={{
+            background: "rgb(var(--brand-light))",
+            border: "1px solid rgb(var(--brand))",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              color: "rgb(var(--brand))",
+              margin: "0 0 var(--space-4) 0",
+            }}
+          >
+            {t("includedTitle")}
+          </p>
+          <MarkdownContent content={helpInfo.included_items} className="gh-md" />
+        </div>
+      )}
+
+      {/* Company-specific: Rules & tips */}
+      {helpInfo.rules_and_tips && (
+        <div className="surface gh-sp">
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              color: "rgb(var(--text-secondary))",
+              margin: "0 0 var(--space-4) 0",
+            }}
+          >
+            {t("rulesTitle")}
+          </p>
+          <MarkdownContent content={helpInfo.rules_and_tips} className="gh-md" />
+        </div>
+      )}
+
       {/* Warning banner */}
       <div
         style={{
@@ -103,7 +177,7 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
         </p>
       </div>
 
-      {/* Accordion sections */}
+      {/* Generic guide accordion sections */}
       <div className="surface gh-sp">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           {SECTION_KEYS.map((key) => (

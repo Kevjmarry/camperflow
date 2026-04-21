@@ -921,6 +921,7 @@
       "bookings": "Buchungen",
       "vehicles": "Fahrzeuge",
       "checklists": "Checklisten",
+      "guestContent": "Gastinhalt",
       "team": "Mitarbeiterteam",
       "customers": "Kunden",
       "company": "Firmeneinstellungen"
@@ -1772,6 +1773,8 @@
     "title": "Fahrzeugführer",
     "subtitle": "Allgemeine Hinweise zur Nutzung Ihres Campervans oder Wohnmobils. Die genauen Ausstattungen und Bedienelemente können je nach Fahrzeug variieren — beachten Sie stets die bei der Übergabe übergebenen Hinweise.",
     "warning": "<strong>Beachten Sie stets die bei der Fahrzeugübergabe erteilten Anweisungen.</strong> Dieser Leitfaden ist allgemeiner Natur und entspricht möglicherweise nicht Ihrem konkreten Fahrzeug. Wenden Sie sich im Zweifelsfall an den Vermieter.",
+    "includedTitle": "Was ist inbegriffen",
+    "rulesTitle": "Regeln & Tipps",
     "sections": {
       "water": {
         "title": "Wasserversorgung",
@@ -1823,6 +1826,106 @@
       "faq": "FAQ",
       "help": "Fahrzeugführer",
       "emergency": "Notfall & Pannenhilfe"
+    }
+  },
+  "staffGuestContent": {
+    "navigation": {
+      "backToDashboard": "← Zurück zum Dashboard"
+    },
+    "title": "Gastinhalt",
+    "description": {
+      "admin": "Inhalte verwalten, die Gästen während ihrer Mietzeit angezeigt werden",
+      "viewer": "Gästeinhalte für dieses Unternehmen anzeigen"
+    },
+    "loading": "Gastinhalt wird geladen...",
+    "actions": {
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichern...",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "loadFailed": "Gastinhalt konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
+      "saveSettingsFailed": "Gastinhalt konnte nicht gespeichert werden"
+    },
+    "success": {
+      "saved": "Gastinhalt gespeichert!"
+    },
+    "sections": {
+      "contact": "Kontaktnummern",
+      "emergencyContacts": "Notfallkontakte",
+      "pickup": "Abholung",
+      "return": "Rückgabe",
+      "guestGuide": "Gastratgeber",
+      "faq": "FAQ",
+      "returnChecklist": "Rückgabe-Checkliste"
+    },
+    "labels": {
+      "contactPhone": "Kontakttelefon",
+      "whatsappNumber": "WhatsApp-Nummer",
+      "accidentNumbers": "Unfall",
+      "breakdownNumbers": "Panne",
+      "primaryPhone": "Hauptnummer",
+      "secondaryPhone": "Zweite Nummer",
+      "beforeArrival": "Vor der Ankunft",
+      "pickupInfo": "Abholinformationen",
+      "beforeReturn": "Vor der Rückgabe",
+      "returnInfo": "Rückgabeinformationen",
+      "includedItems": "Was ist inbegriffen",
+      "rulesAndTips": "Regeln & Tipps"
+    },
+    "helpers": {
+      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen."
+    },
+    "placeholders": {
+      "contactPhone": "+49 30 12345678",
+      "whatsappNumber": "+49 30 12345678",
+      "phonePlaceholder": "+43 123 456 789",
+      "beforeArrival": "Was Gäste vor ihrer Ankunft vorbereiten sollten…",
+      "pickupInfo": "Wo Schlüssel zu finden sind, Zugangscodes, Parken…",
+      "beforeReturn": "Was Gäste vor der Rückgabe des Fahrzeugs tun sollten…",
+      "returnInfo": "Wo Schlüssel abzugeben sind, Reinigungserwartungen…",
+      "includedItems": "Im Mietpreis enthaltene Gegenstände auflisten…",
+      "rulesAndTips": "Hausregeln, Reisetipps…"
+    },
+    "faq": {
+      "helper": "Häufig gestellte Fragen, die Gästen in ihrem Mietportal angezeigt werden.",
+      "questionLabel": "Frage {number}",
+      "questionPlaceholder": "Frage",
+      "answerPlaceholder": "Antwort",
+      "removeButton": "Entfernen",
+      "addButton": "FAQ hinzufügen",
+      "empty": "Keine FAQ-Einträge konfiguriert."
+    },
+    "checklist": {
+      "helper": "Die Checkliste, die Gäste vor der Fahrzeugrückgabe ausfüllen.",
+      "itemCount": "{count} Einträge",
+      "notConfigured": "Keine Rückgabe-Checkliste konfiguriert.",
+      "editButton": "Vorlage bearbeiten",
+      "viewTemplates": "Alle Checklisten-Vorlagen anzeigen",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv"
+    },
+    "sidebar": {
+      "whatGuestsSee": "Was Gäste sehen",
+      "markdownTitle": "Markdown unterstützt",
+      "markdownBodyPrefix": "Textfelder werden für Gäste als formatierter Inhalt dargestellt. Verwenden Sie",
+      "markdownBodySuffix": "URLs werden automatisch verlinkt.",
+      "map": {
+        "contactNumbers": "Kontaktnummern",
+        "contactNumbersWhere": "Notfallseite & Portalheader",
+        "beforeArrival": "Vor der Ankunft",
+        "beforeArrivalWhere": "Vorankunfts-Erinnerung",
+        "pickupInfo": "Abholinformationen",
+        "pickupInfoWhere": "Abholseite",
+        "beforeReturn": "Vor der Rückgabe",
+        "beforeReturnWhere": "Rückgabe-Erinnerung",
+        "returnInfo": "Rückgabeinformationen",
+        "returnInfoWhere": "Rückgabeseite",
+        "guestGuide": "Gastratgeber",
+        "guestGuideWhere": "Fahrzeugführer-Seite",
+        "faq": "FAQ",
+        "faqWhere": "FAQ-Seite"
+      }
     }
   },
   "staffCompany": {
@@ -1947,6 +2050,8 @@
         "returnInfoPlaceholder": "Wo Schlüssel abzugeben sind, Reinigungserwartungen…",
         "beforeArrival": "Vor der Ankunft",
         "beforeArrivalPlaceholder": "Was Gäste vor ihrer Ankunft vorbereiten sollten…",
+        "beforeReturn": "Vor der Rückgabe",
+        "beforeReturnPlaceholder": "Was Gäste vor der Rückgabe des Fahrzeugs tun sollten…",
         "whatsIncluded": "Was ist inbegriffen",
         "whatsIncludedPlaceholder": "Im Mietpreis enthaltene Gegenstände auflisten…",
         "rulesAndTips": "Regeln & Tipps",

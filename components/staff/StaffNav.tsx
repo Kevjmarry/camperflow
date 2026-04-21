@@ -19,6 +19,7 @@ export default function StaffNav() {
     { key: 'bookings',   href: `/${locale}/staff/bookings` },
     { key: 'vehicles',   href: `/${locale}/staff/vehicles` },
     { key: 'checklists', href: `/${locale}/staff/checklists` },
+    { key: 'guestContent', href: `/${locale}/staff/guest-content` },
     { key: 'team',       href: `/${locale}/staff/team` },
     { key: 'customers',  href: `/${locale}/staff/customers` },
     { key: 'company',    href: `/${locale}/staff/company` },

@@ -921,6 +921,7 @@
       "bookings": "Bookings",
       "vehicles": "Vehicles",
       "checklists": "Checklists",
+      "guestContent": "Guest Content",
       "team": "Staff Team",
       "customers": "Customers",
       "company": "Company Settings"
@@ -1772,6 +1773,8 @@
     "title": "Vehicle Guide",
     "subtitle": "General guidance for using your campervan or motorhome. Exact features and controls vary between vehicles — always refer to any handover notes provided by the rental company for specifics.",
     "warning": "<strong>Always follow the instructions given during handover.</strong> This guide is general and may not match your exact vehicle. When in doubt, contact the rental company.",
+    "includedTitle": "What's included",
+    "rulesTitle": "Rules & tips",
     "sections": {
       "water": {
         "title": "Using water",
@@ -1823,6 +1826,106 @@
       "faq": "FAQ",
       "help": "Vehicle guide",
       "emergency": "Emergency & assistance"
+    }
+  },
+  "staffGuestContent": {
+    "navigation": {
+      "backToDashboard": "← Back to dashboard"
+    },
+    "title": "Guest Content",
+    "description": {
+      "admin": "Manage the content shown to guests throughout their rental journey",
+      "viewer": "View guest-facing content for this company"
+    },
+    "loading": "Loading guest content...",
+    "actions": {
+      "saveChanges": "Save changes",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "loadFailed": "Failed to load guest content. Please refresh the page.",
+      "saveSettingsFailed": "Failed to save guest content"
+    },
+    "success": {
+      "saved": "Guest content saved!"
+    },
+    "sections": {
+      "contact": "Contact Numbers",
+      "emergencyContacts": "Emergency Contacts",
+      "pickup": "Pickup",
+      "return": "Return",
+      "guestGuide": "Guest Guide",
+      "faq": "FAQ",
+      "returnChecklist": "Return Checklist"
+    },
+    "labels": {
+      "contactPhone": "Contact phone",
+      "whatsappNumber": "WhatsApp number",
+      "accidentNumbers": "Accident",
+      "breakdownNumbers": "Breakdown",
+      "primaryPhone": "Primary number",
+      "secondaryPhone": "Secondary number",
+      "beforeArrival": "Before arrival",
+      "pickupInfo": "Pick-up information",
+      "beforeReturn": "Before return",
+      "returnInfo": "Return information",
+      "includedItems": "What's included",
+      "rulesAndTips": "Rules & tips"
+    },
+    "helpers": {
+      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder."
+    },
+    "placeholders": {
+      "contactPhone": "+49 30 12345678",
+      "whatsappNumber": "+49 30 12345678",
+      "phonePlaceholder": "+49 30 12345678",
+      "beforeArrival": "What guests should prepare before they arrive…",
+      "pickupInfo": "Where to find keys, access codes, parking…",
+      "beforeReturn": "What guests should do before returning the vehicle…",
+      "returnInfo": "Where to drop keys, cleaning expectations…",
+      "includedItems": "List items included with the rental…",
+      "rulesAndTips": "House rules, tips for the road…"
+    },
+    "faq": {
+      "helper": "Frequently asked questions shown to guests in their rental portal.",
+      "questionLabel": "Question {number}",
+      "questionPlaceholder": "Question",
+      "answerPlaceholder": "Answer",
+      "removeButton": "Remove",
+      "addButton": "Add FAQ",
+      "empty": "No FAQ items configured."
+    },
+    "checklist": {
+      "helper": "The checklist guests complete before returning the vehicle.",
+      "itemCount": "{count} items",
+      "notConfigured": "No return checklist configured.",
+      "editButton": "Edit template",
+      "viewTemplates": "View all checklist templates",
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "sidebar": {
+      "whatGuestsSee": "What guests see",
+      "markdownTitle": "Markdown supported",
+      "markdownBodyPrefix": "Text fields render as formatted content for guests. Use",
+      "markdownBodySuffix": "URLs auto-link.",
+      "map": {
+        "contactNumbers": "Contact numbers",
+        "contactNumbersWhere": "Emergency page & portal header",
+        "beforeArrival": "Before arrival",
+        "beforeArrivalWhere": "Pre-arrival reminder message",
+        "pickupInfo": "Pickup info",
+        "pickupInfoWhere": "Pickup page",
+        "beforeReturn": "Before return",
+        "beforeReturnWhere": "Return reminder message",
+        "returnInfo": "Return info",
+        "returnInfoWhere": "Return page",
+        "guestGuide": "Guest guide",
+        "guestGuideWhere": "Vehicle Guide page",
+        "faq": "FAQ",
+        "faqWhere": "FAQ page"
+      }
     }
   },
   "staffCompany": {
@@ -1947,6 +2050,8 @@
         "returnInfoPlaceholder": "Where to drop keys, cleaning expectations…",
         "beforeArrival": "Before arrival",
         "beforeArrivalPlaceholder": "What guests should prepare before they arrive…",
+        "beforeReturn": "Before return",
+        "beforeReturnPlaceholder": "What guests should do before returning the vehicle…",
         "whatsIncluded": "What's included",
         "whatsIncludedPlaceholder": "List items included with the rental…",
         "rulesAndTips": "Rules & tips",

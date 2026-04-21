@@ -23,6 +23,7 @@ interface CompanyGuestInfo {
   pickup_info: string | null;
   contact_phone: string | null;
   contact_whatsapp: string | null;
+  before_arrival_info: string | null;
 }
 
 export default async function GuestPickupPage({ params, searchParams }: PageProps) {
@@ -67,11 +68,11 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
     vehicle = data || null;
   }
 
-  let guestInfo: CompanyGuestInfo = { pickup_info: null, contact_phone: null, contact_whatsapp: null };
+  let guestInfo: CompanyGuestInfo = { pickup_info: null, contact_phone: null, contact_whatsapp: null, before_arrival_info: null };
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("pickup_info, contact_phone, contact_whatsapp")
+      .select("pickup_info, contact_phone, contact_whatsapp, before_arrival_info")
       .eq("id", booking.company_id)
       .maybeSingle<CompanyGuestInfo>();
     if (data) guestInfo = data;
@@ -157,7 +158,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         </span>
       </div>
 
-      {/* Before you arrive — numbered checklist card */}
+      {/* Before you arrive — company content when set, else generic numbered checklist */}
       <div
         className="surface gpickup-sp gpickup-mb"
         style={{
@@ -177,33 +178,40 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         >
           {t("beforeYouArriveTitle")}
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {([0, 1, 2] as const).map((i) => (
-            <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: "20px",
-                  height: "20px",
-                  borderRadius: "50%",
-                  background: "rgb(var(--brand))",
-                  color: "white",
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: "2px",
-                }}
-              >
-                {i + 1}
+        {guestInfo.before_arrival_info ? (
+          <MarkdownContent
+            content={guestInfo.before_arrival_info}
+            className="gpickup-md"
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {([0, 1, 2] as const).map((i) => (
+              <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "rgb(var(--brand))",
+                    color: "white",
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: "2px",
+                  }}
+                >
+                  {i + 1}
+                </div>
+                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
+                  {t(`beforeYouArrive${i}`)}
+                </span>
               </div>
-              <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
-                {t(`beforeYouArrive${i}`)}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="surface gpickup-sp">

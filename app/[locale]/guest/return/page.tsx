@@ -24,6 +24,7 @@ interface CompanyReturnInfo {
   return_info: string | null;
   contact_phone: string | null;
   contact_whatsapp: string | null;
+  before_return_info: string | null;
 }
 
 interface ChecklistTemplate {
@@ -91,11 +92,11 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
     vehicle = data || null;
   }
 
-  let returnInfo: CompanyReturnInfo = { return_info: null, contact_phone: null, contact_whatsapp: null };
+  let returnInfo: CompanyReturnInfo = { return_info: null, contact_phone: null, contact_whatsapp: null, before_return_info: null };
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("return_info, contact_phone, contact_whatsapp")
+      .select("return_info, contact_phone, contact_whatsapp, before_return_info")
       .eq("id", booking.company_id)
       .maybeSingle<CompanyReturnInfo>();
     if (data) returnInfo = data;
@@ -264,33 +265,40 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         >
           {t("beforeYouReturnTitle")}
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          {([0, 1, 2, 3, 4, 5] as const).map((i) => (
-            <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: "20px",
-                  height: "20px",
-                  borderRadius: "50%",
-                  background: "rgb(var(--brand))",
-                  color: "white",
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: "2px",
-                }}
-              >
-                {i + 1}
+        {returnInfo.before_return_info ? (
+          <MarkdownContent
+            content={returnInfo.before_return_info}
+            className="greturn-md"
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {([0, 1, 2, 3, 4, 5] as const).map((i) => (
+              <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "rgb(var(--brand))",
+                    color: "white",
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: "2px",
+                  }}
+                >
+                  {i + 1}
+                </div>
+                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
+                  {t(`beforeYouReturn${i}`)}
+                </span>
               </div>
-              <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
-                {t(`beforeYouReturn${i}`)}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Return checklist */}
