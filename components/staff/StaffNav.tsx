@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRef, useEffect, useState } from 'react'
+import LocaleSwitcher from '@/components/LocaleSwitcher'
 
 export default function StaffNav() {
   const { locale } = useParams<{ locale: string }>()
@@ -63,7 +64,8 @@ export default function StaffNav() {
         width: '100%',
         background: 'rgb(var(--surface))',
         borderBottom: '1px solid rgb(var(--border))',
-        position: 'relative',
+        display: 'flex',
+        alignItems: 'stretch',
       }}
     >
       <style>{`
@@ -110,75 +112,90 @@ export default function StaffNav() {
         }
       `}</style>
 
-      {/* Left fade + chevron */}
-      <div
-        className="staff-nav-fade staff-nav-fade-left"
-        style={{ opacity: showLeft ? 1 : 0 }}
-      />
-      <div
-        className="staff-nav-arrow staff-nav-arrow-left"
-        style={{ opacity: showLeft ? 1 : 0 }}
-        aria-hidden="true"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+      {/* Scrollable links + fade indicators */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minWidth: 0 }}>
+        {/* Left fade + chevron */}
+        <div
+          className="staff-nav-fade staff-nav-fade-left"
+          style={{ opacity: showLeft ? 1 : 0 }}
+        />
+        <div
+          className="staff-nav-arrow staff-nav-arrow-left"
+          style={{ opacity: showLeft ? 1 : 0 }}
+          aria-hidden="true"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        {/* Right fade + chevron */}
+        <div
+          className="staff-nav-fade staff-nav-fade-right"
+          style={{ opacity: showRight ? 1 : 0 }}
+        />
+        <div
+          className="staff-nav-arrow staff-nav-arrow-right"
+          style={{ opacity: showRight ? 1 : 0 }}
+          aria-hidden="true"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="staff-nav-inner"
+          style={{
+            height: '100%',
+            padding: '0 var(--space-4)',
+            display: 'flex',
+            alignItems: 'stretch',
+            overflowX: 'auto',
+          }}
+        >
+          {links.map(({ key, href }) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/')
+            return (
+              <Link
+                key={key}
+                href={href}
+                data-active={isActive ? 'true' : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 'var(--space-3) var(--space-4)',
+                  minHeight: '44px',
+                  fontSize: '14px',
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+                  textDecoration: 'none',
+                  borderBottom: isActive
+                    ? '2px solid rgb(var(--brand))'
+                    : '2px solid transparent',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {t(key)}
+              </Link>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Right fade + chevron */}
+      {/* Locale switcher — pinned right, desktop only */}
       <div
-        className="staff-nav-fade staff-nav-fade-right"
-        style={{ opacity: showRight ? 1 : 0 }}
-      />
-      <div
-        className="staff-nav-arrow staff-nav-arrow-right"
-        style={{ opacity: showRight ? 1 : 0 }}
-        aria-hidden="true"
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
-
-      <div
-        ref={scrollRef}
-        className="staff-nav-inner"
         style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 var(--space-4)',
+          flexShrink: 0,
           display: 'flex',
-          alignItems: 'stretch',
-          overflowX: 'auto',
+          alignItems: 'center',
+          padding: '0 var(--space-3)',
+          borderLeft: '1px solid rgb(var(--border))',
         }}
       >
-        {links.map(({ key, href }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
-          return (
-            <Link
-              key={key}
-              href={href}
-              data-active={isActive ? 'true' : undefined}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: 'var(--space-3) var(--space-4)',
-                minHeight: '44px',
-                fontSize: '14px',
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
-                textDecoration: 'none',
-                borderBottom: isActive
-                  ? '2px solid rgb(var(--brand))'
-                  : '2px solid transparent',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {t(key)}
-            </Link>
-          )
-        })}
+        <LocaleSwitcher />
       </div>
     </nav>
   )

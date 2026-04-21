@@ -5,6 +5,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import LocaleSwitcher from '@/components/LocaleSwitcher'
 
 // Paths that are "owned" by the More sheet
 const MORE_SECTION_PREFIXES = ['/staff/team', '/staff/customers', '/staff/company']
@@ -191,6 +192,20 @@ export default function MobileBottomNav() {
               </Link>
             )
           })}
+          {/* Locale switcher */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 'var(--space-2) var(--space-4)',
+              marginBottom: 'var(--space-1)',
+            }}
+          >
+            <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>Language</span>
+            <LocaleSwitcher />
+          </div>
+
           <div style={{ height: '1px', background: 'rgb(var(--border))', margin: 'var(--space-2) var(--space-4)' }} />
           <button
             type="button"

@@ -1,4 +1,5 @@
 import PageContainer from '@/components/PageContainer'
+import LocaleSwitcher from '@/components/LocaleSwitcher'
 
 export const metadata = {
   title: 'Guest Portal',
@@ -11,8 +12,22 @@ export default function GuestLayout({
   children: React.ReactNode
 }) {
   return (
-    <PageContainer showSignOut={false}>
-      {children}
-    </PageContainer>
+    <>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          padding: 'var(--space-2) var(--space-4)',
+          background: 'rgb(var(--surface))',
+          borderBottom: '1px solid rgb(var(--border))',
+        }}
+      >
+        <LocaleSwitcher />
+      </div>
+      <PageContainer showSignOut={false}>
+        {children}
+      </PageContainer>
+    </>
   )
 }

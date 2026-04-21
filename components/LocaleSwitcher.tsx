@@ -13,28 +13,40 @@ export default function LocaleSwitcher() {
 
   function switchLocale(newLocale: 'en' | 'de') {
     if (currentLocale === newLocale) return;
-
     const nextPath = '/' + [newLocale, ...segments.slice(2)].join('/');
-
+    // Preserve query string (e.g. ?code=... for guest flow)
+    const qs = typeof window !== 'undefined' ? window.location.search : '';
     startTransition(() => {
-      router.push(nextPath);
+      router.push(qs ? `${nextPath}${qs}` : nextPath);
     });
   }
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button
-        onClick={() => switchLocale('en')}
-        disabled={isPending || currentLocale === 'en'}
-      >
-        EN
-      </button>
-      <button
-        onClick={() => switchLocale('de')}
-        disabled={isPending || currentLocale === 'de'}
-      >
-        DE
-      </button>
+    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      {(['en', 'de'] as const).map((loc) => (
+        <button
+          key={loc}
+          onClick={() => switchLocale(loc)}
+          disabled={isPending || currentLocale === loc}
+          style={{
+            padding: '3px 8px',
+            borderRadius: 'var(--radius)',
+            border: '1px solid',
+            borderColor: currentLocale === loc ? 'rgb(var(--brand))' : 'transparent',
+            background: currentLocale === loc ? 'rgb(var(--brand) / 0.08)' : 'transparent',
+            color: currentLocale === loc ? 'rgb(var(--brand))' : 'rgb(var(--muted))',
+            fontSize: '12px',
+            fontWeight: currentLocale === loc ? 600 : 400,
+            cursor: currentLocale === loc || isPending ? 'default' : 'pointer',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            opacity: isPending ? 0.6 : 1,
+            lineHeight: '1.4',
+          }}
+        >
+          {loc}
+        </button>
+      ))}
     </div>
   );
 }

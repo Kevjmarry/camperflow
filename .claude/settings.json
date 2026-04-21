@@ -41,7 +41,10 @@
       "Bash(git diff *)",
       "Bash(npm list *)",
       "Bash(npm install *)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
+      "Bash(node -e \"const data = require\\('/c/CamperFlow/camperflow/messages/en.json'\\); console.log\\(Object.keys\\(data\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e \"const data = require\\('./messages/en.json'\\); console.log\\(Object.keys\\(data\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e \"const data = require\\('./messages/de.json'\\); console.log\\(Object.keys\\(data\\).join\\('\\\\n'\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest"
