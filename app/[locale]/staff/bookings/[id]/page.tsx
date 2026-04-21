@@ -126,7 +126,11 @@ function GuestAccessBlock({
 
   useEffect(() => {
     if (canvasRef.current) {
-      QRCode.toCanvas(canvasRef.current, guestUrl, { width: 148, margin: 1 });
+      QRCode.toCanvas(canvasRef.current, guestUrl, {
+        width: 148,
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      });
     }
   }, [guestUrl]);
 
@@ -136,10 +140,15 @@ function GuestAccessBlock({
     setTimeout(() => setCopied(false), 1800);
   };
 
-  const downloadPng = () => {
-    if (!canvasRef.current) return;
+  const downloadPng = async () => {
+    const offscreen = document.createElement("canvas");
+    await QRCode.toCanvas(offscreen, guestUrl, {
+      width: 400,
+      margin: 2,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
     const a = document.createElement("a");
-    a.href = canvasRef.current.toDataURL("image/png");
+    a.href = offscreen.toDataURL("image/png");
     a.download = `guest-qr-${bookingNumber}.png`;
     a.click();
   };
@@ -151,6 +160,20 @@ function GuestAccessBlock({
       await copy(guestUrl, setCopiedLink);
     }
   };
+
+  const chipBtn = (active: boolean): React.CSSProperties => ({
+    fontSize: "12px",
+    padding: "3px 10px",
+    background: active ? "rgb(var(--success) / 0.12)" : "rgb(var(--border) / 0.5)",
+    border: "1px solid " + (active ? "rgb(var(--success) / 0.3)" : "rgb(var(--border))"),
+    borderRadius: "var(--radius)",
+    cursor: "pointer",
+    color: active ? "rgb(var(--success))" : "rgb(var(--text))",
+    fontWeight: 500,
+    transition: "color 0.15s, background 0.15s, border-color 0.15s",
+    whiteSpace: "nowrap" as const,
+    lineHeight: "20px",
+  });
 
   return (
     <div
@@ -164,22 +187,13 @@ function GuestAccessBlock({
       }}
     >
       {/* Header */}
-      <div>
-        <h3
-          style={{
-            fontSize: "14px",
-            fontWeight: 600,
-            color: "rgb(var(--muted))",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            margin: "0 0 2px",
-          }}
-        >
+      <div style={{ borderBottom: "1px solid rgb(var(--border) / 0.5)", paddingBottom: "var(--space-3)" }}>
+        <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: 3 }}>
           {t("guestAccess.title")}
-        </h3>
-        <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))" }}>
+        </div>
+        <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>
           {t("guestAccess.subtitle")}
-        </p>
+        </div>
       </div>
 
       {/* Two-column layout: details left, QR right */}
@@ -188,81 +202,62 @@ function GuestAccessBlock({
         {/* Left: booking code + guest link */}
         <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
 
-          {/* Booking code */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <span style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {/* Booking code — hero row */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.07em" }}>
               {t("guestAccess.bookingCode")}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-3)",
+                padding: "10px 14px",
+                background: "rgb(var(--border) / 0.35)",
+                border: "1px solid rgb(var(--border))",
+                borderRadius: "var(--radius)",
+              }}
+            >
               <code
                 style={{
-                  fontSize: "20px",
+                  flex: 1,
+                  fontSize: "22px",
                   fontWeight: 700,
                   color: "rgb(var(--text))",
-                  letterSpacing: "0.06em",
+                  letterSpacing: "0.08em",
                   lineHeight: 1,
+                  fontFamily: "ui-monospace, monospace",
                 }}
               >
                 {bookingNumber}
               </code>
-              <button
-                onClick={() => copy(bookingNumber, setCopiedCode)}
-                style={{
-                  fontSize: "12px",
-                  padding: "3px 10px",
-                  background: copiedCode ? "rgb(var(--success) / 0.12)" : "rgb(var(--border) / 0.5)",
-                  border: "1px solid " + (copiedCode ? "rgb(var(--success) / 0.3)" : "rgb(var(--border))"),
-                  borderRadius: "var(--radius)",
-                  cursor: "pointer",
-                  color: copiedCode ? "rgb(var(--success))" : "rgb(var(--text))",
-                  fontWeight: 500,
-                  transition: "all 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <button onClick={() => copy(bookingNumber, setCopiedCode)} style={chipBtn(copiedCode)}>
                 {copiedCode ? t("guestAccess.copied") : t("guestAccess.copy")}
               </button>
             </div>
           </div>
 
-          {/* Divider */}
-          <div style={{ height: "1px", background: "rgb(var(--border) / 0.5)" }} />
-
           {/* Guest link */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-            <span style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.07em" }}>
               {t("guestAccess.guestLink")}
-            </span>
+            </div>
             <div
               style={{
                 fontSize: "12px",
                 color: "rgb(var(--muted))",
-                background: "rgb(var(--border) / 0.3)",
+                background: "rgb(var(--border) / 0.25)",
                 border: "1px solid rgb(var(--border) / 0.6)",
                 borderRadius: "var(--radius)",
-                padding: "6px 10px",
+                padding: "7px 10px",
                 wordBreak: "break-all",
-                lineHeight: 1.5,
+                lineHeight: 1.6,
               }}
             >
               {guestUrl}
             </div>
             <div>
-              <button
-                onClick={() => copy(guestUrl, setCopiedLink)}
-                style={{
-                  fontSize: "12px",
-                  padding: "3px 10px",
-                  background: copiedLink ? "rgb(var(--success) / 0.12)" : "rgb(var(--border) / 0.5)",
-                  border: "1px solid " + (copiedLink ? "rgb(var(--success) / 0.3)" : "rgb(var(--border))"),
-                  borderRadius: "var(--radius)",
-                  cursor: "pointer",
-                  color: copiedLink ? "rgb(var(--success))" : "rgb(var(--text))",
-                  fontWeight: 500,
-                  transition: "all 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <button onClick={() => copy(guestUrl, setCopiedLink)} style={chipBtn(copiedLink)}>
                 {copiedLink ? t("guestAccess.copied") : t("guestAccess.copyLink")}
               </button>
             </div>
@@ -275,32 +270,32 @@ function GuestAccessBlock({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "var(--space-3)",
+            gap: "var(--space-2)",
             padding: "var(--space-3)",
-            background: "rgb(var(--surface, 255 255 255) / 0.6)",
+            background: "#ffffff",
             border: "1px solid rgb(var(--border))",
             borderRadius: "var(--radius)",
           }}
         >
-          <canvas
-            ref={canvasRef}
-            style={{ display: "block", borderRadius: "4px" }}
-          />
-          <div style={{ display: "flex", gap: "var(--space-2)", width: "100%" }}>
+          <canvas ref={canvasRef} style={{ display: "block" }} />
+          <div style={{ display: "flex", gap: "var(--space-2)", width: "100%", marginTop: "var(--space-1)" }}>
             <button
               className="btn btn-secondary"
               onClick={downloadPng}
-              style={{ flex: 1, fontSize: "12px", padding: "5px 10px", minHeight: "unset", textAlign: "center" }}
+              style={{ flex: 1, fontSize: "12px", padding: "5px 8px", minHeight: "unset" }}
             >
               {t("guestAccess.downloadQr")}
             </button>
             <button
               className="btn btn-secondary"
               onClick={share}
-              style={{ flex: 1, fontSize: "12px", padding: "5px 10px", minHeight: "unset", textAlign: "center" }}
+              style={{ flex: 1, fontSize: "12px", padding: "5px 8px", minHeight: "unset" }}
             >
               {t("guestAccess.share")}
             </button>
+          </div>
+          <div style={{ fontSize: "11px", color: "rgb(var(--muted))", textAlign: "center" }}>
+            {t("guestAccess.printHint")}
           </div>
         </div>
 

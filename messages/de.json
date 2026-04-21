@@ -1496,7 +1496,8 @@
       "copied": "Kopiert!",
       "downloadQr": "QR herunterladen",
       "share": "Teilen",
-      "shareTitle": "Gast-Buchungszugang"
+      "shareTitle": "Gast-Buchungszugang",
+      "printHint": "Export 400×400 px – ideal für 50×50-mm-Etiketten"
     }
   },
   "staffTeamMember": {

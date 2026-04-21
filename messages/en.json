@@ -1496,7 +1496,8 @@
       "copied": "Copied!",
       "downloadQr": "Download QR",
       "share": "Share",
-      "shareTitle": "Guest booking access"
+      "shareTitle": "Guest booking access",
+      "printHint": "Exports 400×400 px — ideal for 50×50 mm labels"
     }
   },
   "staffTeamMember": {
