@@ -62,7 +62,7 @@ export type ChecklistItemType = {
 };
 
 /** A photo already uploaded to Supabase Storage (path + resolved public URL). */
-export type StoredEvidencePhoto = { kind: 'stored'; path: string; url: string };
+export type StoredEvidencePhoto = { kind: 'stored'; path: string; url: string; rotation: number };
 /** A photo selected by the user but not yet uploaded (shown optimistically). */
 export type NewEvidencePhoto = { kind: 'new'; file: File };
 export type EvidencePhoto = StoredEvidencePhoto | NewEvidencePhoto;

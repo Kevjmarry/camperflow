@@ -92,6 +92,16 @@ export function useHandoverCompletion({
       return;
     }
 
+    // Transition booking to on_rent when handover checklist is completed.
+    // The DB trigger on bookings (migration 011) will recompute vehicle readiness.
+    if (instance.checklist_type === 'handover' && instance.booking_id) {
+      await supabase
+        .from('bookings')
+        .update({ status: 'on_rent' })
+        .eq('id', instance.booking_id)
+        .eq('status', 'confirmed');
+    }
+
     navigateAfterCompletion();
   };
 

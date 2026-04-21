@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -99,12 +100,13 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
 
   const hasContactInfo = guestInfo.contact_phone || guestInfo.contact_whatsapp;
 
-
   return (
     <div>
       <style>{`
         .gpickup-sp { padding: var(--space-4); }
         .gpickup-mb { margin-bottom: var(--space-4); }
+        .gpickup-md > *:last-child { margin-bottom: 0; }
+        .gpickup-md > *:first-child { margin-top: 0; }
         @media (min-width: 768px) {
           .gpickup-sp { padding: var(--space-6); }
           .gpickup-mb { margin-bottom: var(--space-6); }
@@ -155,7 +157,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         </span>
       </div>
 
-      {/* Reminder card */}
+      {/* Before you arrive — numbered checklist card */}
       <div
         className="surface gpickup-sp gpickup-mb"
         style={{
@@ -165,31 +167,43 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
       >
         <p
           style={{
-            fontSize: "12px",
-            fontWeight: "600",
+            fontSize: "11px",
+            fontWeight: "700",
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.07em",
             color: "rgb(var(--brand))",
             margin: "0 0 var(--space-4) 0",
           }}
         >
           {t("beforeYouArriveTitle")}
         </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "var(--space-5)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {([0, 1, 2] as const).map((i) => (
-            <li key={i} style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text))" }}>
-              {t(`beforeYouArrive${i}`)}
-            </li>
+            <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+              <div
+                style={{
+                  flexShrink: 0,
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "50%",
+                  background: "rgb(var(--brand))",
+                  color: "white",
+                  fontSize: "10px",
+                  fontWeight: "700",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: "2px",
+                }}
+              >
+                {i + 1}
+              </div>
+              <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
+                {t(`beforeYouArrive${i}`)}
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
       <div className="surface gpickup-sp">
@@ -224,22 +238,24 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
               marginBottom: hasContactInfo ? "var(--space-6)" : undefined,
             }}
           >
-            <p style={labelStyle}>{t("pickupInfo")}</p>
-            <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))", whiteSpace: "pre-wrap" }}>
-              {guestInfo.pickup_info}
-            </p>
+            <p style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>{t("pickupInfo")}</p>
+            <MarkdownContent
+              content={guestInfo.pickup_info}
+              className="gpickup-md"
+            />
           </div>
         ) : (
           <div
             style={{
-              padding: "var(--space-4)",
+              padding: "var(--space-5) var(--space-4)",
               background: "rgb(var(--app-bg))",
-              border: "1px solid rgb(var(--border-light))",
+              border: "1px dashed rgb(var(--border))",
               borderRadius: "var(--radius)",
+              textAlign: "center",
               marginBottom: hasContactInfo ? "var(--space-6)" : undefined,
             }}
           >
-            <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--muted))" }}>
+            <p style={{ fontSize: "13px", lineHeight: "1.6", color: "rgb(var(--muted))", margin: 0 }}>
               {t("placeholder")}
             </p>
           </div>

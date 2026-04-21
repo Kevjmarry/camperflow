@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ const COLOR_TEXT    = rgb(0.10, 0.10, 0.10);
 const COLOR_MUTED   = rgb(0.45, 0.45, 0.45);
 const COLOR_DIVIDER = rgb(0.85, 0.85, 0.85);
 const COLOR_LABEL_BG = rgb(0.96, 0.96, 0.97);
+const COLOR_ACCENT  = rgb(0.13, 0.13, 0.47);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -45,9 +46,18 @@ function photoSortKey(storagePath: string): number {
   }
 }
 
-/** Return a new array of paths sorted chronologically by filename timestamp. */
-function sortPathsByTimestamp(paths: string[]): string[] {
-  return [...paths].sort((a, b) => photoSortKey(a) - photoSortKey(b));
+type PhotoEntry = string | { path: string; rotation?: number };
+
+function entryPath(e: PhotoEntry): string {
+  return typeof e === 'string' ? e : e.path;
+}
+function entryRotation(e: PhotoEntry): number {
+  return typeof e === 'string' ? 0 : (e.rotation ?? 0);
+}
+
+/** Return a new array of entries sorted chronologically by filename timestamp. */
+function sortEntriesByTimestamp(entries: PhotoEntry[]): PhotoEntry[] {
+  return [...entries].sort((a, b) => photoSortKey(entryPath(a)) - photoSortKey(entryPath(b)));
 }
 
 /** Format an ISO timestamp for display. */
@@ -71,6 +81,17 @@ async function fetchImageBuffer(url: string): Promise<ArrayBuffer | null> {
   } catch {
     return null;
   }
+}
+
+// ── Company info ──────────────────────────────────────────────────────────────
+
+interface CompanyInfo {
+  name: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  registrationId: string | null;
+  logoBuffer: ArrayBuffer | null;
 }
 
 // ── Cursor / page management ──────────────────────────────────────────────────
@@ -135,15 +156,14 @@ function drawRule(ctx: DrawCtx, gapBefore = 6, gapAfter = 6): DrawCtx {
 
 /** Draw a section heading with a coloured label background. */
 function drawSectionHeading(ctx: DrawCtx, label: string): DrawCtx {
-  let updated = ensureSpace(ctx, 22);
-  updated.y -= 4;
+  let updated = ensureSpace(ctx, 26);
+  updated.y -= 6;
 
-  // Background pill
   updated.page.drawRectangle({
     x: MARGIN,
-    y: updated.y - 16,
+    y: updated.y - 18,
     width: CONTENT_W,
-    height: 20,
+    height: 22,
     color: COLOR_LABEL_BG,
     borderColor: COLOR_DIVIDER,
     borderWidth: 0.5,
@@ -151,24 +171,40 @@ function drawSectionHeading(ctx: DrawCtx, label: string): DrawCtx {
 
   updated.page.drawText(label, {
     x: MARGIN + 8,
-    y: updated.y - 12,
-    size: 9,
+    y: updated.y - 13,
+    size: 10,
     font: updated.fontBold,
-    color: COLOR_TEXT,
+    color: COLOR_ACCENT,
   });
 
-  return { ...updated, y: updated.y - 16 - 8 };
+  return { ...updated, y: updated.y - 18 - 10 };
 }
 
-/** Embed and draw a photo, returning the updated cursor. */
+/** Draw a key/value row — label bold, value regular, on the same line. */
+function drawKeyValue(ctx: DrawCtx, label: string, value: string): DrawCtx {
+  const labelW = ctx.fontBold.widthOfTextAtSize(`${label}: `, 10);
+  let updated  = ensureSpace(ctx, 16);
+  updated.page.drawText(`${label}: `, {
+    x: MARGIN, y: updated.y - 10,
+    size: 10, font: updated.fontBold, color: COLOR_TEXT,
+  });
+  updated.page.drawText(value, {
+    x: MARGIN + labelW, y: updated.y - 10,
+    size: 10, font: updated.fontRegular, color: COLOR_TEXT,
+    maxWidth: CONTENT_W - labelW,
+  });
+  return { ...updated, y: updated.y - 16 };
+}
+
+/** Embed and draw a photo (with optional CW rotation), returning the updated cursor. */
 async function drawPhoto(
   ctx: DrawCtx,
   buffer: ArrayBuffer,
   caption: string,
+  rotation: number = 0,
 ): Promise<DrawCtx> {
   let updated = ctx;
 
-  // Attempt to embed as JPEG, fall back to PNG
   let image;
   try {
     image = await updated.doc.embedJpg(buffer);
@@ -176,38 +212,144 @@ async function drawPhoto(
     try {
       image = await updated.doc.embedPng(buffer);
     } catch {
-      // Unreadable image — skip silently
       return updated;
     }
   }
 
   const MAX_W = CONTENT_W;
   const MAX_H = 280;
+  const isTransposed = rotation === 90 || rotation === 270;
 
-  const scale = Math.min(MAX_W / image.width, MAX_H / image.height, 1);
+  const scale = isTransposed
+    ? Math.min(MAX_W / image.height, MAX_H / image.width, 1)
+    : Math.min(MAX_W / image.width,  MAX_H / image.height, 1);
+
   const drawW = image.width  * scale;
   const drawH = image.height * scale;
+  const visualH = isTransposed ? drawW : drawH;
 
-  // Caption text above the image
-  updated = ensureSpace(updated, drawH + 30);
+  updated = ensureSpace(updated, visualH + 30);
   updated = drawText(updated, caption, { size: 8, color: COLOR_MUTED, lineGap: 4 });
+  updated = ensureSpace(updated, visualH + 6);
 
-  updated = ensureSpace(updated, drawH + 6);
+  let imgX: number;
+  let imgY: number;
+  let pdfDeg: number;
+
+  switch (rotation) {
+    case 90:
+      imgX   = MARGIN;
+      imgY   = updated.y;
+      pdfDeg = 270;
+      break;
+    case 180:
+      imgX   = MARGIN + drawW;
+      imgY   = updated.y;
+      pdfDeg = 180;
+      break;
+    case 270:
+      imgX   = MARGIN + drawH;
+      imgY   = updated.y - drawW;
+      pdfDeg = 90;
+      break;
+    default:
+      imgX   = MARGIN;
+      imgY   = updated.y - drawH;
+      pdfDeg = 0;
+  }
+
   updated.page.drawImage(image, {
-    x: MARGIN,
-    y: updated.y - drawH,
+    x: imgX,
+    y: imgY,
     width:  drawW,
     height: drawH,
+    rotate: degrees(pdfDeg),
   });
-  return { ...updated, y: updated.y - drawH - 10 };
+  return { ...updated, y: updated.y - visualH - 10 };
+}
+
+// ── Company header ────────────────────────────────────────────────────────────
+
+async function drawCompanyHeader(ctx: DrawCtx, info: CompanyInfo): Promise<DrawCtx> {
+  const LOGO_SIZE = 48;
+  let logoDrawn = false;
+
+  // Embed + draw logo if available
+  if (info.logoBuffer) {
+    try {
+      let logoImage;
+      try {
+        logoImage = await ctx.doc.embedPng(info.logoBuffer);
+      } catch {
+        logoImage = await ctx.doc.embedJpg(info.logoBuffer);
+      }
+      const scale = Math.min(LOGO_SIZE / logoImage.width, LOGO_SIZE / logoImage.height, 1);
+      const lw = logoImage.width  * scale;
+      const lh = logoImage.height * scale;
+      ctx.page.drawImage(logoImage, {
+        x: MARGIN,
+        y: ctx.y - lh,
+        width: lw,
+        height: lh,
+      });
+      logoDrawn = true;
+    } catch {
+      // Logo embed failed — continue without it
+    }
+  }
+
+  const TEXT_X    = logoDrawn ? MARGIN + LOGO_SIZE + 12 : MARGIN;
+  const maxTextW  = CONTENT_W - (logoDrawn ? LOGO_SIZE + 12 : 0);
+  let   lineY     = ctx.y - 14;
+
+  // Company name
+  if (info.name) {
+    ctx.page.drawText(info.name, {
+      x: TEXT_X, y: lineY,
+      size: 14, font: ctx.fontBold, color: COLOR_ACCENT,
+    });
+    lineY -= 16;
+  }
+
+  // Address / registration as secondary identity line
+  if (info.address) {
+    ctx.page.drawText(info.address, {
+      x: TEXT_X, y: lineY,
+      size: 9, font: ctx.fontRegular, color: COLOR_MUTED,
+      maxWidth: maxTextW,
+    });
+    lineY -= 13;
+  } else if (info.registrationId) {
+    ctx.page.drawText(`Reg: ${info.registrationId}`, {
+      x: TEXT_X, y: lineY,
+      size: 9, font: ctx.fontRegular, color: COLOR_MUTED,
+    });
+    lineY -= 13;
+  }
+
+  // Contact line — only include non-null values
+  const contactParts = [info.phone, info.email].filter(Boolean);
+  if (contactParts.length > 0) {
+    ctx.page.drawText(contactParts.join('  ·  '), {
+      x: TEXT_X, y: lineY,
+      size: 8, font: ctx.fontRegular, color: COLOR_MUTED,
+      maxWidth: maxTextW,
+    });
+    lineY -= 11;
+  }
+
+  const headerH = Math.max(LOGO_SIZE, ctx.y - lineY);
+  ctx = { ...ctx, y: ctx.y - headerH };
+  ctx = drawRule(ctx, 8, 10);
+  return ctx;
 }
 
 // ── Evidence section renderer ─────────────────────────────────────────────────
 
 interface PhotoPaths {
-  general?: string[];
-  damage?:  string[];
-  id?:      string[];
+  general?: PhotoEntry[];
+  damage?:  PhotoEntry[];
+  id?:      PhotoEntry[];
 }
 
 const GROUP_LABELS: Record<string, string> = {
@@ -221,8 +363,9 @@ async function drawEvidenceSection(
   sectionTitle: string,
   photos: PhotoPaths,
   publicBaseUrl: string,
+  evidenceType: string,
 ): Promise<DrawCtx> {
-  const groups = (['general', 'damage', 'id'] as const).filter(
+  const groups = (['general', 'damage'] as const).filter(
     (g) => (photos[g] ?? []).length > 0,
   );
 
@@ -235,21 +378,27 @@ async function drawEvidenceSection(
   ctx = drawSectionHeading(ctx, sectionTitle);
 
   for (const group of groups) {
-    const paths = sortPathsByTimestamp(photos[group] ?? []);
+    const entries = sortEntriesByTimestamp(photos[group] ?? []);
 
     ctx = drawText(ctx, GROUP_LABELS[group] ?? group, {
       font: 'bold', size: 9, lineGap: 3,
     });
 
-    for (let i = 0; i < paths.length; i++) {
-      const storagePath = paths[i];
-      const photoUrl = `${publicBaseUrl}/${storagePath}`;
-      const ts = parsePhotoTimestamp(storagePath);
-      const caption = `Photo ${i + 1} of ${paths.length}${ts ? ` · ${ts}` : ''}`;
+    for (let i = 0; i < entries.length; i++) {
+      const entry       = entries[i];
+      const storagePath = entryPath(entry);
+      const rotation    = entryRotation(entry);
+      const photoUrl    = `${publicBaseUrl}/${storagePath}`;
+      const ts          = parsePhotoTimestamp(storagePath);
+      const caption     = [
+        `Photo ${i + 1} of ${entries.length}`,
+        ts ? ts : null,
+        evidenceType,
+      ].filter(Boolean).join(' · ');
 
       const buffer = await fetchImageBuffer(photoUrl);
       if (buffer) {
-        ctx = await drawPhoto(ctx, buffer, caption);
+        ctx = await drawPhoto(ctx, buffer, caption, rotation);
       } else {
         ctx = drawText(ctx, `${caption} — could not load image`, {
           size: 8, color: COLOR_MUTED, lineGap: 4,
@@ -299,6 +448,7 @@ export async function GET(
         customer_name,
         pickup_at,
         return_at,
+        notes,
         staff_metadata,
         vehicle_id,
         vehicles ( name, registration_plate )
@@ -311,13 +461,72 @@ export async function GET(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    const staffMeta = (booking.staff_metadata ?? {}) as Record<string, unknown>;
-    const handoverPhotos = (staffMeta.handover_evidence_photos ?? {}) as PhotoPaths;
-    const returnPhotos   = (staffMeta.return_evidence_photos   ?? {}) as PhotoPaths;
+    // Fetch checklist instances for this booking (handover + return)
+    const { data: checklistInstances } = await supabase
+      .from('checklist_instances')
+      .select('checklist_type, completed_at, completed_by, started_at, started_by')
+      .eq('booking_id', bookingId)
+      .in('checklist_type', ['handover', 'return']);
+
+    // Resolve unique completed_by UIDs and look up staff emails
+    const completedByUids = [
+      ...new Set(
+        (checklistInstances ?? [])
+          .map((i) => i.completed_by)
+          .filter(Boolean) as string[],
+      ),
+    ];
+    let staffEmails: Record<string, string> = {};
+    if (completedByUids.length > 0) {
+      const { data: staffProfiles } = await supabase
+        .from('staff_profiles')
+        .select('auth_user_id, email')
+        .in('auth_user_id', completedByUids);
+      for (const p of staffProfiles ?? []) {
+        if (p.auth_user_id) staffEmails[p.auth_user_id] = p.email ?? p.auth_user_id;
+      }
+    }
+
+    const handoverInstance = checklistInstances?.find((i) => i.checklist_type === 'handover');
+    const returnInstance   = checklistInstances?.find((i) => i.checklist_type === 'return');
+
+    const staffMeta       = (booking.staff_metadata ?? {}) as Record<string, unknown>;
+    const handoverPhotos  = (staffMeta.handover_evidence_photos ?? {}) as PhotoPaths;
+    const returnPhotos    = (staffMeta.return_evidence_photos   ?? {}) as PhotoPaths;
+    const handoverVD      = (staffMeta.handover_vehicle_data    ?? {}) as Record<string, string>;
+    const returnVD        = (staffMeta.return_vehicle_data      ?? {}) as Record<string, string>;
+
+    const vehicle = booking.vehicles as unknown as { name: string; registration_plate: string } | null;
 
     // Supabase Storage public base URL for the evidence bucket
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseUrl   = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const publicBaseUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET}`;
+
+    // Load company details from the same sources used by the Company settings page
+    const [{ data: companyRow }, { data: companySettings }] = await Promise.all([
+      supabase
+        .from('companies')
+        .select('name, logo_url, email, address, registration_id')
+        .eq('id', profile.company_id)
+        .maybeSingle(),
+      supabase
+        .from('company_settings')
+        .select('contact_phone')
+        .eq('id', profile.company_id)
+        .maybeSingle(),
+    ]);
+
+    const logoUrl    = (companyRow as any)?.logo_url as string | null | undefined;
+    const logoBuffer = logoUrl ? await fetchImageBuffer(logoUrl) : null;
+
+    const companyInfo: CompanyInfo = {
+      name:           (companyRow as any)?.name           || null,
+      address:        (companyRow as any)?.address        || null,
+      email:          (companyRow as any)?.email          || null,
+      phone:          (companySettings as any)?.contact_phone || null,
+      registrationId: (companyRow as any)?.registration_id || null,
+      logoBuffer,
+    };
 
     // ── Build PDF ───────────────────────────────────────────────────────────
 
@@ -333,60 +542,94 @@ export async function GET(
       fontBold,
     };
 
-    // ── Cover / booking details ─────────────────────────────────────────────
+    // ── Company header ──────────────────────────────────────────────────────
+    ctx = await drawCompanyHeader(ctx, companyInfo);
 
-    // Title
-    ctx = drawText(ctx, 'Evidence Report', { size: 22, font: 'bold', lineGap: 6 });
+    // ── Report title ────────────────────────────────────────────────────────
+    ctx = drawText(ctx, 'Evidence Report', { size: 20, font: 'bold', lineGap: 4 });
     ctx = drawText(ctx, `Booking ${booking.booking_number}`, {
-      size: 13, font: 'bold', color: COLOR_MUTED, lineGap: 14,
+      size: 11, font: 'bold', color: COLOR_MUTED, lineGap: 12,
     });
 
     ctx = drawRule(ctx, 0, 10);
 
-    // Booking meta grid
-    const vehicle = booking.vehicles as unknown as { name: string; registration_plate: string } | null;
+    // ── Booking information block ───────────────────────────────────────────
+    ctx = drawSectionHeading(ctx, 'Booking Information');
+
     const vehicleLabel = vehicle
-      ? `${vehicle.name} (${vehicle.registration_plate})`
+      ? vehicle.name
       : 'Unassigned';
+    const registrationLabel = vehicle?.registration_plate ?? '—';
 
-    const fields: [string, string][] = [
-      ['Customer',  booking.customer_name || '—'],
-      ['Vehicle',   vehicleLabel],
-      ['Pickup',    formatDate(booking.pickup_at)],
-      ['Return',    formatDate(booking.return_at)],
-    ];
+    ctx = drawKeyValue(ctx, 'Booking reference', booking.booking_number ?? '—');
+    ctx = drawKeyValue(ctx, 'Customer name',     booking.customer_name  || '—');
+    ctx = drawKeyValue(ctx, 'Vehicle',           vehicleLabel);
+    ctx = drawKeyValue(ctx, 'Registration',      registrationLabel);
+    ctx = drawKeyValue(ctx, 'Pickup',            formatDate(booking.pickup_at));
+    ctx = drawKeyValue(ctx, 'Return',            formatDate(booking.return_at));
 
-    for (const [label, value] of fields) {
-      // Label + value on same line: draw label, then value offset
-      const labelW = fontBold.widthOfTextAtSize(`${label}: `, 10);
-      ctx = ensureSpace(ctx, 14);
-      ctx.page.drawText(`${label}: `, {
-        x: MARGIN,
-        y: ctx.y - 10,
-        size: 10,
-        font: fontBold,
-        color: COLOR_TEXT,
-      });
-      ctx.page.drawText(value, {
-        x: MARGIN + labelW,
-        y: ctx.y - 10,
-        size: 10,
-        font: fontRegular,
-        color: COLOR_TEXT,
-        maxWidth: CONTENT_W - labelW,
-      });
-      ctx = { ...ctx, y: ctx.y - 14 };
+    // ── Checklist confirmation metadata ────────────────────────────────────
+    const hasChecklistMeta =
+      handoverInstance?.completed_at || returnInstance?.completed_at;
+
+    if (hasChecklistMeta) {
+      ctx = { ...ctx, y: ctx.y - 6 };
+      ctx = drawSectionHeading(ctx, 'Checklist Completion');
+
+      if (handoverInstance?.completed_at) {
+        ctx = drawKeyValue(ctx, 'Handover completed', formatDate(handoverInstance.completed_at));
+        const staffName = handoverInstance.completed_by
+          ? (staffEmails[handoverInstance.completed_by] ?? handoverInstance.completed_by)
+          : null;
+        if (staffName) ctx = drawKeyValue(ctx, 'Completed by', staffName);
+      }
+
+      if (returnInstance?.completed_at) {
+        ctx = drawKeyValue(ctx, 'Return completed', formatDate(returnInstance.completed_at));
+        const staffName = returnInstance.completed_by
+          ? (staffEmails[returnInstance.completed_by] ?? returnInstance.completed_by)
+          : null;
+        if (staffName) ctx = drawKeyValue(ctx, 'Completed by', staffName);
+      }
+    }
+
+    // ── Odometer section ────────────────────────────────────────────────────
+    const odometerPickup = handoverVD.km?.trim() || null;
+    const odometerReturn = returnVD.km?.trim()   || null;
+
+    if (odometerPickup || odometerReturn) {
+      ctx = { ...ctx, y: ctx.y - 6 };
+      ctx = drawSectionHeading(ctx, 'Odometer');
+
+      if (odometerPickup) ctx = drawKeyValue(ctx, 'Odometer at pickup', `${odometerPickup} km`);
+      if (odometerReturn) ctx = drawKeyValue(ctx, 'Odometer at return', `${odometerReturn} km`);
+
+      if (odometerPickup && odometerReturn) {
+        const pickup = parseFloat(odometerPickup);
+        const ret    = parseFloat(odometerReturn);
+        if (!isNaN(pickup) && !isNaN(ret) && ret >= pickup) {
+          ctx = drawKeyValue(ctx, 'Distance driven', `${(ret - pickup).toFixed(0)} km`);
+        }
+      }
+    }
+
+    // ── Observed notes section ──────────────────────────────────────────────
+    const bookingNotes = (booking as any).notes?.trim() || null;
+    if (bookingNotes) {
+      ctx = { ...ctx, y: ctx.y - 6 };
+      ctx = drawSectionHeading(ctx, 'Observed Notes');
+      ctx = drawText(ctx, bookingNotes, { size: 9, color: COLOR_TEXT, lineGap: 5 });
     }
 
     ctx = drawRule(ctx, 14, 14);
 
     // ── Handover evidence ───────────────────────────────────────────────────
-    ctx = await drawEvidenceSection(ctx, 'Handover Evidence', handoverPhotos, publicBaseUrl);
+    ctx = await drawEvidenceSection(ctx, 'Handover Evidence', handoverPhotos, publicBaseUrl, 'Handover');
 
     ctx = { ...ctx, y: ctx.y - 10 };
 
     // ── Return evidence ─────────────────────────────────────────────────────
-    ctx = await drawEvidenceSection(ctx, 'Return Evidence', returnPhotos, publicBaseUrl);
+    ctx = await drawEvidenceSection(ctx, 'Return Evidence', returnPhotos, publicBaseUrl, 'Return');
 
     // ── Footer on every page ────────────────────────────────────────────────
     const pages = doc.getPages();
@@ -397,15 +640,20 @@ export async function GET(
     });
 
     for (let i = 0; i < totalPages; i++) {
-      const pg = pages[i];
+      const pg      = pages[i];
       const footerY = MARGIN - 16;
-      pg.drawText(`Generated ${generated}`, {
+
+      // Left: branding
+      const companyLabel = companyInfo.name ? `${companyInfo.name} – ` : '';
+      pg.drawText(`${companyLabel}Evidence Report  ·  Generated by CamperFlow  ·  ${generated}`, {
         x: MARGIN,
         y: footerY,
         size: 7,
         font: fontRegular,
         color: COLOR_MUTED,
       });
+
+      // Right: page number
       pg.drawText(`Page ${i + 1} of ${totalPages}`, {
         x: PAGE_W - MARGIN - 60,
         y: footerY,

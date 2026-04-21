@@ -11,6 +11,7 @@ type EvidenceBlockProps = {
   evidencePhotos: EvidencePhotos;
   onAdd: (group: Group, files: File[]) => void;
   onRemove: (group: Group, index: number) => void;
+  onRotate?: (group: Group, index: number, rotation: number) => void;
   isLocked: boolean;
   highlight?: boolean;
   title?: string;
@@ -24,6 +25,8 @@ type ResolvedPhoto = {
   downloadUrl?: string;
   /** Storage path, used to parse a timestamp for stored photos. */
   path?: string;
+  /** Persisted rotation in degrees (0 | 90 | 180 | 270). */
+  rotation: number;
 };
 
 type LightboxState = { photos: ResolvedPhoto[]; index: number; group: Group } | null;
@@ -65,23 +68,25 @@ function PhotoLightbox({
   group,
   initialIndex,
   onClose,
+  onRotate,
 }: {
   photos: ResolvedPhoto[];
   group: Group;
   initialIndex: number;
   onClose: () => void;
+  onRotate?: (index: number, rotation: number) => void;
 }) {
   const t = useTranslations('checklistDetail');
   const locale = useLocale();
   const [index, setIndex] = useState(initialIndex);
-  const [rotation, setRotation] = useState(0);
   const total = photos.length;
   const photo = photos[Math.min(index, total - 1)];
+  const [rotation, setRotation] = useState(photo.rotation);
   const timestamp = photo.path ? tryParseTimestamp(photo.path, locale) : null;
   const showNav = total > 1;
 
-  // Reset rotation whenever the displayed photo changes
-  useEffect(() => { setRotation(0); }, [index]);
+  // Reset to the stored rotation of the newly displayed photo
+  useEffect(() => { setRotation(photos[Math.min(index, photos.length - 1)].rotation); }, [index, photos]);
 
   const label =
     group === 'general'
@@ -199,7 +204,11 @@ function PhotoLightbox({
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
           <button
             type="button"
-            onClick={() => setRotation((r) => (r - 90 + 360) % 360)}
+            onClick={() => {
+              const next = (rotation - 90 + 360) % 360;
+              setRotation(next);
+              onRotate?.(index, next);
+            }}
             aria-label={t('lightboxRotateLeft')}
             style={navBtn(false)}
           >
@@ -207,7 +216,11 @@ function PhotoLightbox({
           </button>
           <button
             type="button"
-            onClick={() => setRotation((r) => (r + 90) % 360)}
+            onClick={() => {
+              const next = (rotation + 90) % 360;
+              setRotation(next);
+              onRotate?.(index, next);
+            }}
             aria-label={t('lightboxRotateRight')}
             style={navBtn(false)}
           >
@@ -292,7 +305,7 @@ function PhotoLightbox({
 // EvidenceBlock
 // ---------------------------------------------------------------------------
 
-export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocked, highlight, title, variant }: EvidenceBlockProps) {
+export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotate, isLocked, highlight, title, variant }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
   const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length + evidencePhotos.id.length;
   const [openChooser, setOpenChooser] = useState<Group | null>(null);
@@ -350,6 +363,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
         ? (p.url.includes('?') ? `${p.url}&download=` : `${p.url}?download=`)
         : undefined,
       path: p.kind === 'stored' ? p.path : undefined,
+      rotation: p.kind === 'stored' ? p.rotation : 0,
     }));
   }
 
@@ -376,6 +390,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
           group={lightbox.group}
           initialIndex={lightbox.index}
           onClose={() => setLightbox(null)}
+          onRotate={onRotate ? (photoIndex, rot) => onRotate(lightbox.group, photoIndex, rot) : undefined}
         />
       )}
 
@@ -458,7 +473,15 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, isLocke
                       <img
                         src={src}
                         alt={alt}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          transform: photo.kind === 'stored' && photo.rotation
+                            ? `rotate(${photo.rotation}deg)`
+                            : undefined,
+                        }}
                         onClick={isUploading ? undefined : () => {
                           setLightbox({ photos: resolveGroup(group), index: idx, group });
                         }}

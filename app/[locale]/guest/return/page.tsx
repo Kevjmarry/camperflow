@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -165,12 +166,15 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         .greturn-sp { padding: var(--space-4); }
         .greturn-details summary { padding: var(--space-4); }
         .greturn-details-body { padding: var(--space-4); }
+        .greturn-md > *:last-child { margin-bottom: 0; }
+        .greturn-md > *:first-child { margin-top: 0; }
         @media (min-width: 768px) {
           .greturn-sp { padding: var(--space-6); }
           .greturn-details summary { padding: var(--space-5) var(--space-6); }
           .greturn-details-body { padding: var(--space-5) var(--space-6); }
         }
       `}</style>
+
       {/* Back link */}
       <div>
         <Link
@@ -240,7 +244,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         </div>
       </div>
 
-      {/* Reminder card — full width */}
+      {/* Before you return — numbered checklist card */}
       <div
         className="surface greturn-sp"
         style={{
@@ -250,125 +254,210 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
       >
         <p
           style={{
-            fontSize: "12px",
-            fontWeight: "600",
+            fontSize: "11px",
+            fontWeight: "700",
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.07em",
             color: "rgb(var(--brand))",
             margin: "0 0 var(--space-4) 0",
           }}
         >
           {t("beforeYouReturnTitle")}
         </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "var(--space-5)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           {([0, 1, 2, 3, 4, 5] as const).map((i) => (
-            <li key={i} style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text))" }}>
-              {t(`beforeYouReturn${i}`)}
-            </li>
+            <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+              <div
+                style={{
+                  flexShrink: 0,
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "50%",
+                  background: "rgb(var(--brand))",
+                  color: "white",
+                  fontSize: "10px",
+                  fontWeight: "700",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: "2px",
+                }}
+              >
+                {i + 1}
+              </div>
+              <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
+                {t(`beforeYouReturn${i}`)}
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
 
-      {/* Return checklist — full width */}
+      {/* Return checklist */}
       <div className="surface greturn-sp">
-        <h2 style={{ marginBottom: "var(--space-1)" }}>{t("checklistTitle")}</h2>
-        <p
-          style={{
-            fontSize: "13px",
-            color: "rgb(var(--muted))",
-            marginTop: "var(--space-1)",
-            marginBottom: "var(--space-5)",
-          }}
-        >
-          {t("checklistPolicyNote")}
-        </p>
-        <p
-          style={{
-            fontSize: "13px",
-            color: "rgb(var(--muted))",
-            marginTop: "var(--space-2)",
-            marginBottom: "var(--space-5)",
-          }}
-        >
-          {t("checklistGuideNote")}
-        </p>
+        <h2 style={{ marginBottom: "var(--space-5)" }}>{t("checklistTitle")}</h2>
 
         {!checklistTemplate ? (
-          <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("noChecklist")}</p>
+          /* No checklist configured — polished empty state */
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              padding: "var(--space-8) var(--space-4)",
+              gap: "var(--space-3)",
+            }}
+          >
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "var(--radius-lg)",
+                background: "rgb(var(--app-bg))",
+                border: "1px solid rgb(var(--border-light))",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{ color: "rgb(var(--muted))" }}
+              >
+                <rect x="9" y="2" width="6" height="4" rx="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <path d="M9 12h6M9 16h4" />
+              </svg>
+            </div>
+            <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0 }}>
+              {t("noChecklist")}
+            </p>
+          </div>
         ) : checklistItems.length === 0 ? (
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("noItems")}</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {checklistItems.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  padding: "var(--space-4)",
-                  background: "rgb(var(--app-bg))",
-                  border: "1px solid rgb(var(--border-light))",
-                  borderRadius: "var(--radius)",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "var(--space-3)",
-                }}
+          <>
+            {/* Info card shown only when items exist */}
+            <div
+              style={{
+                display: "flex",
+                gap: "var(--space-3)",
+                alignItems: "flex-start",
+                padding: "var(--space-3) var(--space-4)",
+                background: "rgb(var(--app-bg))",
+                border: "1px solid rgb(var(--border-light))",
+                borderRadius: "var(--radius)",
+                marginBottom: "var(--space-5)",
+              }}
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                style={{ flexShrink: 0, marginTop: "2px", color: "rgb(var(--brand))" }}
               >
-                <div style={{ flexShrink: 0, marginTop: "2px" }}>
-                  {item.checked ? (
-                    <div
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <div>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    lineHeight: "1.5",
+                    color: "rgb(var(--text-secondary))",
+                    margin: "0 0 var(--space-1) 0",
+                  }}
+                >
+                  {t("checklistGuideNote")}
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                    color: "rgb(var(--muted))",
+                    margin: 0,
+                  }}
+                >
+                  {t("checklistPolicyNote")}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {checklistItems.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    padding: "var(--space-4)",
+                    background: "rgb(var(--app-bg))",
+                    border: "1px solid rgb(var(--border-light))",
+                    borderRadius: "var(--radius)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "var(--space-3)",
+                  }}
+                >
+                  <div style={{ flexShrink: 0, marginTop: "2px" }}>
+                    {item.checked ? (
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "4px",
+                          background: "rgb(var(--brand))",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "4px",
+                          border: "2px solid rgb(var(--border))",
+                          background: "rgb(var(--surface))",
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p
                       style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "4px",
-                        background: "rgb(var(--brand))",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: item.checked ? "rgb(var(--muted))" : "rgb(var(--text))",
+                        textDecoration: item.checked ? "line-through" : "none",
                       }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                        <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "4px",
-                        border: "2px solid rgb(var(--border))",
-                        background: "rgb(var(--surface))",
-                      }}
-                    />
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: item.checked ? "rgb(var(--muted))" : "rgb(var(--text))",
-                      textDecoration: item.checked ? "line-through" : "none",
-                    }}
-                  >
-                    {item.template?.label ?? t("untitledItem")}
-                  </p>
-                  {item.notes && (
-                    <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)" }}>
-                      {item.notes}
+                      {item.template?.label ?? t("untitledItem")}
                     </p>
-                  )}
+                    {item.notes && (
+                      <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)" }}>
+                        {item.notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -406,17 +495,10 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             {returnInfo.return_info && (
               <div style={{ marginBottom: hasContactInfo ? "var(--space-5)" : undefined }}>
                 <p style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>{t("returnInfo")}</p>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: "1.6",
-                    color: "rgb(var(--text-secondary))",
-                    whiteSpace: "pre-wrap",
-                    margin: 0,
-                  }}
-                >
-                  {returnInfo.return_info}
-                </p>
+                <MarkdownContent
+                  content={returnInfo.return_info}
+                  className="greturn-md"
+                />
               </div>
             )}
 

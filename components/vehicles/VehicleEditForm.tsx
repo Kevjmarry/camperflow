@@ -199,9 +199,12 @@ export default function VehicleEditForm({
 
   function formatSyncTime(iso: string): string {
     try {
-      return new Intl.DateTimeFormat(undefined, {
-        dateStyle: "short",
-        timeStyle: "short",
+      return new Intl.DateTimeFormat(locale, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       }).format(new Date(iso));
     } catch {
       return iso;

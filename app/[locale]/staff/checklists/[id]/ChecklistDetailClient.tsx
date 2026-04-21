@@ -170,9 +170,13 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover') return;
     staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
 
-    const pathToStored = (path: string): EvidencePhoto => {
-      const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(path);
-      return { kind: 'stored', path, url: data.publicUrl };
+    // Accept both legacy plain-string paths and new { path, rotation } objects.
+    type EvidenceEntry = string | { path: string; rotation?: number };
+    const pathToStored = (entry: EvidenceEntry): EvidencePhoto => {
+      const p = typeof entry === 'string' ? entry : entry.path;
+      const rotation = typeof entry === 'string' ? 0 : (entry.rotation ?? 0);
+      const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(p);
+      return { kind: 'stored', path: p, url: data.publicUrl, rotation };
     };
 
     if (instance.checklist_type === 'return') {
@@ -181,7 +185,7 @@ export default function ChecklistDetailClient({
       lastSavedReturnKmRef.current = rvd?.km ?? '';
       const returnedIds: string[] = (instance.bookings as any)?.staff_metadata?.extras_returned ?? [];
       setExtrasChecked(Object.fromEntries(returnedIds.map((id: string) => [id, true])));
-      const rep = (instance.bookings as any)?.staff_metadata?.return_evidence_photos as { general?: string[]; damage?: string[] } | undefined;
+      const rep = (instance.bookings as any)?.staff_metadata?.return_evidence_photos as { general?: EvidenceEntry[]; damage?: EvidenceEntry[] } | undefined;
       setEvidencePhotos({
         general: (rep?.general ?? []).map(pathToStored),
         damage: (rep?.damage ?? []).map(pathToStored),
@@ -192,7 +196,7 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type === 'handover') {
       const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
       setVehicleData({ km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' });
-      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: string[]; damage?: string[]; id?: string[] } | undefined;
+      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: EvidenceEntry[]; damage?: EvidenceEntry[]; id?: EvidenceEntry[] } | undefined;
       setEvidencePhotos({
         general: (hep?.general ?? []).map(pathToStored),
         damage: (hep?.damage ?? []).map(pathToStored),
@@ -657,8 +661,23 @@ export default function ChecklistDetailClient({
     }
   };
 
+  type EvidencePhotoEntry = { path: string; rotation: number };
+  const toEntry = (e: unknown): EvidencePhotoEntry =>
+    typeof e === 'string'
+      ? { path: e, rotation: 0 }
+      : { path: (e as any).path, rotation: (e as any).rotation ?? 0 };
+  const normalizeHep = (raw: any) => ({
+    general: ((raw?.general ?? []) as unknown[]).map(toEntry),
+    damage:  ((raw?.damage  ?? []) as unknown[]).map(toEntry),
+    id:      ((raw?.id      ?? []) as unknown[]).map(toEntry),
+  });
+  const normalizeRep = (raw: any) => ({
+    general: ((raw?.general ?? []) as unknown[]).map(toEntry),
+    damage:  ((raw?.damage  ?? []) as unknown[]).map(toEntry),
+  });
+
   // ── Return: save evidence photos into bookings.staff_metadata.return_evidence_photos ──
-  const saveReturnEvidencePhotos = async (rep: { general: string[]; damage: string[] }) => {
+  const saveReturnEvidencePhotos = async (rep: { general: EvidencePhotoEntry[]; damage: EvidencePhotoEntry[] }) => {
     if (!instance.booking_id) return;
     const newMeta = { ...staffMetaRef.current, return_evidence_photos: rep };
     staffMetaRef.current = newMeta;
@@ -683,7 +702,7 @@ export default function ChecklistDetailClient({
   };
 
   // ── Handover: save evidence photos into bookings.staff_metadata.handover_evidence_photos ──
-  const saveHandoverEvidencePhotos = async (rep: { general: string[]; damage: string[]; id: string[] }) => {
+  const saveHandoverEvidencePhotos = async (rep: { general: EvidencePhotoEntry[]; damage: EvidencePhotoEntry[]; id: EvidencePhotoEntry[] }) => {
     if (!instance.booking_id) return;
     const newMeta = { ...staffMetaRef.current, handover_evidence_photos: rep };
     staffMetaRef.current = newMeta;
@@ -1214,8 +1233,8 @@ export default function ChecklistDetailClient({
                     ));
                   }
                   if (succeeded.length > 0) {
-                    const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [], id: [] };
-                    const newRep = { ...currentHep, [group]: [...(currentHep[group] ?? []), ...succeeded.map((s) => s.path)] };
+                    const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
+                    const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
                     await saveHandoverEvidencePhotos(newRep);
                   }
                 }}
@@ -1226,11 +1245,24 @@ export default function ChecklistDetailClient({
                     [group]: prev[group].filter((_, i) => i !== index),
                   }));
                   if (photo?.kind === 'stored') {
-                    const currentHep = (staffMetaRef.current as any)?.handover_evidence_photos ?? { general: [], damage: [], id: [] };
-                    const newPaths = (currentHep[group] ?? []).filter((p: string) => p !== photo.path);
-                    await saveHandoverEvidencePhotos({ ...currentHep, [group]: newPaths });
+                    const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
+                    const newRep = { ...norm, [group]: norm[group as keyof typeof norm].filter((e) => e.path !== photo.path) };
+                    await saveHandoverEvidencePhotos(newRep);
                     supabase.storage.from('checklist-evidence').remove([photo.path]).catch(() => {});
                   }
+                }}
+                onRotate={async (group, index, rotation) => {
+                  const photo = evidencePhotos[group][index];
+                  if (photo?.kind !== 'stored') return;
+                  setEvidencePhotos((prev) => ({
+                    ...prev,
+                    [group]: prev[group].map((p, i) =>
+                      i === index && p.kind === 'stored' ? { ...p, rotation } : p
+                    ),
+                  }));
+                  const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
+                  const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
+                  await saveHandoverEvidencePhotos(newRep);
                 }}
                 isLocked={isChecklistLocked}
                 highlight={validationHighlights.missingPhotos}
@@ -1372,8 +1404,8 @@ export default function ChecklistDetailClient({
                     ));
                   }
                   if (succeeded.length > 0) {
-                    const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
-                    const newRep = { ...currentRep, [group]: [...(currentRep[group] ?? []), ...succeeded.map((s) => s.path)] };
+                    const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
+                    const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
                     await saveReturnEvidencePhotos(newRep);
                   }
                 }}
@@ -1385,11 +1417,24 @@ export default function ChecklistDetailClient({
                   }));
                   promoteReturnToInProgress();
                   if (photo?.kind === 'stored') {
-                    const currentRep = (staffMetaRef.current as any)?.return_evidence_photos ?? { general: [], damage: [] };
-                    const newPaths = (currentRep[group] ?? []).filter((p: string) => p !== photo.path);
-                    await saveReturnEvidencePhotos({ ...currentRep, [group]: newPaths });
+                    const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
+                    const newRep = { ...norm, [group]: norm[group as keyof typeof norm].filter((e) => e.path !== photo.path) };
+                    await saveReturnEvidencePhotos(newRep);
                     supabase.storage.from('checklist-evidence').remove([photo.path]).catch(() => {});
                   }
+                }}
+                onRotate={async (group, index, rotation) => {
+                  const photo = evidencePhotos[group][index];
+                  if (photo?.kind !== 'stored') return;
+                  setEvidencePhotos((prev) => ({
+                    ...prev,
+                    [group]: prev[group].map((p, i) =>
+                      i === index && p.kind === 'stored' ? { ...p, rotation } : p
+                    ),
+                  }));
+                  const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
+                  const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
+                  await saveReturnEvidencePhotos(newRep);
                 }}
                 isLocked={isChecklistLocked}
                 highlight={false}
