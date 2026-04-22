@@ -35,23 +35,6 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
   );
 }
 
-// ─── SidebarCard ──────────────────────────────────────────────────────────────
-
-function SidebarCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      border: "1px solid rgb(var(--border))",
-      borderRadius: "var(--radius)",
-      padding: "var(--space-4)",
-      display: "flex",
-      flexDirection: "column",
-      gap: "var(--space-3)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function GuestContentPage() {
@@ -211,25 +194,6 @@ export default function GuestContentPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <style>{`
-        .gc-body {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: var(--space-8);
-          align-items: start;
-        }
-        @media (min-width: 1024px) {
-          .gc-body { grid-template-columns: 1fr 260px; }
-        }
-        .gc-sidebar {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-        }
-        @media (min-width: 1024px) {
-          .gc-sidebar { position: sticky; top: var(--space-4); }
-        }
-      `}</style>
 
       <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
@@ -248,11 +212,8 @@ export default function GuestContentPage() {
             </p>
           </div>
 
-          {/* 2-column body */}
-          <div className="gc-body">
-
-            {/* ── Left: main form ── */}
-            <div style={{ minWidth: 0 }}>
+          {/* Main form */}
+          <div>
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
                 {/* Contact Numbers */}
@@ -340,6 +301,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                     <div>
                       <label htmlFor="pickup_info" className="label">{t("labels.pickupInfo")}</label>
@@ -351,6 +313,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                   </div>
                 </div>
@@ -369,6 +332,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                     <div>
                       <label htmlFor="return_info" className="label">{t("labels.returnInfo")}</label>
@@ -380,6 +344,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                   </div>
                 </div>
@@ -398,6 +363,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                     <div>
                       <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
@@ -409,6 +375,7 @@ export default function GuestContentPage() {
                         rows={8}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
                   </div>
                 </div>
@@ -498,103 +465,6 @@ export default function GuestContentPage() {
               </form>
             </div>
 
-            {/* ── Right: sidebar ── */}
-            <div className="gc-sidebar">
-
-              {/* Return Checklist */}
-              <SidebarCard>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", margin: 0 }}>
-                  {t("sections.returnChecklist")}
-                </p>
-                <p className="helper-text" style={{ margin: 0, fontSize: "12px" }}>
-                  {t("checklist.helper")}
-                </p>
-                {returnChecklist === undefined && (
-                  <p style={{ fontSize: "13px", color: "rgb(var(--muted))", margin: 0 }}>{t("loading")}</p>
-                )}
-                {returnChecklist === null && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                    <p style={{ fontSize: "13px", color: "rgb(var(--muted))", margin: 0 }}>{t("checklist.notConfigured")}</p>
-                    <Link
-                      href={`/${locale}/staff/checklists/templates`}
-                      className="btn btn-secondary"
-                      style={{ fontSize: "13px", alignSelf: "flex-start" }}
-                    >
-                      {t("checklist.viewTemplates")}
-                    </Link>
-                  </div>
-                )}
-                {returnChecklist && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))" }}>
-                        {returnChecklist.name}
-                      </span>
-                      <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-                        {returnChecklist.item_count != null && (
-                          <span style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
-                            {t("checklist.itemCount", { count: returnChecklist.item_count })}
-                          </span>
-                        )}
-                        <span style={{
-                          fontSize: "11px", fontWeight: 500, padding: "2px 8px", borderRadius: "9999px",
-                          background: returnChecklist.active ? "rgb(var(--success) / 0.15)" : "rgb(var(--muted) / 0.15)",
-                          color: returnChecklist.active ? "rgb(var(--success))" : "rgb(var(--muted))",
-                        }}>
-                          {returnChecklist.active ? t("checklist.statusActive") : t("checklist.statusInactive")}
-                        </span>
-                      </div>
-                    </div>
-                    <Link
-                      href={`/${locale}/staff/checklists/templates/${returnChecklist.id}`}
-                      className="btn btn-secondary"
-                      style={{ fontSize: "13px", alignSelf: "flex-start" }}
-                    >
-                      {t("checklist.editButton")}
-                    </Link>
-                  </div>
-                )}
-              </SidebarCard>
-
-              {/* What guests see */}
-              <SidebarCard>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", margin: 0 }}>
-                  {t("sidebar.whatGuestsSee")}
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  {([
-                    { label: t("sidebar.map.contactNumbers"), where: t("sidebar.map.contactNumbersWhere") },
-                    { label: t("sidebar.map.beforeArrival"),  where: t("sidebar.map.beforeArrivalWhere") },
-                    { label: t("sidebar.map.pickupInfo"),     where: t("sidebar.map.pickupInfoWhere") },
-                    { label: t("sidebar.map.beforeReturn"),   where: t("sidebar.map.beforeReturnWhere") },
-                    { label: t("sidebar.map.returnInfo"),     where: t("sidebar.map.returnInfoWhere") },
-                    { label: t("sidebar.map.guestGuide"),     where: t("sidebar.map.guestGuideWhere") },
-                    { label: t("sidebar.map.faq"),            where: t("sidebar.map.faqWhere") },
-                  ]).map(({ label, where }) => (
-                    <div key={label}>
-                      <p style={{ fontSize: "12px", fontWeight: 500, color: "rgb(var(--text))", margin: 0 }}>{label}</p>
-                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", margin: 0 }}>{where}</p>
-                    </div>
-                  ))}
-                </div>
-              </SidebarCard>
-
-              {/* Formatting tips */}
-              <SidebarCard>
-                <p style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", margin: 0 }}>
-                  {t("sidebar.markdownTitle")}
-                </p>
-                <p style={{ fontSize: "12px", color: "rgb(var(--muted))", lineHeight: 1.6, margin: 0 }}>
-                  {t("sidebar.markdownBodyPrefix")}{" "}
-                  <code style={{ fontSize: "11px", background: "rgb(var(--border))", padding: "1px 4px", borderRadius: "3px" }}>**bold**</code>,{" "}
-                  <code style={{ fontSize: "11px", background: "rgb(var(--border))", padding: "1px 4px", borderRadius: "3px" }}>*italic*</code>,{" "}
-                  <code style={{ fontSize: "11px", background: "rgb(var(--border))", padding: "1px 4px", borderRadius: "3px" }}>- list item</code>.{" "}
-                  {t("sidebar.markdownBodySuffix")}
-                </p>
-              </SidebarCard>
-
-            </div>
-          </div>
 
         </div>
       </div>

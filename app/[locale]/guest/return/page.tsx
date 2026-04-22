@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -49,6 +48,19 @@ type RawTemplateItem = {
   section: string | null;
 };
 
+function renderLines(text: string) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      {lines.map((line, i) => (
+        <p key={i} style={{ fontSize: "15px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
+          {line}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 export default async function GuestReturnPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
@@ -150,25 +162,49 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   };
 
   const labelStyle = {
-    fontSize: "12px",
-    fontWeight: "500" as const,
+    fontSize: "11px",
+    fontWeight: "600" as const,
     textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
+    letterSpacing: "0.06em",
     color: "rgb(var(--text-secondary))",
     marginBottom: "var(--space-2)",
   };
 
-  const hasContactInfo = returnInfo.contact_phone || returnInfo.contact_whatsapp;
-  const hasDetailSection = returnInfo.return_info || hasContactInfo;
+  const valueStyle = {
+    fontWeight: "500" as const,
+    color: "rgb(var(--text))",
+    margin: 0,
+    fontSize: "15px",
+  };
+
+  const linkStyle = {
+    fontWeight: "500" as const,
+    color: "rgb(var(--brand))",
+    margin: 0,
+    fontSize: "15px",
+    textDecoration: "none" as const,
+  };
+
+  const toTelHref = (phone: string) => `tel:${phone.replace(/\s/g, "")}`;
+  const toWaHref = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
+
+  const hasDetailSection = returnInfo.return_info || returnInfo.contact_phone || returnInfo.contact_whatsapp;
+
+  const sectionLabel = (color: string) => ({
+    fontSize: "11px",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.07em",
+    color,
+    margin: "0 0 var(--space-6) 0",
+  });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
-        .greturn-sp { padding: var(--space-4); }
-        .greturn-details summary { padding: var(--space-4); }
-        .greturn-details-body { padding: var(--space-4); }
-        .greturn-md > *:last-child { margin-bottom: 0; }
-        .greturn-md > *:first-child { margin-top: 0; }
+        .greturn-sp { padding: var(--space-5); }
+        .greturn-details summary { padding: var(--space-4) var(--space-5); }
+        .greturn-details-body { padding: var(--space-5); }
         @media (min-width: 768px) {
           .greturn-sp { padding: var(--space-6); }
           .greturn-details summary { padding: var(--space-5) var(--space-6); }
@@ -223,29 +259,48 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         </span>
       </div>
 
-      {/* Booking info */}
+      {/* Summary card */}
       <div className="surface greturn-sp">
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "var(--space-6)",
           }}
         >
           <div>
             <p style={labelStyle}>{t("returnDateTime")}</p>
-            <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{formatDateTime(booking.return_at)}</p>
+            <p style={valueStyle}>{formatDateTime(booking.return_at)}</p>
           </div>
+
           {vehicle?.name && (
             <div>
               <p style={labelStyle}>{t("vehicle")}</p>
-              <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{vehicle.name}</p>
+              <p style={valueStyle}>{vehicle.name}</p>
+            </div>
+          )}
+
+          {returnInfo.contact_phone && (
+            <div>
+              <p style={labelStyle}>{t("contactPhone")}</p>
+              <a href={toTelHref(returnInfo.contact_phone)} style={linkStyle}>
+                {returnInfo.contact_phone}
+              </a>
+            </div>
+          )}
+
+          {returnInfo.contact_whatsapp && (
+            <div>
+              <p style={labelStyle}>{t("contactWhatsapp")}</p>
+              <a href={toWaHref(returnInfo.contact_whatsapp)} style={linkStyle} target="_blank" rel="noopener noreferrer">
+                {returnInfo.contact_whatsapp}
+              </a>
             </div>
           )}
         </div>
       </div>
 
-      {/* Before you return — numbered checklist card */}
+      {/* Before you return */}
       <div
         className="surface greturn-sp"
         style={{
@@ -253,52 +308,42 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
           border: "1px solid rgb(var(--brand))",
         }}
       >
-        <p
-          style={{
-            fontSize: "11px",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "0.07em",
-            color: "rgb(var(--brand))",
-            margin: "0 0 var(--space-4) 0",
-          }}
-        >
+        <p style={sectionLabel("rgb(var(--brand))")}>
           {t("beforeYouReturnTitle")}
         </p>
-        {returnInfo.before_return_info ? (
-          <MarkdownContent
-            content={returnInfo.before_return_info}
-            className="greturn-md"
-          />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {([0, 1, 2, 3, 4, 5] as const).map((i) => (
-              <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                <div
-                  style={{
-                    flexShrink: 0,
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    background: "rgb(var(--brand))",
-                    color: "white",
-                    fontSize: "10px",
-                    fontWeight: "700",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginTop: "2px",
-                  }}
-                >
-                  {i + 1}
+        <div style={{ maxWidth: "640px" }}>
+          {returnInfo.before_return_info ? (
+            renderLines(returnInfo.before_return_info)
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {([0, 1, 2, 3, 4, 5] as const).map((i) => (
+                <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      background: "rgb(var(--brand))",
+                      color: "white",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <span style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))" }}>
+                    {t(`beforeYouReturn${i}`)}
+                  </span>
                 </div>
-                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
-                  {t(`beforeYouReturn${i}`)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Return checklist */}
@@ -306,7 +351,6 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         <h2 style={{ marginBottom: "var(--space-5)" }}>{t("checklistTitle")}</h2>
 
         {!checklistTemplate ? (
-          /* No checklist configured — polished empty state */
           <div
             style={{
               display: "flex",
@@ -354,7 +398,6 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("noItems")}</p>
         ) : (
           <>
-            {/* Info card shown only when items exist */}
             <div
               style={{
                 display: "flex",
@@ -379,24 +422,10 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
                 <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               <div>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: "1.5",
-                    color: "rgb(var(--text-secondary))",
-                    margin: "0 0 var(--space-1) 0",
-                  }}
-                >
+                <p style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text-secondary))", margin: "0 0 var(--space-1) 0" }}>
                   {t("checklistGuideNote")}
                 </p>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    lineHeight: "1.5",
-                    color: "rgb(var(--muted))",
-                    margin: 0,
-                  }}
-                >
+                <p style={{ fontSize: "12px", lineHeight: "1.5", color: "rgb(var(--muted))", margin: 0 }}>
                   {t("checklistPolicyNote")}
                 </p>
               </div>
@@ -494,23 +523,26 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
             </svg>
           </summary>
 
-          <div
-            className="greturn-details-body"
-            style={{
-              borderTop: "1px solid rgb(var(--border-light))",
-            }}
-          >
+          <div className="greturn-details-body" style={{ borderTop: "1px solid rgb(var(--border-light))" }}>
             {returnInfo.return_info && (
-              <div style={{ marginBottom: hasContactInfo ? "var(--space-5)" : undefined }}>
-                <p style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>{t("returnInfo")}</p>
-                <MarkdownContent
-                  content={returnInfo.return_info}
-                  className="greturn-md"
-                />
+              <div style={{ marginBottom: (returnInfo.contact_phone || returnInfo.contact_whatsapp) ? "var(--space-6)" : undefined, maxWidth: "640px" }}>
+                <p
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "rgb(var(--text-secondary))",
+                    margin: "0 0 var(--space-5) 0",
+                  }}
+                >
+                  {t("returnInfo")}
+                </p>
+                {renderLines(returnInfo.return_info)}
               </div>
             )}
 
-            {hasContactInfo && (
+            {(returnInfo.contact_phone || returnInfo.contact_whatsapp) && (
               <div
                 style={{
                   display: "grid",
@@ -522,14 +554,48 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
               >
                 {returnInfo.contact_phone && (
                   <div>
-                    <p style={labelStyle}>{t("contactPhone")}</p>
-                    <p style={{ fontSize: "14px", fontWeight: "500", color: "rgb(var(--text))" }}>{returnInfo.contact_phone}</p>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "rgb(var(--text-secondary))",
+                        marginBottom: "var(--space-2)",
+                      }}
+                    >
+                      {t("contactPhone")}
+                    </p>
+                    <a
+                      href={toTelHref(returnInfo.contact_phone)}
+                      style={{ fontSize: "15px", fontWeight: "500", color: "rgb(var(--brand))", textDecoration: "none" }}
+                    >
+                      {returnInfo.contact_phone}
+                    </a>
                   </div>
                 )}
                 {returnInfo.contact_whatsapp && (
                   <div>
-                    <p style={labelStyle}>{t("contactWhatsapp")}</p>
-                    <p style={{ fontSize: "14px", fontWeight: "500", color: "rgb(var(--text))" }}>{returnInfo.contact_whatsapp}</p>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "rgb(var(--text-secondary))",
+                        marginBottom: "var(--space-2)",
+                      }}
+                    >
+                      {t("contactWhatsapp")}
+                    </p>
+                    <a
+                      href={toWaHref(returnInfo.contact_whatsapp)}
+                      style={{ fontSize: "15px", fontWeight: "500", color: "rgb(var(--brand))", textDecoration: "none" }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {returnInfo.contact_whatsapp}
+                    </a>
                   </div>
                 )}
               </div>

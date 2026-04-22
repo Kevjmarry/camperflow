@@ -1874,7 +1874,8 @@
       "rulesAndTips": "Rules & tips"
     },
     "helpers": {
-      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder."
+      "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder.",
+      "textareaHelper": "Keep each point short and readable for guests."
     },
     "placeholders": {
       "contactPhone": "+49 30 12345678",
@@ -1907,9 +1908,6 @@
     },
     "sidebar": {
       "whatGuestsSee": "What guests see",
-      "markdownTitle": "Markdown supported",
-      "markdownBodyPrefix": "Text fields render as formatted content for guests. Use",
-      "markdownBodySuffix": "URLs auto-link.",
       "map": {
         "contactNumbers": "Contact numbers",
         "contactNumbersWhere": "Emergency page & portal header",

@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -24,6 +23,52 @@ interface CompanyGuestInfo {
   contact_phone: string | null;
   contact_whatsapp: string | null;
   before_arrival_info: string | null;
+}
+
+function renderLines(text: string) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      {lines.map((line, i) => (
+        <p key={i} style={{ fontSize: "15px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
+          {line}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function renderPickupLines(text: string) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  const [first, ...rest] = lines;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+      <div
+        style={{
+          padding: "var(--space-3) var(--space-4)",
+          background: "rgb(var(--app-bg))",
+          border: "1px solid rgb(var(--border-light))",
+          borderLeft: "3px solid rgb(var(--brand))",
+          borderRadius: "var(--radius)",
+        }}
+      >
+        <p style={{ fontSize: "15px", fontWeight: "500", color: "rgb(var(--text))", margin: 0, lineHeight: "1.5" }}>
+          {first}
+        </p>
+      </div>
+      {rest.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          {rest.map((line, i) => (
+            <p key={i} style={{ fontSize: "15px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default async function GuestPickupPage({ params, searchParams }: PageProps) {
@@ -91,29 +136,50 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
   };
 
   const labelStyle = {
-    fontSize: "12px",
-    fontWeight: "500" as const,
+    fontSize: "11px",
+    fontWeight: "600" as const,
     textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
+    letterSpacing: "0.06em",
     color: "rgb(var(--text-secondary))",
     marginBottom: "var(--space-2)",
   };
 
-  const hasContactInfo = guestInfo.contact_phone || guestInfo.contact_whatsapp;
+  const valueStyle = {
+    fontWeight: "500" as const,
+    color: "rgb(var(--text))",
+    margin: 0,
+    fontSize: "15px",
+  };
+
+  const linkStyle = {
+    fontWeight: "500" as const,
+    color: "rgb(var(--brand))",
+    margin: 0,
+    fontSize: "15px",
+    textDecoration: "none" as const,
+  };
+
+  const toTelHref = (phone: string) => `tel:${phone.replace(/\s/g, "")}`;
+  const toWaHref = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
+
+  const sectionLabel = (color: string) => ({
+    fontSize: "11px",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.07em",
+    color,
+    margin: "0 0 var(--space-6) 0",
+  });
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
-        .gpickup-sp { padding: var(--space-4); }
-        .gpickup-mb { margin-bottom: var(--space-4); }
-        .gpickup-md > *:last-child { margin-bottom: 0; }
-        .gpickup-md > *:first-child { margin-top: 0; }
-        @media (min-width: 768px) {
-          .gpickup-sp { padding: var(--space-6); }
-          .gpickup-mb { margin-bottom: var(--space-6); }
-        }
+        .gpickup-sp { padding: var(--space-5); }
+        @media (min-width: 768px) { .gpickup-sp { padding: var(--space-6); } }
       `}</style>
-      <div style={{ marginBottom: "var(--space-4)" }}>
+
+      {/* Back link */}
+      <div>
         <Link
           href={`/${locale}/guest?code=${encodeURIComponent(code)}`}
           style={{
@@ -133,8 +199,9 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         </Link>
       </div>
 
+      {/* Title bar */}
       <div
-        className="surface gpickup-sp gpickup-mb"
+        className="surface gpickup-sp"
         style={{
           display: "flex",
           alignItems: "center",
@@ -158,139 +225,107 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         </span>
       </div>
 
-      {/* Before you arrive — company content when set, else generic numbered checklist */}
-      <div
-        className="surface gpickup-sp gpickup-mb"
-        style={{
-          background: "rgb(var(--brand-light))",
-          border: "1px solid rgb(var(--brand))",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "11px",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "0.07em",
-            color: "rgb(var(--brand))",
-            margin: "0 0 var(--space-4) 0",
-          }}
-        >
-          {t("beforeYouArriveTitle")}
-        </p>
-        {guestInfo.before_arrival_info ? (
-          <MarkdownContent
-            content={guestInfo.before_arrival_info}
-            className="gpickup-md"
-          />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {([0, 1, 2] as const).map((i) => (
-              <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                <div
-                  style={{
-                    flexShrink: 0,
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    background: "rgb(var(--brand))",
-                    color: "white",
-                    fontSize: "10px",
-                    fontWeight: "700",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginTop: "2px",
-                  }}
-                >
-                  {i + 1}
-                </div>
-                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "rgb(var(--text))" }}>
-                  {t(`beforeYouArrive${i}`)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+      {/* Summary card */}
       <div className="surface gpickup-sp">
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "var(--space-6)",
-            marginBottom: "var(--space-8)",
           }}
         >
           <div>
             <p style={labelStyle}>{t("pickupDateTime")}</p>
-            <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{formatDateTime(booking.pickup_at)}</p>
+            <p style={valueStyle}>{formatDateTime(booking.pickup_at)}</p>
           </div>
 
           {vehicle?.name && (
             <div>
               <p style={labelStyle}>{t("vehicle")}</p>
-              <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{vehicle.name}</p>
+              <p style={valueStyle}>{vehicle.name}</p>
+            </div>
+          )}
+
+          {guestInfo.contact_phone && (
+            <div>
+              <p style={labelStyle}>{t("contactPhone")}</p>
+              <a href={toTelHref(guestInfo.contact_phone)} style={linkStyle}>
+                {guestInfo.contact_phone}
+              </a>
+            </div>
+          )}
+
+          {guestInfo.contact_whatsapp && (
+            <div>
+              <p style={labelStyle}>{t("contactWhatsapp")}</p>
+              <a href={toWaHref(guestInfo.contact_whatsapp)} style={linkStyle} target="_blank" rel="noopener noreferrer">
+                {guestInfo.contact_whatsapp}
+              </a>
             </div>
           )}
         </div>
+      </div>
 
-        {guestInfo.pickup_info ? (
-          <div
-            style={{
-              padding: "var(--space-4)",
-              background: "rgb(var(--app-bg))",
-              border: "1px solid rgb(var(--border-light))",
-              borderRadius: "var(--radius)",
-              marginBottom: hasContactInfo ? "var(--space-6)" : undefined,
-            }}
-          >
-            <p style={{ ...labelStyle, marginBottom: "var(--space-3)" }}>{t("pickupInfo")}</p>
-            <MarkdownContent
-              content={guestInfo.pickup_info}
-              className="gpickup-md"
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              padding: "var(--space-5) var(--space-4)",
-              background: "rgb(var(--app-bg))",
-              border: "1px dashed rgb(var(--border))",
-              borderRadius: "var(--radius)",
-              textAlign: "center",
-              marginBottom: hasContactInfo ? "var(--space-6)" : undefined,
-            }}
-          >
-            <p style={{ fontSize: "13px", lineHeight: "1.6", color: "rgb(var(--muted))", margin: 0 }}>
+      {/* Before you arrive */}
+      <div
+        className="surface gpickup-sp"
+        style={{
+          background: "rgb(var(--brand-light))",
+          border: "1px solid rgb(var(--brand))",
+        }}
+      >
+        <p style={sectionLabel("rgb(var(--brand))")}>
+          {t("beforeYouArriveTitle")}
+        </p>
+        <div style={{ maxWidth: "640px" }}>
+          {guestInfo.before_arrival_info ? (
+            renderLines(guestInfo.before_arrival_info)
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {([0, 1, 2] as const).map((i) => (
+                <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      background: "rgb(var(--brand))",
+                      color: "white",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <span style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))" }}>
+                    {t(`beforeYouArrive${i}`)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Pickup instructions */}
+      <div className="surface gpickup-sp">
+        <p style={sectionLabel("rgb(var(--text-secondary))")}>
+          {t("pickupInfo")}
+        </p>
+        <div style={{ maxWidth: "640px" }}>
+          {guestInfo.pickup_info ? (
+            renderPickupLines(guestInfo.pickup_info)
+          ) : (
+            <p style={{ fontSize: "14px", lineHeight: "1.65", color: "rgb(var(--muted))", margin: 0 }}>
               {t("placeholder")}
             </p>
-          </div>
-        )}
-
-        {hasContactInfo && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "var(--space-4)",
-            }}
-          >
-            {guestInfo.contact_phone && (
-              <div>
-                <p style={labelStyle}>{t("contactPhone")}</p>
-                <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{guestInfo.contact_phone}</p>
-              </div>
-            )}
-            {guestInfo.contact_whatsapp && (
-              <div>
-                <p style={labelStyle}>{t("contactWhatsapp")}</p>
-                <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{guestInfo.contact_whatsapp}</p>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

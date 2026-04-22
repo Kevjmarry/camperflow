@@ -1874,7 +1874,8 @@
       "rulesAndTips": "Regeln & Tipps"
     },
     "helpers": {
-      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen."
+      "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen.",
+      "textareaHelper": "Halte jeden Punkt kurz und gut lesbar für Gäste."
     },
     "placeholders": {
       "contactPhone": "+49 30 12345678",
@@ -1907,9 +1908,6 @@
     },
     "sidebar": {
       "whatGuestsSee": "Was Gäste sehen",
-      "markdownTitle": "Markdown unterstützt",
-      "markdownBodyPrefix": "Textfelder werden für Gäste als formatierter Inhalt dargestellt. Verwenden Sie",
-      "markdownBodySuffix": "URLs werden automatisch verlinkt.",
       "map": {
         "contactNumbers": "Kontaktnummern",
         "contactNumbersWhere": "Notfallseite & Portalheader",

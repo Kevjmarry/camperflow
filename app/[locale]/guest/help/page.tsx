@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { MarkdownContent } from "@/components/guest/MarkdownContent";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -18,6 +17,20 @@ interface CompanyHelpInfo {
 }
 
 const SECTION_KEYS = ["water", "toilet", "electricity", "gas", "heating", "fridge", "beforeDriving", "driving"] as const;
+
+function renderLines(text: string) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      {lines.map((line, i) => (
+        <p key={i} style={{ fontSize: "15px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
+          {line}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 export default async function GuestHelpPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
@@ -51,12 +64,19 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
     if (data) helpInfo = data;
   }
 
+  const sectionLabel = (color: string) => ({
+    fontSize: "11px",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.07em",
+    color,
+    margin: "0 0 var(--space-6) 0",
+  });
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
-        .gh-sp { padding: var(--space-4); }
-        .gh-md > *:last-child { margin-bottom: 0; }
-        .gh-md > *:first-child { margin-top: 0; }
+        .gh-sp { padding: var(--space-5); }
         @media (min-width: 768px) { .gh-sp { padding: var(--space-6); } }
       `}</style>
 
@@ -122,38 +142,24 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
             border: "1px solid rgb(var(--brand))",
           }}
         >
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
-              color: "rgb(var(--brand))",
-              margin: "0 0 var(--space-4) 0",
-            }}
-          >
+          <p style={sectionLabel("rgb(var(--brand))")}>
             {t("includedTitle")}
           </p>
-          <MarkdownContent content={helpInfo.included_items} className="gh-md" />
+          <div style={{ maxWidth: "640px" }}>
+            {renderLines(helpInfo.included_items)}
+          </div>
         </div>
       )}
 
       {/* Company-specific: Rules & tips */}
       {helpInfo.rules_and_tips && (
         <div className="surface gh-sp">
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
-              color: "rgb(var(--text-secondary))",
-              margin: "0 0 var(--space-4) 0",
-            }}
-          >
+          <p style={sectionLabel("rgb(var(--text-secondary))")}>
             {t("rulesTitle")}
           </p>
-          <MarkdownContent content={helpInfo.rules_and_tips} className="gh-md" />
+          <div style={{ maxWidth: "640px" }}>
+            {renderLines(helpInfo.rules_and_tips)}
+          </div>
         </div>
       )}
 
@@ -211,11 +217,11 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
               </summary>
               <div
                 style={{
-                  padding: "var(--space-4) var(--space-5)",
+                  padding: "var(--space-5) var(--space-5)",
                   borderTop: "1px solid rgb(var(--border-light))",
                 }}
               >
-                <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text-secondary))", margin: 0 }}>
+                <p style={{ fontSize: "14px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
                   {t(`sections.${key}.body`)}
                 </p>
               </div>
