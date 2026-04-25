@@ -12,7 +12,10 @@ export async function provisionBookingChecklists(bookingId: string): Promise<Pro
     .select('company_id')
     .eq('id', bookingId)
     .single()
-  if (bErr || !booking) throw bErr ?? new Error('Booking not found')
+  if (bErr || !booking) {
+    console.error('[provisionBookingChecklists] step=fetchBooking bookingId=%s code=%s message=%s details=%s hint=%s', bookingId, bErr?.code, bErr?.message, bErr?.details, bErr?.hint)
+    throw bErr ?? new Error('Booking not found')
+  }
 
   const { company_id } = booking
 
@@ -22,14 +25,20 @@ export async function provisionBookingChecklists(bookingId: string): Promise<Pro
     .eq('company_id', company_id)
     .eq('scope', 'booking')
     .eq('active', true)
-  if (tErr) throw tErr
+  if (tErr) {
+    console.error('[provisionBookingChecklists] step=fetchTemplates company_id=%s code=%s message=%s details=%s hint=%s', company_id, tErr?.code, tErr?.message, tErr?.details, tErr?.hint)
+    throw tErr
+  }
   if (!templates?.length) return { created: 0 }
 
   const { data: existing, error: eErr } = await supabase
     .from('checklist_instances')
     .select('template_id')
     .eq('booking_id', bookingId)
-  if (eErr) throw eErr
+  if (eErr) {
+    console.error('[provisionBookingChecklists] step=fetchExistingInstances bookingId=%s code=%s message=%s details=%s hint=%s', bookingId, eErr?.code, eErr?.message, eErr?.details, eErr?.hint)
+    throw eErr
+  }
 
   const existingTemplateIds = new Set((existing ?? []).map((ci) => ci.template_id))
   const missing = templates.filter((t) => !existingTemplateIds.has(t.id))
@@ -47,14 +56,20 @@ export async function provisionBookingChecklists(bookingId: string): Promise<Pro
       }))
     )
     .select('id, template_id')
-  if (iErr) throw iErr
+  if (iErr) {
+    console.error('[provisionBookingChecklists] step=insertInstances bookingId=%s missing=%d code=%s message=%s details=%s hint=%s', bookingId, missing.length, iErr?.code, iErr?.message, iErr?.details, iErr?.hint)
+    throw iErr
+  }
   if (!newInstances?.length) return { created: 0 }
 
   const { data: templateItems, error: tiErr } = await supabase
     .from('checklist_template_items')
     .select('id, template_id')
     .in('template_id', newInstances.map((ci) => ci.template_id))
-  if (tiErr) throw tiErr
+  if (tiErr) {
+    console.error('[provisionBookingChecklists] step=fetchTemplateItems code=%s message=%s details=%s hint=%s', tiErr?.code, tiErr?.message, tiErr?.details, tiErr?.hint)
+    throw tiErr
+  }
 
   const itemsByTemplate = new Map<string, string[]>()
   for (const item of (templateItems ?? [])) {
@@ -74,8 +89,11 @@ export async function provisionBookingChecklists(bookingId: string): Promise<Pro
   if (instanceItems.length) {
     const { error: iiErr } = await supabase
       .from('checklist_instance_items')
-      .insert(instanceItems)
-    if (iiErr) throw iiErr
+      .upsert(instanceItems, { onConflict: 'instance_id,template_item_id', ignoreDuplicates: true })
+    if (iiErr) {
+      console.error('[provisionBookingChecklists] step=insertInstanceItems bookingId=%s count=%d code=%s message=%s details=%s hint=%s', bookingId, instanceItems.length, iiErr?.code, iiErr?.message, iiErr?.details, iiErr?.hint)
+      throw iiErr
+    }
   }
 
   return { created: newInstances.length }

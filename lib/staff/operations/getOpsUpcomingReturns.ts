@@ -94,8 +94,9 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked, booking_status')
     .eq('company_id', companyId)
+    .neq('booking_status', 'completed')
     .gte('return_at', startOfToday.toISOString())
     .order('return_at', { ascending: true })
     .limit(20)
@@ -103,6 +104,17 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
   if (error) throw error
 
   const bookingIds = (data ?? []).map((b) => b.id)
+
+  const { data: completedReturnChecklists } = bookingIds.length
+    ? await supabase
+        .from('checklist_instances')
+        .select('booking_id')
+        .in('booking_id', bookingIds)
+        .eq('checklist_type', 'return')
+        .eq('status', 'completed')
+    : { data: [] }
+
+  const bookingsWithCompletedReturn = new Set((completedReturnChecklists ?? []).map((c) => c.booking_id))
 
   const { data: bookingsData } = bookingIds.length
     ? await supabase.from('bookings').select('id, source_metadata, staff_metadata').in('id', bookingIds)
@@ -187,7 +199,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  return (data ?? []).map((b) => {
+  return (data ?? []).filter((b) => !bookingsWithCompletedReturn.has(b.id)).map((b) => {
     const returnDate = new Date(b.return_at)
     returnDate.setHours(0, 0, 0, 0)
     const daysUntil = Math.round(

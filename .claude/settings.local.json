@@ -13,7 +13,9 @@
       "Bash(grep -r \"vehicle_issues\" /c/CamperFlow/camperflow/app -A 5 --include=\"*.ts\" --include=\"*.tsx\" -not -path \"*/node_modules/*\")",
       "Bash(vercel --version)",
       "Bash(npx vercel *)",
-      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff -type f -name \"*.tsx\")"
+      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff -type f -name \"*.tsx\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -E \"\\\\.tsx$\")"
     ]
   }
 }

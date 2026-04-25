@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     console.error('[provision-booking-checklists POST] message:', e?.message ?? err);
     console.error('[provision-booking-checklists POST] code:', e?.code);
     console.error('[provision-booking-checklists POST] details:', e?.details);
+    console.error('[provision-booking-checklists POST] hint:', e?.hint);
     console.error('[provision-booking-checklists POST] full:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

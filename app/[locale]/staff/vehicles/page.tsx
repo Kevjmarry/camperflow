@@ -79,8 +79,7 @@ export default function VehiclesPage() {
       // Enrich both preparing and ready vehicles with warning signals.
       // on_rent vehicles are skipped — their status is authoritative and
       // there's nothing actionable to surface here.
-      const enrichIds    = vehicleList.filter(v => v.status === 'preparing' || v.status === 'ready').map(v => v.id);
-      const preparingIds = vehicleList.filter(v => v.status === 'preparing').map(v => v.id);
+      const enrichIds = vehicleList.filter(v => v.status === 'preparing' || v.status === 'ready').map(v => v.id);
 
       if (enrichIds.length === 0) {
         setVehicles(vehicleList);
@@ -90,8 +89,7 @@ export default function VehiclesPage() {
       const today = new Date().toISOString().split('T')[0];
 
       // ── Enrichment queries ─────────────────────────────────────────────────
-      // Run across all preparing+ready vehicles so we can surface warning text
-      // without ever overriding the stored status.
+      // Run across all preparing+ready vehicles.
       const [r1, r2, r3] = await Promise.all([
         // 1. Open unresolved vehicle issues
         supabase
@@ -106,19 +104,40 @@ export default function VehiclesPage() {
           .in('vehicle_id', enrichIds)
           .eq('compliance_types.blocks_readiness', true)
           .lte('expiry_date', today),
-        // 3. Incomplete booking-linked checklist instances (preparing only)
-        preparingIds.length > 0
-          ? supabase
-              .from('checklist_instances')
-              .select('bookings!inner(vehicle_id)')
-              .in('bookings.vehicle_id', preparingIds)
-              .neq('status', 'completed')
-          : Promise.resolve({ data: [] as any[], error: null }),
+        // 3. Next confirmed booking per vehicle (soonest pickup_at).
+        // Used to scope the stale-state checklist guard to match the DB function.
+        supabase
+          .from('bookings')
+          .select('id, vehicle_id')
+          .in('vehicle_id', enrichIds)
+          .eq('status', 'confirmed')
+          .order('pickup_at', { ascending: true }),
       ]);
+
+      // Map vehicle_id → next confirmed booking id (first row per vehicle since ordered).
+      const nextBookingByVehicle = new Map<string, string>();
+      for (const b of (r3.data || []) as any[]) {
+        if (!nextBookingByVehicle.has(b.vehicle_id)) {
+          nextBookingByVehicle.set(b.vehicle_id, b.id);
+        }
+      }
+      const nextBookingIds = [...nextBookingByVehicle.values()];
+
+      // 4. Incomplete prep checklists for the next confirmed booking only.
+      // Stale-state guard: DB may say 'ready' if a booking was inserted after
+      // the last recompute trigger fired (INSERT does not trigger recompute).
+      const { data: checklistData } = nextBookingIds.length > 0
+        ? await supabase
+            .from('checklist_instances')
+            .select('vehicle_id')
+            .in('booking_id', nextBookingIds)
+            .in('checklist_type', ['cleaning', 'mechanical', 'vehicle_readiness', 'pre_season', 'post_season'])
+            .neq('status', 'completed')
+        : { data: [] as any[] };
 
       const issues     = r1.data || [];
       const compliance = r2.data || [];
-      const checklists = r3.data || [];
+      const checklists = checklistData || [];
 
       // ── Build enriched list ─────────────────────────────────────────────────
       const issueSet = new Set(issues.map((r: any) => r.vehicle_id));
@@ -130,14 +149,23 @@ export default function VehiclesPage() {
         }
       }
 
-      const bookingChecklistSet = new Set(
-        checklists.map((r: any) => r.bookings?.vehicle_id).filter(Boolean)
+      // Vehicle IDs with at least one incomplete prep checklist for a confirmed booking.
+      // Used as a stale-state guard when the DB hasn't recomputed yet.
+      const openPrepVehicleSet = new Set(
+        checklists.map((r: any) => r.vehicle_id).filter(Boolean)
       );
 
       const withReasons = vehicleList.map(v => {
         if (v.status === 'on_rent') return v;
-        // Never override the stored status — ready means ready, preparing means
-        // something is actively in progress. Only add warning text.
+
+        // Stale-state guard: DB says 'ready' but there are incomplete prep checklists
+        // for a confirmed booking (can happen when a booking is inserted after the last
+        // recompute trigger fired, since INSERT doesn't trigger recompute).
+        const effectiveStatus: Vehicle['status'] =
+          v.status === 'ready' && openPrepVehicleSet.has(v.id)
+            ? 'preparing'
+            : v.status;
+
         let blockingReason = '';
         if (issueSet.has(v.id)) {
           blockingReason = t("blockingReason.openIssue");
@@ -145,9 +173,13 @@ export default function VehiclesPage() {
           const complianceName = complianceNameByVehicle.get(v.id);
           if (complianceName !== undefined) {
             blockingReason = t("blockingReason.expiredComplianceWithName", { name: complianceName });
-          } else if (v.status === 'preparing' && bookingChecklistSet.has(v.id)) {
+          } else if (effectiveStatus === 'preparing' && openPrepVehicleSet.has(v.id)) {
             blockingReason = t("blockingReason.checklistIncomplete");
           }
+        }
+
+        if (effectiveStatus !== v.status) {
+          return { ...v, status: effectiveStatus, ...(blockingReason ? { blockingReason } : {}) };
         }
         return blockingReason ? { ...v, blockingReason } : v;
       });

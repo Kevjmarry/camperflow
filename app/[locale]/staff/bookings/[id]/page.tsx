@@ -900,14 +900,27 @@ export default function BookingDetailPage() {
       vehicle = vehicleInfo;
     }
 
-    // Display override: if DB says ready but prep checklists (cleaning/mechanical)
-    // for this booking are not yet complete, show preparing.
-    if (vehicle?.status === 'ready') {
-      const prepIncomplete = checklistInstances.some(
-        (i) => ['cleaning', 'mechanical'].includes(i.checklist_type) && i.status !== 'completed'
-      );
-      if (prepIncomplete) {
-        return { ...vehicle, status: 'preparing' };
+    if (vehicle && vehicle.status !== 'on_rent') {
+      const savedBookingStatus = booking?.status ?? redactedBooking?.status;
+
+      if (savedBookingStatus === 'confirmed') {
+        // For a confirmed booking, status depends on prep completion.
+        // DB may be stale (INSERT doesn't fire the recompute trigger) so
+        // cross-check against the loaded checklist instances.
+        const prepIncomplete = checklistInstances.some(
+          (i) => ['cleaning', 'mechanical'].includes(i.checklist_type) && i.status !== 'completed'
+        );
+        return { ...vehicle, status: prepIncomplete ? 'preparing' : 'ready' };
+      }
+
+      // Stale-state guard: DB says ready but prep checklists are incomplete.
+      if (vehicle.status === 'ready') {
+        const prepIncomplete = checklistInstances.some(
+          (i) => ['cleaning', 'mechanical'].includes(i.checklist_type) && i.status !== 'completed'
+        );
+        if (prepIncomplete) {
+          return { ...vehicle, status: 'preparing' };
+        }
       }
     }
 
@@ -1058,6 +1071,7 @@ export default function BookingDetailPage() {
   // ── Non-manager (redacted) view ───────────────────────────────────────────
 
   if (!canManage && redactedBooking) {
+    const displayVehicle = getSelectedVehicle();
     return (
       <PageContainer maxWidth="1400px">
         <div className="surface page-surface">
@@ -1111,9 +1125,9 @@ export default function BookingDetailPage() {
                         <span style={{ color: 'rgb(var(--text))' }}>
                           {vehicleInfo.name} ({vehicleInfo.registration_plate})
                         </span>
-                        {vehicleInfo.status && (
-                          <span style={getStatusChipStyle(vehicleInfo.status)}>
-                            {getVehicleStatusLabel(vehicleInfo.status)}
+                        {displayVehicle?.status && (
+                          <span style={getStatusChipStyle(displayVehicle.status)}>
+                            {getVehicleStatusLabel(displayVehicle.status)}
                           </span>
                         )}
                       </span>
