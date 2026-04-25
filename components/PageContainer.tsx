@@ -39,7 +39,8 @@ export default function PageContainer({
     >
       <style>{`
         .page-container-inner {
-          padding-bottom: ${showSignOut ? 'calc(96px + env(safe-area-inset-bottom))' : 'calc(var(--space-4) + env(safe-area-inset-bottom))'};
+          padding: var(--space-4);
+          padding-bottom: ${showSignOut ? 'calc(96px + env(safe-area-inset-bottom))' : 'calc(60px + env(safe-area-inset-bottom))'};
         }
         @media (min-width: 768px) {
           .page-container-inner {
@@ -53,7 +54,6 @@ export default function PageContainer({
           width: '100%',
           maxWidth,
           margin: '0 auto',
-          padding: 'var(--space-4)',
         }}
       >
         {(title || showSignOut) && (
