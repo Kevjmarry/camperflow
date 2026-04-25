@@ -32,14 +32,14 @@ export default function PageContainer({
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: 'rgb(var(--app-bg))',
         color: 'rgb(var(--text))',
       }}
     >
       <style>{`
         .page-container-inner {
-          padding-bottom: ${showSignOut ? 'calc(var(--space-4) + 60px + env(safe-area-inset-bottom))' : 'calc(var(--space-4) + env(safe-area-inset-bottom))'};
+          padding-bottom: ${showSignOut ? 'calc(96px + env(safe-area-inset-bottom))' : 'calc(var(--space-4) + env(safe-area-inset-bottom))'};
         }
         @media (min-width: 768px) {
           .page-container-inner {

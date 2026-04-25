@@ -12,7 +12,8 @@
       "Bash(grep -r \"\\\\.insert\\({\" /c/CamperFlow/camperflow -A 10 --include=\"*.ts\" --include=\"*.tsx\" -not -path \"*/node_modules/*\")",
       "Bash(grep -r \"vehicle_issues\" /c/CamperFlow/camperflow/app -A 5 --include=\"*.ts\" --include=\"*.tsx\" -not -path \"*/node_modules/*\")",
       "Bash(vercel --version)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff -type f -name \"*.tsx\")"
     ]
   }
 }
