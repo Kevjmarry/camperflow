@@ -7,10 +7,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChecklistItemType, IssueSeverity, SyncError, FlagDraft } from './types';
 import { uiToDbSeverity, parseSyncError } from './helpers';
 
+const PREP_CHECKLIST_TYPES = new Set(['cleaning', 'mechanical', 'vehicle_readiness', 'pre_season', 'post_season']);
+
 interface UseChecklistFlagsProps {
   supabase: SupabaseClient<any>;
   instanceId: string;
   vehicleId: string | null;
+  checklistType: string;
+  bookingId: string | null;
   localItems: ChecklistItemType[];
   setLocalItems: Dispatch<SetStateAction<ChecklistItemType[]>>;
   isChecklistLocked: boolean;
@@ -22,6 +26,8 @@ export function useChecklistFlags({
   supabase,
   instanceId,
   vehicleId,
+  checklistType,
+  bookingId,
   localItems,
   setLocalItems,
   isChecklistLocked,
@@ -99,6 +105,28 @@ export function useChecklistFlags({
     // Only possible when the checklist is linked to a vehicle.
     let vehicleIssueId: string | null = null;
     if (vehicleId) {
+      // For prep-type checklists linked to a booking, find the most recent prior booking
+      // for the same vehicle (return_at before this booking's pickup_at) to attribute the issue.
+      let sourceBookingId: string | null = null;
+      if (bookingId && PREP_CHECKLIST_TYPES.has(checklistType)) {
+        const { data: currentBooking } = await supabase
+          .from('bookings')
+          .select('pickup_at')
+          .eq('id', bookingId)
+          .single();
+        if (currentBooking?.pickup_at) {
+          const { data: priorBooking } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('vehicle_id', vehicleId)
+            .lt('return_at', currentBooking.pickup_at)
+            .order('return_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (priorBooking) sourceBookingId = priorBooking.id;
+        }
+      }
+
       const { data: newIssue } = await supabase
         .from('vehicle_issues')
         .insert({
@@ -106,6 +134,7 @@ export function useChecklistFlags({
           resolved: false,
           source_checklist_instance_id: instanceId,
           source_checklist_item_id: itemId,
+          ...(sourceBookingId ? { source_booking_id: sourceBookingId } : {}),
         })
         .select('id')
         .single();

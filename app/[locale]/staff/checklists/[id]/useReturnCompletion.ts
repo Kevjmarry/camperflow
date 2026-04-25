@@ -75,6 +75,11 @@ export function useReturnCompletion({
       return;
     }
 
+    const vehicleId = instance.vehicle_id ?? localInstance.vehicle_id;
+    if (vehicleId) {
+      await supabase.from('vehicles').update({ status: 'preparing' }).eq('id', vehicleId);
+    }
+
     navigateAfterCompletion();
   };
 
@@ -86,9 +91,12 @@ export function useReturnCompletion({
   const handleReturnCompleteButton = async () => {
     if (isChecklistLocked || returnCompleting) return;
 
-    // 1. All visible return audit items must be checked (blocking)
+    // 1. All visible Phase 2 Checklist Actions items must be checked (blocking)
     const hasUncheckedAudit = localItems.some(
-      (it) => !it.checked && getReturnAuditDisplayLabel(it.template.label) !== null
+      (it) =>
+        it.template.ui_section === 'checklist_actions' &&
+        !it.checked &&
+        getReturnAuditDisplayLabel(it.template.label) !== null
     );
     if (hasUncheckedAudit) {
       setReturnBlockedError(t('returnErrorAuditIncomplete'));
@@ -118,7 +126,7 @@ export function useReturnCompletion({
 
     // Urgent/blocking flags: show notification modal (both buttons still complete).
     // Attention-only flags: complete immediately with no modal.
-    const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+    const urgentItems = localItems.filter((it) => it.issue_flag === true && it.issue_blocking === true);
     if (urgentItems.length > 0) {
       showReturnModal(urgentItems, async () => doReturnButtonComplete(user.id));
       return;

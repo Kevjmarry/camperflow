@@ -295,6 +295,18 @@ export default function NewBookingPage() {
         return;
       }
 
+      if (data?.id) {
+        const res = await fetch('/api/staff/admin/provision-booking-checklists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: data.id }),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          console.error('provision checklists failed:', res.status, res.statusText, text);
+        }
+      }
+
       router.push(`/${locale}/staff/bookings`);
       router.refresh();
     } catch (err: any) {

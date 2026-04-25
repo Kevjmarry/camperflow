@@ -900,16 +900,13 @@ export default function BookingDetailPage() {
       vehicle = vehicleInfo;
     }
 
-    // Display override: if DB says ready but return is done and post-return
-    // checklists (cleaning/mechanical) are still incomplete, show preparing.
+    // Display override: if DB says ready but prep checklists (cleaning/mechanical)
+    // for this booking are not yet complete, show preparing.
     if (vehicle?.status === 'ready') {
-      const returnCompleted = checklistInstances.some(
-        (i) => i.checklist_type === 'return' && i.status === 'completed'
-      );
-      const postReturnIncomplete = checklistInstances.some(
+      const prepIncomplete = checklistInstances.some(
         (i) => ['cleaning', 'mechanical'].includes(i.checklist_type) && i.status !== 'completed'
       );
-      if (returnCompleted && postReturnIncomplete) {
+      if (prepIncomplete) {
         return { ...vehicle, status: 'preparing' };
       }
     }
@@ -985,7 +982,7 @@ export default function BookingDetailPage() {
   // ── Checklist gating ──────────────────────────────────────────────────────
 
   const handoverCompleted = checklistInstances.some(
-    (i) => i.checklist_type === 'handover' && i.status === 'completed'
+    (i) => (i.checklist_type === 'handover' || i.checklist_type === 'pickup') && i.status === 'completed'
   );
   const statusOrder: Record<string, number> = { in_progress: 0, not_started: 1, pending: 1, completed: 2 };
   const typeOrder: Record<string, number> = { handover: 0, pickup: 0, return: 1, cleaning: 2, mechanical: 3 };

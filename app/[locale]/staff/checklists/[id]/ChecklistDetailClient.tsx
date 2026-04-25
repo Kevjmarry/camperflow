@@ -348,6 +348,8 @@ export default function ChecklistDetailClient({
     supabase,
     instanceId: instance.id,
     vehicleId: instance.vehicle_id,
+    checklistType: instance.checklist_type,
+    bookingId: instance.booking_id,
     localItems,
     setLocalItems,
     isChecklistLocked,
@@ -1028,7 +1030,8 @@ export default function ChecklistDetailClient({
       staff_metadata?: { extras?: string[] };
       company_settings?: { extras_catalog?: { id: string; name: string }[] };
     }) | null;
-    const selectedIds: string[] = bookings?.staff_metadata?.extras ?? [];
+    const rawExtras = bookings?.staff_metadata?.extras;
+    const selectedIds: string[] = Array.isArray(rawExtras) ? rawExtras : [];
     const catalog: { id: string; name: string }[] = bookings?.company_settings?.extras_catalog ?? [];
     return selectedIds
       .map((id) => catalog.find((e) => e.id === id))
@@ -1441,7 +1444,7 @@ export default function ChecklistDetailClient({
                 variant="return"
               />
               <AuditChecklistBlock
-                sections={sections}
+                sections={checklistActionsSections}
                 isChecklistLocked={isChecklistLocked}
                 collapsedSections={collapsedSections}
                 onToggleSection={toggleSection}

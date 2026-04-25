@@ -180,6 +180,7 @@ export function getReturnAuditDisplayLabel(label: string): string | null {
   if (l.includes('exterior')) return 'Exterior checked for new damage';
   if (l.includes('interior') && (l.includes('clean'))) return 'Interior cleaned';
   if (l.includes('interior')) return 'Interior checked for damage';
+  if (l.includes('photo') && (l.includes('damage') || l.includes('new'))) return null;
   if (l.includes('damage') && (l.includes('inspect') || l.includes('check') || l.includes('assess'))) return 'Damage assessment completed';
   if (
     (l.includes('standard') && (l.includes('kit') || l.includes('equipment'))) ||

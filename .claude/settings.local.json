@@ -7,7 +7,12 @@
       "Bash(python3 -c \" import json with open\\('c:/CamperFlow/camperflow/messages/en.json'\\) as f: d = json.load\\(f\\) sc = d.get\\('staffCompany', {}\\) print\\(json.dumps\\(sc, indent=2\\)\\) \")",
       "Bash(node -e \" const d = require\\('c:/CamperFlow/camperflow/messages/en.json'\\); const sc = d['staffCompany']; console.log\\(JSON.stringify\\(sc, null, 2\\)\\); \")",
       "Bash(node -e \" const d = require\\('c:/CamperFlow/camperflow/messages/de.json'\\); const sc = d['staffCompany']; console.log\\(JSON.stringify\\(sc, null, 2\\)\\); \")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(grep -E \"\\\\.\\(ts|d\\\\.ts\\)$\")",
+      "Bash(grep -r \"\\\\.insert\\({\" /c/CamperFlow/camperflow -A 10 --include=\"*.ts\" --include=\"*.tsx\" -not -path \"*/node_modules/*\")",
+      "Bash(grep -r \"vehicle_issues\" /c/CamperFlow/camperflow/app -A 5 --include=\"*.ts\" --include=\"*.tsx\" -not -path \"*/node_modules/*\")",
+      "Bash(vercel --version)",
+      "Bash(npx vercel *)"
     ]
   }
 }

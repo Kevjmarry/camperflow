@@ -1435,7 +1435,8 @@
         "handover": "Übergabe-Checkliste",
         "return": "Rückgabe-Checkliste",
         "cleaning": "Reinigungs-Checkliste",
-        "mechanical": "Technik-Checkliste"
+        "mechanical": "Technik-Checkliste",
+        "pickup": "Abhol-Checkliste"
       }
     },
     "action": {

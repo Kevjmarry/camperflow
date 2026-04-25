@@ -1435,7 +1435,8 @@
         "handover": "Pickup Checklist",
         "return": "Return Checklist",
         "cleaning": "Cleaning Checklist",
-        "mechanical": "Mechanical Checklist"
+        "mechanical": "Mechanical Checklist",
+        "pickup": "Pickup checklist"
       }
     },
     "action": {

@@ -54,7 +54,20 @@
       "Bash(git -C /c/CamperFlow/camperflow log --all --oneline -- \"supabase/migrations/*\")",
       "Bash(git -C /c/CamperFlow/camperflow show 2055cd7:supabase/migrations/)",
       "Bash(git -C /c/CamperFlow/camperflow log --all --oneline --follow -S \"pickup_info\" -- \"app/*/staff/company/page.tsx\")",
-      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); console.log\\('Valid JSON'\\)\")"
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('messages/de.json','utf8'\\)\\); console.log\\('Valid JSON'\\)\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --oneline --all -- \"supabase/migrations/*.sql\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline --grep=\"checklist\")",
+      "Bash(git -C /c/CamperFlow/camperflow show HEAD~20:supabase/migrations/)",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline)",
+      "Bash(git -C /c/CamperFlow/camperflow log --all -p -S \"CREATE TABLE.*checklist\" --oneline)",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --diff-filter=A -- \"supabase/migrations/*checklist*\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --oneline -- \"*checklist_templates*\")",
+      "Bash(git -C /c/CamperFlow/camperflow log --all -p -- \"supabase/migrations/*.sql\")",
+      "Bash(git -C /c/CamperFlow/camperflow rev-list --all)",
+      "Bash(git -C /c/CamperFlow/camperflow show d4486a9:supabase/migrations/)",
+      "Bash(git -C /c/CamperFlow/camperflow log --all --full-history -p -- \"*.sql\")",
+      "Bash(sed -n '140,160p' /c/CamperFlow/camperflow/app/[locale]/staff/checklists/templates/page.tsx)",
+      "Bash(sed -n '655,695p' /c/CamperFlow/camperflow/app/[locale]/staff/bookings/[id]/page.tsx)"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\guest",
