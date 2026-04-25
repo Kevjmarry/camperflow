@@ -89,14 +89,14 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
 
   if (!isUUID(companyId)) return []
 
-  const endOfToday = new Date()
-  endOfToday.setHours(23, 59, 59, 999)
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
 
   const { data, error } = await supabase
     .from('ops_bookings')
     .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked')
     .eq('company_id', companyId)
-    .gt('return_at', endOfToday.toISOString())
+    .gte('return_at', startOfToday.toISOString())
     .order('return_at', { ascending: true })
     .limit(20)
 

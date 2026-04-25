@@ -290,14 +290,14 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                       {formatTime(r.returnAt, locale)}
                       {/* Mobile-only: date and countdown inline */}
                       <span className="ops-upcoming-time-countdown">
-                        {formatDate(r.returnAt, locale)} · {tSection('inDays', { count: r.daysUntil })}
+                        {formatDate(r.returnAt, locale)} · {r.daysUntil <= 0 ? t('countdown.today') : tSection('inDays', { count: r.daysUntil })}
                       </span>
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                       {formatDate(r.returnAt, locale)}
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {tSection('inDays', { count: r.daysUntil })}
+                      {r.daysUntil <= 0 ? t('countdown.today') : tSection('inDays', { count: r.daysUntil })}
                     </div>
                   </div>
                   <Link
