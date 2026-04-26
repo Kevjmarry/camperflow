@@ -53,6 +53,7 @@ export default function GuestContentPage() {
     emergency_breakdown_phone_secondary: "",
     before_arrival_info: "",
     pickup_info: "",
+    important_before_pickup: "",
     before_return_info: "",
     return_info: "",
     included_items: "",
@@ -96,7 +97,7 @@ export default function GuestContentPage() {
       const [{ data }, { data: template }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items")
+          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -114,6 +115,7 @@ export default function GuestContentPage() {
         contact_phone:                       (data as any)?.contact_phone                       ?? "",
         contact_whatsapp:                    (data as any)?.contact_whatsapp                    ?? "",
         pickup_info:                         (data as any)?.pickup_info                         ?? "",
+        important_before_pickup:             (data as any)?.important_before_pickup             ?? "",
         return_info:                         (data as any)?.return_info                         ?? "",
         rules_and_tips:                      (data as any)?.rules_and_tips                      ?? "",
         before_arrival_info:                 (data as any)?.before_arrival_info                 ?? "",
@@ -147,6 +149,7 @@ export default function GuestContentPage() {
             contact_phone:       formData.contact_phone.trim()       || null,
             contact_whatsapp:    formData.contact_whatsapp.trim()    || null,
             pickup_info:         formData.pickup_info.trim()         || null,
+            important_before_pickup: formData.important_before_pickup.trim() || null,
             return_info:         formData.return_info.trim()         || null,
             rules_and_tips:      formData.rules_and_tips.trim()      || null,
             before_arrival_info: formData.before_arrival_info.trim() || null,
@@ -302,6 +305,7 @@ export default function GuestContentPage() {
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
                       <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = headings.</p>
                     </div>
                     <div>
                       <label htmlFor="pickup_info" className="label">{t("labels.pickupInfo")}</label>
@@ -314,6 +318,19 @@ export default function GuestContentPage() {
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
                       <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Maps link = Navigate card.</p>
+                    </div>
+                    <div>
+                      <label htmlFor="important_before_pickup" className="label">Important before pickup</label>
+                      <textarea
+                        id="important_before_pickup" name="important_before_pickup" className="input"
+                        placeholder=""
+                        value={formData.important_before_pickup} onChange={handleChange}
+                        disabled={!isAdmin}
+                        rows={8}
+                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                      />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown in Important before pickup card.</p>
                     </div>
                   </div>
                 </div>

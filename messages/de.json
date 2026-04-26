@@ -1743,10 +1743,14 @@
     "pickupInfo": "Abholinformationen",
     "contactPhone": "Telefon",
     "contactWhatsapp": "WhatsApp",
+    "importantBeforePickup": "Wichtig vor der Abholung",
     "beforeYouArriveTitle": "Vor Ihrer Ankunft",
     "beforeYouArrive0": "Teilen Sie uns Ihre voraussichtliche Ankunftszeit mit",
     "beforeYouArrive1": "Planen Sie ausreichend Zeit ein; die Übergabe dauert etwa 1 Stunde",
-    "beforeYouArrive2": "Falls Ihre Kaution nicht per Überweisung beglichen wurde, ist sie in bar zu zahlen"
+    "beforeYouArrive2": "Falls Ihre Kaution nicht per Überweisung beglichen wurde, ist sie in bar zu zahlen",
+    "navigate": "Navigieren",
+    "stepsTitle": "Abholschritte",
+    "moreDetails": "Weitere Details"
   },
   "guestReturn": {
     "title": "Rückgabeinformationen",

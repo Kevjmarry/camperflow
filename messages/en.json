@@ -1743,10 +1743,14 @@
     "pickupInfo": "Pickup instructions",
     "contactPhone": "Phone",
     "contactWhatsapp": "WhatsApp",
+    "importantBeforePickup": "Important before pickup",
     "beforeYouArriveTitle": "Before you arrive",
     "beforeYouArrive0": "Let us know your estimated arrival time",
     "beforeYouArrive1": "Please allow enough time; handover takes approximately 1 hour",
-    "beforeYouArrive2": "If your deposit was not sent by bank transfer, it must be paid in cash"
+    "beforeYouArrive2": "If your deposit was not sent by bank transfer, it must be paid in cash",
+    "navigate": "Navigate",
+    "stepsTitle": "Pick-up steps",
+    "moreDetails": "More details"
   },
   "guestReturn": {
     "title": "Return Info",
