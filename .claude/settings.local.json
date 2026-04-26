@@ -15,7 +15,8 @@
       "Bash(npx vercel *)",
       "Bash(find /c/CamperFlow/camperflow/app/[locale]/staff -type f -name \"*.tsx\")",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
-      "Bash(grep -E \"\\\\.tsx$\")"
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

@@ -504,16 +504,18 @@
       "dateFromLabel": "From:",
       "dateToLabel": "To:",
       "searchPlaceholder": "Search by name, booking #…",
-      "clearFilters": "Clear filters"
+      "clearFilters": "Clear filters",
+      "activeOnly": "Active only",
+      "completedOnly": "Completed only",
+      "hideCancelled": "Hide cancelled"
     },
     "sort": {
       "label": "Sort:",
-      "pickupAsc": "Pickup: soonest",
-      "pickupDesc": "Pickup: latest",
-      "createdDesc": "Newest created",
-      "createdAsc": "Oldest created",
-      "updatedDesc": "Last updated",
-      "returnAsc": "Return: soonest"
+      "nextPickup": "Next pickup",
+      "rentingNow": "Renting now",
+      "lastReturned": "Last returned",
+      "newestCreated": "Newest created",
+      "recentlyUpdated": "Recently updated"
     },
     "loading": "Loading bookings...",
     "empty": "No bookings found.",
@@ -528,8 +530,10 @@
       "pickup": "Pickup",
       "pickupIn": "Pickup in",
       "return": "Return",
+      "returnIn": "Return in",
       "status": "Status",
       "tasks": "Tasks",
+      "days": "Days",
       "nextAction": "Next action",
       "actions": "Actions"
     },
@@ -563,7 +567,8 @@
     "time": {
       "today": "Today",
       "tomorrow": "Tomorrow",
-      "daysAhead": "{count}d"
+      "daysAhead": "{count}d",
+      "days": "{count}d"
     },
     "vehicleReadiness": {
       "ready": "Ready",

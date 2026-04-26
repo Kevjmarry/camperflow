@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import PageContainer from '@/components/PageContainer';
 import type { ChecklistScope, ChecklistStatus, ChecklistItem, IssueItem, ChecklistLabels } from '@/components/checklists/checklistListTypes';
-import { ChecklistSection, OpenIssuesSection } from '@/components/checklists/ChecklistListComponents';
+import { BookingGroupSection, OpenIssuesSection } from '@/components/checklists/ChecklistListComponents';
 
 // ─── URL param helpers ────────────────────────────────────────────────────────
 
@@ -36,7 +36,6 @@ export default function ChecklistsPage() {
   const [canManage, setCanManage] = useState<boolean>(false);
   const [bookingChecklists, setBookingChecklists] = useState<ChecklistItem[]>([]);
   const [openIssues, setOpenIssues] = useState<IssueItem[]>([]);
-  const [completedCollapsed, setCompletedCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
   const [scopeFilter, setScopeFilter] = useState<ChecklistScope>(() =>
@@ -90,11 +89,11 @@ export default function ChecklistsPage() {
       setCanManage(userCanManage);
 
       const companyId = profile.company_id;
-      const status = statusFilter;
 
-      // Booking checklists
+      // Booking checklists — fetch all statuses; status filter applied client-side
+      // so locking rules have the full sibling set per booking.
       try {
-        let ciQuery = supabase
+        const { data: ciRows, error: ciError } = await supabase
           .from('checklist_instances')
           .select(
             'id, checklist_type, status, created_at, booking_id, template:checklist_templates!checklist_instances_template_id_fkey(name, title)'
@@ -102,16 +101,6 @@ export default function ChecklistsPage() {
           .eq('company_id', companyId)
           .in('checklist_type', ['cleaning', 'pickup', 'return', 'guest_prereturn', 'handover', 'mechanical'])
           .not('booking_id', 'is', null);
-
-        if (status !== 'all') {
-          if (status === 'not_started') {
-            ciQuery = ciQuery.in('status', ['not_started', 'pending']);
-          } else {
-            ciQuery = ciQuery.eq('status', status);
-          }
-        }
-
-        const { data: ciRows, error: ciError } = await ciQuery;
 
         if (ciError) {
           console.error('Error fetching booking checklists:', ciError);
@@ -160,9 +149,9 @@ export default function ChecklistsPage() {
             const booking = item.booking_id ? bookingsById.get(item.booking_id) : null;
             const vehicle = booking?.vehicle_id ? vehiclesById.get(booking.vehicle_id) : null;
             const normalizedStatus = item.status === 'pending' ? 'not_started' : item.status;
-            console.log('CI STATUS RAW', item.id, item.status);
             return {
               id: item.id,
+              booking_id: item.booking_id as string,
               name: item.checklist_type,
               type: item.checklist_type,
               template_name: item.template?.title ?? item.template?.name ?? undefined,
@@ -305,7 +294,7 @@ export default function ChecklistsPage() {
 
     loadData();
     return () => { cancelled = true; };
-  }, [locale, router, statusFilter]);
+  }, [locale, router]);
 
   // ─── Label helpers (i18n, built once per render) ────────────────────────────
 
@@ -370,10 +359,6 @@ export default function ChecklistsPage() {
     scopeFilter === 'vehicle' ? [] : bookingChecklists;
   const displayOpenIssues = openIssues;
 
-  const notStarted = displayBookingChecklists.filter((c) => c.status === 'not_started');
-  const inProgress  = displayBookingChecklists.filter((c) => c.status === 'in_progress');
-  const completed   = displayBookingChecklists.filter((c) => c.status === 'completed');
-
   const handleScopeChange  = (v: ChecklistScope)  => { setScopeFilter(v);  router.push(`/${locale}/staff/checklists?scope=${v}&status=${statusFilter}`); };
   const handleStatusChange = (v: ChecklistStatus) => { setStatusFilter(v); router.push(`/${locale}/staff/checklists?scope=${scopeFilter}&status=${v}`); };
 
@@ -384,12 +369,6 @@ export default function ChecklistsPage() {
   const showBooking = scopeFilter === 'all' || scopeFilter === 'booking';
   const showVehicle = scopeFilter === 'all' || scopeFilter === 'vehicle';
   const showIssues  = scopeFilter === 'all' && displayOpenIssues.length > 0;
-
-  const noBookingResults =
-    showBooking &&
-    notStarted.length === 0 &&
-    inProgress.length === 0 &&
-    completed.length === 0;
 
   // ─── Loading state ──────────────────────────────────────────────────────────
 
@@ -476,43 +455,22 @@ export default function ChecklistsPage() {
 
           {/* ── Booking checklist sections ── */}
           {showBooking && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {noBookingResults ? (
-                <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))', fontSize: '14px' }}>
-                  {t('empty.bookingChecklists')}
-                </div>
-              ) : (
-                <>
-                  <ChecklistSection
-                    title={t('sections.notStarted')}
-                    items={notStarted}
-                    isMobile={isMobile}
-                    headers={checklistHeaders}
-                    labels={labels}
-                    getHref={detailHref}
-                  />
-                  <ChecklistSection
-                    title={t('sections.inProgress')}
-                    items={inProgress}
-                    isMobile={isMobile}
-                    headers={checklistHeaders}
-                    labels={labels}
-                    getHref={detailHref}
-                  />
-                  <ChecklistSection
-                    title={t('sections.completed')}
-                    items={completed}
-                    isMobile={isMobile}
-                    collapsible
-                    collapsed={completedCollapsed}
-                    onToggle={() => setCompletedCollapsed(!completedCollapsed)}
-                    headers={checklistHeaders}
-                    labels={labels}
-                    getHref={detailHref}
-                  />
-                </>
-              )}
-            </div>
+            displayBookingChecklists.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'rgb(var(--muted))', fontSize: '14px' }}>
+                {t('empty.bookingChecklists')}
+              </div>
+            ) : (
+              <BookingGroupSection
+                items={displayBookingChecklists}
+                statusFilter={statusFilter}
+                isMobile={isMobile}
+                headers={checklistHeaders}
+                labels={labels}
+                locale={locale}
+                getHref={detailHref}
+                emptyText={t('empty.bookingChecklists')}
+              />
+            )
           )}
 
           {/* ── Vehicle checklists placeholder ── */}

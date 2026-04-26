@@ -280,19 +280,17 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
       >
         {pickup ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                {pickup.vehicleName}
-              </span>
-              {pickup.vehicleStatus && (
-                <span style={getStatusChipStyle(pickup.vehicleStatus)}>
-                  {getVehicleStatusLabel(pickup.vehicleStatus)}
-                </span>
-              )}
-            </div>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+              {pickup.vehicleName}
+            </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
               {pickup.customerName} · {pickup.bookingNumber}
             </span>
+            {pickup.vehicleStatus && (
+              <span style={{ ...getStatusChipStyle(pickup.vehicleStatus === 'ready' ? 'ready' : 'preparing'), alignSelf: 'flex-start' }}>
+                {pickup.vehicleStatus === 'ready' ? 'Ready for pickup' : 'Prep needed'}
+              </span>
+            )}
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale)}
             </span>
@@ -345,19 +343,17 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
       >
         {ret ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                {ret.vehicleName}
-              </span>
-              {ret.vehicleStatus && (
-                <span style={getStatusChipStyle(ret.vehicleStatus)}>
-                  {getVehicleStatusLabel(ret.vehicleStatus)}
-                </span>
-              )}
-            </div>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+              {ret.vehicleName}
+            </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
               {ret.customerName} · {ret.bookingNumber}
             </span>
+            {(() => {
+              const diff = countdownDays(ret.returnAt)
+              const label = diff === 0 ? 'Due today' : diff === 1 ? 'Due tomorrow' : `Due in ${diff} days`
+              return <span style={{ ...getStatusChipStyle('on_rent'), alignSelf: 'flex-start' }}>{label}</span>
+            })()}
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(ret.returnAt, locale)} · {formatTime(ret.returnAt, locale)}
             </span>

@@ -24,7 +24,7 @@ export async function POST(
     const { id: vehicleId } = await params;
 
     // ── auth ────────────────────────────────────────────────────────────────
-    const cronSecret = process.env.CRON_SECRET;
+    const cronSecret = process.env.CRON_SECRET?.trim();
     const authHeader = request.headers.get("authorization") ?? "";
     const isInternalCronCall =
       cronSecret &&

@@ -414,9 +414,14 @@ export default function VehiclesPage() {
                       </span>
                     )}
 
-                    <span style={getStatusChipStyle(vehicle.status)}>
-                      {getStatusLabel(vehicle.status)}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--muted))' }}>
+                        Live vehicle status
+                      </span>
+                      <span style={getStatusChipStyle(vehicle.status)}>
+                        {getStatusLabel(vehicle.status)}
+                      </span>
+                    </div>
 
                     {vehicle.blockingReason && !vehicle.operational_hold && (
                       <span style={{

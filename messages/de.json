@@ -504,16 +504,18 @@
       "dateFromLabel": "Von:",
       "dateToLabel": "Bis:",
       "searchPlaceholder": "Name, Buchungsnr. suchen…",
-      "clearFilters": "Filter zurücksetzen"
+      "clearFilters": "Filter zurücksetzen",
+      "activeOnly": "Nur aktive",
+      "completedOnly": "Nur abgeschlossene",
+      "hideCancelled": "Stornierte ausblenden"
     },
     "sort": {
       "label": "Sortierung:",
-      "pickupAsc": "Abholung: früheste",
-      "pickupDesc": "Abholung: späteste",
-      "createdDesc": "Neueste zuerst",
-      "createdAsc": "Älteste zuerst",
-      "updatedDesc": "Zuletzt aktualisiert",
-      "returnAsc": "Rückgabe: früheste"
+      "nextPickup": "Nächste Abholung",
+      "rentingNow": "Aktuell vermietet",
+      "lastReturned": "Zuletzt zurückgegeben",
+      "newestCreated": "Neueste zuerst",
+      "recentlyUpdated": "Zuletzt aktualisiert"
     },
     "loading": "Buchungen werden geladen...",
     "empty": "Keine Buchungen gefunden.",
@@ -528,8 +530,10 @@
       "pickup": "Abholung",
       "pickupIn": "Abholung in",
       "return": "Rückgabe",
+      "returnIn": "Rückgabe in",
       "status": "Status",
       "tasks": "Aufgaben",
+      "days": "Tage",
       "nextAction": "Nächste Aktion",
       "actions": "Aktionen"
     },
@@ -563,7 +567,8 @@
     "time": {
       "today": "Heute",
       "tomorrow": "Morgen",
-      "daysAhead": "{count}T"
+      "daysAhead": "{count}T",
+      "days": "{count}T"
     },
     "vehicleReadiness": {
       "ready": "Bereit",

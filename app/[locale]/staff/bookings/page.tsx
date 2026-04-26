@@ -51,10 +51,12 @@ export default function BookingsPage() {
 
   // Filter + sort state
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("pickup_asc");
+  const [sortBy, setSortBy] = useState<string>("nextPickup");
+  const [hideCancelled, setHideCancelled] = useState<boolean>(true);
+  const [activeOnly, setActiveOnly] = useState<boolean>(false);
+  const [completedOnly, setCompletedOnly] = useState<boolean>(false);
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
-  const [sourceTypeFilter, setSourceTypeFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState<string>("");
+const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [expandedYears, setExpandedYears] = useState<Set<number>>(() => new Set([new Date().getFullYear()]));
@@ -168,15 +170,7 @@ export default function BookingsPage() {
     return Array.from(seen.keys()).sort((a, b) => a.localeCompare(b));
   }, [bookings, canManage]);
 
-  const sourceTypeOptions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const b of bookings) {
-      if (b.source_type) seen.add(b.source_type);
-    }
-    return Array.from(seen).sort();
-  }, [bookings]);
-
-  // Filtered + sorted view — no re-fetch needed
+// Filtered + sorted view — no re-fetch needed
   const displayedBookings = useMemo(() => {
     let result = bookings;
 
@@ -192,6 +186,10 @@ export default function BookingsPage() {
       result = result.filter(b => b.status === 'cancelled');
     }
 
+    if (hideCancelled && statusFilter !== 'cancelled') result = result.filter(b => b.status !== 'cancelled');
+    if (activeOnly) result = result.filter(b => ['confirmed', 'blocked', 'on_rent'].includes(b.status));
+    if (completedOnly) result = result.filter(b => b.status === 'completed');
+
     if (vehicleFilter !== 'all') {
       result = result.filter(b => {
         const name = canManage ? b.vehicles?.name : b.vehicle_name;
@@ -199,11 +197,7 @@ export default function BookingsPage() {
       });
     }
 
-    if (sourceTypeFilter !== 'all') {
-      result = result.filter(b => (b.source_type ?? '') === sourceTypeFilter);
-    }
-
-    if (dateFrom) {
+if (dateFrom) {
       result = result.filter(b => b.pickup_at >= dateFrom);
     }
     if (dateTo) {
@@ -221,7 +215,7 @@ export default function BookingsPage() {
 
     result = [...result].sort((a, b) => {
       switch (sortBy) {
-        case 'pickup_asc': {
+        case 'nextPickup': {
           const now = new Date().toISOString();
           const aOnRent = a.status === 'on_rent';
           const bOnRent = b.status === 'on_rent';
@@ -232,17 +226,21 @@ export default function BookingsPage() {
           if (!aFuture && !bFuture) return b.pickup_at.localeCompare(a.pickup_at);
           return aFuture ? -1 : 1;
         }
-        case 'pickup_desc':  return b.pickup_at.localeCompare(a.pickup_at);
-        case 'created_desc': return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-        case 'created_asc':  return (a.created_at ?? '').localeCompare(b.created_at ?? '');
-        case 'updated_desc': return (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
-        case 'return_asc':   return a.return_at.localeCompare(b.return_at);
-        default:             return 0;
+        case 'rentingNow': {
+          const aOnRent = a.status === 'on_rent';
+          const bOnRent = b.status === 'on_rent';
+          if (aOnRent !== bOnRent) return aOnRent ? -1 : 1;
+          return a.pickup_at.localeCompare(b.pickup_at);
+        }
+        case 'lastReturned':    return b.return_at.localeCompare(a.return_at);
+        case 'newestCreated':   return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+        case 'recentlyUpdated': return (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
+        default:                return 0;
       }
     });
 
     return result;
-  }, [bookings, statusFilter, vehicleFilter, sourceTypeFilter, dateFrom, dateTo, searchQuery, sortBy, canManage]);
+  }, [bookings, statusFilter, vehicleFilter, dateFrom, dateTo, searchQuery, sortBy, canManage, hideCancelled, activeOnly, completedOnly]);
 
   const groupedBookings = useMemo(() => {
     const map = new Map<number, Booking[]>();
@@ -265,17 +263,20 @@ export default function BookingsPage() {
   };
 
   const hasActiveFilters =
-    statusFilter !== 'all' || vehicleFilter !== 'all' || sourceTypeFilter !== 'all' ||
-    dateFrom !== '' || dateTo !== '' || searchQuery.trim() !== '' || sortBy !== 'pickup_asc';
+    statusFilter !== 'all' || vehicleFilter !== 'all' ||
+    dateFrom !== '' || dateTo !== '' || searchQuery.trim() !== '' || sortBy !== 'nextPickup' ||
+    !hideCancelled || activeOnly || completedOnly;
 
   const clearFilters = () => {
     setStatusFilter('all');
     setVehicleFilter('all');
-    setSourceTypeFilter('all');
-    setDateFrom('');
+setDateFrom('');
     setDateTo('');
     setSearchQuery('');
-    setSortBy('pickup_asc');
+    setSortBy('nextPickup');
+    setHideCancelled(true);
+    setActiveOnly(false);
+    setCompletedOnly(false);
   };
 
   const getStatusLabel = (status: string) => {
@@ -298,6 +299,37 @@ export default function BookingsPage() {
     });
   };
 
+  const getTimeToReturn = (returnAt: string) => {
+    const now = new Date();
+    const ret = new Date(returnAt);
+    const diffMs = ret.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return null;
+
+    const label =
+      diffDays === 0 ? t("time.today") :
+      diffDays === 1 ? t("time.tomorrow") :
+      t("time.daysAhead", { count: diffDays });
+
+    const urgent = diffDays <= 3;
+    return (
+      <span style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: 500,
+        lineHeight: '18px',
+        whiteSpace: 'nowrap',
+        background: urgent ? 'rgb(var(--error) / 0.12)' : 'rgb(var(--muted) / 0.12)',
+        color: urgent ? 'rgb(var(--error))' : 'rgb(var(--muted))',
+      }}>
+        {label}
+      </span>
+    );
+  };
+
   const getTimeToPickup = (pickupAt: string) => {
     const now = new Date();
     const pickup = new Date(pickupAt);
@@ -305,12 +337,37 @@ export default function BookingsPage() {
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return null;
-    if (diffDays === 0) return t("time.today");
-    if (diffDays === 1) return t("time.tomorrow");
-    return t("time.daysAhead", { count: diffDays });
+
+    const label =
+      diffDays === 0 ? t("time.today") :
+      diffDays === 1 ? t("time.tomorrow") :
+      t("time.daysAhead", { count: diffDays });
+
+    const urgent = diffDays <= 3;
+    return (
+      <span style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: 500,
+        lineHeight: '18px',
+        whiteSpace: 'nowrap',
+        background: urgent ? 'rgb(var(--error) / 0.12)' : 'rgb(var(--muted) / 0.12)',
+        color: urgent ? 'rgb(var(--error))' : 'rgb(var(--muted))',
+      }}>
+        {label}
+      </span>
+    );
   };
 
   const getVehicleReadinessChip = (booking: Booking) => {
+    // Hide live vehicle status for future bookings — it reflects garage state, not booking readiness
+    const now = new Date().toISOString();
+    if (['draft', 'confirmed', 'blocked'].includes(booking.status) && booking.pickup_at > now) {
+      return null;
+    }
+
     const vStatus = canManage
       ? booking.vehicles?.status
       : booking.vehicle_status;
@@ -347,32 +404,15 @@ export default function BookingsPage() {
     );
   };
 
-  const getTaskSummary = (booking: Booking) => {
-    const checklists = booking.checklists || [];
-    if (checklists.length === 0) return null;
-
-    let total = 0;
-    let checked = 0;
-    for (const cl of checklists) {
-      for (const item of cl.checklist_instance_items) {
-        total++;
-        if (item.checked) checked++;
-      }
-    }
-
-    const allDone = checklists.every(cl => cl.status === 'completed');
-    const color = allDone
-      ? 'rgb(var(--success))'
-      : checked > 0
-        ? 'rgb(var(--warning))'
-        : 'rgb(var(--muted))';
-
+  const getRentalDays = (booking: Booking) => {
+    const pickup = new Date(booking.pickup_at);
+    const ret = new Date(booking.return_at);
+    const days = Math.round((ret.getTime() - pickup.getTime()) / (1000 * 60 * 60 * 24));
+    if (isNaN(days) || days < 0) return null;
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}>
-        <span style={{ fontSize: '14px', color }}>
-          {checked}/{total}
-        </span>
-      </div>
+      <span style={{ fontSize: '14px', color: 'rgb(var(--text))' }}>
+        {t("time.days", { count: days })}
+      </span>
     );
   };
 
@@ -573,12 +613,11 @@ export default function BookingsPage() {
                   onChange={e => setSortBy(e.target.value)}
                   style={selectStyle}
                 >
-                  <option value="pickup_asc">{t("sort.pickupAsc")}</option>
-                  <option value="pickup_desc">{t("sort.pickupDesc")}</option>
-                  <option value="created_desc">{t("sort.createdDesc")}</option>
-                  <option value="created_asc">{t("sort.createdAsc")}</option>
-                  <option value="updated_desc">{t("sort.updatedDesc")}</option>
-                  <option value="return_asc">{t("sort.returnAsc")}</option>
+                  <option value="nextPickup">{t("sort.nextPickup")}</option>
+                  <option value="rentingNow">{t("sort.rentingNow")}</option>
+                  <option value="lastReturned">{t("sort.lastReturned")}</option>
+                  <option value="newestCreated">{t("sort.newestCreated")}</option>
+                  <option value="recentlyUpdated">{t("sort.recentlyUpdated")}</option>
                 </select>
               </div>
             </div>
@@ -619,22 +658,7 @@ export default function BookingsPage() {
                 </div>
               )}
 
-              {sourceTypeOptions.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <label style={filterLabelStyle}>{t("filter.sourceTypeLabel")}</label>
-                  <select
-                    className="input"
-                    value={sourceTypeFilter}
-                    onChange={e => setSourceTypeFilter(e.target.value)}
-                    style={selectStyle}
-                  >
-                    <option value="all">{t("filter.allSources")}</option>
-                    {sourceTypeOptions.map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <label style={filterLabelStyle}>{t("filter.dateFromLabel")}</label>
@@ -655,6 +679,19 @@ export default function BookingsPage() {
                   style={{ ...selectStyle, minWidth: '130px' }}
                 />
               </div>
+
+              <label style={{ ...filterLabelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-1)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={activeOnly} onChange={e => setActiveOnly(e.target.checked)} />
+                {t("filter.activeOnly")}
+              </label>
+              <label style={{ ...filterLabelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-1)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={completedOnly} onChange={e => setCompletedOnly(e.target.checked)} />
+                {t("filter.completedOnly")}
+              </label>
+              <label style={{ ...filterLabelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-1)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={hideCancelled} onChange={e => setHideCancelled(e.target.checked)} />
+                {t("filter.hideCancelled")}
+              </label>
 
               {hasActiveFilters && (
                 <button
@@ -759,10 +796,13 @@ export default function BookingsPage() {
                         {t("table.return")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                        {t("table.returnIn")}
+                      </th>
+                      <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
                         {t("table.status")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                        {t("table.tasks")}
+                        {t("table.days")}
                       </th>
                       <th style={{ padding: 'var(--space-3)', fontWeight: 600, color: 'rgb(var(--text))' }}>
                         {t("table.nextAction")}
@@ -772,7 +812,7 @@ export default function BookingsPage() {
                   <tbody>
                     {groupedBookings.map(({ year, items }) => {
                       const isExpanded = expandedYears.has(year);
-                      const colSpan = canManage ? 9 : 7;
+                      const colSpan = canManage ? 10 : 8;
                       return (
                         <Fragment key={`year-${year}`}>
                           <tr>
@@ -841,11 +881,14 @@ export default function BookingsPage() {
                                 <td style={td}>
                                   {formatDate(booking.pickup_at)}
                                 </td>
-                                <td style={tdMuted}>
+                                <td style={td}>
                                   {timeToPickup ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                 </td>
                                 <td style={td}>
                                   {formatDate(booking.return_at)}
+                                </td>
+                                <td style={td}>
+                                  {getTimeToReturn(booking.return_at) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                 </td>
                                 <td style={td}>
                                   <span style={getStatusChipStyle(booking.status)}>
@@ -853,7 +896,7 @@ export default function BookingsPage() {
                                   </span>
                                 </td>
                                 <td style={td}>
-                                  {getTaskSummary(booking) ?? <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: '18px' }}><span style={{ color: 'rgb(var(--muted))' }}>—</span></div>}
+                                  {getRentalDays(booking) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                 </td>
                                 <td style={td}>
                                   {getNextAction(booking)}
@@ -988,7 +1031,7 @@ export default function BookingsPage() {
                             {formatDate(booking.pickup_at)}
                           </div>
                           {timeToPickup && (
-                            <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: '2px' }}>
+                            <div style={{ marginTop: '4px' }}>
                               {timeToPickup}
                             </div>
                           )}
@@ -1006,9 +1049,9 @@ export default function BookingsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
                         <div>
                           <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>
-                            {t("table.tasks")}
+                            {t("table.days")}
                           </div>
-                          {getTaskSummary(booking) ?? <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>}
+                          {getRentalDays(booking) ?? <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>—</span>}
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           {getNextAction(booking)}

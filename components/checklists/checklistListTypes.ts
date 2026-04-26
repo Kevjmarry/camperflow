@@ -3,6 +3,7 @@ export type ChecklistStatus = 'all' | 'not_started' | 'in_progress' | 'completed
 
 export interface ChecklistItem {
   id: string;
+  booking_id: string;
   name: string;
   type: string;
   template_name?: string;
