@@ -15,6 +15,11 @@ interface FaqItem {
   answer: string;
 }
 
+interface NearbyPlaceItem {
+  title: string;
+  url: string;
+}
+
 interface ReturnChecklist {
   id: string;
   name: string;
@@ -60,6 +65,7 @@ export default function GuestContentPage() {
     rules_and_tips: "",
   });
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
+  const [returnNearbyPlaces, setReturnNearbyPlaces] = useState<NearbyPlaceItem[]>([]);
   // undefined = loading, null = not found, object = found
   const [returnChecklist, setReturnChecklist] = useState<ReturnChecklist | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -97,7 +103,7 @@ export default function GuestContentPage() {
       const [{ data }, { data: template }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items")
+          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -126,7 +132,10 @@ export default function GuestContentPage() {
         emergency_breakdown_phone_primary:   (companyRow as any)?.emergency_breakdown_phone_primary   ?? "",
         emergency_breakdown_phone_secondary: (companyRow as any)?.emergency_breakdown_phone_secondary ?? "",
       });
-      if (data) setFaqItems((data as any).faq_items ?? []);
+      if (data) {
+        setFaqItems((data as any).faq_items ?? []);
+        setReturnNearbyPlaces((data as any).return_nearby_places ?? []);
+      }
       setReturnChecklist(template ?? null);
       setLoading(false);
     };
@@ -155,7 +164,8 @@ export default function GuestContentPage() {
             before_arrival_info: formData.before_arrival_info.trim() || null,
             before_return_info:  formData.before_return_info.trim()  || null,
             included_items:      formData.included_items.trim()      || null,
-            faq_items:           faqItems.length > 0 ? faqItems : null,
+            faq_items:             faqItems.length > 0 ? faqItems : null,
+            return_nearby_places:  returnNearbyPlaces.length > 0 ? returnNearbyPlaces : null,
           })
           .eq("id", company?.id)
           .select("id"),
@@ -338,7 +348,9 @@ export default function GuestContentPage() {
                 {/* Return */}
                 <div>
                   <SectionHeading title={t("sections.return")} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+
+                    {/* Before return checklist */}
                     <div>
                       <label htmlFor="before_return_info" className="label">{t("labels.beforeReturn")}</label>
                       <textarea
@@ -346,23 +358,77 @@ export default function GuestContentPage() {
                         placeholder={t("placeholders.beforeReturn")}
                         value={formData.before_return_info} onChange={handleChange}
                         disabled={!isAdmin}
-                        rows={8}
+                        rows={6}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")} Lines ending : = headings. Shown as checklist on guest return page.</p>
                     </div>
+
+                    {/* Nearby places */}
                     <div>
-                      <label htmlFor="return_info" className="label">{t("labels.returnInfo")}</label>
+                      <label className="label">Nearby places <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— shown as tappable Maps links on the return page</span></label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+                        {returnNearbyPlaces.map((place, i) => (
+                          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 56px", gap: "var(--space-2)", alignItems: "center" }}>
+                            <input
+                              type="text"
+                              className="input"
+                              placeholder="Label (e.g. Supermarket)"
+                              value={place.title}
+                              disabled={!isAdmin}
+                              onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, title: e.target.value } : p))}
+                            />
+                            <input
+                              type="url"
+                              className="input"
+                              placeholder="https://maps.app.goo.gl/…"
+                              value={place.url}
+                              disabled={!isAdmin}
+                              onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, url: e.target.value } : p))}
+                            />
+                            {isAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => setReturnNearbyPlaces(returnNearbyPlaces.filter((_, idx) => idx !== i))}
+                                style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "1px solid rgb(var(--error) / 0.4)", borderRadius: "var(--radius)", cursor: "pointer", padding: "0 var(--space-2)", height: "36px", whiteSpace: "nowrap" }}
+                              >
+                                Remove
+                              </button>
+                            ) : <span />}
+                          </div>
+                        ))}
+                        {isAdmin && (
+                          <div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={() => setReturnNearbyPlaces([...returnNearbyPlaces, { title: "", url: "" }])}
+                              style={{ fontSize: "13px", marginTop: "var(--space-1)" }}
+                            >
+                              + Add place
+                            </button>
+                          </div>
+                        )}
+                        {returnNearbyPlaces.length === 0 && !isAdmin && (
+                          <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No nearby places configured.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Return notes */}
+                    <div>
+                      <label htmlFor="return_info" className="label">Return notes <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— optional, shown in a collapsible card</span></label>
                       <textarea
                         id="return_info" name="return_info" className="input"
-                        placeholder={t("placeholders.returnInfo")}
+                        placeholder="Any additional return instructions…"
                         value={formData.return_info} onChange={handleChange}
                         disabled={!isAdmin}
-                        rows={8}
+                        rows={3}
                         style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                       />
                       <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                     </div>
+
                   </div>
                 </div>
 
@@ -399,59 +465,64 @@ export default function GuestContentPage() {
 
                 {/* FAQ */}
                 <div>
-                  <SectionHeading title={t("sections.faq")} subtitle={t("faq.helper")} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                    {faqItems.map((item, i) => (
-                      <div
-                        key={i}
-                        style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
-                          <label className="label" style={{ margin: 0 }}>{t("faq.questionLabel", { number: i + 1 })}</label>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => setFaqItems(faqItems.filter((_, idx) => idx !== i))}
-                              style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                            >
-                              {t("faq.removeButton")}
-                            </button>
-                          )}
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      {t("sections.faq")}
+                    </summary>
+                    {t("faq.helper") && <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>{t("faq.helper")}</p>}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                      {faqItems.map((item, i) => (
+                        <div
+                          key={i}
+                          style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-3)" }}>
+                            <label className="label" style={{ margin: 0 }}>{t("faq.questionLabel", { number: i + 1 })}</label>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => setFaqItems(faqItems.filter((_, idx) => idx !== i))}
+                                style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                              >
+                                {t("faq.removeButton")}
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            className="input"
+                            placeholder={t("faq.questionPlaceholder")}
+                            value={item.question}
+                            disabled={!isAdmin}
+                            onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, question: e.target.value } : f))}
+                            style={{ width: "100%" }}
+                          />
+                          <textarea
+                            className="input"
+                            placeholder={t("faq.answerPlaceholder")}
+                            value={item.answer}
+                            disabled={!isAdmin}
+                            onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, answer: e.target.value } : f))}
+                            rows={4}
+                            style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                          />
                         </div>
-                        <input
-                          type="text"
-                          className="input"
-                          placeholder={t("faq.questionPlaceholder")}
-                          value={item.question}
-                          disabled={!isAdmin}
-                          onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, question: e.target.value } : f))}
-                          style={{ width: "100%" }}
-                        />
-                        <textarea
-                          className="input"
-                          placeholder={t("faq.answerPlaceholder")}
-                          value={item.answer}
-                          disabled={!isAdmin}
-                          onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, answer: e.target.value } : f))}
-                          rows={4}
-                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                        />
-                      </div>
-                    ))}
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setFaqItems([...faqItems, { question: "", answer: "" }])}
-                        style={{ alignSelf: "flex-start", fontSize: "14px" }}
-                      >
-                        {t("faq.addButton")}
-                      </button>
-                    )}
-                    {faqItems.length === 0 && !isAdmin && (
-                      <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("faq.empty")}</p>
-                    )}
-                  </div>
+                      ))}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => setFaqItems([...faqItems, { question: "", answer: "" }])}
+                          style={{ alignSelf: "flex-start", fontSize: "14px" }}
+                        >
+                          {t("faq.addButton")}
+                        </button>
+                      )}
+                      {faqItems.length === 0 && !isAdmin && (
+                        <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("faq.empty")}</p>
+                      )}
+                    </div>
+                  </details>
                 </div>
 
                 {/* Feedback */}

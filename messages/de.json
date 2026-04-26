@@ -1773,7 +1773,10 @@
     "untitledItem": "Unbenannter Punkt",
     "checklistPolicyNote": "Falls Punkte nicht erfüllt werden, können gemäß Unternehmensrichtlinien zusätzliche Gebühren anfallen.",
     "checklistGuideNote": "Sie können diese Checkliste hier vor der Rückgabe ausfüllen. Nutzen Sie sie bis dahin als Orientierung.",
-    "detailedReturnInstructions": "Detaillierte Rückgabeanweisungen"
+    "detailedReturnInstructions": "Detaillierte Rückgabeanweisungen",
+    "navigate": "Navigieren",
+    "moreDetails": "Weitere Details",
+    "nearbyPlaces": "In der Nähe"
   },
   "guestFaq": {
     "title": "FAQ",

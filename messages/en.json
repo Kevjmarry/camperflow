@@ -1773,7 +1773,10 @@
     "untitledItem": "Untitled item",
     "checklistPolicyNote": "If items are not completed, additional charges may apply according to company policy.",
     "checklistGuideNote": "You'll be able to complete this checklist here before return. For now, please use it as a guide.",
-    "detailedReturnInstructions": "Detailed return instructions"
+    "detailedReturnInstructions": "Detailed return instructions",
+    "navigate": "Navigate",
+    "moreDetails": "More details",
+    "nearbyPlaces": "Nearby places"
   },
   "guestFaq": {
     "title": "FAQ",

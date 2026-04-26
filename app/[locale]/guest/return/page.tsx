@@ -19,48 +19,37 @@ interface VehicleRow {
   name: string | null;
 }
 
+interface NearbyPlace {
+  title: string;
+  url: string;
+}
+
 interface CompanyReturnInfo {
   return_info: string | null;
   contact_phone: string | null;
   contact_whatsapp: string | null;
   before_return_info: string | null;
+  return_nearby_places: NearbyPlace[] | null;
 }
 
-interface ChecklistTemplate {
-  id: string;
-}
-
-interface ChecklistItem {
-  id: string;
-  checked: boolean | null;
-  notes: string | null;
-  template: {
-    label: string;
-    sort_order: number;
-    section: string | null;
-  } | null;
-}
-
-type RawTemplateItem = {
-  id: string;
-  label: string | null;
-  sort_order: number | null;
-  section: string | null;
+const inlineHeaderStyle: React.CSSProperties = {
+  fontSize: "13px",
+  fontWeight: "600",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  color: "rgb(var(--text-secondary))",
+  margin: 0,
 };
 
-function renderLines(text: string) {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length === 0) return null;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      {lines.map((line, i) => (
-        <p key={i} style={{ fontSize: "15px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
-          {line}
-        </p>
-      ))}
-    </div>
-  );
-}
+const PinIcon = ({ color }: { color: string }) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0, color }}>
+    <path
+      d="M8 1.5C5.52 1.5 3.5 3.52 3.5 6c0 3.25 4.5 8.5 4.5 8.5s4.5-5.25 4.5-8.5c0-2.48-2.02-4.5-4.5-4.5Z"
+      stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"
+    />
+    <circle cx="8" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
 
 export default async function GuestReturnPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
@@ -104,49 +93,20 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
     vehicle = data || null;
   }
 
-  let returnInfo: CompanyReturnInfo = { return_info: null, contact_phone: null, contact_whatsapp: null, before_return_info: null };
+  let returnInfo: CompanyReturnInfo = {
+    return_info: null,
+    contact_phone: null,
+    contact_whatsapp: null,
+    before_return_info: null,
+    return_nearby_places: null,
+  };
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("return_info, contact_phone, contact_whatsapp, before_return_info")
+      .select("return_info, contact_phone, contact_whatsapp, before_return_info, return_nearby_places")
       .eq("id", booking.company_id)
       .maybeSingle<CompanyReturnInfo>();
     if (data) returnInfo = data;
-  }
-
-  let checklistTemplate: ChecklistTemplate | null = null;
-  let checklistItems: ChecklistItem[] = [];
-  if (booking.company_id) {
-    const { data: templateRaw } = await supabase
-      .from("checklist_templates")
-      .select("id")
-      .eq("company_id", booking.company_id)
-      .eq("type", "return")
-      .eq("active", true)
-      .maybeSingle();
-
-    const template = templateRaw as ChecklistTemplate | null;
-
-    if (template) {
-      checklistTemplate = template;
-      const { data: itemsRaw } = await supabase
-        .from("checklist_template_items")
-        .select("id, label, sort_order, section")
-        .eq("template_id", template.id)
-        .order("sort_order", { ascending: true });
-
-      const items = (itemsRaw ?? []) as RawTemplateItem[];
-      checklistItems = items.map((item) => ({
-        id: item.id,
-        checked: null,
-        notes: null,
-        template: {
-          label: item.label ?? t("untitledItem"),
-          sort_order: item.sort_order ?? 0,
-          section: item.section ?? null,
-        },
-      }));
-    }
   }
 
   const formatDateTime = (dateString: string | null) => {
@@ -162,10 +122,8 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   };
 
   const labelStyle = {
-    fontSize: "11px",
+    fontSize: "14px",
     fontWeight: "600" as const,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.06em",
     color: "rgb(var(--text-secondary))",
     marginBottom: "var(--space-2)",
   };
@@ -177,39 +135,79 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
     fontSize: "15px",
   };
 
-  const linkStyle = {
-    fontWeight: "500" as const,
-    color: "rgb(var(--brand))",
-    margin: 0,
+  const sectionLabel = (color: string) => ({
     fontSize: "15px",
-    textDecoration: "none" as const,
-  };
+    fontWeight: "600" as const,
+    color,
+    margin: "0 0 var(--space-5) 0",
+  });
 
   const toTelHref = (phone: string) => `tel:${phone.replace(/\s/g, "")}`;
   const toWaHref = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
 
-  const hasDetailSection = returnInfo.return_info || returnInfo.contact_phone || returnInfo.contact_whatsapp;
+  const beforeReturnItems = returnInfo.before_return_info
+    ? returnInfo.before_return_info.split("\n").map((l) => l.trim()).filter(Boolean)
+    : [];
 
-  const sectionLabel = (color: string) => ({
-    fontSize: "11px",
-    fontWeight: "700" as const,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.07em",
-    color,
-    margin: "0 0 var(--space-6) 0",
-  });
+  const moreDetailLines = returnInfo.return_info
+    ? returnInfo.return_info.split("\n").map((l) => l.trim()).filter(Boolean)
+    : [];
+
+  const nearbyPlaces: NearbyPlace[] = returnInfo.return_nearby_places ?? [];
+
+  const ChecklistRow = ({ item, index, items }: { item: string; index: number; items: string[] }) => {
+    const prevIsHeader = items[index - 1]?.endsWith(":");
+    const nextIsHeader = items[index + 1]?.endsWith(":");
+    const isLast = index === items.length - 1;
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-3)",
+          alignItems: "flex-start",
+          paddingTop: index > 0 && !prevIsHeader ? "var(--space-4)" : 0,
+          paddingBottom: !isLast && !nextIsHeader ? "var(--space-4)" : 0,
+          borderBottom: !isLast && !nextIsHeader ? "1px solid rgb(var(--border-light))" : "none",
+        }}
+      >
+        <svg
+          width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"
+          style={{ flexShrink: 0, marginTop: "2px", color: "rgb(var(--brand))" }}
+        >
+          <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M5.5 9L7.5 11L12.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))", margin: 0 }}>{item}</p>
+      </div>
+    );
+  };
+
+  const navRowStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--space-3)",
+    padding: "var(--space-3) var(--space-4)",
+    border: "1px solid rgb(var(--border-light))",
+    borderRadius: "var(--radius)",
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "rgb(var(--text))",
+    textDecoration: "none",
+    background: "rgb(var(--app-bg))",
+    transition: "background 0.15s",
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
         .greturn-sp { padding: var(--space-5); }
-        .greturn-details summary { padding: var(--space-4) var(--space-5); }
-        .greturn-details-body { padding: var(--space-5); }
-        @media (min-width: 768px) {
-          .greturn-sp { padding: var(--space-6); }
-          .greturn-details summary { padding: var(--space-5) var(--space-6); }
-          .greturn-details-body { padding: var(--space-5) var(--space-6); }
-        }
+        @media (min-width: 768px) { .greturn-sp { padding: var(--space-6); } }
+        .greturn-details summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+        .greturn-details summary::-webkit-details-marker { display: none; }
+        .greturn-details[open] .greturn-chevron { transform: rotate(180deg); }
+        .greturn-phone-btn:hover { background: rgb(var(--app-bg)) !important; }
+        .greturn-wa-btn:hover { opacity: 0.88; }
+        .greturn-nearby-btn:hover { background: rgb(var(--border-light)) !important; }
       `}</style>
 
       {/* Back link */}
@@ -261,344 +259,168 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
       {/* Summary card */}
       <div className="surface greturn-sp">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "var(--space-6)",
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-6)" }}>
           <div>
             <p style={labelStyle}>{t("returnDateTime")}</p>
             <p style={valueStyle}>{formatDateTime(booking.return_at)}</p>
           </div>
-
           {vehicle?.name && (
             <div>
               <p style={labelStyle}>{t("vehicle")}</p>
               <p style={valueStyle}>{vehicle.name}</p>
             </div>
           )}
-
-          {returnInfo.contact_phone && (
-            <div>
-              <p style={labelStyle}>{t("contactPhone")}</p>
-              <a href={toTelHref(returnInfo.contact_phone)} style={linkStyle}>
-                {returnInfo.contact_phone}
-              </a>
-            </div>
-          )}
-
-          {returnInfo.contact_whatsapp && (
-            <div>
-              <p style={labelStyle}>{t("contactWhatsapp")}</p>
-              <a href={toWaHref(returnInfo.contact_whatsapp)} style={linkStyle} target="_blank" rel="noopener noreferrer">
-                {returnInfo.contact_whatsapp}
-              </a>
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* Before you return */}
-      <div
-        className="surface greturn-sp"
-        style={{
-          background: "rgb(var(--brand-light))",
-          border: "1px solid rgb(var(--brand))",
-        }}
-      >
-        <p style={sectionLabel("rgb(var(--brand))")}>
-          {t("beforeYouReturnTitle")}
-        </p>
-        <div style={{ maxWidth: "640px" }}>
-          {returnInfo.before_return_info ? (
-            renderLines(returnInfo.before_return_info)
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {([0, 1, 2, 3, 4, 5] as const).map((i) => (
-                <div key={i} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                  <div
-                    style={{
-                      flexShrink: 0,
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      background: "rgb(var(--brand))",
-                      color: "white",
-                      fontSize: "10px",
-                      fontWeight: "700",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginTop: "2px",
-                    }}
-                  >
-                    {i + 1}
-                  </div>
-                  <span style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))" }}>
-                    {t(`beforeYouReturn${i}`)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Return checklist */}
-      <div className="surface greturn-sp">
-        <h2 style={{ marginBottom: "var(--space-5)" }}>{t("checklistTitle")}</h2>
-
-        {!checklistTemplate ? (
+        {(returnInfo.contact_phone || returnInfo.contact_whatsapp) && (
           <div
             style={{
+              marginTop: "var(--space-5)",
+              paddingTop: "var(--space-5)",
+              borderTop: "1px solid rgb(var(--border-light))",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-              padding: "var(--space-8) var(--space-4)",
               gap: "var(--space-3)",
+              flexWrap: "wrap",
             }}
           >
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "var(--radius-lg)",
-                background: "rgb(var(--app-bg))",
-                border: "1px solid rgb(var(--border-light))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                style={{ color: "rgb(var(--muted))" }}
-              >
-                <rect x="9" y="2" width="6" height="4" rx="1" />
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                <path d="M9 12h6M9 16h4" />
-              </svg>
-            </div>
-            <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0 }}>
-              {t("noChecklist")}
-            </p>
-          </div>
-        ) : checklistItems.length === 0 ? (
-          <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("noItems")}</p>
-        ) : (
-          <>
-            <div
-              style={{
-                display: "flex",
-                gap: "var(--space-3)",
-                alignItems: "flex-start",
-                padding: "var(--space-3) var(--space-4)",
-                background: "rgb(var(--app-bg))",
-                border: "1px solid rgb(var(--border-light))",
-                borderRadius: "var(--radius)",
-                marginBottom: "var(--space-5)",
-              }}
-            >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-                style={{ flexShrink: 0, marginTop: "2px", color: "rgb(var(--brand))" }}
-              >
-                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <div>
-                <p style={{ fontSize: "13px", lineHeight: "1.5", color: "rgb(var(--text-secondary))", margin: "0 0 var(--space-1) 0" }}>
-                  {t("checklistGuideNote")}
-                </p>
-                <p style={{ fontSize: "12px", lineHeight: "1.5", color: "rgb(var(--muted))", margin: 0 }}>
-                  {t("checklistPolicyNote")}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {checklistItems.map((item) => (
-                <div
-                  key={item.id}
+            {returnInfo.contact_phone && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                <span style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))" }}>
+                  {t("contactPhone")}
+                </span>
+                <a
+                  href={toTelHref(returnInfo.contact_phone)}
+                  className="greturn-phone-btn"
                   style={{
-                    padding: "var(--space-4)",
-                    background: "rgb(var(--app-bg))",
-                    border: "1px solid rgb(var(--border-light))",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    padding: "var(--space-3) var(--space-4)",
+                    border: "1.5px solid rgb(var(--border))",
                     borderRadius: "var(--radius)",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "var(--space-3)",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "rgb(var(--text))",
+                    textDecoration: "none",
+                    background: "transparent",
+                    transition: "background 0.15s",
                   }}
                 >
-                  <div style={{ flexShrink: 0, marginTop: "2px" }}>
-                    {item.checked ? (
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "4px",
-                          background: "rgb(var(--brand))",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                          <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "4px",
-                          border: "2px solid rgb(var(--border))",
-                          background: "rgb(var(--surface))",
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: item.checked ? "rgb(var(--muted))" : "rgb(var(--text))",
-                        textDecoration: item.checked ? "line-through" : "none",
-                      }}
-                    >
-                      {item.template?.label ?? t("untitledItem")}
-                    </p>
-                    {item.notes && (
-                      <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)" }}>
-                        {item.notes}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                    <path
+                      d="M14 10.5v2a1.01 1.01 0 0 1-1.1 1A13.93 13.93 0 0 1 2 3.1 1.01 1.01 0 0 1 3 2h2a1 1 0 0 1 1 .86 8.56 8.56 0 0 0 .47 1.89 1 1 0 0 1-.23 1.06L5.22 6.83a11.11 11.11 0 0 0 3.95 3.95l1.02-1.02a1 1 0 0 1 1.06-.23c.61.25 1.25.4 1.89.47A1 1 0 0 1 14 11Z"
+                      stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
+                    />
+                  </svg>
+                  {returnInfo.contact_phone}
+                </a>
+              </div>
+            )}
+            {returnInfo.contact_whatsapp && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                <span style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))" }}>
+                  {t("contactWhatsapp")}
+                </span>
+                <a
+                  href={toWaHref(returnInfo.contact_whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="greturn-wa-btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    padding: "var(--space-3) var(--space-4)",
+                    background: "#25D366",
+                    borderRadius: "var(--radius)",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "white",
+                    textDecoration: "none",
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 1.41.37 2.73 1.01 3.87L0 16l4.25-.98A7.98 7.98 0 0 0 8 16c4.42 0 8-3.58 8-8s-3.58-8-8-8zm3.86 11.07c-.17.47-.98.9-1.35.95-.34.05-.77.07-1.25-.08a9.6 9.6 0 0 1-1.13-.43c-2-.99-3.3-3.04-3.4-3.18-.1-.14-.8-1.07-.8-2.03 0-.96.5-1.43.68-1.63.18-.2.39-.25.52-.25h.37c.12 0 .28-.04.44.34l.62 1.5c.06.14.1.3.02.48-.08.18-.12.3-.24.45l-.36.42c-.12.13-.25.27-.11.53.14.26.63 1.04 1.36 1.68.93.83 1.72 1.09 1.97 1.2.24.12.38.1.52-.06l.7-.83c.14-.19.28-.15.47-.09l1.47.69c.19.09.31.14.36.22.05.09.05.5-.12.97z" />
+                  </svg>
+                  {returnInfo.contact_whatsapp}
+                </a>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Detailed return instructions — collapsed by default */}
-      {hasDetailSection && (
-        <details
-          className="surface greturn-details"
-          style={{ padding: 0, overflow: "hidden" }}
-        >
-          <summary
-            style={{
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              color: "rgb(var(--text))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              userSelect: "none",
-              listStyle: "none",
-            }}
-          >
-            {t("detailedReturnInstructions")}
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0, opacity: 0.45 }}>
+      {/* Before you return */}
+      {beforeReturnItems.length > 0 && (
+        <div className="surface greturn-sp">
+          <p style={sectionLabel("rgb(var(--warning, var(--text-secondary)))")}>
+            {t("beforeYouReturnTitle")}
+          </p>
+          <div>
+            {beforeReturnItems.map((item, i) =>
+              item.endsWith(":") ? (
+                <p key={i} style={{ ...inlineHeaderStyle, marginTop: i > 0 ? "var(--space-4)" : 0, marginBottom: "var(--space-1)" }}>
+                  {item}
+                </p>
+              ) : (
+                <ChecklistRow key={i} item={item} index={i} items={beforeReturnItems} />
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Nearby places */}
+      {nearbyPlaces.length > 0 && (
+        <div className="surface greturn-sp">
+          <p style={sectionLabel("rgb(var(--text-secondary))")}>
+            {t("nearbyPlaces")}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            {nearbyPlaces.map((place, i) => (
+              <a
+                key={i}
+                href={place.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="greturn-nearby-btn"
+                style={navRowStyle}
+              >
+                <PinIcon color="rgb(var(--text-secondary))" />
+                <span style={{ flex: 1 }}>{place.title}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* More details */}
+      {moreDetailLines.length > 0 && (
+        <details className="surface greturn-sp greturn-details">
+          <summary>
+            <span style={{ fontSize: "15px", fontWeight: "600", color: "rgb(var(--text))" }}>
+              {t("moreDetails")}
+            </span>
+            <svg
+              className="greturn-chevron"
+              width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+              style={{ flexShrink: 0, color: "rgb(var(--text-secondary))", transition: "transform 0.2s" }}
+            >
               <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </summary>
-
-          <div className="greturn-details-body" style={{ borderTop: "1px solid rgb(var(--border-light))" }}>
-            {returnInfo.return_info && (
-              <div style={{ marginBottom: (returnInfo.contact_phone || returnInfo.contact_whatsapp) ? "var(--space-6)" : undefined, maxWidth: "640px" }}>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    color: "rgb(var(--text-secondary))",
-                    margin: "0 0 var(--space-5) 0",
-                  }}
-                >
-                  {t("returnInfo")}
+          <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            {moreDetailLines.map((line, i) =>
+              line.endsWith(":") ? (
+                <p key={i} style={{ ...inlineHeaderStyle, marginTop: i > 0 ? "var(--space-2)" : 0 }}>
+                  {line}
                 </p>
-                {renderLines(returnInfo.return_info)}
-              </div>
-            )}
-
-            {(returnInfo.contact_phone || returnInfo.contact_whatsapp) && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: "var(--space-4)",
-                  paddingTop: returnInfo.return_info ? "var(--space-5)" : undefined,
-                  borderTop: returnInfo.return_info ? "1px solid rgb(var(--border-light))" : undefined,
-                }}
-              >
-                {returnInfo.contact_phone && (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "rgb(var(--text-secondary))",
-                        marginBottom: "var(--space-2)",
-                      }}
-                    >
-                      {t("contactPhone")}
-                    </p>
-                    <a
-                      href={toTelHref(returnInfo.contact_phone)}
-                      style={{ fontSize: "15px", fontWeight: "500", color: "rgb(var(--brand))", textDecoration: "none" }}
-                    >
-                      {returnInfo.contact_phone}
-                    </a>
-                  </div>
-                )}
-                {returnInfo.contact_whatsapp && (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: "rgb(var(--text-secondary))",
-                        marginBottom: "var(--space-2)",
-                      }}
-                    >
-                      {t("contactWhatsapp")}
-                    </p>
-                    <a
-                      href={toWaHref(returnInfo.contact_whatsapp)}
-                      style={{ fontSize: "15px", fontWeight: "500", color: "rgb(var(--brand))", textDecoration: "none" }}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {returnInfo.contact_whatsapp}
-                    </a>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <p key={i} style={{ fontSize: "14px", lineHeight: "1.7", color: "rgb(var(--text-secondary))", margin: 0 }}>
+                  {line}
+                </p>
+              )
             )}
           </div>
         </details>
