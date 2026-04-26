@@ -25,6 +25,8 @@ export interface OpsUpcomingPickup {
   vehicleStatus: 'ready' | 'preparing' | 'on_rent' | null
   vehicleId: string | null
   openVehicleIssueChecklistInstanceId: string | null
+  handoverDone: boolean
+  prepDone: boolean
   // Resolved operational extras (staff_metadata takes priority over source_metadata)
   guestCount: number | null
   hasPets: boolean
@@ -125,7 +127,7 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   const { data: instances, error: ciError } = bookingIds.length
     ? await supabase
         .from('checklist_instances')
-        .select('id, booking_id')
+        .select('id, booking_id, status, checklist_type')
         .in('booking_id', bookingIds)
     : { data: [], error: null }
 
@@ -160,6 +162,17 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       .map((ci) => ci.booking_id)
   )
   const bookingsWithUrgentIssue = bookingsWithBlockingIssue
+
+  const handoverDoneSet = new Set(
+    (instances ?? [])
+      .filter((ci) => ci.checklist_type === 'handover' && ci.status === 'completed')
+      .map((ci) => ci.booking_id)
+  )
+  const prepDoneSet = new Set(
+    (instances ?? [])
+      .filter((ci) => ci.checklist_type === 'pickup' && ci.status === 'completed')
+      .map((ci) => ci.booking_id)
+  )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -271,6 +284,8 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       vehicleStatus: b.vehicle_id ? (vehicleStatusMap.get(b.vehicle_id) ?? null) : null,
       vehicleId: b.vehicle_id ?? null,
       openVehicleIssueChecklistInstanceId: b.vehicle_id ? (vehicleIssueChecklistMap.get(b.vehicle_id) ?? null) : null,
+      handoverDone: handoverDoneSet.has(b.id),
+      prepDone: prepDoneSet.has(b.id),
       ...extras,
     }
   })

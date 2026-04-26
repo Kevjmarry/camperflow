@@ -286,11 +286,12 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
             <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
               {pickup.customerName} · {pickup.bookingNumber}
             </span>
-            {pickup.vehicleStatus && (
-              <span style={{ ...getStatusChipStyle(pickup.vehicleStatus === 'ready' ? 'ready' : 'preparing'), alignSelf: 'flex-start' }}>
-                {pickup.vehicleStatus === 'ready' ? 'Ready for pickup' : 'Prep needed'}
-              </span>
-            )}
+            {pickup.handoverDone
+              ? <span style={{ ...getStatusChipStyle('completed'), alignSelf: 'flex-start' }}>Handover complete</span>
+              : pickup.prepDone
+                ? <span style={{ ...getStatusChipStyle('ready'), alignSelf: 'flex-start' }}>Ready for pickup</span>
+                : <span style={{ ...getStatusChipStyle('preparing'), alignSelf: 'flex-start' }}>Prep needed</span>
+            }
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale)}
             </span>
