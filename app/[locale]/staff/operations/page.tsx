@@ -246,6 +246,8 @@ export default async function OperationsPage({
     hasPets: false,
     hasAirportPickup: false,
     hasExtraDriver: false,
+    handoverDone: p.handoverStatus === 'completed',
+    prepDone: false,
   }))
   const todayPickupIds = new Set(pickups.map((p) => p.id))
   const nextPickups = [
