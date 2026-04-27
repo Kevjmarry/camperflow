@@ -17,8 +17,8 @@ export const runtime = "nodejs";
 export const maxDuration = 300; // 5 min — enough for many vehicles
 
 export async function GET(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = request.headers.get("authorization") ?? "";
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const authHeader = (request.headers.get("authorization") ?? "").trim();
 
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

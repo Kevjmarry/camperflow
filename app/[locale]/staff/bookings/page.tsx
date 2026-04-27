@@ -888,7 +888,9 @@ setDateFrom('');
                                   {formatDate(booking.return_at)}
                                 </td>
                                 <td style={td}>
-                                  {getTimeToReturn(booking.return_at) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
+                                  {['completed', 'cancelled'].includes(booking.status)
+                                    ? <span style={{ color: 'rgb(var(--muted))' }}>—</span>
+                                    : (getTimeToReturn(booking.return_at) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>)}
                                 </td>
                                 <td style={td}>
                                   <span style={getStatusChipStyle(booking.status)}>

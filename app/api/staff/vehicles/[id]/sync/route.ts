@@ -25,7 +25,7 @@ export async function POST(
 
     // ── auth ────────────────────────────────────────────────────────────────
     const cronSecret = process.env.CRON_SECRET?.trim();
-    const authHeader = request.headers.get("authorization") ?? "";
+    const authHeader = (request.headers.get("authorization") ?? "").trim();
     const isInternalCronCall =
       cronSecret &&
       cronSecret.length > 0 &&
