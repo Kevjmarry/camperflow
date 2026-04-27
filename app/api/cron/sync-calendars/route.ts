@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
-  const origin = new URL(request.url).origin;
 
   // Fetch all vehicles that have an iCal URL configured
   const { data: sources, error } = await supabase
@@ -47,17 +46,18 @@ export async function GET(request: NextRequest) {
 
   for (const source of sources) {
     try {
-      const res = await fetch(
-        `${origin}/api/staff/vehicles/${source.vehicle_id}/sync`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${cronSecret}`,
-          },
-          body: JSON.stringify({}),
-        },
+      const syncUrl = new URL(
+        `/api/staff/vehicles/${source.vehicle_id}/sync`,
+        request.url,
       );
+      const res = await fetch(syncUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cronSecret}`.trim(),
+        },
+        body: JSON.stringify({}),
+      });
 
       if (res.ok) {
         results.push({ vehicleId: source.vehicle_id, ok: true });
