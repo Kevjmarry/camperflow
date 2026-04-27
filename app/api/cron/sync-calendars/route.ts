@@ -46,9 +46,13 @@ export async function GET(request: NextRequest) {
 
   for (const source of sources) {
     try {
+      const appBase =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        process.env.APP_URL ??
+        "https://app.camperflow.io";
       const syncUrl = new URL(
         `/api/staff/vehicles/${source.vehicle_id}/sync`,
-        request.url,
+        appBase,
       );
       const res = await fetch(syncUrl, {
         method: "POST",
