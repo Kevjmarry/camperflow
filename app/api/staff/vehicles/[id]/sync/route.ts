@@ -27,12 +27,6 @@ export async function POST(
     const cronSecret = process.env.CRON_SECRET?.trim();
     const authHeader = (request.headers.get("authorization") ?? "").trim();
     const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    console.log("[sync/auth]", {
-      hasSecret: !!cronSecret,
-      hdrLen: bearer.length,
-      expLen: cronSecret ? cronSecret.length : 0,
-      match: !!cronSecret && bearer === cronSecret,
-    });
     const isInternalCronCall =
       cronSecret &&
       cronSecret.length > 0 &&

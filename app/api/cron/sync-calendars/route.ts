@@ -69,10 +69,6 @@ export async function GET(request: NextRequest) {
         const responseText = await res.text().catch(() => "");
         let data: Record<string, unknown> = {};
         try { data = JSON.parse(responseText); } catch { /* not JSON */ }
-        console.error(
-          `sync-calendars cron: vehicle ${source.vehicle_id} sync failed`,
-          { status: res.status, body: responseText },
-        );
         results.push({
           vehicleId: source.vehicle_id,
           ok: false,
