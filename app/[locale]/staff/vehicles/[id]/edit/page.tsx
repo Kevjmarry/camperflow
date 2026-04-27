@@ -34,6 +34,7 @@ interface Vehicle {
   photo_url: string | null;
   operational_hold: boolean;
   hold_reason: string | null;
+  youtube_url: string | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -91,6 +92,7 @@ export default function EditVehiclePage({
     photo_url: "",
     operational_hold: false,
     hold_reason: "",
+    youtube_url: "",
   });
 
   // ── Calendar sync state ────────────────────────────────────────────────────
@@ -177,6 +179,7 @@ export default function EditVehiclePage({
           photo_url: vehicleData.photo_url || "",
           operational_hold: vehicleData.operational_hold ?? false,
           hold_reason: vehicleData.hold_reason ?? "",
+          youtube_url: vehicleData.youtube_url ?? "",
         });
       } catch {
         setError(t("loadFailed"));
@@ -460,6 +463,7 @@ export default function EditVehiclePage({
           hold_reason: formData.operational_hold && formData.hold_reason.trim()
             ? formData.hold_reason.trim()
             : null,
+          youtube_url: formData.youtube_url.trim() || null,
         })
         .eq("id", vehicleId);
       if (updateError) throw updateError;

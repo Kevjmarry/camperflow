@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
@@ -33,37 +33,31 @@ interface VehicleRow {
   id: string;
   name: string | null;
   registration_plate: string | null;
-  vin: string | null;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  photo_url: string | null;
+  youtube_url: string | null;
   length_m: number | null;
   width_m: number | null;
   height_m: number | null;
 }
 
-const STORAGE_KEY = "camperflow:last_company_theme";
-
-const NOTES_PLACEHOLDER_LABELS = [
-  "company name",
-  "company registration no.",
-  "vat no.",
-  "vat registration no.",
-  "comments",
-];
-
-function hasRealNotes(notes: string | null): boolean {
-  if (!notes) return false;
-  for (const line of notes.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const colonIdx = trimmed.indexOf(":");
-    if (colonIdx !== -1) {
-      const label = trimmed.slice(0, colonIdx).trim().toLowerCase();
-      const value = trimmed.slice(colonIdx + 1).trim();
-      if (NOTES_PLACEHOLDER_LABELS.includes(label) && !value) continue;
+function getYouTubeEmbedId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/embed/")[1].split("?")[0] || null;
+      return u.searchParams.get("v");
     }
-    return true;
+  } catch {
+    // not a valid URL
   }
-  return false;
+  return null;
 }
+
+const STORAGE_KEY = "camperflow:last_company_theme";
 
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -128,9 +122,10 @@ export default async function GuestBookingPage({ params }: PageProps) {
 
   let vehicle: VehicleRow | null = null;
   if (booking.vehicle_id) {
-    const { data, error: vehicleError } = await supabase
+    const serviceClient = createServiceClient();
+    const { data, error: vehicleError } = await serviceClient
       .from("vehicles")
-      .select("id, name, registration_plate, vin, length_m, width_m, height_m")
+      .select("id, name, registration_plate, make, model, year, photo_url, youtube_url, length_m, width_m, height_m")
       .eq("id", booking.vehicle_id)
       .maybeSingle<VehicleRow>();
 
@@ -138,9 +133,6 @@ export default async function GuestBookingPage({ params }: PageProps) {
       vehicle = data || null;
     }
   }
-
-  const { data: checklistsData } = await supabase.rpc("get_guest_checklists_by_code", { p_code: code });
-  const checklists = (checklistsData as any[]) || [];
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t("notSpecified");
@@ -211,6 +203,10 @@ try{
           .gbooking-sp { padding: var(--space-8); }
           .gbooking-title { padding: var(--space-6); margin-bottom: var(--space-6); }
         }
+        .gbooking-photo-fields { display: grid; gap: var(--space-6); grid-template-columns: minmax(0,1fr); }
+        @media (min-width: 481px) { .gbooking-photo-fields { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
+        .gbooking-dims { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+        @media (min-width: 481px) { .gbooking-dims { grid-template-columns: 1fr 1fr 1fr; } }
       `}</style>
       {themeObj && (
         <>
@@ -278,6 +274,55 @@ try{
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+
+        {/* Customer */}
+        {(booking.customer_name || booking.customer_email || booking.customer_phone) && (
+          <div className="surface gbooking-sp">
+            <h2
+              style={{
+                marginBottom: "var(--space-6)",
+                paddingBottom: "var(--space-4)",
+                borderBottom: "1px solid rgb(var(--border-light))",
+              }}
+            >
+              {t("customerInformation")}
+            </h2>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                gap: "var(--space-6)",
+              }}
+            >
+              {booking.customer_name && (
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))", marginBottom: "var(--space-2)" }}>
+                    {t("name")}
+                  </p>
+                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_name}</p>
+                </div>
+              )}
+              {booking.customer_email && (
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))", marginBottom: "var(--space-2)" }}>
+                    {t("email")}
+                  </p>
+                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_email}</p>
+                </div>
+              )}
+              {booking.customer_phone && (
+                <div>
+                  <p style={{ fontSize: "12px", fontWeight: "500", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))", marginBottom: "var(--space-2)" }}>
+                    {t("phone")}
+                  </p>
+                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_phone}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Booking */}
         <div className="surface gbooking-sp">
           <h2
             style={{
@@ -288,7 +333,6 @@ try{
           >
             {t("bookingInformation")}
           </h2>
-
           <div
             style={{
               display: "grid",
@@ -313,7 +357,6 @@ try{
                 {booking.booking_number}
               </p>
             </div>
-
             <div>
               <p
                 style={{
@@ -343,7 +386,6 @@ try{
                 {t(`statusValues.${safeStatus.toLowerCase()}`)}
               </span>
             </div>
-
             <div>
               <p
                 style={{
@@ -359,7 +401,6 @@ try{
               </p>
               <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{formatDate(booking.pickup_at)}</p>
             </div>
-
             <div>
               <p
                 style={{
@@ -376,316 +417,142 @@ try{
               <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{formatDate(booking.return_at)}</p>
             </div>
           </div>
-
-          {hasRealNotes(booking.notes) && (
-            <div
-              style={{
-                marginTop: "var(--space-6)",
-                padding: "var(--space-4)",
-                background: "rgb(var(--app-bg))",
-                border: "1px solid rgb(var(--border-light))",
-                borderRadius: "var(--radius)",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "12px",
-                  fontWeight: "500",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "rgb(var(--text-secondary))",
-                  marginBottom: "var(--space-2)",
-                }}
-              >
-                {t("additionalNotes")}
-              </p>
-              <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--muted))" }}>{booking.notes}</p>
-            </div>
-          )}
         </div>
 
+        {/* Vehicle */}
         {vehicle && (
-          <div className="surface gbooking-sp">
-            <h2
-              style={{
-                marginBottom: "var(--space-6)",
-                paddingBottom: "var(--space-4)",
-                borderBottom: "1px solid rgb(var(--border-light))",
-              }}
-            >
-              {t("vehicleInformation")}
-            </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "var(--space-6)",
-              }}
-            >
-              {vehicle.name && (
-                <div>
-                  <p
+          <>
+            {/* Photo + Fields */}
+            <div className="gbooking-photo-fields">
+              <div className="surface gbooking-sp">
+                {vehicle.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={vehicle.photo_url}
+                    alt={vehicle.name ?? "Vehicle"}
                     style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
+                      width: "100%",
+                      height: 240,
+                      objectFit: "cover",
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
                     }}
-                  >
-                    {t("vehicle")}
-                  </p>
-                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{vehicle.name}</p>
-                </div>
-              )}
-
-              {vehicle.registration_plate && (
-                <div>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("licensePlate")}
-                  </p>
-                  <p style={{ fontFamily: "monospace", fontWeight: "500", color: "rgb(var(--text))" }}>
-                    {vehicle.registration_plate}
-                  </p>
-                </div>
-              )}
-
-              {vehicle.vin && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("vin")}
-                  </p>
-                  <p style={{ fontFamily: "monospace", fontSize: "14px", color: "rgb(var(--muted))" }}>{vehicle.vin}</p>
-                </div>
-              )}
-
-              {(vehicle.length_m != null || vehicle.width_m != null || vehicle.height_m != null) && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("dimensions")}
-                  </p>
-                  <p style={{ fontWeight: "500", color: "rgb(var(--text))", fontSize: "14px" }}>
-                    {[
-                      vehicle.length_m != null && `${t("dimensionLength")} ${vehicle.length_m} m`,
-                      vehicle.width_m  != null && `${t("dimensionWidth")}  ${vehicle.width_m} m`,
-                      vehicle.height_m != null && `${t("dimensionHeight")} ${vehicle.height_m} m`,
-                    ]
-                      .filter(Boolean)
-                      .join("  ·  ")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {(booking.customer_name || booking.customer_email || booking.customer_phone) && (
-          <div className="surface gbooking-sp">
-            <h2
-              style={{
-                marginBottom: "var(--space-6)",
-                paddingBottom: "var(--space-4)",
-                borderBottom: "1px solid rgb(var(--border-light))",
-              }}
-            >
-              {t("customerInformation")}
-            </h2>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                gap: "var(--space-6)",
-              }}
-            >
-              {booking.customer_name && (
-                <div>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("name")}
-                  </p>
-                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_name}</p>
-                </div>
-              )}
-
-              {booking.customer_email && (
-                <div>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("email")}
-                  </p>
-                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_email}</p>
-                </div>
-              )}
-
-              {booking.customer_phone && (
-                <div>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-2)",
-                    }}
-                  >
-                    {t("phone")}
-                  </p>
-                  <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>{booking.customer_phone}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {checklists.length > 0 && (
-          <div className="surface gbooking-sp">
-            <h2
-              style={{
-                marginBottom: "var(--space-6)",
-                paddingBottom: "var(--space-4)",
-                borderBottom: "1px solid rgb(var(--border-light))",
-              }}
-            >
-              {t("checklists")}
-            </h2>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              {checklists.map((checklist: any) => {
-                const isClickable = checklist.completed_at || checklist.can_submit;
-                const rowStyle = {
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  padding: "var(--space-4)",
-                  background: "rgb(var(--app-bg))",
-                  border: "1px solid rgb(var(--border))",
-                  borderRadius: "var(--radius)",
-                  textDecoration: "none",
-                };
-                const checklistHref = `/${locale}/guest/bookings/${encodeURIComponent(code)}/checklists/${checklist.template_id}?code=${encodeURIComponent(code)}`;
-
-                const rowInner = (
-                  <>
-                    <div>
-                      <p style={{ fontWeight: "500", color: "rgb(var(--text))" }}>
-                        {checklist.type || t("checklistDefault")}
-                      </p>
-                      {checklist.created_at && (
-                        <p style={{ marginTop: "var(--space-1)", fontSize: "14px", color: "rgb(var(--muted))" }}>
-                          {new Date(checklist.created_at).toLocaleString(dateLocale)}
-                        </p>
-                      )}
-                    </div>
-
-                    {checklist.completed_at ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          background: "rgb(var(--success) / 0.1)",
-                          color: "rgb(var(--success))",
-                          borderRadius: "var(--radius-xl)",
-                          padding: "var(--space-1) var(--space-3)",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {t("checklistCompleted")}
-                      </span>
-                    ) : checklist.can_submit ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          background: "rgb(var(--brand-light))",
-                          color: "rgb(var(--brand))",
-                          borderRadius: "var(--radius-xl)",
-                          padding: "var(--space-1) var(--space-3)",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {t("checklistAvailable")}
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          background: "rgb(var(--muted) / 0.1)",
-                          color: "rgb(var(--muted))",
-                          borderRadius: "var(--radius-xl)",
-                          padding: "var(--space-1) var(--space-3)",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {t("checklistLocked")}
-                      </span>
-                    )}
-                  </>
-                );
-
-                return isClickable ? (
-                  <Link key={checklist.id} href={checklistHref} style={rowStyle}>
-                    {rowInner}
-                  </Link>
+                  />
                 ) : (
-                  <div key={checklist.id} style={rowStyle}>
-                    {rowInner}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 240,
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
+                      background: "rgb(var(--muted) / 0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "rgb(var(--muted))",
+                      fontSize: "14px",
+                    }}
+                  >
+                    —
                   </div>
-                );
-              })}
+                )}
+              </div>
+              <div className="surface gbooking-sp">
+                <h2
+                  style={{
+                    marginBottom: "var(--space-6)",
+                    paddingBottom: "var(--space-4)",
+                    borderBottom: "1px solid rgb(var(--border-light))",
+                  }}
+                >
+                  {t("vehicleInformation")}
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  {vehicle.name && (
+                    <div>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{t("vehicle")}</p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.name}</p>
+                    </div>
+                  )}
+                  {vehicle.registration_plate && (
+                    <div>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{t("licensePlate")}</p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", fontFamily: "monospace", color: "rgb(var(--text))" }}>{vehicle.registration_plate}</p>
+                    </div>
+                  )}
+                  {vehicle.make && (
+                    <div>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Make</p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.make}</p>
+                    </div>
+                  )}
+                  {vehicle.model && (
+                    <div>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Model</p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.model}</p>
+                    </div>
+                  )}
+                  {vehicle.year != null && (
+                    <div>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Year</p>
+                      <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.year}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Dimensions */}
+            {(vehicle.length_m != null || vehicle.width_m != null || vehicle.height_m != null) && (
+              <div className="surface gbooking-sp">
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                  {t("dimensions")}
+                </div>
+                <div className="gbooking-dims">
+                  {vehicle.length_m != null && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>{t("dimensionLength")}</div>
+                      <div style={{ fontSize: "20px", fontWeight: 700, color: "rgb(var(--text))" }}>{vehicle.length_m} m</div>
+                    </div>
+                  )}
+                  {vehicle.width_m != null && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>{t("dimensionWidth")}</div>
+                      <div style={{ fontSize: "20px", fontWeight: 700, color: "rgb(var(--text))" }}>{vehicle.width_m} m</div>
+                    </div>
+                  )}
+                  {vehicle.height_m != null && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>{t("dimensionHeight")}</div>
+                      <div style={{ fontSize: "20px", fontWeight: 700, color: "rgb(var(--text))" }}>{vehicle.height_m} m</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Video */}
+            {vehicle.youtube_url && getYouTubeEmbedId(vehicle.youtube_url) && (
+              <div className="surface gbooking-sp">
+                <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                  Video Tour
+                </div>
+                <div style={{ maxWidth: 854, margin: "0 auto", width: "100%" }}>
+                  <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${getYouTubeEmbedId(vehicle.youtube_url)}`}
+                      title="Vehicle video tour"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
+
       </div>
     </div>
   );

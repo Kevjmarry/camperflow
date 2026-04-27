@@ -22,6 +22,10 @@ interface Vehicle {
   photo_url: string | null;
   status: "ready" | "preparing" | "on_rent";
   latest_odometer: number | null;
+  length_m: number | null;
+  width_m: number | null;
+  height_m: number | null;
+  youtube_url: string | null;
 }
 
 interface ComplianceTypeShape {
@@ -62,6 +66,20 @@ const SYSTEM_SLUG_KEYS: Record<string, string> = {
   "habitation-service":   "habitationService",
   "general-service":      "generalService",
 };
+
+function getYouTubeEmbedId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/embed/")[1].split("?")[0] || null;
+      return u.searchParams.get("v");
+    }
+  } catch {
+    // not a valid URL
+  }
+  return null;
+}
 
 const isValidUUID = (id: string): boolean => {
   const uuidRegex =
@@ -215,7 +233,7 @@ export default function VehicleDetailPage({
           await Promise.all([
             supabase
               .from("vehicles")
-              .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer")
+              .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer, length_m, width_m, height_m, youtube_url")
               .eq("id", id)
               .single(),
             supabase
@@ -648,6 +666,54 @@ export default function VehicleDetailPage({
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           }
         }
+        .dimensions-grid {
+          display: grid;
+          gap: var(--space-4);
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 481px) {
+          .dimensions-grid {
+            grid-template-columns: 1fr 1fr 1fr;
+          }
+        }
+        .compliance-header {
+          display: none;
+        }
+        @media (min-width: 481px) {
+          .compliance-header {
+            display: grid;
+            grid-template-columns: 1fr 140px 120px 80px;
+            gap: var(--space-3);
+            padding: 0 var(--space-3) var(--space-2);
+            border-bottom: 1px solid rgb(var(--border));
+          }
+        }
+        .compliance-row {
+          display: grid;
+          grid-template-areas:
+            "crow-name crow-status"
+            "crow-date crow-date"
+            "crow-action crow-action";
+          grid-template-columns: 1fr auto;
+          gap: var(--space-2) var(--space-3);
+          padding: var(--space-3);
+          border-radius: var(--radius);
+        }
+        @media (min-width: 481px) {
+          .compliance-row {
+            grid-template-areas: "crow-name crow-date crow-status crow-action";
+            grid-template-columns: 1fr 140px 120px 80px;
+            gap: var(--space-3);
+            align-items: center;
+          }
+        }
+        .compliance-row-name   { grid-area: crow-name; }
+        .compliance-row-date   { grid-area: crow-date; }
+        .compliance-row-status { grid-area: crow-status; }
+        .compliance-row-action { grid-area: crow-action; display: flex; justify-content: flex-start; }
+        @media (min-width: 481px) {
+          .compliance-row-action { justify-content: flex-end; }
+        }
       `}</style>
       {editingRow && (
         <EditComplianceModal
@@ -780,6 +846,7 @@ export default function VehicleDetailPage({
 
               <div className="surface" style={{ padding: "var(--space-6)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <Field label="Registration plate" value={vehicle.registration_plate || "—"} />
                   <Field label={t("fields.make")}  value={vehicle.make  || "—"} />
                   <Field label={t("fields.model")} value={vehicle.model || "—"} />
                   <Field label={t("fields.year")}  value={vehicle.year ? String(vehicle.year) : "—"} />
@@ -788,6 +855,20 @@ export default function VehicleDetailPage({
                 </div>
               </div>
             </div>
+
+            {/* Dimensions */}
+            {(vehicle.length_m != null || vehicle.width_m != null || vehicle.height_m != null) && (
+              <div className="surface" style={{ padding: "var(--space-6)" }}>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                  Dimensions
+                </div>
+                <div className="dimensions-grid">
+                  <DimensionField label="Length" value={vehicle.length_m} />
+                  <DimensionField label="Width"  value={vehicle.width_m} />
+                  <DimensionField label="Height" value={vehicle.height_m} />
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="surface" style={{ padding: "var(--space-6)" }}>
@@ -812,6 +893,30 @@ export default function VehicleDetailPage({
                   : t("fields.noNotes")}
               </div>
             </div>
+
+            {/* Video Tour */}
+            {vehicle.youtube_url && (() => {
+              const embedId = getYouTubeEmbedId(vehicle.youtube_url);
+              if (!embedId) return null;
+              return (
+                <div className="surface" style={{ padding: "var(--space-6)" }}>
+                  <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                    Video tour
+                  </div>
+                  <div style={{ maxWidth: 854, margin: "0 auto", width: "100%" }}>
+                  <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${embedId}`}
+                      title="Video tour"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                    />
+                  </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Compliance */}
             <div id="compliance" className="surface" style={{ padding: "var(--space-6)" }}>
@@ -868,15 +973,7 @@ export default function VehicleDetailPage({
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                   {/* Table header */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 140px 120px 80px",
-                      gap: "var(--space-3)",
-                      padding: "0 var(--space-3) var(--space-2)",
-                      borderBottom: "1px solid rgb(var(--border))",
-                    }}
-                  >
+                  <div className="compliance-header">
                     {[
                       t("compliance.table.type"),
                       t("compliance.table.expiryDate"),
@@ -906,13 +1003,8 @@ export default function VehicleDetailPage({
                     return (
                       <div
                         key={row.id}
+                        className="compliance-row"
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 140px 120px 80px",
-                          gap: "var(--space-3)",
-                          padding: "var(--space-3)",
-                          borderRadius: "var(--radius)",
-                          alignItems: "center",
                           background:
                             cs === "expired"
                               ? "rgb(var(--error) / 0.04)"
@@ -922,6 +1014,7 @@ export default function VehicleDetailPage({
                         }}
                       >
                         <div
+                          className="compliance-row-name"
                           style={{
                             fontSize: "14px",
                             color: "rgb(var(--text))",
@@ -943,11 +1036,11 @@ export default function VehicleDetailPage({
                           )}
                         </div>
 
-                        <div style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
+                        <div className="compliance-row-date" style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
                           {formatDate(row.expiry_date)}
                         </div>
 
-                        <div>
+                        <div className="compliance-row-status">
                           <span
                             style={{
                               display: "inline-block",
@@ -963,7 +1056,7 @@ export default function VehicleDetailPage({
                           </span>
                         </div>
 
-                        <div style={{ textAlign: "right" }}>
+                        <div className="compliance-row-action">
                           {canManage && (
                             <button
                               className="btn btn-secondary"
@@ -1234,6 +1327,19 @@ export default function VehicleDetailPage({
         </div>
       </PageContainer>
     </>
+  );
+}
+
+function DimensionField({ label, value }: { label: string; value: number | null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: "20px", fontWeight: 700, color: "rgb(var(--text))" }}>
+        {value != null ? `${value} m` : "—"}
+      </div>
+    </div>
   );
 }
 

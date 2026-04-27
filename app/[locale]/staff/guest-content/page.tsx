@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, useMemo, FormEvent, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
-import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +18,7 @@ interface NearbyPlaceItem {
   title: string;
   url: string;
 }
+
 
 interface ReturnChecklist {
   id: string;
@@ -45,8 +45,8 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
 export default function GuestContentPage() {
   const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
-  const supabase = createClient();
-  const { company, loading: themeLoading } = useTheme();
+  const supabase = useMemo(() => createClient(), []);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const t = useTranslations("staffGuestContent");
 
   const [formData, setFormData] = useState({
@@ -66,7 +66,7 @@ export default function GuestContentPage() {
   });
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [returnNearbyPlaces, setReturnNearbyPlaces] = useState<NearbyPlaceItem[]>([]);
-  // undefined = loading, null = not found, object = found
+// undefined = loading, null = not found, object = found
   const [returnChecklist, setReturnChecklist] = useState<ReturnChecklist | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,65 +82,91 @@ export default function GuestContentPage() {
       if (!user) { router.replace(`/${locale}/staff/login`); return; }
       const { data: profile } = await supabase
         .from("staff_profiles")
-        .select("role, can_manage")
+        .select("role, can_manage, company_id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       if (profile) {
         setIsAdmin(profile.role === "admin" || profile.can_manage === true);
+        if (!profile.company_id) { setLoading(false); return; }
+        setCompanyId(profile.company_id);
+        console.log("[GuestContent] companyId:", profile.company_id);
+      } else {
+        setLoading(false);
       }
     };
     init();
-  }, [supabase, locale, router]);
+  }, [locale, router]);
 
   // ── Data load ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!company?.id) {
-      if (!themeLoading) setLoading(false);
-      return;
-    }
+    if (!companyId) return;
     const load = async () => {
       const [{ data }, { data: template }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
           .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places")
-          .eq("id", company.id)
+          .eq("id", companyId)
           .maybeSingle(),
         supabase
           .from("checklist_templates")
           .select("id, name, active, item_count")
+          .eq("company_id", companyId)
           .eq("type", "guest_prereturn")
           .maybeSingle(),
         supabase
           .from("companies")
           .select("emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary")
-          .eq("id", company.id)
+          .eq("id", companyId)
           .maybeSingle(),
       ]);
-      setFormData({
-        contact_phone:                       (data as any)?.contact_phone                       ?? "",
-        contact_whatsapp:                    (data as any)?.contact_whatsapp                    ?? "",
-        pickup_info:                         (data as any)?.pickup_info                         ?? "",
-        important_before_pickup:             (data as any)?.important_before_pickup             ?? "",
-        return_info:                         (data as any)?.return_info                         ?? "",
-        rules_and_tips:                      (data as any)?.rules_and_tips                      ?? "",
-        before_arrival_info:                 (data as any)?.before_arrival_info                 ?? "",
-        before_return_info:                  (data as any)?.before_return_info                  ?? "",
-        included_items:                      (data as any)?.included_items                      ?? "",
-        emergency_accident_phone_primary:    (companyRow as any)?.emergency_accident_phone_primary    ?? "",
-        emergency_accident_phone_secondary:  (companyRow as any)?.emergency_accident_phone_secondary  ?? "",
-        emergency_breakdown_phone_primary:   (companyRow as any)?.emergency_breakdown_phone_primary   ?? "",
-        emergency_breakdown_phone_secondary: (companyRow as any)?.emergency_breakdown_phone_secondary ?? "",
-      });
+      console.log("[GuestContent] company_settings raw:", data);
       if (data) {
+        const payload = {
+          contact_phone:           (data as any).contact_phone           ?? "",
+          contact_whatsapp:        (data as any).contact_whatsapp        ?? "",
+          pickup_info:             (data as any).pickup_info             ?? "",
+          important_before_pickup: (data as any).important_before_pickup ?? "",
+          return_info:             (data as any).return_info             ?? "",
+          rules_and_tips:          (data as any).rules_and_tips          ?? "",
+          before_arrival_info:     (data as any).before_arrival_info     ?? "",
+          before_return_info:      (data as any).before_return_info      ?? "",
+          included_items:          (data as any).included_items          ?? "",
+        };
+        console.log("[GuestContent] setFormData payload:", payload);
+        setFormData(prev => {
+          const next = {
+            ...prev,
+            contact_phone:           (data as any).contact_phone           ?? "",
+            contact_whatsapp:        (data as any).contact_whatsapp        ?? "",
+            pickup_info:             (data as any).pickup_info             ?? "",
+            important_before_pickup: (data as any).important_before_pickup ?? "",
+            return_info:             (data as any).return_info             ?? "",
+            rules_and_tips:          (data as any).rules_and_tips          ?? "",
+            before_arrival_info:     (data as any).before_arrival_info     ?? "",
+            before_return_info:      (data as any).before_return_info      ?? "",
+            included_items:          (data as any).included_items          ?? "",
+          };
+          console.log("[GuestContent] formData after setFormData:", next);
+          return next;
+        });
         setFaqItems((data as any).faq_items ?? []);
         setReturnNearbyPlaces((data as any).return_nearby_places ?? []);
+      }
+      if (companyRow) {
+        setFormData(prev => ({
+          ...prev,
+          emergency_accident_phone_primary:    (companyRow as any).emergency_accident_phone_primary    ?? "",
+          emergency_accident_phone_secondary:  (companyRow as any).emergency_accident_phone_secondary  ?? "",
+          emergency_breakdown_phone_primary:   (companyRow as any).emergency_breakdown_phone_primary   ?? "",
+          emergency_breakdown_phone_secondary: (companyRow as any).emergency_breakdown_phone_secondary ?? "",
+        }));
       }
       setReturnChecklist(template ?? null);
       setLoading(false);
     };
     load();
-  }, [company?.id, themeLoading, supabase]);
+  }, [companyId]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -167,7 +193,7 @@ export default function GuestContentPage() {
             faq_items:             faqItems.length > 0 ? faqItems : null,
             return_nearby_places:  returnNearbyPlaces.length > 0 ? returnNearbyPlaces : null,
           })
-          .eq("id", company?.id)
+          .eq("id", companyId)
           .select("id"),
         supabase
           .from("companies")
@@ -177,7 +203,7 @@ export default function GuestContentPage() {
             emergency_breakdown_phone_primary:   formData.emergency_breakdown_phone_primary.trim()   || null,
             emergency_breakdown_phone_secondary: formData.emergency_breakdown_phone_secondary.trim() || null,
           })
-          .eq("id", company?.id),
+          .eq("id", companyId),
       ]);
       if (err) throw err;
       if (companyErr) throw companyErr;
@@ -205,6 +231,9 @@ export default function GuestContentPage() {
 
   // ─────────────────────────────────────────────────────────────────────────────
 
+  const countLines = (val: string, min = 3) => Math.max(min, val.split("\n").length);
+
+  console.log("[GuestContent] render pickup_info:", formData.pickup_info);
   return (
     <PageContainer maxWidth="1400px">
 
@@ -302,165 +331,178 @@ export default function GuestContentPage() {
 
                 {/* Pickup */}
                 <div>
-                  <SectionHeading title={t("sections.pickup")} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                    <div>
-                      <label htmlFor="before_arrival_info" className="label">{t("labels.beforeArrival")}</label>
-                      <textarea
-                        id="before_arrival_info" name="before_arrival_info" className="input"
-                        placeholder={t("placeholders.beforeArrival")}
-                        value={formData.before_arrival_info} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={8}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = headings.</p>
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      {t("sections.pickup")}
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
+                      <div>
+                        <label htmlFor="before_arrival_info" className="label">{t("labels.beforeArrival")}</label>
+                        <textarea
+                          id="before_arrival_info" name="before_arrival_info" className="input"
+                          placeholder={t("placeholders.beforeArrival")}
+                          value={formData.before_arrival_info} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.before_arrival_info)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = headings.</p>
+                      </div>
+                      <div>
+                        <label htmlFor="pickup_info" className="label">{t("labels.pickupInfo")}</label>
+                        <textarea
+                          id="pickup_info" name="pickup_info" className="input"
+                          placeholder={t("placeholders.pickupInfo")}
+                          value={formData.pickup_info} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.pickup_info)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Maps link = Navigate card.</p>
+                      </div>
+                      <div>
+                        <label htmlFor="important_before_pickup" className="label">Important before pickup</label>
+                        <textarea
+                          id="important_before_pickup" name="important_before_pickup" className="input"
+                          placeholder=""
+                          value={formData.important_before_pickup} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.important_before_pickup)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown in Important before pickup card.</p>
+                      </div>
                     </div>
-                    <div>
-                      <label htmlFor="pickup_info" className="label">{t("labels.pickupInfo")}</label>
-                      <textarea
-                        id="pickup_info" name="pickup_info" className="input"
-                        placeholder={t("placeholders.pickupInfo")}
-                        value={formData.pickup_info} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={8}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Maps link = Navigate card.</p>
-                    </div>
-                    <div>
-                      <label htmlFor="important_before_pickup" className="label">Important before pickup</label>
-                      <textarea
-                        id="important_before_pickup" name="important_before_pickup" className="input"
-                        placeholder=""
-                        value={formData.important_before_pickup} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={8}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown in Important before pickup card.</p>
-                    </div>
-                  </div>
+                  </details>
                 </div>
 
                 {/* Return */}
                 <div>
-                  <SectionHeading title={t("sections.return")} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      {t("sections.return")}
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
 
-                    {/* Before return checklist */}
-                    <div>
-                      <label htmlFor="before_return_info" className="label">{t("labels.beforeReturn")}</label>
-                      <textarea
-                        id="before_return_info" name="before_return_info" className="input"
-                        placeholder={t("placeholders.beforeReturn")}
-                        value={formData.before_return_info} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={6}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")} Lines ending : = headings. Shown as checklist on guest return page.</p>
-                    </div>
+                      {/* Before return checklist */}
+                      <div>
+                        <label htmlFor="before_return_info" className="label">{t("labels.beforeReturn")}</label>
+                        <textarea
+                          id="before_return_info" name="before_return_info" className="input"
+                          placeholder={t("placeholders.beforeReturn")}
+                          value={formData.before_return_info} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.before_return_info)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")} Lines ending : = headings. Shown as checklist on guest return page.</p>
+                      </div>
 
-                    {/* Nearby places */}
-                    <div>
-                      <label className="label">Nearby places <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— shown as tappable Maps links on the return page</span></label>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-                        {returnNearbyPlaces.map((place, i) => (
-                          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 56px", gap: "var(--space-2)", alignItems: "center" }}>
-                            <input
-                              type="text"
-                              className="input"
-                              placeholder="Label (e.g. Supermarket)"
-                              value={place.title}
-                              disabled={!isAdmin}
-                              onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, title: e.target.value } : p))}
-                            />
-                            <input
-                              type="url"
-                              className="input"
-                              placeholder="https://maps.app.goo.gl/…"
-                              value={place.url}
-                              disabled={!isAdmin}
-                              onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, url: e.target.value } : p))}
-                            />
-                            {isAdmin ? (
+                      {/* Nearby places */}
+                      <div>
+                        <label className="label">Nearby places <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— shown as tappable Maps links on the return page</span></label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+                          {returnNearbyPlaces.map((place, i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 56px", gap: "var(--space-2)", alignItems: "center" }}>
+                              <input
+                                type="text"
+                                className="input"
+                                placeholder="Label (e.g. Supermarket)"
+                                value={place.title}
+                                disabled={!isAdmin}
+                                onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, title: e.target.value } : p))}
+                              />
+                              <input
+                                type="url"
+                                className="input"
+                                placeholder="https://maps.app.goo.gl/…"
+                                value={place.url}
+                                disabled={!isAdmin}
+                                onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, url: e.target.value } : p))}
+                              />
+                              {isAdmin ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setReturnNearbyPlaces(returnNearbyPlaces.filter((_, idx) => idx !== i))}
+                                  style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "1px solid rgb(var(--error) / 0.4)", borderRadius: "var(--radius)", cursor: "pointer", padding: "0 var(--space-2)", height: "36px", whiteSpace: "nowrap" }}
+                                >
+                                  Remove
+                                </button>
+                              ) : <span />}
+                            </div>
+                          ))}
+                          {isAdmin && (
+                            <div>
                               <button
                                 type="button"
-                                onClick={() => setReturnNearbyPlaces(returnNearbyPlaces.filter((_, idx) => idx !== i))}
-                                style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "1px solid rgb(var(--error) / 0.4)", borderRadius: "var(--radius)", cursor: "pointer", padding: "0 var(--space-2)", height: "36px", whiteSpace: "nowrap" }}
+                                className="btn btn-secondary"
+                                onClick={() => setReturnNearbyPlaces([...returnNearbyPlaces, { title: "", url: "" }])}
+                                style={{ fontSize: "13px", marginTop: "var(--space-1)" }}
                               >
-                                Remove
+                                + Add place
                               </button>
-                            ) : <span />}
-                          </div>
-                        ))}
-                        {isAdmin && (
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-secondary"
-                              onClick={() => setReturnNearbyPlaces([...returnNearbyPlaces, { title: "", url: "" }])}
-                              style={{ fontSize: "13px", marginTop: "var(--space-1)" }}
-                            >
-                              + Add place
-                            </button>
-                          </div>
-                        )}
-                        {returnNearbyPlaces.length === 0 && !isAdmin && (
-                          <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No nearby places configured.</p>
-                        )}
+                            </div>
+                          )}
+                          {returnNearbyPlaces.length === 0 && !isAdmin && (
+                            <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No nearby places configured.</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Return notes */}
-                    <div>
-                      <label htmlFor="return_info" className="label">Return notes <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— optional, shown in a collapsible card</span></label>
-                      <textarea
-                        id="return_info" name="return_info" className="input"
-                        placeholder="Any additional return instructions…"
-                        value={formData.return_info} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={3}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                    </div>
+                      {/* Return notes */}
+                      <div>
+                        <label htmlFor="return_info" className="label">Return notes <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— optional, shown in a collapsible card</span></label>
+                        <textarea
+                          id="return_info" name="return_info" className="input"
+                          placeholder="Any additional return instructions…"
+                          value={formData.return_info} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.return_info)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      </div>
 
-                  </div>
+                    </div>
+                  </details>
                 </div>
 
                 {/* Guest Guide */}
                 <div>
-                  <SectionHeading title={t("sections.guestGuide")} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-                    <div>
-                      <label htmlFor="included_items" className="label">{t("labels.includedItems")}</label>
-                      <textarea
-                        id="included_items" name="included_items" className="input"
-                        placeholder={t("placeholders.includedItems")}
-                        value={formData.included_items} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={8}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      {t("sections.guestGuide")}
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
+                      <div>
+                        <label htmlFor="included_items" className="label">{t("labels.includedItems")}</label>
+                        <textarea
+                          id="included_items" name="included_items" className="input"
+                          placeholder={t("placeholders.includedItems")}
+                          value={formData.included_items} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.included_items)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      </div>
+                      <div>
+                        <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
+                        <textarea
+                          id="rules_and_tips" name="rules_and_tips" className="input"
+                          placeholder={t("placeholders.rulesAndTips")}
+                          value={formData.rules_and_tips} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.rules_and_tips)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      </div>
+
                     </div>
-                    <div>
-                      <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
-                      <textarea
-                        id="rules_and_tips" name="rules_and_tips" className="input"
-                        placeholder={t("placeholders.rulesAndTips")}
-                        value={formData.rules_and_tips} onChange={handleChange}
-                        disabled={!isAdmin}
-                        rows={8}
-                        style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                      />
-                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                    </div>
-                  </div>
+                  </details>
                 </div>
 
                 {/* FAQ */}

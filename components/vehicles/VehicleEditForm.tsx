@@ -22,6 +22,7 @@ export interface VehicleFormData {
   photo_url: string;
   operational_hold: boolean;
   hold_reason: string;
+  youtube_url: string;
 }
 
 export interface ComplianceTypeShape {
@@ -374,6 +375,16 @@ export default function VehicleEditForm({
           id="photo_url" name="photo_url" type="text"
           value={formData.photo_url} onChange={onChange}
           placeholder={t("photoUrlPlaceholder")} style={inputStyle}
+        />
+      </div>
+
+      {/* YouTube URL */}
+      <div>
+        <label htmlFor="youtube_url" style={labelStyle}>YouTube URL (optional)</label>
+        <input
+          id="youtube_url" name="youtube_url" type="url"
+          value={formData.youtube_url} onChange={onChange}
+          placeholder="https://www.youtube.com/watch?v=..." style={inputStyle}
         />
       </div>
 
