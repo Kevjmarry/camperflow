@@ -62,11 +62,17 @@ export async function GET(request: NextRequest) {
       if (res.ok) {
         results.push({ vehicleId: source.vehicle_id, ok: true });
       } else {
-        const data = await res.json().catch(() => ({}));
+        const responseText = await res.text().catch(() => "");
+        let data: Record<string, unknown> = {};
+        try { data = JSON.parse(responseText); } catch { /* not JSON */ }
+        console.error(
+          `sync-calendars cron: vehicle ${source.vehicle_id} sync failed`,
+          { status: res.status, body: responseText },
+        );
         results.push({
           vehicleId: source.vehicle_id,
           ok: false,
-          error: data?.error ?? `HTTP ${res.status}`,
+          error: (data?.error as string) ?? `HTTP ${res.status}`,
         });
       }
     } catch (err) {
