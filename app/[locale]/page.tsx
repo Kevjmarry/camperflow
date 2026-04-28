@@ -12,6 +12,7 @@ export default function AppEntryPage() {
   const router = useRouter();
   const params = useParams<{ locale?: string }>();
   const [bookingCode, setBookingCode] = useState("");
+  const [staffOffline, setStaffOffline] = useState(false);
   const t = useTranslations("entry");
 
   const supabase = createClient();
@@ -43,6 +44,11 @@ export default function AppEntryPage() {
   };
 
   const handleStaffLogin = () => {
+    if (!navigator.onLine) {
+      setStaffOffline(true);
+      return;
+    }
+    setStaffOffline(false);
     router.push(`/${locale}/staff/login`);
   };
 
@@ -186,6 +192,11 @@ export default function AppEntryPage() {
                 >
                   {t("staff.login")}
                 </button>
+                {staffOffline && (
+                  <p style={{ textAlign: "center", fontSize: "13px", color: "rgb(var(--error, 220 38 38))", margin: 0 }}>
+                    {t("staff.offlineError")}
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -15,7 +15,8 @@
     "staff": {
       "title": "Mitarbeiter-Login",
       "description": "Zugriff auf das Verwaltungs-Dashboard",
-      "login": "Mitarbeiter-Login"
+      "login": "Mitarbeiter-Login",
+      "offlineError": "Internetverbindung erforderlich"
     },
     "footer": {
       "legal": "Mit dem Fortfahren stimmen Sie den Mietbedingungen und der Datenschutzerklärung zu"

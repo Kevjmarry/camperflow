@@ -1,11 +1,9 @@
-const CACHE_NAME = 'camperflow-v4';
+const CACHE_NAME = 'camperflow-v5';
 
 const PRE_CACHE = [
   '/',
   '/en',
   '/de',
-  '/en/staff/login',
-  '/de/staff/login',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

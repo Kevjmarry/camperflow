@@ -15,7 +15,8 @@
     "staff": {
       "title": "Staff Login",
       "description": "Access the operations dashboard",
-      "login": "Staff login"
+      "login": "Staff login",
+      "offlineError": "Internet connection required"
     },
     "footer": {
       "legal": "By continuing you agree to the rental rules and privacy policy"
