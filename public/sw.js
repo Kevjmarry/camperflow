@@ -8,31 +8,51 @@ const PRE_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  console.log('[SW] install fired, cache:', CACHE_NAME);
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE))
+    caches.open(CACHE_NAME).then((cache) =>
+      // addAll is atomic — one 404 aborts the whole install.
+      // Add individually so a flaky pre-cache URL never blocks SW activation.
+      Promise.all(
+        PRE_CACHE.map((url) =>
+          cache.add(url).catch((err) =>
+            console.warn('[SW] pre-cache skipped:', url, err)
+          )
+        )
+      )
+    ).then(() => {
+      console.log('[SW] pre-cache done, skipping wait');
+      return self.skipWaiting();
+    })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('[SW] activate fired');
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+    caches.keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== CACHE_NAME)
+            .map((k) => {
+              console.log('[SW] deleting old cache:', k);
+              return caches.delete(k);
+            })
+        )
       )
-    )
+      .then(() => {
+        console.log('[SW] claiming clients');
+        return self.clients.claim();
+      })
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin requests; let Supabase/API calls pass through
   if (url.origin !== self.location.origin) return;
-
-  // Skip non-GET requests and API routes — never cache mutations
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
 
@@ -43,7 +63,8 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ||
           fetch(request).then((res) => {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
             return res;
           })
       )
@@ -58,7 +79,8 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ||
           fetch(request).then((res) => {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
             return res;
           })
       )
@@ -66,12 +88,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML navigation — caches the page so it loads offline next time
+  // Network-first for HTML navigation — caches the page for offline fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return res;
         })
         .catch(() => caches.match(request))
