@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      request.headers.get('origin') ||
-      ''
+      process.env.NODE_ENV === 'development'
+        ? (process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || 'http://localhost:3000')
+        : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || '')
 
     const supabase = await createServerClient()
 
