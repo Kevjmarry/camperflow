@@ -1,6 +1,7 @@
-const CACHE_NAME = 'camperflow-v1';
+const CACHE_NAME = 'camperflow-v2';
 
 const PRE_CACHE = [
+  '/',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -97,7 +98,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return res;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
     );
   }
 });
