@@ -95,18 +95,39 @@ self.addEventListener('fetch', (event) => {
 
   // Network-first for HTML navigation — caches the page for offline fallback
   if (request.mode === 'navigate') {
+    // [TEMP LOG] navigate request received
+    console.log('[SW][NAV] navigate request:', url.pathname, '| referrer:', request.referrer || '(none)');
     event.respondWith(
       fetch(request)
         .then((res) => {
+          // [TEMP LOG] network hit
+          console.log('[SW][NAV] network HIT:', url.pathname, '| status:', res.status);
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return res;
         })
-        .catch(() =>
-          caches.match(request, { ignoreVary: true })
-            .then((cached) => cached || caches.match('/'))
-            .then((r) => r || new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } }))
-        )
+        .catch((netErr) => {
+          // [TEMP LOG] network failed, entering cache fallback
+          console.warn('[SW][NAV] network MISS for:', url.pathname, '| error:', netErr && netErr.message);
+          return caches.match(request, { ignoreVary: true })
+            .then((cached) => {
+              // [TEMP LOG] exact-url cache result
+              console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
+              return cached || caches.match('/').then((rootCached) => {
+                // [TEMP LOG] root '/' fallback result
+                console.log('[SW][NAV] root "/" fallback:', rootCached ? 'HIT' : 'MISS');
+                return rootCached;
+              });
+            })
+            .then((r) => {
+              if (!r) {
+                // [TEMP LOG] all cache lookups failed — serving offline stub
+                console.error('[SW][NAV] ALL CACHE MISSES for:', url.pathname, '— serving offline stub');
+                return new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
+              }
+              return r;
+            });
+        })
     );
   }
 });
