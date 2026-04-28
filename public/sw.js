@@ -103,14 +103,8 @@ self.addEventListener('fetch', (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(request)
-            .then((cached) => {
-              if (cached) return cached;
-              if (url.pathname === '/en/staff/login' || url.pathname === '/de/staff/login') {
-                return caches.match(url.pathname).then((c) => c || caches.match('/'));
-              }
-              return caches.match('/');
-            })
+          caches.match(request, { ignoreVary: true })
+            .then((cached) => cached || caches.match('/'))
             .then((r) => r || new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } }))
         )
     );
