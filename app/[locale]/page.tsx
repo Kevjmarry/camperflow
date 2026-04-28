@@ -23,16 +23,21 @@ export default function AppEntryPage() {
   }, [params]);
 
   useEffect(() => {
-    const handleInviteSession = async () => {
-      const hash = window.location.hash;
-      if (hash && hash.includes("access_token")) {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      (async () => {
         await supabase.auth.getSession();
         window.history.replaceState(null, "", `/${locale}`);
         router.replace(`/${locale}/staff/login`);
-      }
-    };
-
-    handleInviteSession();
+      })();
+    } else {
+      // Works offline — session is stored in localStorage by @supabase/ssr
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          router.replace(`/${locale}/staff/operations`);
+        }
+      });
+    }
   }, [locale, router, supabase]);
 
   const handleGuestSubmit = (e: FormEvent) => {
