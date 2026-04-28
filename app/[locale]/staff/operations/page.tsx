@@ -250,9 +250,12 @@ export default async function OperationsPage({
     prepDone: false,
   }))
   const todayPickupIds = new Set(pickups.map((p) => p.id))
+  const overdueUpcoming = upcomingPickups.filter((p) => !todayPickupIds.has(p.id) && p.daysUntil < 0)
+  const futureUpcoming = upcomingPickups.filter((p) => !todayPickupIds.has(p.id) && p.daysUntil >= 0)
   const nextPickups = [
+    ...overdueUpcoming,
     ...todayPickupsAsUpcoming,
-    ...upcomingPickups.filter((p) => !todayPickupIds.has(p.id)),
+    ...futureUpcoming,
   ].slice(0, 3)
 
   return (

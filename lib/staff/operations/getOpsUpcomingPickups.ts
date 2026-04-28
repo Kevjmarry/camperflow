@@ -100,10 +100,10 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, booking_status')
     .eq('company_id', companyId)
     .is('ops_flag', null)
-    .gt('pickup_at', new Date().toISOString())
+    .not('booking_status', 'in', '(cancelled,on_rent,completed)')
     .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('pickup_at', { ascending: true })
 
@@ -246,6 +246,8 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
+  const now = new Date()
+
   return (data ?? []).map((b) => {
     const pickupDate = new Date(b.pickup_at)
     pickupDate.setHours(0, 0, 0, 0)
@@ -288,5 +290,11 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       prepDone: prepDoneSet.has(b.id),
       ...extras,
     }
+  })
+  .filter((p) => !(new Date(p.pickupAt) < now && p.handoverDone))
+  .sort((a, b) => {
+    if (a.daysUntil < 0 && b.daysUntil >= 0) return -1
+    if (a.daysUntil >= 0 && b.daysUntil < 0) return 1
+    return new Date(a.pickupAt).getTime() - new Date(b.pickupAt).getTime()
   })
 }
