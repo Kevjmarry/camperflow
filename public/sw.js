@@ -1,4 +1,4 @@
-const CACHE_NAME = 'camperflow-v3';
+const CACHE_NAME = 'camperflow-v4';
 
 const PRE_CACHE = [
   '/',
@@ -20,9 +20,14 @@ self.addEventListener('install', (event) => {
       // Add individually so a flaky pre-cache URL never blocks SW activation.
       Promise.all(
         PRE_CACHE.map((url) =>
-          cache.add(url).catch((err) =>
-            console.warn('[SW] pre-cache skipped:', url, err)
-          )
+          fetch(new Request(url, { redirect: 'follow' }))
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return cache.put(url, res);
+            })
+            .catch((err) =>
+              console.warn('[SW] pre-cache skipped:', url, err)
+            )
         )
       )
     ).then(() => {
@@ -101,9 +106,11 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((res) => {
           // [TEMP LOG] network hit
-          console.log('[SW][NAV] network HIT:', url.pathname, '| status:', res.status);
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          console.log('[SW][NAV] network HIT:', url.pathname, '| status:', res.status, '| ok:', res.ok);
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
           return res;
         })
         .catch((netErr) => {
