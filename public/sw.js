@@ -102,7 +102,15 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return res;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        .catch(() =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            if (url.pathname === '/en/staff/login' || url.pathname === '/de/staff/login') {
+              return caches.match(url.pathname).then((c) => c || caches.match('/'));
+            }
+            return caches.match('/');
+          })
+        )
     );
   }
 });
