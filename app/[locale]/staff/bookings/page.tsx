@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import LocalizedDateInput from "@/components/LocalizedDateInput";
 import { createClient } from "@/lib/supabase/client";
+import { getEffectiveUser } from "@/lib/supabase/getEffectiveUser";
 import { getStatusChipStyle } from "@/lib/statusChip";
 
 interface ChecklistInstance {
@@ -73,7 +74,7 @@ const [dateFrom, setDateFrom] = useState<string>("");
 
   const checkUserCapabilities = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getEffectiveUser(supabase);
       if (!user) {
         setError(t("error.notAuthenticated"));
         setLoading(false);

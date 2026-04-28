@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import { getEffectiveUser } from "@/lib/supabase/getEffectiveUser";
 import { getStatusChipStyle } from "@/lib/statusChip";
 import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
 import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
@@ -367,7 +368,7 @@ export default function BookingDetailPage() {
 
   const checkUserCapabilities = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getEffectiveUser(supabase);
       if (!user) {
         setError(t("error.notAuthenticated"));
         setLoading(false);
