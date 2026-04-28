@@ -12,6 +12,7 @@ type EvidenceBlockProps = {
   onAdd: (group: Group, files: File[]) => void;
   onRemove: (group: Group, index: number) => void;
   onRotate?: (group: Group, index: number, rotation: number) => void;
+  onRetry?: (group: Group, index: number) => void;
   isLocked: boolean;
   highlight?: boolean;
   title?: string;
@@ -305,7 +306,7 @@ function PhotoLightbox({
 // EvidenceBlock
 // ---------------------------------------------------------------------------
 
-export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotate, isLocked, highlight, title, variant }: EvidenceBlockProps) {
+export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotate, onRetry, isLocked, highlight, title, variant }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
   const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length + evidencePhotos.id.length;
   const [openChooser, setOpenChooser] = useState<Group | null>(null);
@@ -325,7 +326,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
     const activeFiles = new Set<File>();
     for (const g of ['general', 'damage', 'id'] as const) {
       for (const p of evidencePhotos[g]) {
-        if (p.kind === 'new') activeFiles.add(p.file);
+        if (p.kind === 'new' || p.kind === 'failed') activeFiles.add(p.file);
       }
     }
     urlCache.current.forEach((url, file) => {
@@ -454,6 +455,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                   const src = getPreviewSrc(photo);
                   const alt = `${group} ${idx + 1}`;
                   const isUploading = photo.kind === 'new';
+                  const isFailed = photo.kind === 'failed';
                   return (
                     <div
                       key={idx}
@@ -463,10 +465,10 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                         height: '64px',
                         borderRadius: '6px',
                         overflow: 'hidden',
-                        border: '1px solid rgb(var(--border))',
+                        border: isFailed ? '1.5px solid #ef4444' : '1px solid rgb(var(--border))',
                         flexShrink: 0,
                         opacity: isUploading ? 0.6 : 1,
-                        cursor: isUploading ? 'default' : 'zoom-in',
+                        cursor: (isUploading || isFailed) ? 'default' : 'zoom-in',
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -482,7 +484,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                             ? `rotate(${photo.rotation}deg)`
                             : undefined,
                         }}
-                        onClick={isUploading ? undefined : () => {
+                        onClick={(isUploading || isFailed) ? undefined : () => {
                           setLightbox({ photos: resolveGroup(group), index: idx, group });
                         }}
                       />
@@ -496,6 +498,38 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                           backgroundColor: 'rgba(0,0,0,0.25)',
                         }}>
                           <span style={{ fontSize: '9px', color: '#fff', fontWeight: 600 }}>…</span>
+                        </div>
+                      )}
+                      {isFailed && (
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(239,68,68,0.62)',
+                          gap: '4px',
+                        }}>
+                          <span style={{ fontSize: '8px', color: '#fff', fontWeight: 700, textAlign: 'center', lineHeight: 1.2, padding: '0 4px' }}>
+                            {t('evidencePendingUpload')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onRetry?.(group, idx); }}
+                            style={{
+                              fontSize: '8px',
+                              color: '#fff',
+                              fontWeight: 600,
+                              backgroundColor: 'rgba(255,255,255,0.22)',
+                              border: '1px solid rgba(255,255,255,0.55)',
+                              borderRadius: '3px',
+                              padding: '2px 5px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {t('evidenceRetry')}
+                          </button>
                         </div>
                       )}
                       {!isLocked && !isUploading && (

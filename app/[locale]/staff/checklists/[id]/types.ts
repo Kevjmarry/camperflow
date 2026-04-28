@@ -65,7 +65,9 @@ export type ChecklistItemType = {
 export type StoredEvidencePhoto = { kind: 'stored'; path: string; url: string; rotation: number };
 /** A photo selected by the user but not yet uploaded (shown optimistically). */
 export type NewEvidencePhoto = { kind: 'new'; file: File };
-export type EvidencePhoto = StoredEvidencePhoto | NewEvidencePhoto;
+/** A photo whose upload failed — local preview kept, eligible for retry. */
+export type FailedEvidencePhoto = { kind: 'failed'; file: File };
+export type EvidencePhoto = StoredEvidencePhoto | NewEvidencePhoto | FailedEvidencePhoto;
 
 export type FlagDraft = {
   severity: IssueSeverity;

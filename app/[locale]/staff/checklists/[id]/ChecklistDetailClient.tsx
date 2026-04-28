@@ -90,6 +90,9 @@ export default function ChecklistDetailClient({
     damage: [],
     id: [],
   });
+  // Always-current ref used by the online-event retry handler (avoids stale closure)
+  const evidencePhotosRef = useRef(evidencePhotos);
+  evidencePhotosRef.current = evidencePhotos;
 
   // ── Return km validation ──────────────────────────────────────────────────────
   const [returnKmError, setReturnKmError] = useState<string | null>(null);
@@ -768,6 +771,58 @@ export default function ChecklistDetailClient({
     return { path, url: data.publicUrl };
   };
 
+  // ── Retry a single failed evidence photo upload ───────────────────────────────
+  const retryEvidencePhoto = async (group: 'general' | 'damage' | 'id', file: File) => {
+    setEvidencePhotos((prev) => ({
+      ...prev,
+      [group]: prev[group].map((p) =>
+        p.kind === 'failed' && p.file === file ? { kind: 'new' as const, file } : p
+      ),
+    }));
+    try {
+      const result = await uploadEvidencePhoto(file, group);
+      setEvidencePhotos((prev) => ({
+        ...prev,
+        [group]: prev[group].map((p) =>
+          p.kind === 'new' && p.file === file
+            ? { kind: 'stored' as const, path: result.path, url: result.url, rotation: 0 }
+            : p
+        ),
+      }));
+      if (instance.checklist_type === 'handover') {
+        const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
+        const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], { path: result.path, rotation: 0 }] };
+        await saveHandoverEvidencePhotos(newRep);
+      } else if (instance.checklist_type === 'return') {
+        const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
+        const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], { path: result.path, rotation: 0 }] };
+        await saveReturnEvidencePhotos(newRep);
+      }
+    } catch {
+      setEvidencePhotos((prev) => ({
+        ...prev,
+        [group]: prev[group].map((p) =>
+          p.kind === 'new' && p.file === file ? { kind: 'failed' as const, file } : p
+        ),
+      }));
+    }
+  };
+
+  // Auto-retry all failed evidence photos when the browser comes back online
+  useEffect(() => {
+    const handleOnline = () => {
+      const current = evidencePhotosRef.current;
+      for (const group of ['general', 'damage', 'id'] as const) {
+        current[group].forEach((p) => {
+          if (p.kind === 'failed') retryEvidencePhoto(group, p.file);
+        });
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Item toggle ───────────────────────────────────────────────────────────────
 
   const handleToggle = async (itemId: string, currentChecked: boolean) => {
@@ -1216,30 +1271,26 @@ export default function ChecklistDetailClient({
                     if (r.status === 'fulfilled') succeeded.push({ file: files[i], ...r.value });
                     else failedFiles.push(files[i]);
                   });
-                  // Swap 'new' → 'stored' on success, remove on failure
+                  // Swap 'new' → 'stored' on success, 'new' → 'failed' on failure (keep preview)
                   setEvidencePhotos((prev) => {
-                    const next = prev[group]
-                      .map((p) => {
-                        if (p.kind !== 'new') return p;
-                        const s = succeeded.find((r) => r.file === p.file);
-                        if (s) return { kind: 'stored' as const, path: s.path, url: s.url };
-                        if (failedFiles.includes(p.file)) return null;
-                        return p;
-                      })
-                      .filter((p): p is EvidencePhoto => p !== null);
+                    const next = prev[group].map((p) => {
+                      if (p.kind !== 'new') return p;
+                      const s = succeeded.find((r) => r.file === p.file);
+                      if (s) return { kind: 'stored' as const, path: s.path, url: s.url, rotation: 0 };
+                      if (failedFiles.includes(p.file)) return { kind: 'failed' as const, file: p.file };
+                      return p;
+                    });
                     return { ...prev, [group]: next };
                   });
-                  if (failedFiles.length > 0) {
-                    setSyncError(parseSyncError(
-                      new Error(`${failedFiles.length} photo(s) failed to upload`),
-                      'item_update_failed',
-                    ));
-                  }
                   if (succeeded.length > 0) {
                     const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
                     const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
                     await saveHandoverEvidencePhotos(newRep);
                   }
+                }}
+                onRetry={(group, idx) => {
+                  const photo = evidencePhotos[group][idx];
+                  if (photo?.kind === 'failed') retryEvidencePhoto(group, photo.file);
                 }}
                 onRemove={async (group, index) => {
                   const photo = evidencePhotos[group][index];
@@ -1388,29 +1439,26 @@ export default function ChecklistDetailClient({
                     if (r.status === 'fulfilled') succeeded.push({ file: files[i], ...r.value });
                     else failedFiles.push(files[i]);
                   });
+                  // Swap 'new' → 'stored' on success, 'new' → 'failed' on failure (keep preview)
                   setEvidencePhotos((prev) => {
-                    const next = prev[group]
-                      .map((p) => {
-                        if (p.kind !== 'new') return p;
-                        const s = succeeded.find((r) => r.file === p.file);
-                        if (s) return { kind: 'stored' as const, path: s.path, url: s.url };
-                        if (failedFiles.includes(p.file)) return null;
-                        return p;
-                      })
-                      .filter((p): p is EvidencePhoto => p !== null);
+                    const next = prev[group].map((p) => {
+                      if (p.kind !== 'new') return p;
+                      const s = succeeded.find((r) => r.file === p.file);
+                      if (s) return { kind: 'stored' as const, path: s.path, url: s.url, rotation: 0 };
+                      if (failedFiles.includes(p.file)) return { kind: 'failed' as const, file: p.file };
+                      return p;
+                    });
                     return { ...prev, [group]: next };
                   });
-                  if (failedFiles.length > 0) {
-                    setSyncError(parseSyncError(
-                      new Error(`${failedFiles.length} photo(s) failed to upload`),
-                      'item_update_failed',
-                    ));
-                  }
                   if (succeeded.length > 0) {
                     const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
                     const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
                     await saveReturnEvidencePhotos(newRep);
                   }
+                }}
+                onRetry={(group, idx) => {
+                  const photo = evidencePhotos[group][idx];
+                  if (photo?.kind === 'failed') retryEvidencePhoto(group, photo.file);
                 }}
                 onRemove={async (group, index) => {
                   const photo = evidencePhotos[group][index];

@@ -2483,6 +2483,8 @@
     "evidenceAdd": "Add",
     "evidenceTakePhoto": "Take photo",
     "evidenceChoosePhoto": "Choose existing",
+    "evidencePendingUpload": "Pending",
+    "evidenceRetry": "Retry",
     "evidenceNoPhotos": "No photos added yet",
     "auditChecklistTitle": "Checklist Actions",
     "auditChecklistDesc": "Work through each section carefully. Use the flag button only for newly discovered issues or damage. All fields and steps on this page must be completed before handover.",

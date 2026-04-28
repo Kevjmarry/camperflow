@@ -2483,6 +2483,8 @@
     "evidenceAdd": "Hinzufügen",
     "evidenceTakePhoto": "Foto aufnehmen",
     "evidenceChoosePhoto": "Vorhandenes auswählen",
+    "evidencePendingUpload": "Ausstehend",
+    "evidenceRetry": "Wiederholen",
     "evidenceNoPhotos": "Noch keine Fotos hinzugefügt",
     "auditChecklistTitle": "Checkliste",
     "auditChecklistDesc": "Arbeite jeden Abschnitt sorgfältig durch. Nutze den Markier-Button nur für neu entdeckte Probleme oder Schäden. Alle Felder und Schritte auf dieser Seite müssen vor der Übergabe ausgefüllt sein.",
