@@ -1,4 +1,4 @@
-const CACHE_NAME = 'camperflow-v5';
+const CACHE_NAME = 'camperflow-v6';
 const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
 
 const PRE_CACHE = [
@@ -109,7 +109,8 @@ self.addEventListener('fetch', (event) => {
         cache.match(htmlKey, { ignoreVary: true }).then((existing) => {
           if (existing) return;
           return fetch(htmlKey, { headers: { 'x-sw-bypass': '1' } })
-            .then((r) => { if (r.ok) return cache.put(htmlKey, r); })
+            // [FIX] Never cache redirected responses — they won't serve correctly offline
+            .then((r) => { if (r.ok && !r.redirected) return cache.put(htmlKey, r); })
             .catch(() => {});
         })
       )
@@ -127,7 +128,8 @@ self.addEventListener('fetch', (event) => {
         .then((res) => {
           // [TEMP LOG] network hit
           console.log('[SW][NAV] network HIT:', url.pathname, '| status:', res.status, '| ok:', res.ok);
-          if (res.ok) {
+          // [FIX] Never cache redirected responses — serving one offline confuses the browser
+          if (res.ok && !res.redirected) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
@@ -136,24 +138,36 @@ self.addEventListener('fetch', (event) => {
         .catch((netErr) => {
           // [TEMP LOG] network failed, entering cache fallback
           console.warn('[SW][NAV] network MISS for:', url.pathname, '| error:', netErr && netErr.message);
-          return caches.match(request, { ignoreVary: true })
-            .then((cached) => {
+          return caches.open(CACHE_NAME).then((cache) =>
+            cache.match(request, { ignoreVary: true }).then((cached) => {
               // [TEMP LOG] exact-url cache result
               console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
-              return cached || caches.match('/').then((rootCached) => {
+              if (cached) return cached;
+
+              // [FIX] For dynamic staff routes not individually cached, serve any cached staff
+              // page — Next.js re-renders client-side from the shared app shell.
+              if (STAFF_RE.test(url.pathname)) {
+                return cache.keys().then((keys) => {
+                  const match = keys.find((k) => STAFF_RE.test(new URL(k.url).pathname));
+                  console.log('[SW][NAV] staff fallback cache:', match ? match.url : 'MISS');
+                  return match ? cache.match(match, { ignoreVary: true }) : cache.match('/');
+                });
+              }
+
+              return cache.match('/').then((rootCached) => {
                 // [TEMP LOG] root '/' fallback result
                 console.log('[SW][NAV] root "/" fallback:', rootCached ? 'HIT' : 'MISS');
                 return rootCached;
               });
             })
-            .then((r) => {
-              if (!r) {
-                // [TEMP LOG] all cache lookups failed — serving offline stub
-                console.error('[SW][NAV] ALL CACHE MISSES for:', url.pathname, '— serving offline stub');
-                return new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
-              }
-              return r;
-            });
+          ).then((r) => {
+            if (!r) {
+              // [TEMP LOG] all cache lookups failed — serving offline stub
+              console.error('[SW][NAV] ALL CACHE MISSES for:', url.pathname, '— serving offline stub');
+              return new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
+            }
+            return r;
+          });
         })
     );
   }
