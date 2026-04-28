@@ -1,4 +1,5 @@
 const CACHE_NAME = 'camperflow-v5';
+const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
 
 const PRE_CACHE = [
   '/',
@@ -63,6 +64,8 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
+  // Background HTML pre-fetch requests initiated by this SW — let them pass straight to network.
+  if (request.headers.get('x-sw-bypass')) return;
 
   // Cache-first for Next.js static chunks (content-hashed, immutable)
   if (url.pathname.startsWith('/_next/static/')) {
@@ -93,6 +96,25 @@ self.addEventListener('fetch', (event) => {
           })
       )
     );
+    return;
+  }
+
+  // Staff pages reached via Next.js client-side routing (mode !== 'navigate') never trigger
+  // the navigate handler below, so their HTML is never cached. As a side-effect, background-
+  // fetch the HTML for the clean pathname and cache it so offline navigate requests can be served.
+  if (STAFF_RE.test(url.pathname) && request.mode !== 'navigate') {
+    const htmlKey = url.origin + url.pathname;
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(htmlKey, { ignoreVary: true }).then((existing) => {
+          if (existing) return;
+          return fetch(htmlKey, { headers: { 'x-sw-bypass': '1' } })
+            .then((r) => { if (r.ok) return cache.put(htmlKey, r); })
+            .catch(() => {});
+        })
+      )
+    );
+    // Don't call event.respondWith — browser handles the RSC/data fetch normally.
     return;
   }
 
