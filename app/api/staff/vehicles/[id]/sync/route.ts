@@ -176,7 +176,64 @@ export async function POST(
       return NextResponse.json({ error: errMsg }, { status: 502 });
     }
 
-    // ── step 3: persist success status ──────────────────────────────────────
+    // ── step 3: cancel stale future iCal bookings ────────────────────────────
+    const liveUids = rows
+      .map((r) => r.normalized?.sourceBookingId)
+      .filter((uid): uid is string => !!uid);
+
+    const staleBaseQuery = supabase
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("company_id", companyId)
+      .eq("vehicle_id", vehicleId)
+      .eq("source_type", "ical")
+      .neq("status", "cancelled")
+      .gt("return_at", now);
+
+    const { data: cancelledRows } = await (
+      liveUids.length > 0
+        ? staleBaseQuery.not("source_booking_id", "in", `(${liveUids.join(",")})`)
+        : staleBaseQuery
+    ).select("id");
+
+    const cancelled = cancelledRows?.length ?? 0;
+
+    // ── step 3b: retire stale bookingmood_csv rows in the feed window ─────────
+    let csvRetired = 0;
+    const isBookingmoodFeed = liveUids.some((uid) => uid.includes("@bookingmood.com"));
+    if (isBookingmoodFeed) {
+      const feedDates = rows
+        .filter((r) => r.normalized?.pickupAt && r.normalized?.returnAt)
+        .map((r) => ({ start: r.normalized!.pickupAt, end: r.normalized!.returnAt }));
+      if (feedDates.length > 0) {
+        const feedWindowStart = feedDates.reduce(
+          (min, d) => (d.start < min ? d.start : min),
+          feedDates[0].start,
+        );
+        const feedWindowEnd = feedDates.reduce(
+          (max, d) => (d.end > max ? d.end : max),
+          feedDates[0].end,
+        );
+        const returnAtFloor = feedWindowStart > now ? feedWindowStart : now;
+        const csvBaseQuery = supabase
+          .from("bookings")
+          .update({ status: "cancelled" })
+          .eq("company_id", companyId)
+          .eq("vehicle_id", vehicleId)
+          .eq("source_type", "bookingmood_csv")
+          .neq("status", "cancelled")
+          .gt("return_at", returnAtFloor)
+          .lt("pickup_at", feedWindowEnd);
+        const { data: csvRetiredRows } = await (
+          liveUids.length > 0
+            ? csvBaseQuery.not("source_booking_id", "in", `(${liveUids.join(",")})`)
+            : csvBaseQuery
+        ).select("id");
+        csvRetired = csvRetiredRows?.length ?? 0;
+      }
+    }
+
+    // ── step 4: persist success status ──────────────────────────────────────
     await supabase.from("vehicle_calendar_sources").upsert(
       { ...upsertBase, last_synced_at: now, last_sync_status: "success", last_sync_error: null },
       { onConflict: "vehicle_id" },
@@ -187,6 +244,8 @@ export async function POST(
       updated: importData.updated ?? 0,
       blocked: importData.blocked ?? 0,
       errors: importData.errors ?? [],
+      cancelled,
+      csvRetired,
       syncedAt: now,
     });
   } catch (err: unknown) {

@@ -43,6 +43,9 @@ export interface NormalizedImportBooking {
   vehicleReference: string;
   pickupAt: string;
   returnAt: string;
+  /** True when the raw iCal DTSTART/DTEND value was an explicit UTC-Z datetime (YYYYMMDDTHHMMSSZ). */
+  pickupAtExplicitUtc?: boolean;
+  returnAtExplicitUtc?: boolean;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;

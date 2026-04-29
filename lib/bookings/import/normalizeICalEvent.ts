@@ -181,6 +181,13 @@ export function normalizeICalEvent(
   const returnAt = dtEndProp
     ? parseDtToIso(dtEndProp.value, dtEndProp.params["TZID"])
     : "";
+  const EXPLICIT_UTC_RE = /^\d{8}T\d{6}Z$/;
+  const pickupAtExplicitUtc = dtStartProp
+    ? EXPLICIT_UTC_RE.test(dtStartProp.value)
+    : false;
+  const returnAtExplicitUtc = dtEndProp
+    ? EXPLICIT_UTC_RE.test(dtEndProp.value)
+    : false;
 
   // ── vehicle reference resolution ──────────────────────────────────────────
   // Priority:
@@ -210,6 +217,8 @@ export function normalizeICalEvent(
       vehicleReference: effectiveVehicleReference,
       pickupAt,
       returnAt,
+      pickupAtExplicitUtc,
+      returnAtExplicitUtc,
       rawMetadata,
     };
   }
@@ -226,6 +235,8 @@ export function normalizeICalEvent(
     vehicleReference: effectiveVehicleReference,
     pickupAt,
     returnAt,
+    pickupAtExplicitUtc,
+    returnAtExplicitUtc,
     customerName,
     customerEmail,
     notes: description,

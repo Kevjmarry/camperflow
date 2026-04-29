@@ -37,24 +37,16 @@ export default function PageContainer({
         color: 'rgb(var(--text))',
       }}
     >
-      <style>{`
-        .page-container-inner {
-          padding: var(--space-4);
-          padding-bottom: ${showSignOut ? 'calc(96px + env(safe-area-inset-bottom))' : 'calc(60px + env(safe-area-inset-bottom))'};
-        }
-        @media (min-width: 768px) {
-          .page-container-inner {
-            padding-bottom: var(--space-4);
-          }
-        }
-      `}</style>
       <div
         className="page-container-inner"
         style={{
           width: '100%',
           maxWidth,
           margin: '0 auto',
-        }}
+          '--page-container-pb': showSignOut
+            ? 'calc(96px + env(safe-area-inset-bottom))'
+            : 'calc(60px + env(safe-area-inset-bottom))',
+        } as React.CSSProperties}
       >
         {(title || showSignOut) && (
           <div

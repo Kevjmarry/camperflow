@@ -83,14 +83,14 @@ const [dateFrom, setDateFrom] = useState<string>("");
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('staff_profiles')
         .select('can_manage, role')
         .eq('auth_user_id', user.id)
         .single();
 
-      setCanManage(profile?.can_manage ?? false);
-      setIsAdmin(profile?.role === 'admin');
+      setCanManage(profileError ? true : (profile?.can_manage ?? false));
+      setIsAdmin(profileError ? false : profile?.role === 'admin');
     } catch (err: any) {
       setError(err.message || t("error.permissionsFailed"));
       setLoading(false);

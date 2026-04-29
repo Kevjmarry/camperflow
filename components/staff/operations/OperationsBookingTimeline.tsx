@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import type { OpsTimelineVehicle, OpsTimelineBooking } from '@/lib/staff/operations/getOpsBookingTimeline'
 
 interface Props {
@@ -11,17 +11,23 @@ interface Props {
 const DAYS_BACK = 30
 const DAYS_FORWARD = 180
 const TOTAL_DAYS = DAYS_BACK + DAYS_FORWARD
-const PX_PER_DAY = 6
-const TIMELINE_PX = TOTAL_DAYS * PX_PER_DAY // 1260
+const PX_PER_DAY = 28
+const TIMELINE_PX = TOTAL_DAYS * PX_PER_DAY // 5880
 const LEFT_COL_PX = 144
 const ROW_H = 34
+const ROW_GRID_BG = `repeating-linear-gradient(to right, rgb(var(--border) / 0.28) 0, rgb(var(--border) / 0.28) 1px, transparent 1px, transparent ${PX_PER_DAY}px)`
+const WEEK_W = 7 * PX_PER_DAY
+const WEEK_BG = `repeating-linear-gradient(to right, rgb(var(--muted) / 0.045) 0, rgb(var(--muted) / 0.045) ${WEEK_W}px, transparent ${WEEK_W}px, transparent ${WEEK_W * 2}px)`
+const TODAY_L = DAYS_BACK * PX_PER_DAY
+const TODAY_R = TODAY_L + PX_PER_DAY
+const TODAY_COL_BG = `linear-gradient(to right, transparent ${TODAY_L}px, rgb(var(--danger) / 0.08) ${TODAY_L}px, rgb(var(--danger) / 0.08) ${TODAY_R}px, transparent ${TODAY_R}px)`
 
-const STATUS_STYLE: Record<string, { bg: string; border: string; text: string }> = {
-  draft:     { bg: 'rgb(var(--muted) / 0.18)', border: 'rgb(var(--muted) / 0.35)',   text: 'rgb(var(--muted))' },
-  confirmed: { bg: 'rgb(var(--brand) / 0.15)', border: 'rgb(var(--brand) / 0.45)',   text: 'rgb(var(--brand))' },
-  blocked:   { bg: 'rgb(var(--warning) / 0.15)', border: 'rgb(var(--warning) / 0.5)', text: 'rgb(var(--warning))' },
-  on_rent:   { bg: 'rgb(var(--success) / 0.15)', border: 'rgb(var(--success) / 0.5)', text: 'rgb(var(--success))' },
-  completed: { bg: 'rgb(var(--muted) / 0.08)', border: 'rgb(var(--border))',          text: 'rgb(var(--muted))' },
+const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; bgImage?: string }> = {
+  draft:     { bg: 'rgb(234 179 8 / 0.13)', bgImage: 'repeating-linear-gradient(45deg, rgb(234 179 8 / 0.30) 0, rgb(234 179 8 / 0.30) 3px, transparent 3px, transparent 9px)', border: 'rgb(234 179 8 / 0.60)', text: 'rgb(133 95 0)' },
+  confirmed: { bg: 'rgb(var(--success) / 0.65)', border: 'rgb(var(--success) / 0.90)', text: 'rgb(var(--success))' },
+  blocked:   { bg: 'rgb(var(--danger) / 0.22)',  border: 'rgb(var(--danger) / 0.65)',  text: 'rgb(var(--danger))' },
+  on_rent:   { bg: 'rgb(var(--success) / 0.85)', border: 'rgb(var(--success))',        text: '#fff' },
+  completed: { bg: 'rgb(134 155 140 / 0.13)',    border: 'rgb(134 155 140 / 0.35)',    text: 'rgb(100 120 105 / 0.75)' },
 }
 const FALLBACK_STYLE = STATUS_STYLE.draft
 
@@ -35,14 +41,18 @@ const LEGEND = [
 
 export default function OperationsBookingTimeline({ vehicles, bookings }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
 
-  // Scroll so today is visible near the left of the viewport on mount
+  useEffect(() => { setMounted(true) }, [])
+
+  // Scroll so ~5 days before today is at the left of the viewport on mount
   useEffect(() => {
     if (scrollRef.current) {
-      const todayPx = (DAYS_BACK / TOTAL_DAYS) * TIMELINE_PX
-      scrollRef.current.scrollLeft = Math.max(0, todayPx - 240)
+        scrollRef.current.scrollLeft = (DAYS_BACK - 5) * PX_PER_DAY
     }
   }, [])
+
+  if (!mounted) return null
 
   const now = new Date()
   const windowStart = new Date(now)
@@ -70,6 +80,15 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
   }
 
   const todayPct = (DAYS_BACK / TOTAL_DAYS) * 100
+  const todayLabel = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+
+  // Day markers every 7 days
+  const dayMarkers: { label: string; leftPct: number }[] = []
+  for (let d = 0; d <= TOTAL_DAYS; d += 1) {
+    const date = new Date(windowStart)
+    date.setDate(date.getDate() + d)
+    dayMarkers.push({ label: String(date.getDate()), leftPct: (d / TOTAL_DAYS) * 100 })
+  }
 
   const bookingsByVehicle = new Map<string, OpsTimelineBooking[]>()
   for (const b of bookings) {
@@ -101,7 +120,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
             const s = STATUS_STYLE[status]
             return (
               <span key={status} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: s.bg, border: `1px solid ${s.border}`, display: 'inline-block' }} />
+                <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: s.bg, backgroundImage: s.bgImage, border: `1px solid ${s.border}`, display: 'inline-block' }} />
                 {label}
               </span>
             )
@@ -114,9 +133,9 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
         <div style={{ minWidth: `${LEFT_COL_PX + TIMELINE_PX}px` }}>
 
           {/* Month header row */}
-          <div style={{ display: 'flex', marginBottom: '2px' }}>
-            <div style={{ width: LEFT_COL_PX, flexShrink: 0 }} />
-            <div style={{ flex: 1, position: 'relative', height: '18px' }}>
+          <div style={{ display: 'flex' }}>
+            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
+            <div style={{ flex: 1, position: 'relative', height: '16px' }}>
               {monthMarkers.map(({ label, leftPct }) => (
                 <div
                   key={label}
@@ -135,11 +154,49 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
             </div>
           </div>
 
+          {/* Day numbers row */}
+          <div style={{ display: 'flex', marginBottom: '2px' }}>
+            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
+            <div style={{ flex: 1, position: 'relative', height: '16px' }}>
+              {dayMarkers.map(({ label, leftPct }) => (
+                <div
+                  key={leftPct}
+                  style={{
+                    position: 'absolute',
+                    left: `${leftPct}%`,
+                    transform: 'translateX(-50%)',
+                    fontSize: '9px',
+                    color: 'rgb(var(--muted) / 0.65)',
+                    userSelect: 'none',
+                  }}
+                >
+                  {label}
+                </div>
+              ))}
+              {/* Today date label aligned with the red line */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${todayPct}%`,
+                  transform: 'translateX(-50%)',
+                  fontSize: '9px',
+                  fontWeight: 600,
+                  color: 'rgb(var(--danger))',
+                  whiteSpace: 'nowrap',
+                  userSelect: 'none',
+                  zIndex: 1,
+                }}
+              >
+                {todayLabel}
+              </div>
+            </div>
+          </div>
+
           {/* Rows */}
           <div style={{ display: 'flex' }}>
 
             {/* Vehicle name column */}
-            <div style={{ width: LEFT_COL_PX, flexShrink: 0 }}>
+            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3, background: 'rgb(var(--surface))' }}>
               {vehicles.map((v, i) => (
                 <div
                   key={v.id}
@@ -147,7 +204,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                     height: ROW_H,
                     display: 'flex',
                     alignItems: 'center',
-                    borderTop: '1px solid rgb(var(--border) / 0.4)',
+                    borderTop: '1px solid rgb(var(--border) / 0.7)',
                     background: i % 2 !== 0 ? 'rgb(var(--muted) / 0.04)' : 'transparent',
                   }}
                 >
@@ -167,26 +224,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                   </span>
                 </div>
               ))}
-              <div style={{ borderTop: '1px solid rgb(var(--border) / 0.4)' }} />
+              <div style={{ borderTop: '1px solid rgb(var(--border) / 0.7)' }} />
             </div>
 
             {/* Bar area (position:relative anchors the today line) */}
             <div style={{ flex: 1, position: 'relative' }}>
 
-              {/* Today vertical line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${todayPct}%`,
-                  top: 0,
-                  bottom: 0,
-                  width: '1px',
-                  background: 'rgb(var(--danger))',
-                  opacity: 0.55,
-                  zIndex: 2,
-                  pointerEvents: 'none',
-                }}
-              />
 
               {vehicles.map((v, i) => {
                 const vBookings = bookingsByVehicle.get(v.id) ?? []
@@ -196,20 +239,25 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                     style={{
                       height: ROW_H,
                       position: 'relative',
-                      borderTop: '1px solid rgb(var(--border) / 0.4)',
-                      background: i % 2 !== 0 ? 'rgb(var(--muted) / 0.04)' : 'transparent',
+                      borderTop: '1px solid rgb(var(--border) / 0.7)',
+                      background: i % 2 !== 0 ? `${TODAY_COL_BG}, ${WEEK_BG}, ${ROW_GRID_BG}, rgb(var(--muted) / 0.04)` : `${TODAY_COL_BG}, ${WEEK_BG}, ${ROW_GRID_BG}`,
                     }}
                   >
                     {vBookings.map((b) => {
-                      const startDay = dayOffset(new Date(b.pickupAt))
-                      const endDay = dayOffset(new Date(b.returnAt))
+                      const pickupDate = new Date(b.pickupAt)
+                      const returnDate = new Date(b.returnAt)
+                      const isReturnLocalMidnight =
+                        returnDate.getHours() === 0 && returnDate.getMinutes() === 0 &&
+                        returnDate.getSeconds() === 0 && returnDate.getMilliseconds() === 0
+                      const startDay = dayOffset(new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate()))
+                      const endDay = dayOffset(new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate())) + (isReturnLocalMidnight ? 0 : 1)
                       const cStart = Math.max(0, startDay)
                       const cEnd = Math.min(TOTAL_DAYS, endDay)
                       if (cStart >= cEnd) return null
                       const leftPct = (cStart / TOTAL_DAYS) * 100
                       const widthPct = ((cEnd - cStart) / TOTAL_DAYS) * 100
                       const s = STATUS_STYLE[b.status] ?? FALLBACK_STYLE
-                      const label = [b.bookingNumber, b.customerName].filter(Boolean).join(' · ')
+                      const label = b.customerName || b.bookingNumber
                       return (
                         <div
                           key={b.id}
@@ -221,6 +269,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                             top: '5px',
                             height: `${ROW_H - 10}px`,
                             background: s.bg,
+                            backgroundImage: s.bgImage,
                             border: `1px solid ${s.border}`,
                             borderRadius: '3px',
                             overflow: 'hidden',
@@ -248,14 +297,14 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                   </div>
                 )
               })}
-              <div style={{ borderTop: '1px solid rgb(var(--border) / 0.4)' }} />
+              <div style={{ borderTop: '1px solid rgb(var(--border) / 0.7)' }} />
             </div>
           </div>
         </div>
       </div>
 
       <p style={{ marginTop: 'var(--space-2)', fontSize: '11px', color: 'rgb(var(--muted))', margin: 'var(--space-2) 0 0' }}>
-        Red line = today · Scroll to navigate · Cancelled bookings hidden
+        Highlighted column = today · Scroll to navigate · Cancelled bookings hidden
       </p>
     </div>
   )

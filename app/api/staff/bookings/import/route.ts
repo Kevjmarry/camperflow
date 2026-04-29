@@ -75,7 +75,7 @@ function localToUtcIso(datePart: string, timePart: string, tz: string): string {
  * COMPANY_TIMEZONE local time. Otherwise returns `dateStr` unchanged, preserving
  * explicit source-provided times.
  */
-function applyDefaultTime(dateStr: string, defaultTime: string | null): string {
+function applyDefaultTime(dateStr: string, defaultTime: string | null, isExplicitUtc?: boolean): string {
   if (!defaultTime) return dateStr;
   if (looksDateOnly(dateStr)) {
     const datePart = dateStr.trim().slice(0, 10); // always "YYYY-MM-DD"
@@ -85,7 +85,9 @@ function applyDefaultTime(dateStr: string, defaultTime: string | null): string {
   // UTC midnight (e.g. 2026-03-30T22:00:00.000Z = midnight Europe/Bratislava on
   // 2026-03-31). Recover the *local* calendar date before applying the default
   // time so the result lands on the correct booking day.
-  if (isMidnightInCompanyTz(dateStr)) {
+  // Guard: explicit UTC-Z datetimes (YYYYMMDDTHHMMSSZ) are never placeholders —
+  // skip the midnight check so a real 22:00Z is not mistaken for a TZID midnight.
+  if (!isExplicitUtc && isMidnightInCompanyTz(dateStr)) {
     const datePart = localDateInCompanyTz(dateStr);
     return localToUtcIso(datePart, defaultTime, COMPANY_TIMEZONE);
   }
@@ -597,16 +599,16 @@ export async function POST(request: NextRequest) {
           //   • if the existing stored time is midnight or null (a placeholder),
           //     replace it with the company default so it is corrected on update
           // Only explicit real iCal times may override unconditionally.
-          const pickupIsDateOnly = looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt);
-          const returnIsDateOnly = looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt);
+          const pickupIsDateOnly = !n.pickupAtExplicitUtc && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt));
+          const returnIsDateOnly = !n.returnAtExplicitUtc && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt));
           const mergedPickupAt =
             pickupIsDateOnly && existing!.pickup_at && !isMidnightInCompanyTz(existing!.pickup_at)
               ? existing!.pickup_at
-              : applyDefaultTime(n.pickupAt, defaultPickupTime);
+              : applyDefaultTime(n.pickupAt, defaultPickupTime, n.pickupAtExplicitUtc);
           const mergedReturnAt =
             returnIsDateOnly && existing!.return_at && !isMidnightInCompanyTz(existing!.return_at)
               ? existing!.return_at
-              : applyDefaultTime(n.returnAt, defaultDropoffTime);
+              : applyDefaultTime(n.returnAt, defaultDropoffTime, n.returnAtExplicitUtc);
 
           const customerId = await findOrCreateCustomer(
             supabase,
@@ -659,16 +661,16 @@ export async function POST(request: NextRequest) {
           // (YYYYMMDD) and midnight DATE-TIME (YYYYMMDDTHHMMSSZ where
           // HH:MM:SS = 00:00:00), which many platforms emit for all-day events
           // even though the raw value is not 8 digits.
-          const pickupIsDateOnly = n.sourceType === 'ical' && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt));
-          const returnIsDateOnly = n.sourceType === 'ical' && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt));
+          const pickupIsDateOnly = n.sourceType === 'ical' && !n.pickupAtExplicitUtc && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt));
+          const returnIsDateOnly = n.sourceType === 'ical' && !n.returnAtExplicitUtc && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt));
           const resolvedPickupAt =
             pickupIsDateOnly && existing?.pickup_at && !isMidnightInCompanyTz(existing.pickup_at)
               ? existing.pickup_at
-              : applyDefaultTime(n.pickupAt, defaultPickupTime);
+              : applyDefaultTime(n.pickupAt, defaultPickupTime, n.pickupAtExplicitUtc);
           const resolvedReturnAt =
             returnIsDateOnly && existing?.return_at && !isMidnightInCompanyTz(existing.return_at)
               ? existing.return_at
-              : applyDefaultTime(n.returnAt, defaultDropoffTime);
+              : applyDefaultTime(n.returnAt, defaultDropoffTime, n.returnAtExplicitUtc);
 
           const customerId = await findOrCreateCustomer(
             supabase,
@@ -730,8 +732,8 @@ export async function POST(request: NextRequest) {
           .insert({
             company_id: companyId,
             status: mapExternalStatus(n.externalStatus),
-            pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
-            return_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
+            pickup_at: applyDefaultTime(n.pickupAt, defaultPickupTime, n.pickupAtExplicitUtc),
+            return_at: applyDefaultTime(n.returnAt, defaultDropoffTime, n.returnAtExplicitUtc),
             vehicle_id: row.matchedVehicleId,
             customer_name: n.customerName!,
             customer_phone: n.customerPhone ?? '',
@@ -784,8 +786,8 @@ export async function POST(request: NextRequest) {
             source_booking_id: n.sourceBookingId,
             source_reference: n.sourceReference ?? null,
             label: n.label ?? null,
-            start_at: applyDefaultTime(n.pickupAt, defaultPickupTime),
-            end_at: applyDefaultTime(n.returnAt, defaultDropoffTime),
+            start_at: applyDefaultTime(n.pickupAt, defaultPickupTime, n.pickupAtExplicitUtc),
+            end_at: applyDefaultTime(n.returnAt, defaultDropoffTime, n.returnAtExplicitUtc),
             source_metadata: n.rawMetadata,
             import_last_seen_at: now,
             updated_at: now,

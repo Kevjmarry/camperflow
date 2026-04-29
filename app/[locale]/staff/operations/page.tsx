@@ -15,8 +15,8 @@ import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceRemi
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
 import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
-import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
 import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimeline'
+import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -265,28 +265,6 @@ export default async function OperationsPage({
 
   return (
     <PageContainer maxWidth="1280px">
-      <style>{`
-        .ops-page-inner {
-          padding: 32px;
-          padding-bottom: 80px;
-        }
-        .ops-section-card {
-          border: 1px solid rgb(var(--border));
-          border-radius: var(--radius);
-          background: rgb(var(--surface));
-          padding: 24px;
-        }
-        @media (max-width: 768px) {
-          .ops-page-inner {
-            padding: 20px;
-            padding-bottom: 80px;
-          }
-          .ops-section-card {
-            padding: 16px;
-          }
-        }
-      `}</style>
-
       <div className="ops-page-inner">
 
         {/* Header */}
