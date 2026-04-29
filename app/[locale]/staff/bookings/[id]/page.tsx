@@ -367,9 +367,12 @@ export default function BookingDetailPage() {
   }, [id, canManage]);
 
   const checkUserCapabilities = async () => {
+    console.log('[CUC] checkUserCapabilities called');
     try {
       const user = await getEffectiveUser(supabase);
+      console.log('[CUC] getEffectiveUser returned:', user ? `user:${user.id}` : 'null');
       if (!user) {
+        console.log('[CUC] BRANCH: setError notAuthenticated');
         setError(t("error.notAuthenticated"));
         setLoading(false);
         return;
