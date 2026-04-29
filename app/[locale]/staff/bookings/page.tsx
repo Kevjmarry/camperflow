@@ -73,9 +73,11 @@ const [dateFrom, setDateFrom] = useState<string>("");
   }, [canManage]);
 
   const checkUserCapabilities = async () => {
+    console.error("[BOOKINGS_AUTH_BRANCH] checkUserCapabilities start");
     try {
       const user = await getEffectiveUser(supabase);
       if (!user) {
+        console.error("[BOOKINGS_AUTH_BRANCH] notAuthenticated", { user });
         setError(t("error.notAuthenticated"));
         setLoading(false);
         return;
