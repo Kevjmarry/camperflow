@@ -1,4 +1,4 @@
-const CACHE_NAME = 'camperflow-v6';
+const CACHE_NAME = 'camperflow-v7';
 const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
 
 const PRE_CACHE = [
