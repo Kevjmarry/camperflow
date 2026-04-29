@@ -377,12 +377,14 @@ export default function BookingDetailPage() {
         setLoading(false);
         return;
       }
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('staff_profiles')
         .select('can_manage')
         .eq('auth_user_id', user.id)
         .single();
-      setCanManage(profile?.can_manage ?? false);
+      // On network failure (offline) fall back to true so an authenticated user
+      // reaches fetchBooking rather than the unauthenticated-redacted RPC path.
+      setCanManage(profileError ? true : (profile?.can_manage ?? false));
     } catch (err: any) {
       setError(err.message || t("error.permissionsFailed"));
       setLoading(false);

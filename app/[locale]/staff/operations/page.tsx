@@ -15,6 +15,8 @@ import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceRemi
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
 import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
+import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
+import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +78,7 @@ export default async function OperationsPage({
     { name: 'getOpsCompletedBookings', fn: getOpsCompletedBookings },
     { name: 'getOpsBlockedVehicles',   fn: getOpsBlockedVehicles },
     { name: 'getOpsOnRentNow',         fn: getOpsOnRentNow },
+    { name: 'getOpsBookingTimeline',   fn: getOpsBookingTimeline },
   ] as const
   const settled = await Promise.allSettled(loaders.map((l) => l.fn()))
   settled.forEach((result, i) => {
@@ -97,6 +100,7 @@ export default async function OperationsPage({
     completed,
     blockedVehicles,
     onRentNow,
+    timelineData,
   ] = settled.map((r) => (r as PromiseFulfilledResult<unknown>).value) as [
     Awaited<ReturnType<typeof getOpsPickupsToday>>,
     Awaited<ReturnType<typeof getOpsUpcomingPickups>>,
@@ -105,6 +109,7 @@ export default async function OperationsPage({
     Awaited<ReturnType<typeof getOpsCompletedBookings>>,
     Awaited<ReturnType<typeof getOpsBlockedVehicles>>,
     Awaited<ReturnType<typeof getOpsOnRentNow>>,
+    Awaited<ReturnType<typeof getOpsBookingTimeline>>,
   ]
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
@@ -294,6 +299,10 @@ export default async function OperationsPage({
 
         {/* Sections */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <OperationsBookingTimeline
+            vehicles={timelineData.vehicles}
+            bookings={timelineData.bookings}
+          />
           <OperationsOnRentNow rows={onRentNow} />
           <OperationsNextUp
             pickups={nextPickups}
