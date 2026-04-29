@@ -1,18 +1,12 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-/**
- * Offline Field Mode: when offline, reads the locally cached session
- * (no network call). When online, validates via getUser() as normal.
- */
 export async function getEffectiveUser(supabase: SupabaseClient) {
-  if (typeof navigator !== "undefined" && !navigator.onLine) {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user ?? null;
-  }
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user ?? null;
-  } catch {
-    return null;
-  }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (user) return user;
+
+  // getUser() failed (network unreachable) — session.user is the offline fallback
+  return error ? session.user : null;
 }
