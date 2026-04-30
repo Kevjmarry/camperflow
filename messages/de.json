@@ -1784,45 +1784,11 @@
     "empty": "Es wurden noch keine häufig gestellten Fragen hinzugefügt."
   },
   "guestHelp": {
-    "title": "Fahrzeugführer",
-    "subtitle": "Allgemeine Hinweise zur Nutzung Ihres Campervans oder Wohnmobils. Die genauen Ausstattungen und Bedienelemente können je nach Fahrzeug variieren — beachten Sie stets die bei der Übergabe übergebenen Hinweise.",
-    "warning": "<strong>Beachten Sie stets die bei der Fahrzeugübergabe erteilten Anweisungen.</strong> Dieser Leitfaden ist allgemeiner Natur und entspricht möglicherweise nicht Ihrem konkreten Fahrzeug. Wenden Sie sich im Zweifelsfall an den Vermieter.",
-    "includedTitle": "Was ist inbegriffen",
-    "rulesTitle": "Regeln & Tipps",
-    "sections": {
-      "water": {
-        "title": "Wasserversorgung",
-        "body": "Füllen Sie den Frischwassertank vor der Abfahrt — der Einfüllstutzen befindet sich in der Regel außen am Fahrzeug. Verwenden Sie die eingebaute Pumpe (Schalter in der Nähe des Waschbeckens), um Wasser fließen zu lassen. Trinken Sie nur Wasser aus dem Tank, wenn dessen Trinkwasserqualität bestätigt wurde; andernfalls verwenden Sie Flaschenwasser. Entleeren Sie den Grauwassertank an ausgewiesenen Servicestellen, bevor Sie das Fahrzeug zurückgeben."
-      },
-      "toilet": {
-        "title": "Grundlagen der Toilettennutzung",
-        "body": "Fügen Sie vor der ersten Benutzung die empfohlene Chemikaliendosis hinzu (Menge je nach Produkt — auf das Etikett achten). Verwenden Sie nur kassettensicheres oder biologisch abbaubares Toilettenpapier. Entleeren Sie die Kassette an einer dafür vorgesehenen Chemikalienentsorgungsstelle, nicht in einem normalen Abfluss. Nach dem Entleeren mit sauberem Wasser ausspülen und vor dem Einsetzen erneut Chemikalie hinzufügen."
-      },
-      "electricity": {
-        "title": "Elektrik & Stromanschluss",
-        "body": "Die elektrische Ausstattung variiert je nach Fahrzeug. Manche laufen ausschließlich mit einer Freizeitbatterie (wird während der Fahrt geladen); andere unterstützen 230-V-Landstrom (EHU) über eine Campingplatzsäule; einige verfügen über einen Wechselrichter für den Betrieb von Netzgeräten über die Batterie. Lassen Sie sich bei der Übergabe erklären, welche Systeme Ihr Fahrzeug hat. Geräte mit hohem Stromverbrauch wie Wasserkocher oder Haartrockner entleeren eine Freizeitbatterie schnell — verwenden Sie diese möglichst am Landstromanschluss."
-      },
-      "gas": {
-        "title": "Gas / Kochsicherheit",
-        "body": "Gasregeln hängen von der Ausstattung Ihres Fahrzeugs ab — manche haben automatische Crashabsperrventile, andere erfordern manuelle Absperrung. Erkundigen Sie sich beim Vermieter, ob das Gas während der Fahrt an der Flasche abgesperrt werden sollte. Wenn Sie Gas riechen: Brenner nicht mehr benutzen, Fenster und Türen öffnen, keine Elektroschalter betätigen und das Fahrzeug verlassen. Manche Fahrzeuge sind mit einem Gasdetektor ausgestattet — diesen nicht verdecken oder deaktivieren."
-      },
-      "heating": {
-        "title": "Heizung / Warmwasser",
-        "body": "Heizungs- und Warmwassersysteme sind sehr unterschiedlich — Ihr Fahrzeug kann LPG-Gas, Diesel (z.B. Webasto oder Eberspächer), Landstrom oder eine Kombination nutzen. Lassen Sie sich bei der Übergabe erklären, wie Ihr System funktioniert. Warmwasser kann aus einem separaten Boiler, über den Motorkühlkreislauf oder aus einem Kombisystem kommen. Geben Sie dem System Zeit zum Aufheizen und überprüfen Sie den entsprechenden Schalter oder Thermostat, wenn das Warmwasser langsam kommt."
-      },
-      "fridge": {
-        "title": "Kühlschrankgrundlagen",
-        "body": "Schalten Sie den Kühlschrank mehrere Stunden vor dem Beladen ein — das Kühlen aus dem Warmen braucht Zeit. Unterwegs läuft der Kühlschrank normalerweise über die Fahrzeuglichtmaschine (12V); auf einem Campingplatz umschalten auf 230-V-Landstrom für mehr Effizienz. Halten Sie den Kühlschrank möglichst waagerecht. Nicht überladen: Luft muss zirkulieren können. Prüfen Sie im Handbuch den richtigen Gas-/Elektromodus, falls Ihr Kühlschrank eine 3-Wege-Einstellung hat."
-      },
-      "beforeDriving": {
-        "title": "Vor der Abfahrt",
-        "body": "Führen Sie vor der Abfahrt folgende Kontrollen durch: Trittstufe einfahren und sichern; alle Dachluken, Fenster und Oberlichter schließen und sichern; lose Gegenstände verstauen und Schrankriegel sichern; prüfen, ob die TV-Antenne eingezogen ist; EHU-Kabel trennen und verstauen; prüfen, ob die Handbremse gelöst ist. Gehen Sie einmal um das Fahrzeug herum und prüfen Sie, ob alle Staufächer verriegelt sind."
-      },
-      "driving": {
-        "title": "Beim Fahren / Höhenbewusstsein",
-        "body": "Kennen Sie die Höhe Ihres Fahrzeugs — sie ist meist auf dem Sonnenblende der Fahrerkabine vermerkt. Niedrige Brücken, Parkhäuser und Drive-throughs sind die häufigsten Gefahren. Nehmen Sie enge Kurven langsam: Der hintere Überhang schwingt nach außen. Beachten Sie, dass das Fahrzeug schwerer und länger als ein Auto ist — die Bremswege sind größer. Vermeiden Sie abrupte Spurwechsel und lassen Sie im Verkehr mehr Abstand."
-      }
-    }
+    "title": "Hilfe & Anleitungen",
+    "subtitle": "Anleitungen, schnelle Lösungen und Kontaktdaten für Ihre Miete.",
+    "contactIntro": "Brauchen Sie Hilfe? Kontaktieren Sie uns über die Schaltflächen unten.",
+    "quickFixesTitle": "Schnelle Lösungen",
+    "drivingTitle": "Fahren & Sicherheit"
   },
   "guestDashboard": {
     "title": "Meine Buchung",
@@ -1838,7 +1804,7 @@
       "pickupInfo": "Abholinformationen",
       "returnInfo": "Rückgabeinformationen",
       "faq": "FAQ",
-      "help": "Fahrzeugführer",
+      "help": "Hilfe & Anleitungen",
       "emergency": "Notfall & Pannenhilfe"
     }
   },

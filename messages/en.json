@@ -1784,45 +1784,11 @@
     "empty": "No frequently asked questions have been added yet."
   },
   "guestHelp": {
-    "title": "Vehicle Guide",
-    "subtitle": "General guidance for using your campervan or motorhome. Exact features and controls vary between vehicles — always refer to any handover notes provided by the rental company for specifics.",
-    "warning": "<strong>Always follow the instructions given during handover.</strong> This guide is general and may not match your exact vehicle. When in doubt, contact the rental company.",
-    "includedTitle": "What's included",
-    "rulesTitle": "Rules & tips",
-    "sections": {
-      "water": {
-        "title": "Using water",
-        "body": "Fill the fresh water tank before departure — the filler point is usually on the exterior. Use the onboard pump (switch near the sink) to get water flowing. Only drink from the tank if it has been confirmed safe; otherwise use bottled water. Empty the grey waste tank at designated service points before returning the vehicle."
-      },
-      "toilet": {
-        "title": "Toilet basics",
-        "body": "Add the recommended chemical dose before first use (amount varies by product — check the label). Use toilet paper marked as cassette-safe or biodegradable. Empty the cassette at a designated chemical disposal point, not in a standard drain. Rinse with clean water after emptying and re-add chemical before replacing."
-      },
-      "electricity": {
-        "title": "Electricity & hookup",
-        "body": "Electrical setup varies by vehicle. Some run solely on a leisure battery (charged while driving); others support 230V shore power (EHU) via a campsite bollard; some include an inverter for running mains appliances from the battery. Check during handover which systems your vehicle has. High-draw appliances like kettles or hair dryers will drain a leisure battery quickly — use them on hookup where possible."
-      },
-      "gas": {
-        "title": "Gas / cooking safety",
-        "body": "Gas rules depend on your vehicle's setup — some have automatic crash shut-off valves, others require manual isolation. Check with the rental company whether gas should be turned off at the bottle while driving. If you smell gas: stop using burners, open windows and doors, avoid operating electrical switches, and leave the vehicle. Some vehicles have a gas detector fitted — do not obstruct or disable it."
-      },
-      "heating": {
-        "title": "Heating / hot water",
-        "body": "Heating and hot water systems vary widely — your vehicle may use LPG gas, diesel (e.g. Webasto or Eberspächer), electric hookup, or a combination. Ask during handover how to operate yours. Hot water may come from a dedicated boiler, via the engine coolant circuit, or from a combi system. Allow time for the system to heat up, and check the relevant switch or thermostat if hot water is slow."
-      },
-      "fridge": {
-        "title": "Fridge basics",
-        "body": "Turn the fridge on several hours before loading it — cooling from warm takes time. On the road the fridge typically runs from the vehicle alternator (12V); on a campsite switch to 230V hookup for efficiency. Keep the fridge level where possible. Do not overfill: air needs to circulate. Check the manual for the correct gas/electric mode if your fridge has a 3-way setting."
-      },
-      "beforeDriving": {
-        "title": "Before driving off",
-        "body": "Before moving off, complete these checks: retract and lock the step; close and secure all roof vents, windows, and skylights; stow loose items and secure cupboard latches; check that the TV aerial is lowered; disconnect EHU cable and stow it; check that the handbrake is released. Walk around the vehicle and check all storage compartments are locked."
-      },
-      "driving": {
-        "title": "While driving / height awareness",
-        "body": "Know your vehicle's height — it is usually marked on the cab sun visor. Low bridges, car parks, and drive-throughs are the most common hazards. Take wide corners slowly: the rear overhang swings outward on tight turns. Be aware that the vehicle is heavier and longer than a car — braking distances are greater. Avoid sudden lane changes and allow extra space in traffic."
-      }
-    }
+    "title": "Help & How-to",
+    "subtitle": "Guides, quick fixes, and contact details for your rental.",
+    "contactIntro": "Need help? Contact us using the buttons below.",
+    "quickFixesTitle": "Quick fixes",
+    "drivingTitle": "Driving & safety"
   },
   "guestDashboard": {
     "title": "My Booking",
@@ -1838,7 +1804,7 @@
       "pickupInfo": "Pickup info",
       "returnInfo": "Return info",
       "faq": "FAQ",
-      "help": "Vehicle guide",
+      "help": "Help & How-to",
       "emergency": "Emergency & assistance"
     }
   },

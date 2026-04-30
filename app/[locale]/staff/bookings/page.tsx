@@ -314,7 +314,6 @@ setDateFrom('');
       diffDays === 1 ? t("time.tomorrow") :
       t("time.daysAhead", { count: diffDays });
 
-    const urgent = diffDays <= 3;
     return (
       <span style={{
         display: 'inline-block',
@@ -324,8 +323,8 @@ setDateFrom('');
         fontWeight: 500,
         lineHeight: '18px',
         whiteSpace: 'nowrap',
-        background: urgent ? 'rgb(var(--error) / 0.12)' : 'rgb(var(--muted) / 0.12)',
-        color: urgent ? 'rgb(var(--error))' : 'rgb(var(--muted))',
+        background: 'rgb(var(--muted) / 0.12)',
+        color: 'rgb(var(--muted))',
       }}>
         {label}
       </span>
@@ -884,7 +883,7 @@ setDateFrom('');
                                   {formatDate(booking.pickup_at)}
                                 </td>
                                 <td style={td}>
-                                  {timeToPickup ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
+                                  {booking.status !== 'on_rent' && timeToPickup ? timeToPickup : <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                 </td>
                                 <td style={td}>
                                   {formatDate(booking.return_at)}
@@ -1034,7 +1033,7 @@ setDateFrom('');
                           <div style={{ color: 'rgb(var(--text))' }}>
                             {formatDate(booking.pickup_at)}
                           </div>
-                          {timeToPickup && (
+                          {timeToPickup && booking.status !== 'on_rent' && (
                             <div style={{ marginTop: '4px' }}>
                               {timeToPickup}
                             </div>

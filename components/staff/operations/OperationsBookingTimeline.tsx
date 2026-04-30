@@ -83,11 +83,13 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
   const todayPct = ((DAYS_BACK + 0.5) / TOTAL_DAYS) * 100
 
   // Day markers — one per day, centered in each column
-  const dayMarkers: { label: string; leftPct: number }[] = []
+  const dayMarkers: { label: string; leftPx: number }[] = []
+  const weekendOffsets: number[] = []
   for (let d = 0; d < TOTAL_DAYS; d += 1) {
     const date = new Date(windowStart)
     date.setDate(date.getDate() + d)
-    dayMarkers.push({ label: String(date.getDate()), leftPct: ((d + 0.5) / TOTAL_DAYS) * 100 })
+    dayMarkers.push({ label: String(date.getDate()), leftPx: (d + 0.5) * PX_PER_DAY })
+    if (date.getDay() === 0) weekendOffsets.push(d * PX_PER_DAY)
   }
 
   const bookingsByVehicle = new Map<string, OpsTimelineBooking[]>()
@@ -166,12 +168,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
           <div className="ops-tl-day-row" style={{ display: 'flex', marginBottom: '2px' }}>
             <div className="ops-tl-label-col" style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
             <div style={{ flex: 1, position: 'relative', height: '16px' }}>
-              {dayMarkers.map(({ label, leftPct }) => (
+              {dayMarkers.map(({ label, leftPx }) => (
                 <div
-                  key={leftPct}
+                  key={leftPx}
                   style={{
                     position: 'absolute',
-                    left: `${leftPct}%`,
+                    left: `${leftPx}px`,
                     transform: 'translateX(-50%)',
                     fontSize: '9px',
                     color: 'rgb(var(--muted) / 0.65)',
@@ -237,6 +239,9 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                       background: i % 2 !== 0 ? `${DAY_BG}, rgb(var(--muted) / 0.04)` : DAY_BG,
                     }}
                   >
+                    {weekendOffsets.map((leftPx) => (
+                      <div key={leftPx} style={{ position: 'absolute', top: 0, bottom: 0, left: leftPx, width: PX_PER_DAY, background: '#f3f0ff', pointerEvents: 'none', zIndex: 0 }} />
+                    ))}
                     {vBookings.map((b) => {
                       const pickupDate = new Date(b.pickupAt)
                       const returnDate = new Date(b.returnAt)
