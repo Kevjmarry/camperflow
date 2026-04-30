@@ -100,7 +100,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
 
   if (vehicles.length === 0) {
     return (
-      <div className="surface" style={{ padding: 'var(--space-6)' }}>
+      <div className="surface ops-tl-outer" style={{ padding: 'var(--space-6)' }}>
         <h2 style={{ fontSize: '18px', margin: '0 0 var(--space-4)', color: 'rgb(var(--text))' }}>
           Vehicle Booking Timeline
         </h2>
@@ -110,7 +110,15 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
   }
 
   return (
-    <div className="surface" style={{ padding: 'var(--space-6)' }}>
+    <div className="surface ops-tl-outer">
+      <style>{`
+        .ops-tl-outer { padding: var(--space-6); }
+        @media (max-width: 480px) {
+          .ops-tl-outer { padding: var(--space-3); width: 100vw; margin-left: calc(50% - 50vw); border-radius: 0 !important; border: none !important; box-shadow: 0 -1px 0 rgb(var(--border) / 0.5), 0 1px 0 rgb(var(--border) / 0.5) !important; }
+          .ops-tl-label-col { width: 80px !important; box-shadow: 6px 0 0 rgb(var(--surface)); }
+          .ops-tl-day-row { margin-bottom: 0 !important; }
+        }
+      `}</style>
 
       {/* Header + legend */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -136,7 +144,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
 
           {/* Month header row */}
           <div style={{ display: 'flex' }}>
-            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
+            <div className="ops-tl-label-col" style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
             <div style={{ flex: 1, position: 'relative', height: '16px' }}>
               {monthMarkers.map(({ label, leftPct }) => (
                 <div
@@ -157,8 +165,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
           </div>
 
           {/* Day numbers row */}
-          <div style={{ display: 'flex', marginBottom: '2px' }}>
-            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
+          <div className="ops-tl-day-row" style={{ display: 'flex', marginBottom: '2px' }}>
+            <div className="ops-tl-label-col" style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
             <div style={{ flex: 1, position: 'relative', height: '16px' }}>
               {dayMarkers.map(({ label, leftPct }) => (
                 <div
@@ -182,7 +190,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
           <div style={{ display: 'flex' }}>
 
             {/* Vehicle name column */}
-            <div style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3, background: 'rgb(var(--surface))' }}>
+            <div className="ops-tl-label-col" style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 3, background: 'rgb(var(--surface))' }}>
               {vehicles.map((v, i) => (
                 <div
                   key={v.id}
@@ -213,8 +221,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
               <div style={{ borderTop: '1px solid rgb(var(--border) / 0.7)' }} />
             </div>
 
-            {/* Bar area (position:relative anchors the today line) */}
-            <div style={{ flex: 1, position: 'relative' }}>
+            {/* Bar area — explicit zIndex:0 creates a stacking context below the sticky left column (z:3) */}
+            <div style={{ flex: 1, position: 'relative', zIndex: 0 }}>
 
               {/* Today column highlight — separate overlay so it never breaks row background layers */}
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: TODAY_L, width: PX_PER_DAY, background: 'rgb(var(--brand) / 0.10)', pointerEvents: 'none', zIndex: 0 }} />
