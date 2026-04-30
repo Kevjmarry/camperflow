@@ -29,6 +29,10 @@ interface GuestBooking {
   accent_color: string | null;
 }
 
+interface CompanySettings {
+  included_items: string | null;
+}
+
 interface VehicleRow {
   id: string;
   name: string | null;
@@ -134,6 +138,16 @@ export default async function GuestBookingPage({ params }: PageProps) {
     }
   }
 
+  let companySettings: CompanySettings = { included_items: null };
+  if (booking.company_id) {
+    const { data } = await supabase
+      .from("company_settings")
+      .select("included_items")
+      .eq("id", booking.company_id)
+      .maybeSingle<CompanySettings>();
+    if (data) companySettings = data;
+  }
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t("notSpecified");
     const date = new Date(dateString);
@@ -207,6 +221,8 @@ try{
         @media (min-width: 481px) { .gbooking-photo-fields { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
         .gbooking-dims { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
         @media (min-width: 481px) { .gbooking-dims { grid-template-columns: 1fr 1fr 1fr; } }
+        .gbooking-included-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
+        @media (min-width: 768px) { .gbooking-included-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
       {themeObj && (
         <>
@@ -530,6 +546,94 @@ try{
                 </div>
               </div>
             )}
+
+            {/* Included in your booking */}
+            {(() => {
+              const items = companySettings.included_items
+                ? companySettings.included_items.split("\n").map((l) => l.trim()).filter(Boolean)
+                : [];
+              if (items.length === 0) return null;
+
+              const colonIndices = items.reduce<number[]>((acc, item, i) => {
+                if (item.endsWith(":")) acc.push(i);
+                return acc;
+              }, []);
+              const splitAt = colonIndices.length >= 2 ? colonIndices[1] : null;
+              const group1 = splitAt !== null ? items.slice(0, splitAt) : items;
+              const group2 = splitAt !== null ? items.slice(splitAt) : [];
+
+              const renderGroup = (lines: string[]) => (
+                <div>
+                  {lines.map((item, index) => {
+                    if (item.endsWith(":")) {
+                      return (
+                        <p
+                          key={index}
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            color: "rgb(var(--text-secondary))",
+                            margin: index > 0 ? "var(--space-5) 0 var(--space-3)" : "0 0 var(--space-3)",
+                          }}
+                        >
+                          {item.slice(0, -1)}
+                        </p>
+                      );
+                    }
+                    const isLast = index === lines.length - 1;
+                    const nextIsHeader = lines[index + 1]?.endsWith(":");
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          gap: "var(--space-3)",
+                          alignItems: "flex-start",
+                          paddingTop: "var(--space-3)",
+                          paddingBottom: "var(--space-3)",
+                          borderBottom: !isLast && !nextIsHeader ? "1px solid rgb(var(--border-light))" : "none",
+                        }}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 18 18"
+                          fill="none"
+                          aria-hidden="true"
+                          style={{ flexShrink: 0, marginTop: "2px", color: "rgb(var(--brand))" }}
+                        >
+                          <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+                          <path
+                            d="M5.5 9L7.5 11L12.5 7"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text))", margin: 0 }}>
+                          {item}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+
+              return (
+                <div className="surface gbooking-sp">
+                  <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
+                    Included in your booking
+                  </div>
+                  <div className="gbooking-included-grid">
+                    <div>{renderGroup(group1)}</div>
+                    {group2.length > 0 && <div>{renderGroup(group2)}</div>}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Video */}
             {vehicle.youtube_url && getYouTubeEmbedId(vehicle.youtube_url) && (

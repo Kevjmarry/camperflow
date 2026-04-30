@@ -17,9 +17,7 @@ const PX_PER_DAY = 28
 const TIMELINE_PX = TOTAL_DAYS * PX_PER_DAY // 5880
 const LEFT_COL_PX = 144
 const ROW_H = 34
-const ROW_GRID_BG = `repeating-linear-gradient(to right, rgb(var(--border) / 0.28) 0, rgb(var(--border) / 0.28) 1px, transparent 1px, transparent ${PX_PER_DAY}px)`
-const WEEK_W = 7 * PX_PER_DAY
-const WEEK_BG = `repeating-linear-gradient(to right, rgb(var(--muted) / 0.045) 0, rgb(var(--muted) / 0.045) ${WEEK_W}px, transparent ${WEEK_W}px, transparent ${WEEK_W * 2}px)`
+const DAY_BG = `repeating-linear-gradient(to right, rgb(var(--muted) / 0.03) 0, rgb(var(--muted) / 0.03) ${PX_PER_DAY}px, transparent ${PX_PER_DAY}px, transparent ${PX_PER_DAY * 2}px)`
 const TODAY_L = DAYS_BACK * PX_PER_DAY
 
 const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; bgImage?: string }> = {
@@ -236,7 +234,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                       height: ROW_H,
                       position: 'relative',
                       borderTop: '1px solid rgb(var(--border) / 0.7)',
-                      background: i % 2 !== 0 ? `${WEEK_BG}, ${ROW_GRID_BG}, rgb(var(--muted) / 0.04)` : `${WEEK_BG}, ${ROW_GRID_BG}`,
+                      background: i % 2 !== 0 ? `${DAY_BG}, rgb(var(--muted) / 0.04)` : DAY_BG,
                     }}
                   >
                     {vBookings.map((b) => {

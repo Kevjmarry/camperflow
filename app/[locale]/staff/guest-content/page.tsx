@@ -329,6 +329,29 @@ export default function GuestContentPage() {
                   </div>
                 </div>
 
+                {/* Booking Details */}
+                <div>
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      Booking Details
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
+                      <div>
+                        <label htmlFor="included_items" className="label">{t("labels.includedItems")}</label>
+                        <textarea
+                          id="included_items" name="included_items" className="input"
+                          placeholder={t("placeholders.includedItems")}
+                          value={formData.included_items} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.included_items)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+
                 {/* Pickup */}
                 <div>
                   <details>
@@ -469,42 +492,6 @@ export default function GuestContentPage() {
                   </details>
                 </div>
 
-                {/* Guest Guide */}
-                <div>
-                  <details>
-                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
-                      {t("sections.guestGuide")}
-                    </summary>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
-                      <div>
-                        <label htmlFor="included_items" className="label">{t("labels.includedItems")}</label>
-                        <textarea
-                          id="included_items" name="included_items" className="input"
-                          placeholder={t("placeholders.includedItems")}
-                          value={formData.included_items} onChange={handleChange}
-                          disabled={!isAdmin}
-                          rows={countLines(formData.included_items)}
-                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                        />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                      </div>
-                      <div>
-                        <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
-                        <textarea
-                          id="rules_and_tips" name="rules_and_tips" className="input"
-                          placeholder={t("placeholders.rulesAndTips")}
-                          value={formData.rules_and_tips} onChange={handleChange}
-                          disabled={!isAdmin}
-                          rows={countLines(formData.rules_and_tips)}
-                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
-                        />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                      </div>
-
-                    </div>
-                  </details>
-                </div>
-
                 {/* FAQ */}
                 <div>
                   <details>
@@ -563,6 +550,30 @@ export default function GuestContentPage() {
                       {faqItems.length === 0 && !isAdmin && (
                         <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("faq.empty")}</p>
                       )}
+                    </div>
+                  </details>
+                </div>
+
+                {/* Help & How-to */}
+                <div>
+                  <details>
+                    <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
+                      Help & How-to
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
+                      <div>
+                        <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
+                        <textarea
+                          id="rules_and_tips" name="rules_and_tips" className="input"
+                          placeholder={t("placeholders.rulesAndTips")}
+                          value={formData.rules_and_tips} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.rules_and_tips)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
+                      </div>
+
                     </div>
                   </details>
                 </div>

@@ -39,7 +39,7 @@ export function uiToDbSeverity(ui: IssueSeverity): DbIssueSeverity {
 
 /**
  * Computes the next instance status from checked-item counts.
- * Used only for non-handover auto-complete paths (pickup, return, etc.).
+ * Works for all checklist types: cleaning, mechanical, pickup, handover, return, etc.
  */
 export function computeInstanceUpdate(
   items: ChecklistItemType[],
@@ -53,12 +53,7 @@ export function computeInstanceUpdate(
   const noneChecked = checkedCount === 0;
   const isPending = snapshot.status === 'pending' || snapshot.status === 'not_started';
 
-  // Pickup ('handover') and return checklists require a dedicated completion flow
-  // (signature, deposit, close-out steps). Item-based sync must never auto-complete them.
-  const requiresDedicatedCompletion =
-    snapshot.checklist_type === 'handover' || snapshot.checklist_type === 'return';
-
-  if (allChecked && !requiresDedicatedCompletion) {
+  if (allChecked && totalCount > 0) {
     return {
       status: 'completed',
       started_at: snapshot.started_at ?? now,

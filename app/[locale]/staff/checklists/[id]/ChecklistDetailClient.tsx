@@ -427,6 +427,20 @@ export default function ChecklistDetailClient({
     t,
   });
 
+  // ── Page-load safety: sync instance status if items are already all-checked but status isn't completed (or vice versa) ──
+  useEffect(() => {
+    if (isChecklistLocked) return;
+    if (initialItems.length === 0) return;
+    const allChecked = initialItems.every((it) => it.checked);
+    const alreadyComplete = instance.status === 'completed';
+    if (allChecked === alreadyComplete) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      syncInstanceStatus(initialItems, user.id, initialItems, instance);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Safety modal handlers ─────────────────────────────────────────────────────
 
   const handleSafetyConfirm = async () => {
