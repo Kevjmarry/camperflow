@@ -1,6 +1,8 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import type { OpsTimelineVehicle, OpsTimelineBooking } from '@/lib/staff/operations/getOpsBookingTimeline'
 
 interface Props {
@@ -19,15 +21,13 @@ const ROW_GRID_BG = `repeating-linear-gradient(to right, rgb(var(--border) / 0.2
 const WEEK_W = 7 * PX_PER_DAY
 const WEEK_BG = `repeating-linear-gradient(to right, rgb(var(--muted) / 0.045) 0, rgb(var(--muted) / 0.045) ${WEEK_W}px, transparent ${WEEK_W}px, transparent ${WEEK_W * 2}px)`
 const TODAY_L = DAYS_BACK * PX_PER_DAY
-const TODAY_R = TODAY_L + PX_PER_DAY
-const TODAY_COL_BG = `linear-gradient(to right, transparent ${TODAY_L}px, rgb(var(--danger) / 0.08) ${TODAY_L}px, rgb(var(--danger) / 0.08) ${TODAY_R}px, transparent ${TODAY_R}px)`
 
 const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; bgImage?: string }> = {
-  draft:     { bg: 'rgb(234 179 8 / 0.13)', bgImage: 'repeating-linear-gradient(45deg, rgb(234 179 8 / 0.30) 0, rgb(234 179 8 / 0.30) 3px, transparent 3px, transparent 9px)', border: 'rgb(234 179 8 / 0.60)', text: 'rgb(133 95 0)' },
-  confirmed: { bg: 'rgb(var(--success) / 0.65)', border: 'rgb(var(--success) / 0.90)', text: 'rgb(var(--success))' },
-  blocked:   { bg: 'rgb(var(--danger) / 0.22)',  border: 'rgb(var(--danger) / 0.65)',  text: 'rgb(var(--danger))' },
+  draft:     { bg: 'rgb(234 179 8 / 0.13)', bgImage: 'repeating-linear-gradient(45deg, rgb(234 179 8 / 0.30) 0, rgb(234 179 8 / 0.30) 3px, transparent 3px, transparent 9px)', border: 'rgb(234 179 8 / 0.60)', text: '#fff' },
+  confirmed: { bg: 'rgb(var(--success) / 0.65)', border: 'rgb(var(--success) / 0.90)', text: '#fff' },
+  blocked:   { bg: 'rgb(var(--danger) / 0.22)',  border: 'rgb(var(--danger) / 0.65)',  text: '#fff' },
   on_rent:   { bg: 'rgb(var(--success) / 0.85)', border: 'rgb(var(--success))',        text: '#fff' },
-  completed: { bg: 'rgb(134 155 140 / 0.13)',    border: 'rgb(134 155 140 / 0.35)',    text: 'rgb(100 120 105 / 0.75)' },
+  completed: { bg: 'rgb(134 155 140 / 0.13)',    border: 'rgb(134 155 140 / 0.35)',    text: '#fff' },
 }
 const FALLBACK_STYLE = STATUS_STYLE.draft
 
@@ -42,15 +42,18 @@ const LEGEND = [
 export default function OperationsBookingTimeline({ vehicles, bookings }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
+  const params = useParams()
+  const locale = params.locale as string
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Scroll so ~5 days before today is at the left of the viewport on mount
+  // Scroll so 5 days before today is at the left edge on first render.
+  // Depends on `mounted` because the ref is null until the timeline renders.
   useEffect(() => {
-    if (scrollRef.current) {
-        scrollRef.current.scrollLeft = (DAYS_BACK - 5) * PX_PER_DAY
+    if (mounted && scrollRef.current) {
+      scrollRef.current.scrollLeft = (DAYS_BACK - 5) * PX_PER_DAY
     }
-  }, [])
+  }, [mounted])
 
   if (!mounted) return null
 
@@ -79,15 +82,14 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
     cur.setMonth(cur.getMonth() + 1)
   }
 
-  const todayPct = (DAYS_BACK / TOTAL_DAYS) * 100
-  const todayLabel = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const todayPct = ((DAYS_BACK + 0.5) / TOTAL_DAYS) * 100
 
-  // Day markers every 7 days
+  // Day markers — one per day, centered in each column
   const dayMarkers: { label: string; leftPct: number }[] = []
-  for (let d = 0; d <= TOTAL_DAYS; d += 1) {
+  for (let d = 0; d < TOTAL_DAYS; d += 1) {
     const date = new Date(windowStart)
     date.setDate(date.getDate() + d)
-    dayMarkers.push({ label: String(date.getDate()), leftPct: (d / TOTAL_DAYS) * 100 })
+    dayMarkers.push({ label: String(date.getDate()), leftPct: ((d + 0.5) / TOTAL_DAYS) * 100 })
   }
 
   const bookingsByVehicle = new Map<string, OpsTimelineBooking[]>()
@@ -173,22 +175,6 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                   {label}
                 </div>
               ))}
-              {/* Today date label aligned with the red line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${todayPct}%`,
-                  transform: 'translateX(-50%)',
-                  fontSize: '9px',
-                  fontWeight: 600,
-                  color: 'rgb(var(--danger))',
-                  whiteSpace: 'nowrap',
-                  userSelect: 'none',
-                  zIndex: 1,
-                }}
-              >
-                {todayLabel}
-              </div>
             </div>
           </div>
 
@@ -230,6 +216,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
             {/* Bar area (position:relative anchors the today line) */}
             <div style={{ flex: 1, position: 'relative' }}>
 
+              {/* Today column highlight — separate overlay so it never breaks row background layers */}
+              <div style={{ position: 'absolute', top: 0, bottom: 0, left: TODAY_L, width: PX_PER_DAY, background: 'rgb(var(--brand) / 0.10)', pointerEvents: 'none', zIndex: 0 }} />
 
               {vehicles.map((v, i) => {
                 const vBookings = bookingsByVehicle.get(v.id) ?? []
@@ -240,7 +228,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                       height: ROW_H,
                       position: 'relative',
                       borderTop: '1px solid rgb(var(--border) / 0.7)',
-                      background: i % 2 !== 0 ? `${TODAY_COL_BG}, ${WEEK_BG}, ${ROW_GRID_BG}, rgb(var(--muted) / 0.04)` : `${TODAY_COL_BG}, ${WEEK_BG}, ${ROW_GRID_BG}`,
+                      background: i % 2 !== 0 ? `${WEEK_BG}, ${ROW_GRID_BG}, rgb(var(--muted) / 0.04)` : `${WEEK_BG}, ${ROW_GRID_BG}`,
                     }}
                   >
                     {vBookings.map((b) => {
@@ -259,8 +247,9 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                       const s = STATUS_STYLE[b.status] ?? FALLBACK_STYLE
                       const label = b.customerName || b.bookingNumber
                       return (
-                        <div
+                        <Link
                           key={b.id}
+                          href={`/${locale}/staff/bookings/${b.id}`}
                           title={`${label}\n${b.status}`}
                           style={{
                             position: 'absolute',
@@ -274,6 +263,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                             borderRadius: '3px',
                             overflow: 'hidden',
                             zIndex: 1,
+                            cursor: 'pointer',
+                            textDecoration: 'none',
                           }}
                         >
                           <span
@@ -291,7 +282,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                           >
                             {label}
                           </span>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>

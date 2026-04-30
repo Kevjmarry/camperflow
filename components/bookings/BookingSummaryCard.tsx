@@ -81,15 +81,8 @@ export function BookingSummaryCard({ booking, selectedVehicle, locale, t }: Prop
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
           <span>{t("summary.vehicle")}:</span>{' '}
           {selectedVehicle ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
-              <span style={{ color: 'rgb(var(--text))' }}>
-                {selectedVehicle.name} ({selectedVehicle.registration_plate})
-              </span>
-              {selectedVehicle.status && (
-                <span style={getStatusChipStyle(selectedVehicle.status)}>
-                  {getVehicleStatusLabel(selectedVehicle.status)}
-                </span>
-              )}
+            <span style={{ color: 'rgb(var(--text))' }}>
+              {selectedVehicle.name} ({selectedVehicle.registration_plate})
             </span>
           ) : (
             <span style={{ color: 'rgb(var(--text))' }}>{t("vehicle.unassigned")}</span>

@@ -73,7 +73,6 @@ const [dateFrom, setDateFrom] = useState<string>("");
   }, [canManage]);
 
   const checkUserCapabilities = async () => {
-    console.error("[BOOKINGS_AUTH_BRANCH] checkUserCapabilities start");
     try {
       const user = await getEffectiveUser(supabase);
       if (!user) {

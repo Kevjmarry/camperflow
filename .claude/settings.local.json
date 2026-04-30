@@ -17,7 +17,9 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(grep -E \"\\\\.tsx$\")",
       "Bash(python3 -c ' *)",
-      "Bash(python3 -c \"import json; d=json.load\\(open\\('c:/CamperFlow/camperflow/messages/en.json'\\)\\); gr=d.get\\('guestReturn',{}\\); print\\(json.dumps\\(gr, indent=2\\)\\)\")"
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('c:/CamperFlow/camperflow/messages/en.json'\\)\\); gr=d.get\\('guestReturn',{}\\); print\\(json.dumps\\(gr, indent=2\\)\\)\")",
+      "Bash(node -e \"const s = require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/app/[locale]/staff/checklists/[id]/ChecklistDetailClient.tsx','utf8'\\); const line = s.split\\('\\\\n'\\)[768]; console.log\\(JSON.stringify\\(line\\)\\);\")",
+      "Bash(node)"
     ]
   }
 }

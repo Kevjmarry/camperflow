@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ComponentProps } from 'react';
@@ -753,20 +753,31 @@ export default function ChecklistDetailClient({
     });
 
   // ── Upload a single evidence photo to Supabase Storage ────────────────────────
-  // Path shape: {company_id}/{booking_id}/{checklist_type}/{group}/{timestamp}_{random}.{ext}
+  // Path shape: {company_id}/{booking_number}_{customer_surname}/{checklist_type}/{group}/{timestamp}_{random}.jpg
   const uploadEvidencePhoto = async (
     file: File,
     group: 'general' | 'damage' | 'id',
   ): Promise<{ path: string; url: string }> => {
     const compressed = await compressImage(file).catch(() => file);
-    const companyId = (instance.bookings as any)?.company_id ?? 'unknown';
-    const bookingId = instance.booking_id ?? 'unknown';
+    const companyId = (instance.bookings as any)?.company_id;
+    const bookingId = instance.booking_id;
+    if (!companyId) throw new Error('uploadEvidencePhoto: company_id is missing from booking');
+    if (!bookingId) throw new Error('uploadEvidencePhoto: booking_id is missing from checklist instance');
+    const bookingCode = instance.bookings?.booking_number ?? '';
+    const customerSurname = instance.bookings?.customer_name
+      ? (instance.bookings.customer_name.trim().split(/\s+/).pop() ?? '')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      : '';
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const path = `${companyId}/${bookingId}/${instance.checklist_type}/${group}/${unique}.jpg`;
+    const path = `${companyId}/${bookingCode}_${customerSurname}/${instance.checklist_type}/${group}/${unique}.jpg`;
     const { error } = await supabase.storage
       .from('checklist-evidence')
       .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
-    if (error) throw error;
+    if (error) {
+      console.error('uploadEvidencePhoto: storage upload failed', { path, group, error });
+      setSyncError(parseSyncError(error, 'item_update_failed'));
+      throw error;
+    }
     const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(path);
     return { path, url: data.publicUrl };
   };

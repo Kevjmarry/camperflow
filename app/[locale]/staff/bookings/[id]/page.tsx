@@ -1127,15 +1127,8 @@ export default function BookingDetailPage() {
                   </div>
                   <div style={{ fontSize: '15px', fontWeight: 500 }}>
                     {vehicleInfo ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
-                        <span style={{ color: 'rgb(var(--text))' }}>
-                          {vehicleInfo.name} ({vehicleInfo.registration_plate})
-                        </span>
-                        {displayVehicle?.status && (
-                          <span style={getStatusChipStyle(displayVehicle.status)}>
-                            {getVehicleStatusLabel(displayVehicle.status)}
-                          </span>
-                        )}
+                      <span style={{ color: 'rgb(var(--text))' }}>
+                        {vehicleInfo.name} ({vehicleInfo.registration_plate})
                       </span>
                     ) : (
                       <span style={{ color: 'rgb(var(--muted))' }}>{t("vehicle.unassigned")}</span>
