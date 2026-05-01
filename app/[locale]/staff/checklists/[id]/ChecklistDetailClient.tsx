@@ -1235,6 +1235,8 @@ export default function ChecklistDetailClient({
       <BackLink href={backHref}>{backButtonLabel}</BackLink>
       <ChecklistHeader
         title={checklistTitle}
+        backLabel={backButtonLabel}
+        onBack={handleBackClick}
         statusLabel={statusLabel}
         contextLine={contextLine}
       />
