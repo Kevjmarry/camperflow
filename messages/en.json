@@ -32,6 +32,7 @@
     "signIn": "Sign in",
     "signingIn": "Signing in...",
     "backToHome": "Back to home",
+    "rememberEmail": "Remember email on this device",
     "inviteOnly": "Accounts are created by invitation only. Contact your manager.",
     "error": {
       "accessDenied": "Access denied. This account does not have staff privileges.",
@@ -1788,7 +1789,8 @@
     "subtitle": "Guides, quick fixes, and contact details for your rental.",
     "contactIntro": "Need help? Contact us using the buttons below.",
     "quickFixesTitle": "Quick fixes",
-    "drivingTitle": "Driving & safety"
+    "drivingTitle": "Driving & safety",
+    "howToVideosTitle": "How-to videos"
   },
   "guestDashboard": {
     "title": "My Booking",

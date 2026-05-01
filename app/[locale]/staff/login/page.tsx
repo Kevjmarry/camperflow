@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+
+const REMEMBER_EMAIL_KEY = "staff_remembered_email";
 
 type Mode = "login" | "reset";
 
@@ -16,8 +18,17 @@ export default function StaffLoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (saved) {
+      setEmail(saved);
+      setRememberEmail(true);
+    }
+  }, []);
 
   const [mode, setMode] = useState<Mode>("login");
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -79,6 +90,12 @@ export default function StaffLoginPage() {
         setError(t("error.accessDeniedError"));
         setLoading(false);
         return;
+      }
+
+      if (rememberEmail) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, email.trim());
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
       }
 
       router.push(`/${locale}/staff`);
@@ -254,6 +271,26 @@ export default function StaffLoginPage() {
                     </button>
                   </div>
                 </div>
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    fontSize: "14px",
+                    color: "rgb(var(--muted))",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={rememberEmail}
+                    onChange={(e) => setRememberEmail(e.target.checked)}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  {t("rememberEmail")}
+                </label>
 
                 {error && (
                   <div

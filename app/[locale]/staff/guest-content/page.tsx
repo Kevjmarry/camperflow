@@ -63,6 +63,9 @@ export default function GuestContentPage() {
     return_info: "",
     included_items: "",
     rules_and_tips: "",
+    help_intro: "",
+    help_quick_fixes: "",
+    help_videos: "",
   });
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [returnNearbyPlaces, setReturnNearbyPlaces] = useState<NearbyPlaceItem[]>([]);
@@ -105,7 +108,7 @@ export default function GuestContentPage() {
       const [{ data }, { data: template }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places")
+          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos")
           .eq("id", companyId)
           .maybeSingle(),
         supabase
@@ -132,6 +135,9 @@ export default function GuestContentPage() {
           before_arrival_info:     (data as any).before_arrival_info     ?? "",
           before_return_info:      (data as any).before_return_info      ?? "",
           included_items:          (data as any).included_items          ?? "",
+          help_intro:              (data as any).help_intro              ?? "",
+          help_quick_fixes:        (data as any).help_quick_fixes        ?? "",
+          help_videos:             (data as any).help_videos             ?? "",
         };
         console.log("[GuestContent] setFormData payload:", payload);
         setFormData(prev => {
@@ -146,6 +152,9 @@ export default function GuestContentPage() {
             before_arrival_info:     (data as any).before_arrival_info     ?? "",
             before_return_info:      (data as any).before_return_info      ?? "",
             included_items:          (data as any).included_items          ?? "",
+            help_intro:              (data as any).help_intro              ?? "",
+            help_quick_fixes:        (data as any).help_quick_fixes        ?? "",
+            help_videos:             (data as any).help_videos             ?? "",
           };
           console.log("[GuestContent] formData after setFormData:", next);
           return next;
@@ -190,6 +199,9 @@ export default function GuestContentPage() {
             before_arrival_info: formData.before_arrival_info.trim() || null,
             before_return_info:  formData.before_return_info.trim()  || null,
             included_items:      formData.included_items.trim()      || null,
+            help_intro:          formData.help_intro.trim()          || null,
+            help_quick_fixes:    formData.help_quick_fixes.trim()    || null,
+            help_videos:         formData.help_videos.trim()         || null,
             faq_items:             faqItems.length > 0 ? faqItems : null,
             return_nearby_places:  returnNearbyPlaces.length > 0 ? returnNearbyPlaces : null,
           })
@@ -561,6 +573,42 @@ export default function GuestContentPage() {
                       Help & How-to
                     </summary>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
+                      <div>
+                        <label htmlFor="help_intro" className="label">Help intro</label>
+                        <textarea
+                          id="help_intro" name="help_intro" className="input"
+                          placeholder="Short intro text shown at the top of the Help & How-to contact card…"
+                          value={formData.help_intro} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.help_intro)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown as intro text in the contact card.</p>
+                      </div>
+                      <div>
+                        <label htmlFor="help_quick_fixes" className="label">Quick fixes</label>
+                        <textarea
+                          id="help_quick_fixes" name="help_quick_fixes" className="input"
+                          placeholder={"Water system:\nTurn tap clockwise to open\nCheck pump switch near sink\nElectricity:\nFlip the leisure battery switch\nConnect EHU cable if on hookup"}
+                          value={formData.help_quick_fixes} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.help_quick_fixes, 6)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = accordion title. Following lines = numbered steps.</p>
+                      </div>
+                      <div>
+                        <label htmlFor="help_videos" className="label">How-to videos</label>
+                        <textarea
+                          id="help_videos" name="help_videos" className="input"
+                          placeholder={"Water system:\nhttps://youtube.com/watch?v=…\nElectricity:\nhttps://youtube.com/watch?v=…"}
+                          value={formData.help_videos} onChange={handleChange}
+                          disabled={!isAdmin}
+                          rows={countLines(formData.help_videos, 5)}
+                          style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                        />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = group title. YouTube/video links below = embedded players.</p>
+                      </div>
                       <div>
                         <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
                         <textarea

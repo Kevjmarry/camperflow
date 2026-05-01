@@ -1,9 +1,38 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { createClient } from "@/lib/supabase/server";
 import type { ReactNode } from "react";
+
+interface PageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ code?: string }>;
+}
+
+interface GuestBooking {
+  company_id: string | null;
+  company_name: string | null;
+  logo_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+}
+
+const STORAGE_KEY = "camperflow:last_company_theme";
+
+function hexToRgb(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return "0 0 0";
+  return `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}`;
+}
+
+function adjustBrightness(hex: string, amount: number): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return hex;
+  const r = Math.max(0, Math.min(255, parseInt(result[1], 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(result[2], 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(result[3], 16) + amount));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
 const iconWrap = {
   width: "48px",
@@ -60,11 +89,11 @@ const icons: Record<string, ReactNode> = {
   ),
 };
 
-export default function GuestPage() {
-  const t = useTranslations("guestDashboard");
-  const locale = useLocale();
-  const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+export default async function GuestPage({ params, searchParams }: PageProps) {
+  const { locale } = await params;
+  const { code: codeRaw } = await searchParams;
+  const code = decodeURIComponent(codeRaw || "").trim();
+  const t = await getTranslations("guestDashboard");
 
   if (!code) {
     return (
@@ -77,6 +106,56 @@ export default function GuestPage() {
       </div>
     );
   }
+
+  const supabase = await createClient();
+  const { data: booking } = await supabase
+    .rpc("get_guest_booking_by_code", { p_code: code })
+    .maybeSingle<GuestBooking>();
+
+  const hasTheme =
+    !!booking?.company_id &&
+    !!booking?.company_name &&
+    !!booking?.primary_color &&
+    !!booking?.secondary_color &&
+    !!booking?.accent_color;
+
+  const themeObj = hasTheme
+    ? {
+        id: booking!.company_id as string,
+        name: booking!.company_name as string,
+        logo_url: booking!.logo_url ?? null,
+        primary_color: booking!.primary_color as string,
+        secondary_color: booking!.secondary_color as string,
+        accent_color: booking!.accent_color as string,
+      }
+    : null;
+
+  const themeStyleTag = themeObj
+    ? `
+:root{
+  --brand:${hexToRgb(themeObj.primary_color)};
+  --brand-hover:${hexToRgb(adjustBrightness(themeObj.primary_color, -20))};
+  --brand-light:${hexToRgb(adjustBrightness(themeObj.primary_color, 200))};
+  --brand-2:${hexToRgb(themeObj.secondary_color)};
+  --accent:${hexToRgb(themeObj.accent_color)};
+}
+`
+    : "";
+
+  const themeScript = themeObj
+    ? `
+try{
+  var _t=${JSON.stringify(themeObj)};
+  localStorage.setItem(${JSON.stringify(STORAGE_KEY)},JSON.stringify(_t));
+  var _r=document.documentElement;
+  _r.style.setProperty("--brand","${hexToRgb(themeObj.primary_color)}");
+  _r.style.setProperty("--brand-hover","${hexToRgb(adjustBrightness(themeObj.primary_color, -20))}");
+  _r.style.setProperty("--brand-light","${hexToRgb(adjustBrightness(themeObj.primary_color, 200))}");
+  _r.style.setProperty("--brand-2","${hexToRgb(themeObj.secondary_color)}");
+  _r.style.setProperty("--accent","${hexToRgb(themeObj.accent_color)}");
+}catch(_e){}
+`
+    : "";
 
   const cards: { key: string; functional: boolean; href: string }[] = [
     { key: "bookingDetails", functional: true, href: `/${locale}/guest/bookings/${code}` },
@@ -103,6 +182,12 @@ export default function GuestPage() {
           .gp-card { padding: var(--space-6); }
         }
       `}</style>
+      {themeObj && (
+        <>
+          <style dangerouslySetInnerHTML={{ __html: themeStyleTag }} />
+          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        </>
+      )}
 
       {/* Header */}
       <div style={{ marginBottom: "var(--space-5)" }}>

@@ -16,6 +16,38 @@ interface CompanyHelpInfo {
   contact_whatsapp: string | null;
   included_items: string | null;
   rules_and_tips: string | null;
+  help_videos: string | null;
+}
+
+function getYouTubeEmbedId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/embed/")[1].split("?")[0] || null;
+      return u.searchParams.get("v");
+    }
+  } catch {
+    // not a valid URL
+  }
+  return null;
+}
+
+function parseVideoSections(text: string) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const sections: { title: string; urls: string[] }[] = [];
+  let cur: { title: string; urls: string[] } | null = null;
+  for (const line of lines) {
+    if (line.endsWith(":")) {
+      if (cur) sections.push(cur);
+      cur = { title: line.slice(0, -1).trim(), urls: [] };
+    } else {
+      if (!cur) cur = { title: "", urls: [] };
+      cur.urls.push(line);
+    }
+  }
+  if (cur) sections.push(cur);
+  return sections.filter((s) => s.urls.some((u) => getYouTubeEmbedId(u)));
 }
 
 function parseAccordionSections(text: string) {
@@ -62,12 +94,13 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
     contact_whatsapp: null,
     included_items: null,
     rules_and_tips: null,
+    help_videos: null,
   };
 
   if (booking?.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("contact_phone, contact_whatsapp, included_items, rules_and_tips")
+      .select("contact_phone, contact_whatsapp, included_items, rules_and_tips, help_videos")
       .eq("id", booking.company_id)
       .maybeSingle();
     if (data) {
@@ -76,6 +109,7 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
         contact_whatsapp: (data as any).contact_whatsapp ?? null,
         included_items: (data as any).included_items ?? null,
         rules_and_tips: (data as any).rules_and_tips ?? null,
+        help_videos: (data as any).help_videos ?? null,
       };
     }
   }
@@ -87,6 +121,8 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
   const rulesLines = helpInfo.rules_and_tips
     ? helpInfo.rules_and_tips.split("\n").map((l) => l.trim()).filter(Boolean)
     : [];
+
+  const videoSections = helpInfo.help_videos ? parseVideoSections(helpInfo.help_videos) : [];
 
   const hasContact = !!(helpInfo.contact_phone || helpInfo.contact_whatsapp);
 
@@ -187,7 +223,7 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", maxWidth: "760px", width: "100%" }}>
       <style>{`
         .gh-sp { padding: var(--space-5); }
         @media (min-width: 768px) { .gh-sp { padding: var(--space-6); } }
@@ -323,6 +359,77 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
             ))}
           </div>
         </div>
+      )}
+
+      {/* How-to videos */}
+      {videoSections.length > 0 && (
+        videoSections.length === 1 && !videoSections[0].title ? (
+          <div className="surface gh-sp">
+            <p style={{ ...sectionLabelStyle, marginBottom: "var(--space-3)" }}>{t("howToVideosTitle")}</p>
+            {videoSections[0].urls.map((url, j) => {
+              const embedId = getYouTubeEmbedId(url);
+              if (!embedId) return null;
+              return (
+                <div key={j} style={{ maxWidth: 854, width: "100%", marginTop: j > 0 ? "var(--space-3)" : 0 }}>
+                  <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${embedId}`}
+                      title={`Video ${j + 1}`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="surface gh-sp">
+            <p style={sectionLabelStyle}>{t("howToVideosTitle")}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              {videoSections.map((section, i) => {
+                const embeds = (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                    {section.urls.map((url, j) => {
+                      const embedId = getYouTubeEmbedId(url);
+                      if (!embedId) return null;
+                      return (
+                        <div key={j} style={{ maxWidth: 854, width: "100%" }}>
+                          <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
+                            <iframe
+                              src={`https://www.youtube.com/embed/${embedId}`}
+                              title={section.title || `Video ${j + 1}`}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+
+                if (!section.title) {
+                  return <div key={i}>{embeds}</div>;
+                }
+
+                return (
+                  <details key={i} style={accordionItemStyle}>
+                    <summary style={summaryStyle}>
+                      {section.title}
+                      {chevron}
+                    </summary>
+                    <div style={{ padding: "var(--space-4) var(--space-5)", borderTop: "1px solid rgb(var(--border-light))" }}>
+                      {embeds}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </div>
+        )
       )}
 
       {/* Bottom contact card */}

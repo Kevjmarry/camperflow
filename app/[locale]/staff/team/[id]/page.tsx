@@ -314,6 +314,18 @@ export default function StaffMemberPage() {
       const canManageValue = formData.role === "admin";
       const fullName = `${firstName} ${lastName}`.trim();
 
+      if (member.auth_user_id && formData.email !== (member.email ?? "")) {
+        const res = await fetch('/api/staff/update-auth-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_id: staffId, email: formData.email }),
+        });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json?.error || t('errors.saveFailed'));
+        }
+      }
+
       const { error } = await supabase
         .from("staff_profiles")
         .update({

@@ -32,6 +32,7 @@
     "signIn": "Anmelden",
     "signingIn": "Anmeldung...",
     "backToHome": "Zurück zur Startseite",
+    "rememberEmail": "E-Mail auf diesem Gerät merken",
     "inviteOnly": "Konten werden nur per Einladung erstellt. Bitte kontaktiere deinen Administrator.",
     "error": {
       "accessDenied": "Zugriff verweigert. Dieses Konto hat keine Mitarbeiterrechte.",
@@ -1788,7 +1789,8 @@
     "subtitle": "Anleitungen, schnelle Lösungen und Kontaktdaten für Ihre Miete.",
     "contactIntro": "Brauchen Sie Hilfe? Kontaktieren Sie uns über die Schaltflächen unten.",
     "quickFixesTitle": "Schnelle Lösungen",
-    "drivingTitle": "Fahren & Sicherheit"
+    "drivingTitle": "Fahren & Sicherheit",
+    "howToVideosTitle": "Anleitungsvideos"
   },
   "guestDashboard": {
     "title": "Meine Buchung",
