@@ -311,6 +311,8 @@ export default function StaffMemberPage() {
         return;
       }
 
+      if (!member) { setIsSaving(false); return; }
+
       const canManageValue = formData.role === "admin";
       const fullName = `${firstName} ${lastName}`.trim();
 
