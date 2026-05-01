@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import PageContainer from '@/components/PageContainer';
+import BackLink from '@/components/staff/BackLink';
 
 import ReopenModal from './ReopenModal';
 import PickupDataWarningModal from './PickupDataWarningModal';
@@ -1224,10 +1225,9 @@ export default function ChecklistDetailClient({
           }
         `}</style>
       )}
+      <BackLink label={backButtonLabel} onClick={handleBackClick} />
       <ChecklistHeader
         title={checklistTitle}
-        backLabel={backButtonLabel}
-        onBack={handleBackClick}
         statusLabel={statusLabel}
         contextLine={contextLine}
       />

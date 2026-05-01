@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import PageContainer from '@/components/PageContainer';
 import type { ChecklistScope, ChecklistStatus, ChecklistItem, IssueItem, ChecklistLabels } from '@/components/checklists/checklistListTypes';
 import { BookingGroupSection, OpenIssuesSection } from '@/components/checklists/ChecklistListComponents';
+import BackLink from '@/components/staff/BackLink';
 
 // ─── URL param helpers ────────────────────────────────────────────────────────
 
@@ -388,18 +389,16 @@ export default function ChecklistsPage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t('backToDashboard')}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
           {/* ── Page header ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
-              <Link
-                href={`/${locale}/staff`}
-                style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-2)' }}
-              >
-                {t('backToDashboard')}
-              </Link>
               <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
                 {t('title')}
               </h1>
@@ -500,6 +499,7 @@ export default function ChecklistsPage() {
           )}
 
         </div>
+      </div>
       </div>
     </PageContainer>
   );

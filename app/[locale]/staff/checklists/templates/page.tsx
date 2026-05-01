@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
+import BackLink from '@/components/staff/BackLink';
 import { useTranslations } from 'next-intl';
 
 type TemplateScope = 'booking' | 'vehicle';
@@ -464,7 +465,9 @@ export default function ChecklistTemplatesPage() {
       `}</style>
 
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div><BackLink href={`/${locale}/staff/checklists`}>{t('backToChecklists')}</BackLink></div>
+          <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
             {/* ── Page header ── */}
@@ -478,18 +481,6 @@ export default function ChecklistTemplatesPage() {
               }}
             >
               <div>
-                <Link
-                  href={`/${locale}/staff/checklists`}
-                  style={{
-                    display: 'inline-block',
-                    fontSize: '14px',
-                    color: 'rgb(var(--brand))',
-                    textDecoration: 'none',
-                    marginBottom: 'var(--space-2)',
-                  }}
-                >
-                  {t('backToChecklists')}
-                </Link>
                 <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
                   {t('pageTitle')}
                 </h1>
@@ -528,6 +519,7 @@ export default function ChecklistTemplatesPage() {
             {/* ── Vehicle templates ── */}
             <TemplateSection title={t('sectionVehicle')} items={vehicleTemplates} />
 
+          </div>
           </div>
         </div>
       </PageContainer>

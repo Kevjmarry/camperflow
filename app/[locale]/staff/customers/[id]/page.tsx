@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
+import BackLink from "@/components/staff/BackLink";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
@@ -81,7 +82,7 @@ export default async function CustomerDetailPage({
 
   if (!customer) {
     return (
-      <PageContainer maxWidth="1400px" showSignOut={false}>
+      <PageContainer maxWidth="1400px">
         <div className="surface page-surface">
           <div
             style={{
@@ -117,28 +118,19 @@ export default async function CustomerDetailPage({
   const lastBookingDate = bookings.find((b) => b.pickup_at)?.pickup_at ?? null;
 
   return (
-    <PageContainer maxWidth="1400px" showSignOut={false}>
+    <PageContainer maxWidth="1400px">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div>
+          <BackLink href={`/${locale}/staff/customers`}>{t("backLink")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-8)",
+            gap: "var(--space-6)",
           }}
         >
-          {/* Back link */}
-          <div>
-            <Link
-              href={`/${locale}/staff/customers`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--muted))",
-                textDecoration: "none",
-              }}
-            >
-              {t("backLink")}
-            </Link>
-          </div>
 
           {/* Header */}
           <div
@@ -352,6 +344,7 @@ export default async function CustomerDetailPage({
             )}
           </div>
         </div>
+      </div>
       </div>
     </PageContainer>
   );

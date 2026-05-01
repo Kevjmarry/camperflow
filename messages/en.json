@@ -334,7 +334,7 @@
     }
   },
   "vehicleEdit": {
-    "backToVehiclesArrow": "← Back to vehicles",
+    "backToVehiclesArrow": "Back to vehicles",
     "title": "Edit vehicle",
     "subtitle": "Update vehicle information",
     "readOnlyTitle": "Vehicle details",
@@ -423,7 +423,7 @@
   },
   "vehicleNew": {
     "loading": "Loading...",
-    "backToVehiclesArrow": "← Back to vehicles",
+    "backToVehiclesArrow": "Back to vehicles",
     "title": "Add Vehicle",
     "subtitle": "Add a new vehicle to your fleet",
     "photo": {
@@ -479,7 +479,7 @@
     }
   },
   "bookings": {
-    "backToDashboardArrow": "← Back to dashboard",
+    "backToDashboardArrow": "Back to dashboard",
     "title": "Bookings",
     "subtitle": "Manage customer reservations",
     "action": {
@@ -579,7 +579,7 @@
     }
   },
   "bookingsDetail": {
-    "backToBookingsArrow": "← Back to bookings",
+    "backToBookingsArrow": "Back to bookings",
     "title": {
       "redacted": "Booking Details"
     },
@@ -901,7 +901,7 @@
     "checklistNotFoundOrInvalidCode": "Checklist not found or invalid code",
     "checklistNotFound": "Checklist not found",
     "backToPortal": "Back to portal",
-    "backToBooking": "← Back to booking",
+    "backToBooking": "Back to booking",
     "checklistFallback": "Checklist",
     "status": "Status",
     "progress": "Progress",
@@ -1104,6 +1104,7 @@
         "tomorrow": "Tomorrow",
         "days": "{count} days"
       },
+      "backToDashboard": "Back to dashboard",
       "pageTitle": "Operations",
       "pageSubtitle": "Today's pickups, returns, and vehicle readiness at a glance.",
       "attentionNeeded": "Attention needed",
@@ -1147,7 +1148,7 @@
     },
     "checklistsPage": {
       "loading": "Loading…",
-      "backToDashboard": "← Back to Dashboard",
+      "backToDashboard": "Back to dashboard",
       "title": "Checklists",
       "subtitle": "Manage pickup, return, and cleaning checklists",
       "manageTemplates": "Manage Default Checklists",
@@ -1206,7 +1207,7 @@
     "bookings": {
       "new": {
         "checkingPermissions": "Checking permissions...",
-        "backToBookings": "← Back to bookings",
+        "backToBookings": "Back to bookings",
         "title": "New booking",
         "subtitle": "Create a new customer reservation",
         "sections": {
@@ -1266,7 +1267,7 @@
     "vehicles": {
       "new": {
         "loading": "Loading...",
-        "back": "← Back to vehicles",
+        "back": "Back to vehicles",
         "title": "Add Vehicle",
         "subtitle": "Add a new vehicle to your fleet",
         "photo": {
@@ -1448,7 +1449,7 @@
     },
     "action": {
       "backToBookings": "Back to bookings",
-      "backToBookingsArrow": "← Back to bookings",
+      "backToBookingsArrow": "Back to bookings",
       "saveChanges": "Save changes",
       "saving": "Saving...",
       "cancelBooking": "Cancel Booking",
@@ -1510,7 +1511,7 @@
     }
   },
   "staffTeamMember": {
-    "backToTeam": "← Back to team",
+    "backToTeam": "Back to team",
     "loading": "Loading staff member…",
     "unnamedStaff": "Unnamed Staff",
     "inactive": "Inactive",
@@ -1605,7 +1606,7 @@
       "failedLoadVehicles": "Failed to load vehicles"
     },
     "navigation": {
-      "backToDashboard": "← Back to dashboard"
+      "backToDashboard": "Back to dashboard"
     },
     "title": "Vehicles",
     "subtitle": "Manage your fleet",
@@ -1639,7 +1640,7 @@
   },
   "staffVehicleEdit": {
     "title": "Edit vehicle",
-    "backToVehicles": "← Back to vehicles",
+    "backToVehicles": "Back to vehicles",
     "loading": "Loading vehicle...",
     "nameLabel": "Name",
     "namePlaceholder": "Vehicle name",
@@ -1812,7 +1813,7 @@
   },
   "staffGuestContent": {
     "navigation": {
-      "backToDashboard": "← Back to dashboard"
+      "backToDashboard": "Back to dashboard"
     },
     "title": "Guest Content",
     "description": {
@@ -1910,7 +1911,7 @@
   },
   "staffCompany": {
     "navigation": {
-      "backToDashboard": "← Back to dashboard"
+      "backToDashboard": "Back to dashboard"
     },
     "title": "Company Settings",
     "description": {
@@ -2102,7 +2103,7 @@
   },
   "staffChecklistsTemplates": {
     "loading": "Loading…",
-    "backToChecklists": "← Back to Checklists",
+    "backToChecklists": "Back to Checklists",
     "pageTitle": "Manage Default Checklists",
     "pageSubtitle": "Define checklist templates used when bookings are created or vehicles are prepared.",
     "createTemplate": "+ Create Template",
@@ -2121,7 +2122,7 @@
   },
   "newChecklistTemplate": {
     "loading": "Loading…",
-    "backToTemplates": "← Back to Templates",
+    "backToTemplates": "Back to Templates",
     "pageTitle": "Create Template",
     "pageSubtitle": "Define a new checklist template for bookings or vehicle maintenance.",
     "sectionTitle": "Template Details",
@@ -2521,7 +2522,7 @@
     "vehicleDataEmpty": "Empty"
   },
   "bookingsImport": {
-    "backToBookings": "← Back to bookings",
+    "backToBookings": "Back to bookings",
     "title": "Import bookings",
     "subtitle": "Upload a CSV or JSON export from your booking platform.",
     "tabs": {
@@ -2617,9 +2618,13 @@
     }
   },
   "staffCustomers": {
+    "backToDashboard": "Dashboard",
     "title": "Customers",
     "newCustomer": "+ New Customer",
     "empty": "No customers yet",
+    "loading": "Loading…",
+    "searchPlaceholder": "Search by name, email, or phone…",
+    "noResults": "No customers match your search.",
     "table": {
       "name": "Name",
       "email": "Email",
@@ -2631,8 +2636,8 @@
   },
   "staffCustomerDetail": {
     "notFound": "Customer not found.",
-    "backToCustomers": "← Back to Customers",
-    "backLink": "← Customers",
+    "backToCustomers": "Back to Customers",
+    "backLink": "Customers",
     "unnamedCustomer": "Unnamed customer",
     "viewAllBookings": "View all bookings",
     "noContactInfo": "No contact info",

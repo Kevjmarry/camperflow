@@ -6,6 +6,7 @@ import { EMPTY_EXTRAS } from "@/components/bookings/BookingEditForm";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import BackLink from "@/components/staff/BackLink";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
@@ -348,21 +349,13 @@ export default function NewBookingPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface page-surface">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div>
+          <BackLink href={`/${locale}/staff/bookings`}>{t("backToBookings")}</BackLink>
+        </div>
+        <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>
-            <Link
-              href={`/${locale}/staff/bookings`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              {t("backToBookings")}
-            </Link>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               {t("title")}
             </h1>
@@ -644,6 +637,7 @@ export default function NewBookingPage() {
               </Link>
             </div>
           </form>
+        </div>
         </div>
       </div>
     </PageContainer>

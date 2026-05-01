@@ -30,7 +30,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
 
   if (!code) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -43,7 +43,7 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
 
   if (bookingError || !booking) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -54,16 +54,24 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("faq_items")
+      .select("faq_items, guest_content_i18n")
       .eq("id", booking.company_id)
-      .maybeSingle<CompanyFaqInfo>();
-    if (data?.faq_items) faqItems = data.faq_items;
+      .maybeSingle();
+    if (data) {
+      const raw = data as any;
+      const langKey = locale.toUpperCase();
+      const i18n = raw.guest_content_i18n?.[langKey] ?? {};
+      const isSk = langKey === "SK";
+      const fromI18n: FaqItem[] | null = Array.isArray(i18n.faq_items) ? i18n.faq_items : null;
+      const fromFlat: FaqItem[] | null = isSk && Array.isArray(raw.faq_items) ? raw.faq_items : null;
+      faqItems = fromI18n ?? fromFlat ?? [];
+    }
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
-        .gfaq-sp { padding: var(--space-4); }
+        .gfaq-sp { padding: var(--space-5); }
         @media (min-width: 768px) { .gfaq-sp { padding: var(--space-6); } }
       `}</style>
       {/* Back link */}

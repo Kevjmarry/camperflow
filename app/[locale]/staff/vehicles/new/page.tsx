@@ -3,22 +3,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
+import BackLink from '@/components/staff/BackLink';
 import { createClient } from '@/lib/supabase/client';
 import { useTranslations } from 'next-intl';
 
 function withLocale(locale: string, path: string) {
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   return `/${locale}/${cleanPath}`;
-}
-
-function withArrow(label: string): string {
-  const trimmed = label.trimStart();
-  if (trimmed.startsWith('←') || trimmed.startsWith('&larr;') || trimmed.startsWith('\u2190')) {
-    return label;
-  }
-  return `← ${label}`;
 }
 
 function withRequired(label: string): string {
@@ -203,19 +195,16 @@ export default function NewVehiclePage() {
   if (error && !companyId) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <div>
-              <Link
-                href={withLocale(locale, '/staff/vehicles')}
-                style={{ fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-2)', display: 'inline-block' }}
-              >
-                {withArrow(t('back'))}
-              </Link>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div>
+            <BackLink href={withLocale(locale, '/staff/vehicles')}>{t('back')}</BackLink>
+          </div>
+          <div className="surface page-surface">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>{t('title')}</h1>
-            </div>
-            <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--error) / 0.1)', border: '1px solid rgb(var(--error) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--error))', fontSize: '14px' }}>
-              {error}
+              <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--error) / 0.1)', border: '1px solid rgb(var(--error) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--error))', fontSize: '14px' }}>
+                {error}
+              </div>
             </div>
           </div>
         </div>
@@ -225,15 +214,13 @@ export default function NewVehiclePage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={withLocale(locale, '/staff/vehicles')}>{t('back')}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div>
-            <Link
-              href={withLocale(locale, '/staff/vehicles')}
-              style={{ fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-2)', display: 'inline-block' }}
-            >
-              {withArrow(t('back'))}
-            </Link>
             <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>{t('title')}</h1>
             <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>{t('subtitle')}</p>
           </div>
@@ -434,6 +421,7 @@ export default function NewVehiclePage() {
             </div>
           </form>
         </div>
+      </div>
       </div>
     </PageContainer>
   );

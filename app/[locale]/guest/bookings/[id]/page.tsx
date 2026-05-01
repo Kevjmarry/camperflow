@@ -97,7 +97,7 @@ export default async function GuestBookingPage({ params }: PageProps) {
 
   if (bookingError) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notAccessibleTitle")}</h1>
         <p style={{ marginBottom: "var(--space-2)", color: "rgb(var(--muted))" }}>
           {t("notAccessibleMessage")}{" "}
@@ -111,7 +111,7 @@ export default async function GuestBookingPage({ params }: PageProps) {
 
   if (!booking) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>
           {t("notFoundMessage")}{" "}
@@ -142,10 +142,18 @@ export default async function GuestBookingPage({ params }: PageProps) {
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("included_items")
+      .select("included_items, guest_content_i18n")
       .eq("id", booking.company_id)
-      .maybeSingle<CompanySettings>();
-    if (data) companySettings = data;
+      .maybeSingle();
+    if (data) {
+      const raw = data as any;
+      const langKey = locale.toUpperCase();
+      const i18n = raw.guest_content_i18n?.[langKey] ?? {};
+      const isSk = langKey === "SK";
+      companySettings = {
+        included_items: i18n.included_items || (isSk ? raw.included_items : null),
+      };
+    }
   }
 
   const formatDate = (dateString: string | null) => {

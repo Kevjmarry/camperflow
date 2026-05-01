@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import BackLink from "@/components/staff/BackLink";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 
@@ -293,6 +294,7 @@ export default function NewTeamMemberPage() {
   if (error) {
     return (
       <PageContainer maxWidth="800px">
+        <BackLink href={`/${locale}/staff/team`}>{t("backToTeam")}</BackLink>
         <div className="surface page-surface">
           <div
             style={{
@@ -302,21 +304,10 @@ export default function NewTeamMemberPage() {
               borderRadius: "var(--radius)",
               color: "rgb(var(--error))",
               fontSize: "14px",
-              marginBottom: "var(--space-4)",
             }}
           >
             {error}
           </div>
-          <Link
-            href={`/${locale}/staff/team`}
-            style={{
-              fontSize: "14px",
-              color: "rgb(var(--brand))",
-              textDecoration: "none",
-            }}
-          >
-            ← {t("backToTeam")}
-          </Link>
         </div>
       </PageContainer>
     );
@@ -325,6 +316,7 @@ export default function NewTeamMemberPage() {
   if (!isAllowed) {
     return (
       <PageContainer maxWidth="800px">
+        <BackLink href={`/${locale}/staff/team`}>{t("backToTeam")}</BackLink>
         <div className="surface page-surface">
           <h1
             style={{
@@ -343,14 +335,10 @@ export default function NewTeamMemberPage() {
               borderRadius: "var(--radius)",
               color: "rgb(var(--warning))",
               fontSize: "14px",
-              marginBottom: "var(--space-4)",
             }}
           >
             {t("accessDenied.message")}
           </div>
-          <Link href={`/${locale}/staff/team`} className="btn btn-secondary">
-            ← {t("backToTeam")}
-          </Link>
         </div>
       </PageContainer>
     );
@@ -358,6 +346,7 @@ export default function NewTeamMemberPage() {
 
   return (
     <PageContainer maxWidth="800px">
+      <BackLink href={`/${locale}/staff/team`}>{t("backToTeam")}</BackLink>
       <div className="surface page-surface">
         <div
           style={{
@@ -367,18 +356,6 @@ export default function NewTeamMemberPage() {
           }}
         >
           <div>
-            <Link
-              href={`/${locale}/staff/team`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              ← {t("backToTeam")}
-            </Link>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               {t("title")}
             </h1>

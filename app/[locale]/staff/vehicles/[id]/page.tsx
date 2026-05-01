@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import BackLink from "@/components/staff/BackLink";
 import EditComplianceModal, { type ComplianceRow } from "@/components/vehicles/EditComplianceModal";
 import AddComplianceModal, { type ComplianceType } from "@/components/vehicles/AddComplianceModal";
 
@@ -616,36 +617,27 @@ export default function VehicleDetailPage({
   if (error || !vehicle) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <div>
-              <Link
-                href={`/${locale}/staff/vehicles`}
-                style={{
-                  fontSize: "14px",
-                  color: "rgb(var(--brand))",
-                  textDecoration: "none",
-                  marginBottom: "var(--space-2)",
-                  display: "inline-block",
-                }}
-              >
-                {t("backToVehicles")}
-              </Link>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <BackLink href={`/${locale}/staff/vehicles`}>{t("backToVehicles")}</BackLink>
+          </div>
+          <div className="surface page-surface">
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
                 {t("pageTitle")}
               </h1>
-            </div>
-            <div
-              style={{
-                padding: "var(--space-4)",
-                background: "rgb(var(--error) / 0.1)",
-                border: "1px solid rgb(var(--error) / 0.3)",
-                borderRadius: "var(--radius)",
-                color: "rgb(var(--error))",
-                fontSize: "14px",
-              }}
-            >
-              {error || t("errorLoad")}
+              <div
+                style={{
+                  padding: "var(--space-4)",
+                  background: "rgb(var(--error) / 0.1)",
+                  border: "1px solid rgb(var(--error) / 0.3)",
+                  borderRadius: "var(--radius)",
+                  color: "rgb(var(--error))",
+                  fontSize: "14px",
+                }}
+              >
+                {error || t("errorLoad")}
+              </div>
             </div>
           </div>
         </div>
@@ -735,7 +727,11 @@ export default function VehicleDetailPage({
       )}
 
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <BackLink href={`/${locale}/staff/vehicles`}>{t("backToVehicles")}</BackLink>
+          </div>
+          <div className="surface page-surface">
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
 
             {/* Header */}
@@ -749,18 +745,6 @@ export default function VehicleDetailPage({
               }}
             >
               <div>
-                <Link
-                  href={`/${locale}/staff/vehicles`}
-                  style={{
-                    fontSize: "14px",
-                    color: "rgb(var(--brand))",
-                    textDecoration: "none",
-                    marginBottom: "var(--space-2)",
-                    display: "inline-block",
-                  }}
-                >
-                  {t("backToVehicles")}
-                </Link>
                 <div
                   style={{
                     display: "flex",
@@ -1323,6 +1307,7 @@ export default function VehicleDetailPage({
               </div>
             </div>
 
+          </div>
           </div>
         </div>
       </PageContainer>

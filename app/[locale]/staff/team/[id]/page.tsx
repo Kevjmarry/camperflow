@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
+import BackLink from "@/components/staff/BackLink";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
@@ -490,20 +490,11 @@ export default function StaffMemberPage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div>
+          <BackLink href={`/${locale}/staff/team`}>{t('backToTeam')}</BackLink>
+        </div>
       <div className="surface page-surface">
-        <Link
-          href={`/${locale}/staff/team`}
-          style={{
-            fontSize: "14px",
-            color: "rgb(var(--brand))",
-            textDecoration: "none",
-            marginBottom: "var(--space-4)",
-            display: "inline-block",
-          }}
-        >
-          {t('backToTeam')}
-        </Link>
-
         {loading && (
           <div style={{ color: "rgb(var(--muted))" }}>
             {t('loading')}
@@ -859,6 +850,7 @@ export default function StaffMemberPage() {
             )}
           </div>
         )}
+      </div>
       </div>
     </PageContainer>
   );

@@ -76,7 +76,7 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
 
   if (!code) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -100,16 +100,21 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
   if (booking?.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("contact_phone, contact_whatsapp, included_items, rules_and_tips, help_videos")
+      .select("contact_phone, contact_whatsapp, included_items, rules_and_tips, help_videos, guest_content_i18n")
       .eq("id", booking.company_id)
       .maybeSingle();
     if (data) {
+      const raw = data as any;
+      const langKey = locale.toUpperCase();
+      const i18n = raw.guest_content_i18n?.[langKey] ?? {};
+      const isSk = langKey === "SK";
       helpInfo = {
-        contact_phone: (data as any).contact_phone ?? null,
-        contact_whatsapp: (data as any).contact_whatsapp ?? null,
-        included_items: (data as any).included_items ?? null,
-        rules_and_tips: (data as any).rules_and_tips ?? null,
-        help_videos: (data as any).help_videos ?? null,
+        contact_phone:    raw.contact_phone    ?? null,
+        contact_whatsapp: raw.contact_whatsapp ?? null,
+        // i18n key for quick-fixes is help_quick_fixes; legacy flat column is included_items
+        included_items: i18n.help_quick_fixes || (isSk ? raw.included_items : null),
+        rules_and_tips: i18n.rules_and_tips   || (isSk ? raw.rules_and_tips : null),
+        help_videos:    i18n.help_videos      || (isSk ? raw.help_videos    : null),
       };
     }
   }
@@ -223,7 +228,7 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", maxWidth: "760px", width: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
       <style>{`
         .gh-sp { padding: var(--space-5); }
         @media (min-width: 768px) { .gh-sp { padding: var(--space-6); } }
@@ -344,14 +349,17 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
                 borderRadius: "var(--radius)",
                 border: "1px solid rgb(var(--border-light))",
               }}>
-                <span style={{
-                  flexShrink: 0,
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "rgb(var(--brand))",
-                  marginTop: "7px",
-                }} />
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                  aria-hidden="true"
+                  style={{ flexShrink: 0, marginTop: "2px", color: "rgb(var(--brand))" }}
+                >
+                  <circle cx="9" cy="9" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M5.5 9L7.5 11L12.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 <p style={{ fontSize: "14px", lineHeight: "1.6", color: "rgb(var(--text-secondary))", margin: 0 }}>
                   {line}
                 </p>

@@ -1,10 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
-import { getTranslations } from "next-intl/server";
-
-export const dynamic = "force-dynamic";
+import { useTranslations } from "next-intl";
+import BackLink from "@/components/staff/BackLink";
 
 interface Customer {
   id: string;
@@ -74,44 +76,57 @@ function CustomerRow({
   );
 }
 
-export default async function CustomersPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "staffCustomers" });
+export default function CustomersPage() {
+  const { locale } = useParams<{ locale: string }>();
+  const t = useTranslations("staffCustomers");
+  const router = useRouter();
+  const supabase = createClient();
 
-  const supabase = await createClient();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    async function load() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push(`/${locale}/staff/login`);
+        return;
+      }
 
-  if (!user) {
-    redirect(`/${locale}/staff/login`);
-  }
+      const { data: profile } = await supabase
+        .from("staff_profiles")
+        .select("company_id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
 
-  const { data: profile } = await supabase
-    .from("staff_profiles")
-    .select("company_id")
-    .eq("auth_user_id", user!.id)
-    .maybeSingle();
+      if (profile?.company_id) {
+        const { data } = await supabase
+          .from("customers")
+          .select("id, full_name, email, phone, created_at")
+          .eq("company_id", profile.company_id)
+          .order("created_at", { ascending: false });
+        setCustomers(data ?? []);
+      }
+      setLoading(false);
+    }
+    load();
+  }, []);
 
-  const companyId = profile?.company_id;
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? customers.filter(
+        (c) =>
+          (c.full_name ?? "").toLowerCase().includes(q) ||
+          (c.email ?? "").toLowerCase().includes(q) ||
+          (c.phone ?? "").toLowerCase().includes(q),
+      )
+    : customers;
 
-  let customers: Customer[] = [];
-  if (companyId) {
-    const { data } = await supabase
-      .from("customers")
-      .select("id, full_name, email, phone, created_at")
-      .eq("company_id", companyId)
-      .order("created_at", { ascending: false });
-    customers = data ?? [];
-  }
-
-  const withPhone = customers.filter(hasPhone);
-  const withoutPhone = customers.filter((c) => !hasPhone(c));
+  const withPhone = filtered.filter(hasPhone);
+  const withoutPhone = filtered.filter((c) => !hasPhone(c));
 
   const tableStyle: React.CSSProperties = {
     width: "100%",
@@ -124,14 +139,35 @@ export default async function CustomersPage({
     fontWeight: 500,
   };
 
+  const tableHead = (
+    <thead>
+      <tr
+        style={{
+          borderBottom: "1px solid rgb(var(--border))",
+          color: "rgb(var(--muted))",
+          textAlign: "left",
+        }}
+      >
+        <th style={thStyle}>{t("table.name")}</th>
+        <th className="customers-col-email" style={thStyle}>{t("table.email")}</th>
+        <th style={thStyle}>{t("table.phone")}</th>
+        <th className="customers-col-created" style={thStyle}>{t("table.created")}</th>
+      </tr>
+    </thead>
+  );
+
   return (
-    <PageContainer maxWidth="1400px" showSignOut={false}>
+    <PageContainer maxWidth="1400px">
       <style>{`
         @media (max-width: 767px) {
           .customers-col-email,
           .customers-col-created { display: none; }
         }
       `}</style>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t("backToDashboard")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div
           style={{
@@ -158,8 +194,41 @@ export default async function CustomersPage({
             </Link>
           </div>
 
-          {/* Table or empty state */}
-          {customers.length === 0 ? (
+          {/* Search toolbar */}
+          <div
+            style={{
+              paddingBottom: "var(--space-4)",
+              borderBottom: "1px solid rgb(var(--border))",
+            }}
+          >
+            <input
+              type="text"
+              className="input"
+              placeholder={t("searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                flex: "1 1 200px",
+                width: "100%",
+                maxWidth: "360px",
+                minHeight: "36px",
+                padding: "var(--space-2) var(--space-3)",
+              }}
+            />
+          </div>
+
+          {/* Body */}
+          {loading ? (
+            <div
+              style={{
+                padding: "var(--space-8)",
+                textAlign: "center",
+                color: "rgb(var(--muted))",
+              }}
+            >
+              {t("loading")}
+            </div>
+          ) : customers.length === 0 ? (
             <div
               style={{
                 padding: "var(--space-10)",
@@ -171,32 +240,38 @@ export default async function CustomersPage({
             >
               {t("empty")}
             </div>
+          ) : filtered.length === 0 ? (
+            <div
+              style={{
+                padding: "var(--space-8)",
+                textAlign: "center",
+                color: "rgb(var(--muted))",
+              }}
+            >
+              {t("noResults")}
+            </div>
+          ) : q ? (
+            /* Search active — flat list, phone-split collapsed */
+            <div style={{ overflowX: "auto" }}>
+              <table style={tableStyle}>
+                {tableHead}
+                <tbody>
+                  {filtered.map((customer) => (
+                    <CustomerRow key={customer.id} customer={customer} locale={locale} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
+            /* No search — original phone-split layout */
             <div style={{ overflowX: "auto" }}>
               {/* Customers with a phone number — always visible */}
               {withPhone.length > 0 && (
                 <table style={tableStyle}>
-                  <thead>
-                    <tr
-                      style={{
-                        borderBottom: "1px solid rgb(var(--border))",
-                        color: "rgb(var(--muted))",
-                        textAlign: "left",
-                      }}
-                    >
-                      <th style={thStyle}>{t("table.name")}</th>
-                      <th className="customers-col-email" style={thStyle}>{t("table.email")}</th>
-                      <th style={thStyle}>{t("table.phone")}</th>
-                      <th className="customers-col-created" style={thStyle}>{t("table.created")}</th>
-                    </tr>
-                  </thead>
+                  {tableHead}
                   <tbody>
                     {withPhone.map((customer) => (
-                      <CustomerRow
-                        key={customer.id}
-                        customer={customer}
-                        locale={locale}
-                      />
+                      <CustomerRow key={customer.id} customer={customer} locale={locale} />
                     ))}
                   </tbody>
                 </table>
@@ -221,16 +296,16 @@ export default async function CustomersPage({
                       fontWeight: 600,
                       color: "rgb(var(--text))",
                       userSelect: "none",
-                      borderTop: withPhone.length === 0
-                        ? "1px solid rgb(var(--border))"
-                        : "none",
+                      borderTop:
+                        withPhone.length === 0
+                          ? "1px solid rgb(var(--border))"
+                          : "none",
                     }}
                   >
                     <span style={{ fontSize: "11px", color: "rgb(var(--muted))" }}>▸</span>
                     {t("missingPhone", { count: withoutPhone.length })}
                   </summary>
 
-                  {/* Asterisk note */}
                   <p
                     style={{
                       margin: "var(--space-2) 0 var(--space-3)",
@@ -242,40 +317,20 @@ export default async function CustomersPage({
                     {t("missingPhoneNote")}
                   </p>
 
-                  {/* Show header if the main table above is empty */}
                   <table style={tableStyle}>
-                    {withPhone.length === 0 && (
-                      <thead>
-                        <tr
-                          style={{
-                            borderBottom: "1px solid rgb(var(--border))",
-                            color: "rgb(var(--muted))",
-                            textAlign: "left",
-                          }}
-                        >
-                          <th style={thStyle}>{t("table.name")}</th>
-                          <th className="customers-col-email" style={thStyle}>{t("table.email")}</th>
-                          <th style={thStyle}>{t("table.phone")}</th>
-                          <th className="customers-col-created" style={thStyle}>{t("table.created")}</th>
-                        </tr>
-                      </thead>
-                    )}
+                    {withPhone.length === 0 && tableHead}
                     <tbody>
                       {withoutPhone.map((customer) => (
-                        <CustomerRow
-                          key={customer.id}
-                          customer={customer}
-                          locale={locale}
-                        />
+                        <CustomerRow key={customer.id} customer={customer} locale={locale} />
                       ))}
                     </tbody>
                   </table>
                 </details>
               )}
-
             </div>
           )}
         </div>
+      </div>
       </div>
     </PageContainer>
   );

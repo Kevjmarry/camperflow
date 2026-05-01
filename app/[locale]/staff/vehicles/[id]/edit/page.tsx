@@ -3,10 +3,10 @@
 import { use, useEffect, useState } from "react";
 import type { CSSProperties, ChangeEvent, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import PageContainer from "@/components/PageContainer";
+import BackLink from "@/components/staff/BackLink";
 import VehicleEditForm from "@/components/vehicles/VehicleEditForm";
 import type {
   VehicleFormData,
@@ -577,26 +577,17 @@ export default function EditVehiclePage({
   if (error || !vehicle) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-            <div>
-              <Link
-                href={`/${locale}/staff/vehicles`}
-                style={{
-                  fontSize: "14px",
-                  color: "rgb(var(--brand))",
-                  textDecoration: "none",
-                  marginBottom: "var(--space-2)",
-                  display: "inline-block",
-                }}
-              >
-                {t("backToVehicles")}
-              </Link>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div>
+            <BackLink href={`/${locale}/staff/vehicles`}>{t("backToVehicles")}</BackLink>
+          </div>
+          <div className="surface page-surface">
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
               <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
                 {t("title")}
               </h1>
+              <div style={errorBoxStyle}>{error}</div>
             </div>
-            <div style={errorBoxStyle}>{error}</div>
           </div>
         </div>
       </PageContainer>
@@ -607,23 +598,15 @@ export default function EditVehiclePage({
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div>
+          <BackLink href={`/${locale}/staff/vehicles`}>{t("backToVehicles")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
 
           {/* Header */}
           <div>
-            <Link
-              href={`/${locale}/staff/vehicles`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              {t("backToVehicles")}
-            </Link>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               {t("title")}
             </h1>
@@ -686,6 +669,7 @@ export default function EditVehiclePage({
           />
 
         </div>
+      </div>
       </div>
 
       {/* Responsive grid collapse */}

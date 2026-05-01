@@ -334,7 +334,7 @@
     }
   },
   "vehicleEdit": {
-    "backToVehiclesArrow": "← Zurück zu den Fahrzeugen",
+    "backToVehiclesArrow": "Zurück zu den Fahrzeugen",
     "title": "Fahrzeug bearbeiten",
     "subtitle": "Fahrzeuginformationen aktualisieren",
     "readOnlyTitle": "Fahrzeugdetails",
@@ -423,7 +423,7 @@
   },
   "vehicleNew": {
     "loading": "Wird geladen...",
-    "backToVehiclesArrow": "← Zurück zu den Fahrzeugen",
+    "backToVehiclesArrow": "Zurück zu den Fahrzeugen",
     "title": "Fahrzeug hinzufügen",
     "subtitle": "Fügen Sie ein neues Fahrzeug zu Ihrem Fuhrpark hinzu",
     "photo": {
@@ -479,7 +479,7 @@
     }
   },
   "bookings": {
-    "backToDashboardArrow": "← Zurück zum Dashboard",
+    "backToDashboardArrow": "Zurück zum Dashboard",
     "title": "Buchungen",
     "subtitle": "Kundenreservierungen verwalten",
     "action": {
@@ -579,7 +579,7 @@
     }
   },
   "bookingsDetail": {
-    "backToBookingsArrow": "← Zurück zu den Buchungen",
+    "backToBookingsArrow": "Zurück zu den Buchungen",
     "title": {
       "redacted": "Buchungsdetails"
     },
@@ -901,7 +901,7 @@
     "checklistNotFoundOrInvalidCode": "Checkliste nicht gefunden oder ungültiger Code",
     "checklistNotFound": "Checkliste nicht gefunden",
     "backToPortal": "Zurück zum Portal",
-    "backToBooking": "← Zurück zur Buchung",
+    "backToBooking": "Zurück zur Buchung",
     "checklistFallback": "Checkliste",
     "status": "Status",
     "progress": "Fortschritt",
@@ -1104,6 +1104,7 @@
         "tomorrow": "Morgen",
         "days": "{count} Tage"
       },
+      "backToDashboard": "Zurück zum Dashboard",
       "pageTitle": "Operations",
       "pageSubtitle": "Heutige Abholungen, Rückgaben und Fahrzeugbereitschaft auf einen Blick.",
       "attentionNeeded": "Handlungsbedarf",
@@ -1147,7 +1148,7 @@
     },
     "checklistsPage": {
       "loading": "Wird geladen…",
-      "backToDashboard": "← Zurück zum Dashboard",
+      "backToDashboard": "Zurück zum Dashboard",
       "title": "Checklisten",
       "subtitle": "Abnahme-, Rückgabe- und Reinigungschecklisten verwalten",
       "manageTemplates": "Standard-Checklisten verwalten",
@@ -1206,7 +1207,7 @@
     "bookings": {
       "new": {
         "checkingPermissions": "Berechtigungen werden geprüft...",
-        "backToBookings": "← Zurück zu den Buchungen",
+        "backToBookings": "Zurück zu den Buchungen",
         "title": "Neue Buchung",
         "subtitle": "Neue Kundenreservierung erstellen",
         "sections": {
@@ -1266,7 +1267,7 @@
     "vehicles": {
       "new": {
         "loading": "Wird geladen...",
-        "back": "← Zurück zu den Fahrzeugen",
+        "back": "Zurück zu den Fahrzeugen",
         "title": "Fahrzeug hinzufügen",
         "subtitle": "Neues Fahrzeug zu Ihrem Fuhrpark hinzufügen",
         "photo": {
@@ -1448,7 +1449,7 @@
     },
     "action": {
       "backToBookings": "Zurück zu Buchungen",
-      "backToBookingsArrow": "← Zurück zu Buchungen",
+      "backToBookingsArrow": "Zurück zu Buchungen",
       "saveChanges": "Änderungen speichern",
       "saving": "Wird gespeichert...",
       "cancelBooking": "Buchung stornieren",
@@ -1510,7 +1511,7 @@
     }
   },
   "staffTeamMember": {
-    "backToTeam": "← Zurück zum Team",
+    "backToTeam": "Zurück zum Team",
     "loading": "Mitarbeiter wird geladen…",
     "unnamedStaff": "Unbenannter Mitarbeiter",
     "inactive": "Inaktiv",
@@ -1605,7 +1606,7 @@
       "failedLoadVehicles": "Fahrzeuge konnten nicht geladen werden"
     },
     "navigation": {
-      "backToDashboard": "← Zurück zum Dashboard"
+      "backToDashboard": "Zurück zum Dashboard"
     },
     "title": "Fahrzeuge",
     "subtitle": "Verwalten Sie Ihre Flotte",
@@ -1639,7 +1640,7 @@
   },
   "staffVehicleEdit": {
     "title": "Fahrzeug bearbeiten",
-    "backToVehicles": "← Zurück zu Fahrzeugen",
+    "backToVehicles": "Zurück zu Fahrzeugen",
     "loading": "Fahrzeug wird geladen...",
     "nameLabel": "Name",
     "namePlaceholder": "Fahrzeugname",
@@ -1812,7 +1813,7 @@
   },
   "staffGuestContent": {
     "navigation": {
-      "backToDashboard": "← Zurück zum Dashboard"
+      "backToDashboard": "Zurück zum Dashboard"
     },
     "title": "Gastinhalt",
     "description": {
@@ -1910,7 +1911,7 @@
   },
   "staffCompany": {
     "navigation": {
-      "backToDashboard": "← Zurück zum Dashboard"
+      "backToDashboard": "Zurück zum Dashboard"
     },
     "title": "Unternehmenseinstellungen",
     "description": {
@@ -2102,7 +2103,7 @@
   },
   "staffChecklistsTemplates": {
     "loading": "Wird geladen…",
-    "backToChecklists": "← Zurück zu Checklisten",
+    "backToChecklists": "Zurück zu Checklisten",
     "pageTitle": "Standard-Checklisten verwalten",
     "pageSubtitle": "Definieren Sie Checklistenvorlagen für neue Buchungen oder Fahrzeugvorbereitungen.",
     "createTemplate": "+ Vorlage erstellen",
@@ -2121,7 +2122,7 @@
   },
   "newChecklistTemplate": {
     "loading": "Wird geladen…",
-    "backToTemplates": "← Zurück zu Vorlagen",
+    "backToTemplates": "Zurück zu Vorlagen",
     "pageTitle": "Vorlage erstellen",
     "pageSubtitle": "Definieren Sie eine neue Checklistenvorlage für Buchungen oder Fahrzeugwartung.",
     "sectionTitle": "Vorlagendetails",
@@ -2521,7 +2522,7 @@
     "vehicleDataEmpty": "Leer"
   },
   "bookingsImport": {
-    "backToBookings": "← Zurück zu Buchungen",
+    "backToBookings": "Zurück zu Buchungen",
     "title": "Buchungen importieren",
     "subtitle": "Laden Sie einen CSV- oder JSON-Export Ihrer Buchungsplattform hoch.",
     "tabs": {
@@ -2617,9 +2618,13 @@
     }
   },
   "staffCustomers": {
+    "backToDashboard": "Dashboard",
     "title": "Kunden",
     "newCustomer": "+ Neuer Kunde",
     "empty": "Noch keine Kunden",
+    "loading": "Laden…",
+    "searchPlaceholder": "Nach Name, E-Mail oder Telefon suchen…",
+    "noResults": "Keine Kunden entsprechen Ihrer Suche.",
     "table": {
       "name": "Name",
       "email": "E-Mail",
@@ -2631,8 +2636,8 @@
   },
   "staffCustomerDetail": {
     "notFound": "Kunde nicht gefunden.",
-    "backToCustomers": "← Zurück zu den Kunden",
-    "backLink": "← Kunden",
+    "backToCustomers": "Zurück zu den Kunden",
+    "backLink": "Kunden",
     "unnamedCustomer": "Unbenannter Kunde",
     "viewAllBookings": "Alle Buchungen anzeigen",
     "noContactInfo": "Keine Kontaktdaten",

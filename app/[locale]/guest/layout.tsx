@@ -1,5 +1,5 @@
-import PageContainer from '@/components/PageContainer'
-import LocaleSwitcher from '@/components/LocaleSwitcher'
+import GuestHeader from '@/components/guest/GuestHeader'
+import GuestPageContainer from '@/components/guest/GuestPageContainer'
 
 export const metadata = {
   title: 'Guest Portal',
@@ -13,21 +13,10 @@ export default function GuestLayout({
 }) {
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          padding: 'var(--space-2) var(--space-4)',
-          background: 'rgb(var(--surface))',
-          borderBottom: '1px solid rgb(var(--border))',
-        }}
-      >
-        <LocaleSwitcher />
-      </div>
-      <PageContainer showSignOut={false}>
+      <GuestHeader />
+      <GuestPageContainer>
         {children}
-      </PageContainer>
+      </GuestPageContainer>
     </>
   )
 }

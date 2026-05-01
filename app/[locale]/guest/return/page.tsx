@@ -63,7 +63,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
   if (!code) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -76,7 +76,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
 
   if (bookingError || !booking) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -103,10 +103,22 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("return_info, contact_phone, contact_whatsapp, before_return_info, return_nearby_places")
+      .select("return_info, contact_phone, contact_whatsapp, before_return_info, return_nearby_places, guest_content_i18n")
       .eq("id", booking.company_id)
-      .maybeSingle<CompanyReturnInfo>();
-    if (data) returnInfo = data;
+      .maybeSingle();
+    if (data) {
+      const raw = data as any;
+      const langKey = locale.toUpperCase();
+      const i18n = raw.guest_content_i18n?.[langKey] ?? {};
+      const isSk = langKey === "SK";
+      returnInfo = {
+        contact_phone:        raw.contact_phone,
+        contact_whatsapp:     raw.contact_whatsapp,
+        return_nearby_places: raw.return_nearby_places ?? null,
+        return_info:          i18n.return_info       || (isSk ? raw.return_info       : null),
+        before_return_info:   i18n.before_return_info || (isSk ? raw.before_return_info : null),
+      };
+    }
   }
 
   const formatDateTime = (dateString: string | null) => {
@@ -136,10 +148,12 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   };
 
   const sectionLabel = (color: string) => ({
-    fontSize: "15px",
-    fontWeight: "600" as const,
+    fontSize: "11px",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.07em",
     color,
-    margin: "0 0 var(--space-5) 0",
+    margin: "0 0 var(--space-4) 0",
   });
 
   const toTelHref = (phone: string) => `tel:${phone.replace(/\s/g, "")}`;

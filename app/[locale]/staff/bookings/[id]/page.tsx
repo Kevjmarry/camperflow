@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, FormEvent, ChangeEvent } from "reac
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import BackLink from "@/components/staff/BackLink";
 import QRCode from "qrcode";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
@@ -1080,22 +1081,12 @@ export default function BookingDetailPage() {
     const displayVehicle = getSelectedVehicle();
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div>
+            <BackLink href={`/${locale}/staff/bookings`}>{t("action.backToBookings")}</BackLink>
+          </div>
+          <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            <div>
-              <Link
-                href={`/${locale}/staff/bookings`}
-                style={{
-                  fontSize: '14px',
-                  color: 'rgb(var(--brand))',
-                  textDecoration: 'none',
-                  marginBottom: 'var(--space-2)',
-                  display: 'inline-block'
-                }}
-              >
-                {t("action.backToBookingsArrow")}
-              </Link>
-            </div>
 
             <div className="surface" style={{ padding: 'var(--space-6)', background: 'rgb(var(--border) / 0.2)' }}>
               <div style={{
@@ -1199,6 +1190,7 @@ export default function BookingDetailPage() {
               );
             })}
           </div>
+          </div>
         </div>
       </PageContainer>
     );
@@ -1224,23 +1216,15 @@ export default function BookingDetailPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface page-surface">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff/bookings`}>{t("action.backToBookings")}</BackLink>
+        </div>
+        <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-          {/* Back link + summary card */}
+          {/* Summary card */}
           <div>
-            <Link
-              href={`/${locale}/staff/bookings`}
-              style={{
-                fontSize: '14px',
-                color: 'rgb(var(--brand))',
-                textDecoration: 'none',
-                marginBottom: 'var(--space-2)',
-                display: 'inline-block'
-              }}
-            >
-              {t("action.backToBookingsArrow")}
-            </Link>
             <BookingSummaryCard
               booking={booking}
               selectedVehicle={getSelectedVehicle()}
@@ -1875,6 +1859,7 @@ export default function BookingDetailPage() {
           })}
           </div>
 
+        </div>
         </div>
       </div>
 

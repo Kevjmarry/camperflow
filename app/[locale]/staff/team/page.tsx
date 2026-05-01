@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
+import BackLink from "@/components/staff/BackLink";
 
 interface StaffProfile {
   profile_id: string;
@@ -92,6 +93,10 @@ export default function StaffTeamPage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t("backToDashboard")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div
           style={{
@@ -101,18 +106,6 @@ export default function StaffTeamPage() {
           }}
         >
           <div>
-            <Link
-              href={`/${locale}/staff`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              ← {t("backToDashboard")}
-            </Link>
             <div
               style={{
                 display: "flex",
@@ -242,6 +235,7 @@ export default function StaffTeamPage() {
             </>
           )}
         </div>
+      </div>
       </div>
     </PageContainer>
   );

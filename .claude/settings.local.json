@@ -20,7 +20,17 @@
       "Bash(python3 -c \"import json; d=json.load\\(open\\('c:/CamperFlow/camperflow/messages/en.json'\\)\\); gr=d.get\\('guestReturn',{}\\); print\\(json.dumps\\(gr, indent=2\\)\\)\")",
       "Bash(node -e \"const s = require\\('fs'\\).readFileSync\\('c:/CamperFlow/camperflow/app/[locale]/staff/checklists/[id]/ChecklistDetailClient.tsx','utf8'\\); const line = s.split\\('\\\\n'\\)[768]; console.log\\(JSON.stringify\\(line\\)\\);\")",
       "Bash(node)",
-      "Bash(grep -E \"\\(ts|sql\\)$\")"
+      "Bash(grep -E \"\\(ts|sql\\)$\")",
+      "Bash(xargs wc *)",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\de.json\"\\); \"First 6 bytes: $\\($bytes[0..5] -join ', '\\)\")",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\de.json\"\\); [System.IO.File]::WriteAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\de.json\", $bytes[3..\\($bytes.Length-1\\)]\\))",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\de.json\"\\); \"First 3 bytes: $\\($bytes[0..2] -join ', '\\)\")",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\en.json\"\\); \"First 6 bytes: $\\($bytes[0..5] -join ', '\\)\")",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\en.json\"\\); [System.IO.File]::WriteAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\en.json\", $bytes[3..\\($bytes.Length-1\\)]\\))",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\en.json\"\\); \"First 3 bytes: $\\($bytes[0..2] -join ', '\\)\")",
+      "Bash(npx supabase *)",
+      "Bash(curl -s -X POST https://wcagbocahogggzxpkhnr.supabase.co/rest/v1/rpc/query -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Content-Type: application/json' -d '{\"query\": \"SELECT guest_content_i18n -> '\\\\''SK'\\\\'' AS sk FROM public.company_settings WHERE name = '\\\\''Epic Vans'\\\\''\"}')",
+      "Bash(curl -s 'https://wcagbocahogggzxpkhnr.supabase.co/rest/v1/company_settings?select=guest_content_i18n&name=eq.Epic+Vans' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA')"
     ]
   }
 }

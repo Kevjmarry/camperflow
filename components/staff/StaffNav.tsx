@@ -5,11 +5,13 @@ import { useParams, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useRef, useEffect, useState } from 'react'
 import LocaleSwitcher from '@/components/LocaleSwitcher'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function StaffNav() {
   const { locale } = useParams<{ locale: string }>()
   const pathname = usePathname()
   const t = useTranslations('staff.nav')
+  const { company } = useTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showLeft, setShowLeft] = useState(false)
   const [showRight, setShowRight] = useState(false)
@@ -185,6 +187,29 @@ export default function StaffNav() {
           })}
         </div>
       </div>
+
+      {/* Company identity — pinned right, desktop only */}
+      {company && (
+        <div
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            padding: '0 var(--space-3)',
+            borderLeft: '1px solid rgb(var(--border))',
+            gap: '1px',
+          }}
+        >
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--foreground))', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            {company.name}
+          </span>
+          <span style={{ fontSize: '10px', color: 'rgb(var(--muted))', lineHeight: 1.2, fontFamily: 'monospace', letterSpacing: '0.04em' }}>
+            {company.id.slice(0, 6)}
+          </span>
+        </div>
+      )}
 
       {/* Locale switcher — pinned right, desktop only */}
       <div

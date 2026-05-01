@@ -9,6 +9,7 @@ import LocalizedDateInput from "@/components/LocalizedDateInput";
 import { createClient } from "@/lib/supabase/client";
 import { getEffectiveUser } from "@/lib/supabase/getEffectiveUser";
 import { getStatusChipStyle } from "@/lib/statusChip";
+import BackLink from "@/components/staff/BackLink";
 
 interface ChecklistInstance {
   id: string;
@@ -541,6 +542,10 @@ setDateFrom('');
         }
       `}</style>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t("backToDashboardArrow")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div style={{
@@ -551,18 +556,6 @@ setDateFrom('');
             gap: 'var(--space-4)'
           }}>
             <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
-              <Link
-                href={`/${locale}/staff`}
-                style={{
-                  fontSize: '14px',
-                  color: 'rgb(var(--brand))',
-                  textDecoration: 'none',
-                  marginBottom: 'var(--space-2)',
-                  display: 'inline-block'
-                }}
-              >
-                {t("backToDashboardArrow")}
-              </Link>
               <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
                 {t("title")}
               </h1>
@@ -1081,6 +1074,7 @@ setDateFrom('');
             </>
           )}
         </div>
+      </div>
       </div>
     </PageContainer>
   );

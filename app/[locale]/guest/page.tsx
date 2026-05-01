@@ -233,18 +233,6 @@ try{
         >
           {t("guestAccess")}
         </span>
-        <Link
-          href={`/${locale}`}
-          style={{
-            marginLeft: "auto",
-            fontSize: "14px",
-            color: "rgb(var(--muted))",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {t("useDifferentCode")}
-        </Link>
       </div>
 
       {/* Card grid */}

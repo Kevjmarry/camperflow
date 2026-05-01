@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import GuestSignOutButton from "@/components/guest/GuestSignOutButton";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -134,7 +135,7 @@ function SectionCard({
         style={{
           fontSize: "14px",
           lineHeight: "1.65",
-          color: "rgb(var(--muted))",
+          color: "rgb(var(--text-secondary))",
           marginBottom: "var(--space-5)",
         }}
       >
@@ -160,7 +161,7 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
     return (
       <div
         className="surface"
-        style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}
+        style={{ padding: "var(--space-8)" }}
       >
         <h1 style={{ marginBottom: "var(--space-4)" }}>{t("noCodeTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{t("noCodeMessage")}</p>
@@ -221,8 +222,8 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
         @media (min-width: 768px) { .gemergency-sp { padding: var(--space-6); } }
       `}</style>
 
-      {/* Back link */}
-      <div style={{ marginBottom: "var(--space-4)" }}>
+      {/* Top bar: back link + sign out */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
         <Link
           href={`/${locale}/guest?code=${code}`}
           style={{
@@ -230,7 +231,8 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
             alignItems: "center",
             gap: "var(--space-2)",
             fontSize: "14px",
-            color: "rgb(var(--muted))",
+            fontWeight: "500",
+            color: "rgb(var(--text-secondary))",
             textDecoration: "none",
           }}
         >
@@ -239,6 +241,7 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
           </svg>
           {t("back")}
         </Link>
+        <GuestSignOutButton />
       </div>
 
       {/* Page header surface */}

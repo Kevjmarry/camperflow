@@ -4,8 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
+import BackLink from '@/components/staff/BackLink';
 import { useTranslations } from 'next-intl';
 import ChecklistTemplateDetailsPanel from '@/components/checklists/ChecklistTemplateDetailsPanel';
 import ChecklistTemplateItemsPanel from '@/components/checklists/ChecklistTemplateItemsPanel';
@@ -1208,11 +1208,11 @@ export default function ChecklistTemplateDetailPage() {
   if (globalError || !template) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
-          <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-4)' }}>
-            ← {t('backToTemplates')}
-          </Link>
-          <div style={ERROR_BOX}>{globalError ?? t('globalErrorFallback')}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div><BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink></div>
+          <div className="surface page-surface">
+            <div style={ERROR_BOX}>{globalError ?? t('globalErrorFallback')}</div>
+          </div>
         </div>
       </PageContainer>
     );
@@ -1239,14 +1239,13 @@ export default function ChecklistTemplateDetailPage() {
         }
       `}</style>
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div><BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink></div>
+          <div className="surface page-surface">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
             {/* ── Page header ── */}
             <div>
-              <Link href={`/${locale}/staff/checklists/templates`} style={{ display: 'inline-block', fontSize: '14px', color: 'rgb(var(--brand))', textDecoration: 'none', marginBottom: 'var(--space-2)' }}>
-                ← {t('backToTemplates')}
-              </Link>
               <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
               <p style={{ margin: 'var(--space-2) 0 0 0', color: 'rgb(var(--muted))', fontSize: '14px' }}>{t('pageSubtitle')}</p>
             </div>
@@ -1677,6 +1676,7 @@ export default function ChecklistTemplateDetailPage() {
               )}
             </div>
           </div>
+        </div>
         </div>
       </PageContainer>
     </>

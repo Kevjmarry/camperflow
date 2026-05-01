@@ -264,11 +264,12 @@ export default async function OperationsPage({
   ].slice(0, 3)
 
   return (
-    <PageContainer maxWidth="1280px">
-      <div className="ops-page-inner">
+    <PageContainer maxWidth="1400px">
+      <div className="surface page-surface">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: '24px' }}>
+        <div>
           <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
           <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))', margin: '8px 0 0' }}>
             {t('pageSubtitle')}
@@ -340,6 +341,7 @@ export default async function OperationsPage({
           <OperationsCompletedBookings bookings={completed} />
         </div>
 
+        </div>
       </div>
     </PageContainer>
   )

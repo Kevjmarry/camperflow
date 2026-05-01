@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, DragEvent, ChangeEvent } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
+import BackLink from "@/components/staff/BackLink";
 import PageContainer from "@/components/PageContainer";
 import { detectSourceType } from "@/lib/bookings/import/detectSourceType";
 import { buildImportPreview } from "@/lib/bookings/import/buildImportPreview";
@@ -577,23 +577,15 @@ export default function BookingImportPage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface page-surface">
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div>
+          <BackLink href={`/${locale}/staff/bookings`}>{t("backToBookings")}</BackLink>
+        </div>
+        <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
 
           {/* Header */}
           <div>
-            <Link
-              href={`/${locale}/staff/bookings`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              {t("backToBookings")}
-            </Link>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
               {t("title")}
             </h1>
@@ -1146,6 +1138,7 @@ export default function BookingImportPage() {
             </div>
           )}
 
+        </div>
         </div>
       </div>
     </PageContainer>

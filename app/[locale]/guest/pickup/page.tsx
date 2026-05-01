@@ -113,7 +113,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
 
   if (!code) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -126,7 +126,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
 
   if (bookingError || !booking) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
+      <div className="surface" style={{ padding: "var(--space-8)" }}>
         <h1 style={{ marginBottom: "var(--space-4)" }}>{tBooking("notFoundTitle")}</h1>
         <p style={{ color: "rgb(var(--muted))" }}>{tBooking("contactUs")}</p>
       </div>
@@ -153,10 +153,22 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("pickup_info, contact_phone, contact_whatsapp, before_arrival_info, important_before_pickup")
+      .select("pickup_info, contact_phone, contact_whatsapp, before_arrival_info, important_before_pickup, guest_content_i18n")
       .eq("id", booking.company_id)
-      .maybeSingle<CompanyGuestInfo>();
-    if (data) guestInfo = data;
+      .maybeSingle();
+    if (data) {
+      const raw = data as any;
+      const langKey = locale.toUpperCase();
+      const i18n = raw.guest_content_i18n?.[langKey] ?? {};
+      const isSk = langKey === "SK";
+      guestInfo = {
+        contact_phone:            raw.contact_phone,
+        contact_whatsapp:         raw.contact_whatsapp,
+        pickup_info:              i18n.pickup_info              || (isSk ? raw.pickup_info              : null),
+        before_arrival_info:      i18n.before_arrival_info      || (isSk ? raw.before_arrival_info      : null),
+        important_before_pickup:  i18n.important_before_pickup  || (isSk ? raw.important_before_pickup  : null),
+      };
+    }
   }
 
   const formatDateTime = (dateString: string | null) => {
@@ -186,10 +198,12 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
   };
 
   const sectionLabel = (color: string) => ({
-    fontSize: "15px",
-    fontWeight: "600" as const,
+    fontSize: "11px",
+    fontWeight: "700" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.07em",
     color,
-    margin: "0 0 var(--space-5) 0",
+    margin: "0 0 var(--space-4) 0",
   });
 
   const toTelHref = (phone: string) => `tel:${phone.replace(/\s/g, "")}`;

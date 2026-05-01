@@ -8,6 +8,7 @@ import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { getStatusChipStyle } from "@/lib/statusChip";
+import BackLink from "@/components/staff/BackLink";
 
 interface Vehicle {
   id: string;
@@ -203,6 +204,10 @@ export default function VehiclesPage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t("navigation.backToDashboard")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/* Header */}
@@ -214,19 +219,7 @@ export default function VehiclesPage() {
             gap: 'var(--space-4)'
           }}>
             <div>
-              <Link 
-                href={`/${locale}/staff`}
-                style={{
-                  fontSize: '14px',
-                  color: 'rgb(var(--brand))',
-                  textDecoration: 'none',
-                  marginBottom: 'var(--space-2)',
-                  display: 'inline-block'
-                }}
-              >
-                {t("navigation.backToDashboard")}
-              </Link>
-              <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
+              <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))', margin: 0 }}>
                 {t("title")}
               </h1>
               <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>
@@ -463,6 +456,7 @@ export default function VehiclesPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </PageContainer>
   );

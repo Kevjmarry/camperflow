@@ -7,6 +7,7 @@ import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
+import BackLink from "@/components/staff/BackLink";
 import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -336,18 +337,16 @@ export default function CompanySettingsPage() {
 
   return (
     <PageContainer maxWidth="1400px">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div>
+          <BackLink href={`/${locale}/staff`}>{t("navigation.backToDashboard")}</BackLink>
+        </div>
       <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
 
           {/* Page header */}
           <div>
-            <Link
-              href={`/${locale}/staff`}
-              style={{ fontSize: "14px", color: "rgb(var(--brand))", textDecoration: "none", marginBottom: "var(--space-2)", display: "inline-block" }}
-            >
-              {t("navigation.backToDashboard")}
-            </Link>
-            <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>{t("title")}</h1>
+            <h1 style={{ fontSize: "28px", color: "rgb(var(--text))", margin: 0 }}>{t("title")}</h1>
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
               {isAdmin ? t("description.admin") : t("description.viewer")}
             </p>
@@ -763,6 +762,7 @@ export default function CompanySettingsPage() {
           )}
 
         </div>
+      </div>
       </div>
 
       {/* Backlog review modal */}
