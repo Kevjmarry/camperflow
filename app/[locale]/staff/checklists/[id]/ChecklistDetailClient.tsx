@@ -1173,6 +1173,13 @@ export default function ChecklistDetailClient({
       ? t('backToVehicle')
       : t('backToChecklists');
 
+  const backHref =
+    from === 'booking' && instance.booking_id
+      ? `/${locale}/staff/bookings/${instance.booking_id}`
+      : from === 'vehicle' && instance.vehicle_id
+      ? `/${locale}/staff/vehicles/${instance.vehicle_id}`
+      : `/${locale}/staff/checklists?scope=${listScope}&status=${listStatus}`;
+
   const contextLine = instance.bookings
     ? `${instance.bookings.booking_number} – ${instance.bookings.customer_name}`
     : instance.vehicles
@@ -1225,7 +1232,7 @@ export default function ChecklistDetailClient({
           }
         `}</style>
       )}
-      <BackLink label={backButtonLabel} onClick={handleBackClick} />
+      <BackLink href={backHref}>{backButtonLabel}</BackLink>
       <ChecklistHeader
         title={checklistTitle}
         statusLabel={statusLabel}
