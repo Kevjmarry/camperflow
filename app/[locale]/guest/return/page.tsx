@@ -245,6 +245,8 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         </Link>
       </div>
 
+      <div className="surface page-surface" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+
       {/* Title bar */}
       <div
         className="surface greturn-sp"
@@ -439,6 +441,8 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
           </div>
         </details>
       )}
+
+      </div>
     </div>
   );
 }

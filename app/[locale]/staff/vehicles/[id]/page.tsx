@@ -786,46 +786,32 @@ export default function VehicleDetailPage({
 
             {/* Photo + Fields */}
             <div className="photo-fields-grid">
-              <div className="surface" style={{ padding: "var(--space-6)" }}>
+              <div className="surface" style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column" }}>
                 <div
                   style={{
-                    fontSize: "14px",
-                    color: "rgb(var(--muted))",
-                    marginBottom: "var(--space-2)",
+                    flex: 1,
+                    minHeight: 0,
+                    borderRadius: "var(--radius)",
+                    overflow: "hidden",
                   }}
                 >
-                  {t("fields.photo")}
+                  {vehicle.photo_url ? (
+                    <img
+                      src={vehicle.photo_url}
+                      alt={vehicle.name}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "rgb(var(--muted))", fontSize: "14px" }}>
+                      {t("fields.noPhoto")}
+                    </span>
+                  )}
                 </div>
-                {vehicle.photo_url ? (
-                  <img
-                    src={vehicle.photo_url}
-                    alt={vehicle.name}
-                    style={{
-                      width: "100%",
-                      height: 240,
-                      objectFit: "cover",
-                      borderRadius: "var(--radius)",
-                      border: "1px solid rgb(var(--border))",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 240,
-                      borderRadius: "var(--radius)",
-                      border: "1px solid rgb(var(--border))",
-                      background: "rgb(var(--muted) / 0.12)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "rgb(var(--muted))",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {t("fields.noPhoto")}
-                  </div>
-                )}
               </div>
 
               <div className="surface" style={{ padding: "var(--space-6)" }}>

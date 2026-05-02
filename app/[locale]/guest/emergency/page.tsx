@@ -244,6 +244,8 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
         <GuestSignOutButton />
       </div>
 
+      <div className="surface page-surface">
+
       {/* Page header surface */}
       <div
         className="surface gemergency-sp"
@@ -301,6 +303,8 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
         phone2={emergency.emergency_breakdown_phone_secondary}
         notConfigured={notConfigured}
       />
+
+      </div>
 
     </div>
   );

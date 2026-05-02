@@ -1,6 +1,8 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import Script from "next/script";
+import { EvidenceDownloadButton } from "./EvidenceDownloadButton";
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -8,10 +10,15 @@ interface PageProps {
 
 type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed" | string;
 
+interface PhotoItem {
+  path: string;
+  rotation?: number;
+}
+
 interface PhotoPaths {
-  general?: string[];
-  damage?: string[];
-  id?: string[];
+  general?: PhotoItem[];
+  damage?: PhotoItem[];
+  id?: PhotoItem[];
 }
 
 interface GuestBooking {
@@ -168,59 +175,86 @@ export default async function GuestBookingPage({ params }: PageProps) {
   }
 
   // ── Evidence photos ──────────────────────────────────────────────────────────
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const evidenceBucketBase = `${supabaseUrl}/storage/v1/object/public/checklist-evidence`;
-
   const handoverMeta = booking.staff_metadata?.handover_evidence_photos ?? {};
   const returnMeta = booking.staff_metadata?.return_evidence_photos ?? {};
+
+  const toPublicUrl = (path: string) =>
+    supabase.storage.from("checklist-evidence").getPublicUrl(path).data.publicUrl;
+
+  const toUrls = (items: PhotoItem[] | undefined) =>
+    (items ?? []).flatMap((item) => (typeof item?.path === "string" ? [toPublicUrl(item.path)] : []));
 
   type EvidenceGroup = { labelA: string; labelB: string; urls: string[] };
   const evidenceGroups: EvidenceGroup[] = [
     {
       labelA: t("evidenceHandover"),
       labelB: t("evidenceGroupGeneral"),
-      urls: (handoverMeta.general ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+      urls: toUrls(handoverMeta.general),
     },
     {
       labelA: t("evidenceHandover"),
       labelB: t("evidenceGroupDamage"),
-      urls: (handoverMeta.damage ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+      urls: toUrls(handoverMeta.damage),
     },
     {
       labelA: t("evidenceReturn"),
       labelB: t("evidenceGroupGeneral"),
-      urls: (returnMeta.general ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+      urls: toUrls(returnMeta.general),
     },
     {
       labelA: t("evidenceReturn"),
       labelB: t("evidenceGroupDamage"),
-      urls: (returnMeta.damage ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+      urls: toUrls(returnMeta.damage),
     },
   ].filter((g) => g.urls.length > 0);
 
   const allEvidenceUrls = evidenceGroups.flatMap((g) => g.urls);
   const hasEvidence = allEvidenceUrls.length > 0;
 
-  const evidenceDownloadScript = hasEvidence
+
+  const lightboxScript = hasEvidence
     ? `
 (function(){
-  var urls=${JSON.stringify(allEvidenceUrls)};
-  async function dl(){
-    for(var i=0;i<urls.length;i++){
-      var u=urls[i];
-      var a=document.createElement('a');
-      a.href=u+(u.indexOf('?')>=0?'&':'?')+'download=';
-      a.download='';
-      a.target='_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      if(i<urls.length-1)await new Promise(function(r){setTimeout(r,150);});
-    }
+  var photos=${JSON.stringify(allEvidenceUrls)};
+  var cur=0;
+  function show(){var el=document.getElementById('cf-lb');if(el)el.style.display='flex';}
+  function hide(){var el=document.getElementById('cf-lb');if(el)el.style.display='none';document.body.style.overflow='';}
+  function open(i){cur=i;update();show();document.body.style.overflow='hidden';}
+  function next(){cur=(cur+1)%photos.length;update();}
+  function prev(){cur=(cur-1+photos.length)%photos.length;update();}
+  function update(){
+    var img=document.getElementById('cf-lb-img');
+    var ctr=document.getElementById('cf-lb-ctr');
+    if(img)img.src=photos[cur];
+    if(ctr)ctr.textContent=(cur+1)+' / '+photos.length;
   }
+  document.addEventListener('keydown',function(e){
+    var el=document.getElementById('cf-lb');
+    if(!el||el.style.display==='none')return;
+    if(e.key==='Escape')hide();
+    else if(e.key==='ArrowRight')next();
+    else if(e.key==='ArrowLeft')prev();
+  });
+  var _tsx=0;
+  document.addEventListener('touchstart',function(e){_tsx=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    var el=document.getElementById('cf-lb');
+    if(!el||el.style.display==='none')return;
+    var dx=e.changedTouches[0].clientX-_tsx;
+    if(Math.abs(dx)>50){if(dx<0)next();else prev();}
+  },{passive:true});
   function attach(){
-    var btn=document.getElementById('cf-evidence-dl-btn');
-    if(btn)btn.onclick=dl;
+    var closeBtn=document.getElementById('cf-lb-close');
+    var bg=document.getElementById('cf-lb-bg');
+    var prevBtn=document.getElementById('cf-lb-prev');
+    var nextBtn=document.getElementById('cf-lb-next');
+    if(closeBtn)closeBtn.onclick=hide;
+    if(bg)bg.onclick=hide;
+    if(prevBtn)prevBtn.onclick=function(e){e.stopPropagation();prev();};
+    if(nextBtn)nextBtn.onclick=function(e){e.stopPropagation();next();};
+    document.querySelectorAll('.cf-lb-thumb').forEach(function(btn){
+      btn.addEventListener('click',function(){open(parseInt(btn.getAttribute('data-lb-idx'),10));});
+    });
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',attach);}
   else{attach();}
@@ -307,6 +341,10 @@ try{
         @media (min-width: 768px) { .gbooking-included-grid { grid-template-columns: 1fr 1fr; } }
         .gbooking-evidence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: var(--space-2); }
         .gbooking-evidence-img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: var(--radius); border: 1px solid rgb(var(--border)); display: block; }
+        .cf-lb-thumb { background: none; border: none; padding: 0; display: block; width: 100%; cursor: zoom-in; }
+        .cf-lb-thumb:focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; border-radius: var(--radius); }
+        .cf-lb-nav { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cf-lb-nav:hover { background: rgba(255,255,255,0.28); }
       `}</style>
       {themeObj && (
         <>
@@ -315,7 +353,7 @@ try{
         </>
       )}
       {hasEvidence && (
-        <script dangerouslySetInnerHTML={{ __html: evidenceDownloadScript }} />
+        <Script id="cf-lightbox" dangerouslySetInnerHTML={{ __html: lightboxScript }} />
       )}
 
       <div style={{ marginBottom: "var(--space-4)" }}>
@@ -350,6 +388,8 @@ try{
           {t("back")}
         </Link>
       </div>
+
+      <div className="surface page-surface">
 
       <div
         className="surface gbooking-title"
@@ -527,38 +567,31 @@ try{
           <>
             {/* Photo + Fields */}
             <div className="gbooking-photo-fields">
-              <div className="surface gbooking-sp">
-                {vehicle.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={vehicle.photo_url}
-                    alt={vehicle.name ?? "Vehicle"}
-                    style={{
-                      width: "100%",
-                      height: 240,
-                      objectFit: "cover",
-                      borderRadius: "var(--radius)",
-                      border: "1px solid rgb(var(--border))",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 240,
-                      borderRadius: "var(--radius)",
-                      border: "1px solid rgb(var(--border))",
-                      background: "rgb(var(--muted) / 0.12)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "rgb(var(--muted))",
-                      fontSize: "14px",
-                    }}
-                  >
-                    —
-                  </div>
-                )}
+              <div className="surface gbooking-sp" style={{ display: "flex", flexDirection: "column" }}>
+                <div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    borderRadius: "var(--radius)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {vehicle.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={vehicle.photo_url}
+                      alt={vehicle.name ?? "Vehicle"}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "rgb(var(--muted))", fontSize: "14px" }}>—</span>
+                  )}
+                </div>
               </div>
               <div className="surface gbooking-sp">
                 <h2
@@ -760,72 +793,161 @@ try{
               }}
             >
               <h2>{t("evidencePhotosTitle")}</h2>
-              <button
-                id="cf-evidence-dl-btn"
-                type="button"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-2)",
-                  padding: "var(--space-2) var(--space-4)",
-                  borderRadius: "var(--radius)",
-                  border: "1px solid rgb(var(--border))",
-                  background: "rgb(var(--surface))",
-                  color: "rgb(var(--text-secondary))",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                {t("evidenceDownloadAll")}
-              </button>
+              <EvidenceDownloadButton urls={allEvidenceUrls} label={t("evidenceDownloadAll")} />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-              {evidenceGroups.map((group, gi) => (
-                <div key={gi}>
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.07em",
-                      color: "rgb(var(--text-secondary))",
-                      marginBottom: "var(--space-3)",
-                    }}
-                  >
-                    {group.labelA} — {group.labelB}
-                  </p>
-                  <div className="gbooking-evidence-grid">
-                    {group.urls.map((url, pi) => (
-                      <a
-                        key={pi}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ display: "block" }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`${group.labelA} ${group.labelB} ${pi + 1}`}
-                          className="gbooking-evidence-img"
-                        />
-                      </a>
-                    ))}
+              {(() => {
+                let gIdx = 0;
+                return evidenceGroups.map((group, gi) => (
+                  <div key={gi}>
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.07em",
+                        color: "rgb(var(--text-secondary))",
+                        marginBottom: "var(--space-3)",
+                      }}
+                    >
+                      {group.labelA} — {group.labelB}
+                    </p>
+                    <div className="gbooking-evidence-grid">
+                      {group.urls.map((url, pi) => {
+                        const idx = gIdx++;
+                        return (
+                          <button
+                            key={pi}
+                            type="button"
+                            data-lb-idx={idx}
+                            className="cf-lb-thumb"
+                            aria-label={`${group.labelA} ${group.labelB} ${pi + 1}`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt={`${group.labelA} ${group.labelB} ${pi + 1}`}
+                              className="gbooking-evidence-img"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         )}
 
       </div>
+
+      </div>
+
+      {/* Lightbox overlay */}
+      {hasEvidence && (
+        <div
+          id="cf-lb"
+          style={{
+            display: "none",
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.92)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo viewer"
+        >
+          {/* Backdrop */}
+          <div id="cf-lb-bg" style={{ position: "absolute", inset: 0 }} />
+
+          {/* Close */}
+          <button
+            id="cf-lb-close"
+            type="button"
+            aria-label="Close"
+            className="cf-lb-nav"
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 1,
+              fontSize: 18,
+            }}
+          >
+            ✕
+          </button>
+
+          {/* Prev */}
+          <button
+            id="cf-lb-prev"
+            type="button"
+            aria-label="Previous photo"
+            className="cf-lb-nav"
+            style={{
+              position: "absolute",
+              left: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 1,
+            }}
+          >
+            ‹
+          </button>
+
+          {/* Next */}
+          <button
+            id="cf-lb-next"
+            type="button"
+            aria-label="Next photo"
+            className="cf-lb-nav"
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              zIndex: 1,
+            }}
+          >
+            ›
+          </button>
+
+          {/* Image + counter */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              maxWidth: "90vw",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              id="cf-lb-img"
+              src={undefined}
+              alt=""
+              style={{
+                maxWidth: "90vw",
+                maxHeight: "80vh",
+                objectFit: "contain",
+                borderRadius: 8,
+                display: "block",
+              }}
+            />
+            <div
+              id="cf-lb-ctr"
+              style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, letterSpacing: "0.05em" }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

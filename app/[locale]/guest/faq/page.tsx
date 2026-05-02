@@ -95,6 +95,8 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
         </Link>
       </div>
 
+      <div className="surface page-surface" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+
       {/* Title bar */}
       <div
         className="surface gfaq-sp"
@@ -172,6 +174,8 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
             ))}
           </div>
         )}
+      </div>
+
       </div>
     </div>
   );

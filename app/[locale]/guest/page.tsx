@@ -189,6 +189,8 @@ try{
         </>
       )}
 
+      <div className="surface page-surface">
+
       {/* Header */}
       <div style={{ marginBottom: "var(--space-5)" }}>
         <h1 style={{ color: "rgb(var(--text))" }}>{t("title")}</h1>
@@ -299,6 +301,8 @@ try{
             </div>
           );
         })}
+      </div>
+
       </div>
     </div>
   );

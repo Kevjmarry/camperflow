@@ -298,6 +298,8 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
         </Link>
       </div>
 
+      <div className="surface page-surface" style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+
       {/* Title bar */}
       <div
         className="surface gpickup-sp"
@@ -639,6 +641,8 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
           </p>
         </div>
       )}
+
+      </div>
     </div>
   );
 }
