@@ -33,7 +33,7 @@ export function EvidenceDownloadButton({ urls, label }: Props) {
 
       // level 0 = store only; images are already compressed so recompressing wastes time
       const zip = zipSync(files, { level: 0 });
-      const blob = new Blob([zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength)], { type: "application/zip" });
+      const blob = new Blob([new Uint8Array(zip)], { type: "application/zip" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "evidence_photos.zip";
