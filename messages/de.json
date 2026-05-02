@@ -887,7 +887,13 @@
     "notFoundTitle": "Buchung nicht gefunden",
     "notFoundMessage": "Der Buchungscode",
     "notFoundMessageEnd": "existiert nicht.",
-    "back": "Zurück"
+    "back": "Zurück",
+    "evidencePhotosTitle": "Inspektionsfotos",
+    "evidenceHandover": "Übergabe",
+    "evidenceReturn": "Rückgabe",
+    "evidenceGroupGeneral": "Allgemein",
+    "evidenceGroupDamage": "Schäden",
+    "evidenceDownloadAll": "Alle Fotos herunterladen"
   },
   "guestBookings": {
     "redirecting": "Weiterleitung…",
@@ -1474,7 +1480,8 @@
       "returnChecklistRequired": "Die Rückgabe-Checkliste muss abgeschlossen sein, bevor die Buchung als abgeschlossen markiert werden kann."
     },
     "warning": {
-      "vehicleConflict": "Warnung: Fahrzeug ist bereits für diesen Zeitraum gebucht (Buchung {bookingNumber}). Bitte wählen Sie ein anderes Fahrzeug oder andere Termine."
+      "vehicleConflict": "Warnung: Fahrzeug ist bereits für diesen Zeitraum gebucht (Buchung {bookingNumber}). Bitte wählen Sie ein anderes Fahrzeug oder andere Termine.",
+      "sameDayConflict": "Gleichtags-Übergabe: Fahrzeug ist an diesem Datum ebenfalls gebucht (Buchung {bookingNumber}). Trotzdem speichern?"
     },
     "success": {
       "bookingUpdated": "Buchung erfolgreich aktualisiert",
@@ -1987,7 +1994,9 @@
       "pickupTimeLabel": "Standard-Abholzeit",
       "pickupTimeHelper": "Wird neuen Buchungen als Standard-Abholzeit zugewiesen.",
       "dropoffTimeLabel": "Standard-Rückgabezeit",
-      "dropoffTimeHelper": "Wird neuen Buchungen als Standard-Rückgabezeit zugewiesen."
+      "dropoffTimeHelper": "Wird neuen Buchungen als Standard-Rückgabezeit zugewiesen.",
+      "timezoneLabel": "Zeitzone des Unternehmens",
+      "timezoneHelper": "Wird für Buchungsimporte und Datumsanzeigen verwendet."
     },
     "reminders": {
       "title": "Erinnerungen",

@@ -340,6 +340,7 @@ export default function BookingDetailPage() {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [conflictWarning, setConflictWarning] = useState("");
+  const [sameDayConflictWarning, setSameDayConflictWarning] = useState("");
   const [linkCustomerOpen, setLinkCustomerOpen] = useState(false);
   const [allCustomers, setAllCustomers] = useState<{ id: string; full_name: string | null }[]>([]);
   const [linkingCustomer, setLinkingCustomer] = useState(false);
@@ -687,10 +688,11 @@ export default function BookingDetailPage() {
     }
   };
 
-  const checkVehicleAvailability = async () => {
+  const checkVehicleAvailability = async (): Promise<{ type: 'none' | 'hard' } | { type: 'sameDay'; message: string }> => {
     if (!formData.vehicle_id || !formData.pickup_at || !formData.return_at) {
       setConflictWarning("");
-      return true;
+      setSameDayConflictWarning("");
+      return { type: 'none' };
     }
     try {
       const { data, error } = await supabase
@@ -705,6 +707,11 @@ export default function BookingDetailPage() {
       const newPickup = new Date(formData.pickup_at);
       const newReturn = new Date(formData.return_at);
 
+      const isSameCalendarDay = (a: Date, b: Date) =>
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+
       const conflictBooking = data?.find(b => {
         const ep = new Date(b.pickup_at);
         const er = new Date(b.return_at);
@@ -712,17 +719,37 @@ export default function BookingDetailPage() {
       });
 
       if (conflictBooking) {
+        const ep = new Date(conflictBooking.pickup_at);
+        const er = new Date(conflictBooking.return_at);
+
+        if (isSameCalendarDay(er, newPickup) && newPickup < er) {
+          // Auto-snap: force pickup_at to the exact return time of the preceding booking
+          setFormData(prev => ({ ...prev, pickup_at: toDatetimeLocal(conflictBooking.return_at) }));
+          setSameDayConflictWarning("");
+          setConflictWarning("");
+          return { type: 'none' };
+        }
+
+        if (isSameCalendarDay(newReturn, ep)) {
+          const msg = t("warning.sameDayConflict", { bookingNumber: conflictBooking.booking_number });
+          setSameDayConflictWarning(msg);
+          setConflictWarning("");
+          return { type: 'sameDay', message: msg };
+        }
+
         setConflictWarning(
           t("warning.vehicleConflict", { bookingNumber: conflictBooking.booking_number })
         );
-        return false;
+        setSameDayConflictWarning("");
+        return { type: 'hard' };
       }
 
       setConflictWarning("");
-      return true;
+      setSameDayConflictWarning("");
+      return { type: 'none' };
     } catch (err: any) {
       console.error('Error checking availability:', err);
-      return true;
+      return { type: 'none' };
     }
   };
 
@@ -777,11 +804,17 @@ export default function BookingDetailPage() {
     }
 
     if (formData.vehicle_id && booking && isActiveStatus(booking.status)) {
-      const isAvailable = await checkVehicleAvailability();
-      if (!isAvailable) {
+      const availResult = await checkVehicleAvailability();
+      if (availResult.type === 'hard') {
         setError(t("error.vehicleUnavailable"));
         setSaving(false);
         return;
+      }
+      if (availResult.type === 'sameDay') {
+        if (!window.confirm(availResult.message)) {
+          setSaving(false);
+          return;
+        }
       }
     }
 
@@ -833,6 +866,7 @@ export default function BookingDetailPage() {
         return;
       }
 
+      setSameDayConflictWarning("");
       await fetchBooking();
       alert(t("success.bookingUpdated"));
     } catch (err: any) {
@@ -1569,7 +1603,9 @@ export default function BookingDetailPage() {
                           )
                         }
                       />
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{item.name}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
+                        {(item.name_i18n as Record<string, string> | undefined)?.[locale] || item.name_i18n?.sk || item.name}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -1718,6 +1754,19 @@ export default function BookingDetailPage() {
             </div>
 
             {/* ── Feedback + actions ───────────────────────────────────────── */}
+            {sameDayConflictWarning && !conflictWarning && (
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'rgb(var(--warning) / 0.07)',
+                border: '1px solid rgb(var(--warning) / 0.25)',
+                borderRadius: 'var(--radius)',
+                color: 'rgb(var(--warning))',
+                fontSize: '14px',
+              }}>
+                {sameDayConflictWarning}
+              </div>
+            )}
+
             {conflictWarning && (
               <div style={{
                 padding: 'var(--space-3) var(--space-4)',

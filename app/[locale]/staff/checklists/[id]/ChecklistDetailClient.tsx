@@ -1109,14 +1109,14 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type !== 'return') return [];
     const bookings = instance.bookings as (typeof instance.bookings & {
       staff_metadata?: { extras?: string[] };
-      company_settings?: { extras_catalog?: { id: string; name: string }[] };
+      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] };
     }) | null;
     const rawExtras = bookings?.staff_metadata?.extras;
     const selectedIds: string[] = Array.isArray(rawExtras) ? rawExtras : [];
-    const catalog: { id: string; name: string }[] = bookings?.company_settings?.extras_catalog ?? [];
+    const catalog: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] = bookings?.company_settings?.extras_catalog ?? [];
     return selectedIds
       .map((id) => catalog.find((e) => e.id === id))
-      .filter((e): e is { id: string; name: string } => e !== undefined);
+      .filter((e): e is { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } } => e !== undefined);
   })();
 
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);
@@ -1607,7 +1607,7 @@ export default function ChecklistDetailClient({
                             </div>
                           </label>
                           <span style={{ fontWeight: 500, marginTop: '2px' }}>
-                            {extra.name} returned
+                            {(extra.name_i18n as Record<string, string> | undefined)?.[locale] || extra.name_i18n?.sk || extra.name} returned
                           </span>
                         </div>
                       </div>

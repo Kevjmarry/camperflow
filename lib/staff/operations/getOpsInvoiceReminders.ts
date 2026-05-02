@@ -51,7 +51,10 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       pickup_at,
       return_at,
       status,
-      staff_metadata,
+      payment_type,
+      balance_invoice_sent,
+      prearrival_whatsapp_sent,
+      return_whatsapp_sent,
       vehicles ( name )
     `)
     .eq('company_id', companyId)
@@ -65,18 +68,18 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   for (const b of data ?? []) {
     if (!b.pickup_at) continue
-    const sm = (b.staff_metadata as Record<string, unknown> | null) ?? {}
     const vehicle = b.vehicles
       ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
       : null
     const pickupMs = new Date(b.pickup_at).getTime()
     const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
 
-    // Balance invoice reminder: split payment plan, not yet sent, within company window
+    // Balance invoice reminder: split payment, not yet sent, within company window, pickup upcoming
     if (
       settings?.final_payment_reminders_enabled &&
-      sm.payment_plan === 'split' &&
-      !sm.balance_invoice_sent_at &&
+      b.payment_type === 'split' &&
+      b.balance_invoice_sent === false &&
+      daysUntilPickup > 0 &&
       daysUntilPickup > urgentDays &&
       daysUntilPickup <= reminderDays
     ) {
@@ -96,7 +99,11 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     }
 
     // Pre-arrival WhatsApp: pickup is tomorrow, not yet sent, toggle enabled
-    if ((settings?.pre_arrival_reminders_enabled ?? true) && daysUntilPickup === 1 && !sm.pre_arrival_message_sent_at) {
+    if (
+      (settings?.pre_arrival_reminders_enabled ?? true) &&
+      daysUntilPickup === 1 &&
+      b.prearrival_whatsapp_sent === false
+    ) {
       results.push({
         type: 'pre_arrival',
         id: `${b.id}-pre`,
@@ -109,11 +116,11 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       })
     }
 
-    // Return-prep WhatsApp: return is tomorrow, not yet sent, toggle enabled
+    // Return-prep WhatsApp: return is tomorrow, not yet sent, toggle enabled, return upcoming
     if ((settings?.return_prep_reminders_enabled ?? true) && b.return_at) {
       const returnMs = new Date(b.return_at).getTime()
       const daysUntilReturn = Math.round((returnMs - now) / 86400000)
-      if (daysUntilReturn === 1 && !sm.return_prep_message_sent_at) {
+      if (daysUntilReturn === 1 && b.return_whatsapp_sent === false) {
         results.push({
           type: 'return_prep',
           id: `${b.id}-return-prep`,

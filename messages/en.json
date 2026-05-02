@@ -887,7 +887,13 @@
     "notFoundTitle": "Booking Not Found",
     "notFoundMessage": "The booking code",
     "notFoundMessageEnd": "does not exist.",
-    "back": "Back"
+    "back": "Back",
+    "evidencePhotosTitle": "Inspection Photos",
+    "evidenceHandover": "Handover",
+    "evidenceReturn": "Return",
+    "evidenceGroupGeneral": "General",
+    "evidenceGroupDamage": "Damage",
+    "evidenceDownloadAll": "Download All Photos"
   },
   "guestBookings": {
     "redirecting": "Redirecting…",
@@ -1474,7 +1480,8 @@
       "returnChecklistRequired": "The return checklist must be completed before marking this booking as completed."
     },
     "warning": {
-      "vehicleConflict": "Warning: Vehicle is already booked during this period (Booking {bookingNumber}). Please choose a different vehicle or dates."
+      "vehicleConflict": "Warning: Vehicle is already booked during this period (Booking {bookingNumber}). Please choose a different vehicle or dates.",
+      "sameDayConflict": "Same-day turnaround: Vehicle is also booked on this date (Booking {bookingNumber}). Save anyway?"
     },
     "success": {
       "bookingUpdated": "Booking updated successfully",
@@ -1987,7 +1994,9 @@
       "pickupTimeLabel": "Default pick-up time",
       "pickupTimeHelper": "Applied to new bookings as the default pick-up time.",
       "dropoffTimeLabel": "Default drop-off time",
-      "dropoffTimeHelper": "Applied to new bookings as the default drop-off time."
+      "dropoffTimeHelper": "Applied to new bookings as the default drop-off time.",
+      "timezoneLabel": "Company timezone",
+      "timezoneHelper": "Used for booking imports and date display."
     },
     "reminders": {
       "title": "Reminders",

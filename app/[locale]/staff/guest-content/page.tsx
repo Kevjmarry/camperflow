@@ -167,6 +167,22 @@ export default function GuestContentPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : "EN");
+  const [copyWarning, setCopyWarning] = useState(false);
+
+  // Derived: first language with saved content in guest_content_i18n (SK→EN→DE)
+  const originalLang = useMemo<Lang | null>(() => {
+    for (const lang of ["SK", "EN", "DE"] as Lang[]) {
+      const fields = rawI18nJson[lang];
+      if (!fields) continue;
+      const hasContent = Object.entries(fields).some(([k, v]) =>
+        k === "faq_items"
+          ? Array.isArray(v) && v.length > 0
+          : typeof v === "string" && v.trim().length > 0
+      );
+      if (hasContent) return lang;
+    }
+    return null;
+  }, [rawI18nJson]);
 
   // Derived: current lang's i18n fields and FAQ helper
   const currentI18n = i18nByLang[activeLang];
@@ -281,6 +297,18 @@ export default function GuestContentPage() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
+  const handleLangChange = (l: Lang) => {
+    setActiveLang(l);
+    setCopyWarning(false);
+  };
+
+  const handleCopyFrom = () => {
+    if (!originalLang) return;
+    if (!window.confirm(`Copy all content from ${originalLang} into ${activeLang}? This will overwrite any unsaved changes on the current tab.`)) return;
+    setI18nByLang(prev => ({ ...prev, [activeLang]: { ...prev[originalLang] } }));
+    setCopyWarning(true);
+  };
+
   const handleSharedChange = (e: ChangeEvent<HTMLInputElement>) =>
     setSharedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -340,6 +368,7 @@ export default function GuestContentPage() {
       // Keep rawI18nJson in sync so subsequent saves merge correctly
       setRawI18nJson(updatedJson);
       setSuccess(true);
+      setCopyWarning(false);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message || t("errors.saveSettingsFailed"));
@@ -380,7 +409,34 @@ export default function GuestContentPage() {
               {isAdmin ? t("description.admin") : t("description.viewer")}
             </p>
             <div style={{ marginTop: "var(--space-4)" }}>
-              <LangTabs active={activeLang} onChange={setActiveLang} />
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                <LangTabs active={activeLang} onChange={handleLangChange} />
+                {isAdmin && originalLang && originalLang !== activeLang && (
+                  <div style={{ paddingBottom: "1px" }}>
+                    <button
+                      type="button"
+                      onClick={handleCopyFrom}
+                      style={{
+                        fontSize: "12px",
+                        padding: "3px 10px",
+                        borderRadius: "var(--radius)",
+                        border: "1px solid rgb(var(--border))",
+                        background: "none",
+                        cursor: "pointer",
+                        color: "rgb(var(--muted))",
+                        lineHeight: "1.4",
+                      }}
+                    >
+                      Copy from original language ({originalLang})
+                    </button>
+                  </div>
+                )}
+              </div>
+              {copyWarning && (
+                <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
+                  Translate before saving or guests will see the wrong language.
+                </p>
+              )}
               <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
                 Slovak currently contains your existing content. English and German can be filled manually.
               </p>

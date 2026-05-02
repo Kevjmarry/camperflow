@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface ExtraCatalogItem {
   id: string;
-  name: string;
+  name: string; // legacy fallback — do not drop until migration is confirmed
+  name_i18n: { en: string; de: string; sk: string };
   active: boolean;
 }
 
@@ -16,6 +17,7 @@ export interface CompanySettings {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  company_timezone: string;
 }
 
 interface ThemeContextType {
@@ -31,6 +33,7 @@ const defaultCompany: CompanySettings = {
   primary_color: "#3b82f6",
   secondary_color: "#8b5cf6",
   accent_color: "#10b981",
+  company_timezone: "Europe/Bratislava",
 };
 
 const STORAGE_KEY = "camperflow:last_company_theme";
@@ -116,7 +119,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
       const { data: companyData } = await supabase
         .from("companies")
-        .select("id, name, logo_url, primary_color, secondary_color, accent_color")
+        .select("id, name, logo_url, primary_color, secondary_color, accent_color, company_timezone")
         .eq("id", staffProfile.company_id)
         .maybeSingle();
 

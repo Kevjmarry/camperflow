@@ -265,81 +265,112 @@ export default async function OperationsPage({
 
   return (
     <PageContainer maxWidth="1400px">
-      <div className="surface page-surface">
+      {/*
+        On mobile: ops-outer-card is a plain wrapper; ops-inner-card (surface page-surface)
+        is the visible card starting at OperationsOnRentNow.
+        On desktop (≥768px): ops-outer-card becomes the full card (matching surface + page-surface);
+        ops-inner-card resets to transparent/no-border so all sections sit inside one unified card.
+      */}
+      <style>{`
+        @media (min-width: 768px) {
+          .ops-outer-card {
+            background: rgb(var(--surface));
+            border: 1px solid rgb(var(--border));
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: var(--space-8);
+          }
+          .ops-inner-card {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+      <div className="ops-outer-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-        {/* Header */}
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
-          <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))', margin: '8px 0 0' }}>
-            {t('pageSubtitle')}
-          </p>
-        </div>
+          {/* Header */}
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>{t('pageTitle')}</h1>
+            <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))', margin: '8px 0 0' }}>
+              {t('pageSubtitle')}
+            </p>
+          </div>
 
-        {/* Sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          <OperationsBookingTimeline
-            vehicles={timelineData.vehicles}
-            bookings={timelineData.bookings}
-          />
-          <OperationsOnRentNow rows={onRentNow} />
-          <OperationsNextUp
-            pickups={nextPickups}
-            returns={upcomingReturns.slice(0, 3)}
-          />
+          {/* Sections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <OperationsBookingTimeline
+              vehicles={timelineData.vehicles}
+              bookings={timelineData.bookings}
+            />
 
-          {/* Attention needed strip */}
-          {urgentItems.length > 0 && (
-            <div className="ops-section-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
-                  {t('attentionNeeded')}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {urgentItems.map((item) => (
-                  <div
-                    key={item.key}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '6px var(--space-3)',
-                      background: 'rgb(var(--surface))',
-                      border: '1px solid rgb(var(--border))',
-                      borderRadius: 'var(--radius)',
-                      gap: 'var(--space-4)',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                        <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.line1}
-                        </span>
-                        {item.subtext && (
-                          <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
-                            {item.subtext}
-                          </span>
-                        )}
-                      </div>
+            {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}
+            <div className="surface page-surface ops-inner-card">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <OperationsOnRentNow rows={onRentNow} />
+                <OperationsNextUp
+                  pickups={nextPickups}
+                  returns={upcomingReturns.slice(0, 3)}
+                />
+
+                {/* Attention needed strip */}
+                {urgentItems.length > 0 && (
+                  <div className="ops-section-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
+                        {t('attentionNeeded')}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                      {item.chips.map((chip) => (
-                        <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {urgentItems.map((item) => (
+                        <div
+                          key={item.key}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '6px var(--space-3)',
+                            background: 'rgb(var(--surface))',
+                            border: '1px solid rgb(var(--border))',
+                            borderRadius: 'var(--radius)',
+                            gap: 'var(--space-4)',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                              <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {item.line1}
+                              </span>
+                              {item.subtext && (
+                                <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                                  {item.subtext}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            {item.chips.map((chip) => (
+                              <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                <OperationsInvoiceReminders reminders={invoiceReminders} />
+                <OperationsUpcomingPickups pickups={upcomingPickups} />
+                <OperationsUpcomingReturns returns={upcomingReturns} />
+                <OperationsCompletedBookings bookings={completed} />
               </div>
             </div>
-          )}
 
-          <OperationsInvoiceReminders reminders={invoiceReminders} />
-          <OperationsUpcomingPickups pickups={upcomingPickups} />
-          <OperationsUpcomingReturns returns={upcomingReturns} />
-          <OperationsCompletedBookings bookings={completed} />
-        </div>
+          </div>
 
         </div>
       </div>

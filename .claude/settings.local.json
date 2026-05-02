@@ -30,7 +30,11 @@
       "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"c:\\\\CamperFlow\\\\camperflow\\\\messages\\\\en.json\"\\); \"First 3 bytes: $\\($bytes[0..2] -join ', '\\)\")",
       "Bash(npx supabase *)",
       "Bash(curl -s -X POST https://wcagbocahogggzxpkhnr.supabase.co/rest/v1/rpc/query -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Content-Type: application/json' -d '{\"query\": \"SELECT guest_content_i18n -> '\\\\''SK'\\\\'' AS sk FROM public.company_settings WHERE name = '\\\\''Epic Vans'\\\\''\"}')",
-      "Bash(curl -s 'https://wcagbocahogggzxpkhnr.supabase.co/rest/v1/company_settings?select=guest_content_i18n&name=eq.Epic+Vans' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA')"
+      "Bash(curl -s 'https://wcagbocahogggzxpkhnr.supabase.co/rest/v1/company_settings?select=guest_content_i18n&name=eq.Epic+Vans' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjYWdib2NhaG9nZ2d6eHBraG5yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODc5MzI4MCwiZXhwIjoyMDg0MzY5MjgwfQ.qGZBBCZEYUEZBNxTouU1nRQc79vof5AAse18jRz53DA')",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Recurse -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

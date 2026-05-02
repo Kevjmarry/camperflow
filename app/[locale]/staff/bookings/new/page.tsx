@@ -169,6 +169,11 @@ export default function NewBookingPage() {
       const newPickup = new Date(formData.pickup_at);
       const newReturn = new Date(formData.return_at);
 
+      const isSameCalendarDay = (a: Date, b: Date) =>
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+
       const conflictBooking = data?.find((booking) => {
         const existingPickup = new Date(booking.pickup_at);
         const existingReturn = new Date(booking.return_at);
@@ -176,6 +181,15 @@ export default function NewBookingPage() {
       });
 
       if (conflictBooking) {
+        const er = new Date(conflictBooking.return_at);
+        if (isSameCalendarDay(er, newPickup) && newPickup < er) {
+          // Auto-snap: force pickup_at to the exact return time of the preceding booking
+          const pad = (n: number) => String(n).padStart(2, "0");
+          const snapped = `${er.getFullYear()}-${pad(er.getMonth() + 1)}-${pad(er.getDate())}T${pad(er.getHours())}:${pad(er.getMinutes())}`;
+          setFormData((prev) => ({ ...prev, pickup_at: snapped }));
+          setConflictWarning("");
+          return true;
+        }
         setConflictWarning(
           t("conflictWarning", { bookingNumber: conflictBooking.booking_number })
         );

@@ -30,6 +30,7 @@ export default function CompanySettingsPage() {
     dropoff_time: "",
     final_payment_due_days: "",
     final_payment_urgent_days: "",
+    company_timezone: "Europe/Bratislava",
     // Company identity (for reports)
     address: "",
     email: "",
@@ -47,6 +48,8 @@ export default function CompanySettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
+  const [activeExtrasLang, setActiveExtrasLang] = useState<"en" | "de" | "sk">("sk");
+  const [extrasLangCopyWarning, setExtrasLangCopyWarning] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   // isRealAdmin: role === 'admin' only — used for the System Recovery section.
   // isAdmin (above) also includes can_manage and gates the regular form fields.
@@ -126,7 +129,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -146,6 +149,7 @@ export default function CompanySettingsPage() {
           final_payment_urgent_days: (data as any).final_payment_urgent_days != null
                                     ? String((data as any).final_payment_urgent_days)
                                     : "",
+          company_timezone: (data as any).company_timezone ?? "Europe/Bratislava",
         } : {}),
         ...(companyRow ? {
           address:         (companyRow as any).address         ?? "",
@@ -246,6 +250,7 @@ export default function CompanySettingsPage() {
           pre_arrival_reminders_enabled:   preArrivalRemindersEnabled,
           return_prep_reminders_enabled:   returnPrepRemindersEnabled,
           extras_catalog:                  extrasCatalog.length > 0 ? extrasCatalog : null,
+          company_timezone:                formData.company_timezone,
         })
         .eq("id", company?.id)
         .select("id");
@@ -517,6 +522,39 @@ export default function CompanySettingsPage() {
                   />
                   <p className="helper-text">{t("bookingDefaults.dropoffTimeHelper")}</p>
                 </div>
+                <div>
+                  <label htmlFor="company_timezone" className="label">{t("bookingDefaults.timezoneLabel")}</label>
+                  <select
+                    id="company_timezone" name="company_timezone" className="input"
+                    value={formData.company_timezone}
+                    onChange={(e) => setFormData({ ...formData, company_timezone: e.target.value })}
+                    disabled={!isAdmin} style={{ width: "100%" }}
+                  >
+                    {[
+                      "UTC",
+                      "Europe/London",
+                      "Europe/Lisbon",
+                      "Europe/Paris",
+                      "Europe/Berlin",
+                      "Europe/Vienna",
+                      "Europe/Prague",
+                      "Europe/Bratislava",
+                      "Europe/Budapest",
+                      "Europe/Warsaw",
+                      "Europe/Bucharest",
+                      "Europe/Helsinki",
+                      "Europe/Athens",
+                      "Europe/Istanbul",
+                      "America/New_York",
+                      "America/Chicago",
+                      "America/Denver",
+                      "America/Los_Angeles",
+                    ].map((tz) => (
+                      <option key={tz} value={tz}>{tz}</option>
+                    ))}
+                  </select>
+                  <p className="helper-text">{t("bookingDefaults.timezoneHelper")}</p>
+                </div>
               </div>
             </div>
 
@@ -632,6 +670,59 @@ export default function CompanySettingsPage() {
               <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
                 {t("extrasCatalog.subtitle")}
               </p>
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
+                <div style={{ borderBottom: "1px solid rgb(var(--border))" }}>
+                  {(["en", "de", "sk"] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => { setActiveExtrasLang(lang); setExtrasLangCopyWarning(false); }}
+                      style={{
+                        padding: "var(--space-2) var(--space-5)",
+                        fontSize: "14px",
+                        fontWeight: activeExtrasLang === lang ? 600 : 400,
+                        color: activeExtrasLang === lang ? "rgb(var(--brand))" : "rgb(var(--muted))",
+                        background: "none",
+                        border: "none",
+                        borderBottom: activeExtrasLang === lang ? "2px solid rgb(var(--brand))" : "2px solid transparent",
+                        cursor: "pointer",
+                        marginBottom: "-1px",
+                      }}
+                    >
+                      {lang.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                {isAdmin && activeExtrasLang !== "sk" && extrasCatalog.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExtrasCatalog(extrasCatalog.map((x) => ({
+                        ...x,
+                        name_i18n: { ...x.name_i18n, [activeExtrasLang]: x.name_i18n?.sk ?? "" },
+                      })));
+                      setExtrasLangCopyWarning(true);
+                    }}
+                    style={{
+                      fontSize: "12px",
+                      padding: "3px 10px",
+                      borderRadius: "var(--radius)",
+                      border: "1px solid rgb(var(--border))",
+                      background: "none",
+                      cursor: "pointer",
+                      color: "rgb(var(--muted))",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    Copy from original language (SK)
+                  </button>
+                )}
+              </div>
+              {extrasLangCopyWarning && (
+                <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginBottom: "var(--space-2)", marginTop: 0 }}>
+                  Copied from Slovak. Please translate before saving.
+                </p>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                 {extrasCatalog.map((item) => (
                   <div
@@ -645,12 +736,14 @@ export default function CompanySettingsPage() {
                     <input
                       type="text"
                       className="input"
-                      placeholder={t("extrasCatalog.namePlaceholder")}
-                      value={item.name}
+                      placeholder={activeExtrasLang.toUpperCase()}
+                      value={item.name_i18n?.[activeExtrasLang] ?? ""}
                       disabled={!isAdmin}
                       onChange={(e) =>
                         setExtrasCatalog(extrasCatalog.map((x) =>
-                          x.id === item.id ? { ...x, name: e.target.value } : x
+                          x.id === item.id
+                            ? { ...x, name_i18n: { ...x.name_i18n, [activeExtrasLang]: e.target.value } }
+                            : x
                         ))
                       }
                       style={{ flex: 1, minWidth: 0 }}
@@ -684,7 +777,7 @@ export default function CompanySettingsPage() {
                     type="button"
                     className="btn btn-secondary"
                     onClick={() =>
-                      setExtrasCatalog([...extrasCatalog, { id: crypto.randomUUID(), name: "", active: true }])
+                      setExtrasCatalog([...extrasCatalog, { id: crypto.randomUUID(), name: "", name_i18n: { en: "", de: "", sk: "" }, active: true }])
                     }
                     style={{ alignSelf: "flex-start", fontSize: "14px", marginTop: "var(--space-1)" }}
                   >

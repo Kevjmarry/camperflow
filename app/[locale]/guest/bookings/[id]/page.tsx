@@ -8,6 +8,12 @@ interface PageProps {
 
 type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed" | string;
 
+interface PhotoPaths {
+  general?: string[];
+  damage?: string[];
+  id?: string[];
+}
+
 interface GuestBooking {
   status: BookingStatus | null;
   vehicle_id: string | null;
@@ -27,6 +33,11 @@ interface GuestBooking {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+
+  staff_metadata?: {
+    handover_evidence_photos?: PhotoPaths;
+    return_evidence_photos?: PhotoPaths;
+  } | null;
 }
 
 interface CompanySettings {
@@ -156,6 +167,69 @@ export default async function GuestBookingPage({ params }: PageProps) {
     }
   }
 
+  // ── Evidence photos ──────────────────────────────────────────────────────────
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const evidenceBucketBase = `${supabaseUrl}/storage/v1/object/public/checklist-evidence`;
+
+  const handoverMeta = booking.staff_metadata?.handover_evidence_photos ?? {};
+  const returnMeta = booking.staff_metadata?.return_evidence_photos ?? {};
+
+  type EvidenceGroup = { labelA: string; labelB: string; urls: string[] };
+  const evidenceGroups: EvidenceGroup[] = [
+    {
+      labelA: t("evidenceHandover"),
+      labelB: t("evidenceGroupGeneral"),
+      urls: (handoverMeta.general ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+    },
+    {
+      labelA: t("evidenceHandover"),
+      labelB: t("evidenceGroupDamage"),
+      urls: (handoverMeta.damage ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+    },
+    {
+      labelA: t("evidenceReturn"),
+      labelB: t("evidenceGroupGeneral"),
+      urls: (returnMeta.general ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+    },
+    {
+      labelA: t("evidenceReturn"),
+      labelB: t("evidenceGroupDamage"),
+      urls: (returnMeta.damage ?? []).map((p) => `${evidenceBucketBase}/${p}`),
+    },
+  ].filter((g) => g.urls.length > 0);
+
+  const allEvidenceUrls = evidenceGroups.flatMap((g) => g.urls);
+  const hasEvidence = allEvidenceUrls.length > 0;
+
+  const evidenceDownloadScript = hasEvidence
+    ? `
+(function(){
+  var urls=${JSON.stringify(allEvidenceUrls)};
+  async function dl(){
+    for(var i=0;i<urls.length;i++){
+      var u=urls[i];
+      var a=document.createElement('a');
+      a.href=u+(u.indexOf('?')>=0?'&':'?')+'download=';
+      a.download='';
+      a.target='_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if(i<urls.length-1)await new Promise(function(r){setTimeout(r,150);});
+    }
+  }
+  function attach(){
+    var btn=document.getElementById('cf-evidence-dl-btn');
+    if(btn)btn.onclick=dl;
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',attach);}
+  else{attach();}
+})();
+`
+    : "";
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t("notSpecified");
     const date = new Date(dateString);
@@ -231,12 +305,17 @@ try{
         @media (min-width: 481px) { .gbooking-dims { grid-template-columns: 1fr 1fr 1fr; } }
         .gbooking-included-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-6); }
         @media (min-width: 768px) { .gbooking-included-grid { grid-template-columns: 1fr 1fr; } }
+        .gbooking-evidence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: var(--space-2); }
+        .gbooking-evidence-img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: var(--radius); border: 1px solid rgb(var(--border)); display: block; }
       `}</style>
       {themeObj && (
         <>
           <style dangerouslySetInnerHTML={{ __html: themeStyleTag }} />
           <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         </>
+      )}
+      {hasEvidence && (
+        <script dangerouslySetInnerHTML={{ __html: evidenceDownloadScript }} />
       )}
 
       <div style={{ marginBottom: "var(--space-4)" }}>
@@ -663,6 +742,87 @@ try{
               </div>
             )}
           </>
+        )}
+
+        {/* Evidence Photos */}
+        {hasEvidence && (
+          <div className="surface gbooking-sp">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "var(--space-4)",
+                marginBottom: "var(--space-6)",
+                paddingBottom: "var(--space-4)",
+                borderBottom: "1px solid rgb(var(--border-light))",
+              }}
+            >
+              <h2>{t("evidencePhotosTitle")}</h2>
+              <button
+                id="cf-evidence-dl-btn"
+                type="button"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius)",
+                  border: "1px solid rgb(var(--border))",
+                  background: "rgb(var(--surface))",
+                  color: "rgb(var(--text-secondary))",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                {t("evidenceDownloadAll")}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+              {evidenceGroups.map((group, gi) => (
+                <div key={gi}>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      color: "rgb(var(--text-secondary))",
+                      marginBottom: "var(--space-3)",
+                    }}
+                  >
+                    {group.labelA} — {group.labelB}
+                  </p>
+                  <div className="gbooking-evidence-grid">
+                    {group.urls.map((url, pi) => (
+                      <a
+                        key={pi}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display: "block" }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`${group.labelA} ${group.labelB} ${pi + 1}`}
+                          className="gbooking-evidence-img"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
       </div>

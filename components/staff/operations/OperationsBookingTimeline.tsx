@@ -14,6 +14,7 @@ const DAYS_BACK = 30
 const DAYS_FORWARD = 180
 const TOTAL_DAYS = DAYS_BACK + DAYS_FORWARD
 const PX_PER_DAY = 28
+const PX_PER_HOUR = PX_PER_DAY / 24
 const TIMELINE_PX = TOTAL_DAYS * PX_PER_DAY // 5880
 const LEFT_COL_PX = 144
 const ROW_H = 34
@@ -245,11 +246,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                     {vBookings.map((b) => {
                       const pickupDate = new Date(b.pickupAt)
                       const returnDate = new Date(b.returnAt)
-                      const isReturnLocalMidnight =
-                        returnDate.getHours() === 0 && returnDate.getMinutes() === 0 &&
-                        returnDate.getSeconds() === 0 && returnDate.getMilliseconds() === 0
-                      const startDay = dayOffset(new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate()))
-                      const endDay = dayOffset(new Date(returnDate.getFullYear(), returnDate.getMonth(), returnDate.getDate())) + (isReturnLocalMidnight ? 0 : 1)
+                      const startDay = dayOffset(pickupDate)
+                      const endDay = dayOffset(returnDate)
                       const cStart = Math.max(0, startDay)
                       const cEnd = Math.min(TOTAL_DAYS, endDay)
                       if (cStart >= cEnd) return null

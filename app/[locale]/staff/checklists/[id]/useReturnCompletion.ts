@@ -80,6 +80,14 @@ export function useReturnCompletion({
       await supabase.from('vehicles').update({ status: 'preparing' }).eq('id', vehicleId);
     }
 
+    if (instance.checklist_type === 'return' && instance.booking_id) {
+      await supabase
+        .from('bookings')
+        .update({ status: 'completed' })
+        .eq('id', instance.booking_id)
+        .eq('status', 'on_rent');
+    }
+
     navigateAfterCompletion();
   };
 

@@ -25,27 +25,14 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
   }
 
-  const { data: booking, error: fetchErr } = await supabase
-    .from('bookings')
-    .select('id, staff_metadata')
-    .eq('id', bookingId)
-    .eq('company_id', profile.company_id)
-    .single()
-
-  if (fetchErr || !booking) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
   const field =
-    type === 'balance_invoice' ? 'balance_invoice_sent_at' :
-    type === 'return_prep'     ? 'return_prep_message_sent_at' :
-                                 'pre_arrival_message_sent_at'
-  const updatedMeta = {
-    ...((booking.staff_metadata as Record<string, unknown>) ?? {}),
-    [field]: new Date().toISOString(),
-  }
+    type === 'balance_invoice' ? 'balance_invoice_sent' :
+    type === 'return_prep'     ? 'return_whatsapp_sent' :
+                                 'prearrival_whatsapp_sent'
 
   const { error: updateErr } = await supabase
     .from('bookings')
-    .update({ staff_metadata: updatedMeta })
+    .update({ [field]: true })
     .eq('id', bookingId)
     .eq('company_id', profile.company_id)
 

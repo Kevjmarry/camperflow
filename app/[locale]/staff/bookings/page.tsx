@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getEffectiveUser } from "@/lib/supabase/getEffectiveUser";
 import { getStatusChipStyle } from "@/lib/statusChip";
 import BackLink from "@/components/staff/BackLink";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ChecklistInstance {
   id: string;
@@ -45,6 +46,7 @@ export default function BookingsPage() {
   const { locale } = useParams<{ locale: string }>();
   const t = useTranslations("bookings");
   const supabase = createClient();
+  const { company } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,6 +107,14 @@ const [dateFrom, setDateFrom] = useState<string>("");
       let rawBookings: Booking[] = [];
 
       if (canManage) {
+        const now = new Date().toISOString();
+        await supabase
+          .from('bookings')
+          .update({ status: 'on_rent' })
+          .eq('status', 'confirmed')
+          .lte('pickup_at', now)
+          .gte('return_at', now);
+
         const { data, error } = await supabase
           .from('bookings')
           .select('*, vehicles(id, name, status)')
@@ -173,6 +183,13 @@ const [dateFrom, setDateFrom] = useState<string>("");
     return Array.from(seen.keys()).sort((a, b) => a.localeCompare(b));
   }, [bookings, canManage]);
 
+  // True when pickup_at has passed but return_at hasn't — regardless of DB status
+  const isEffectivelyOnRent = (booking: Booking): boolean => {
+    if (booking.status === 'cancelled' || booking.status === 'completed') return false;
+    const now = new Date().toISOString();
+    return booking.pickup_at <= now && booking.return_at > now;
+  };
+
 // Filtered + sorted view — no re-fetch needed
   const displayedBookings = useMemo(() => {
     let result = bookings;
@@ -180,9 +197,9 @@ const [dateFrom, setDateFrom] = useState<string>("");
     if (statusFilter === 'pending') {
       result = result.filter(b => b.status === 'draft');
     } else if (statusFilter === 'confirmed') {
-      result = result.filter(b => ['confirmed', 'blocked'].includes(b.status));
+      result = result.filter(b => ['confirmed', 'blocked'].includes(b.status) && !isEffectivelyOnRent(b));
     } else if (statusFilter === 'on_rent') {
-      result = result.filter(b => b.status === 'on_rent');
+      result = result.filter(b => b.status === 'on_rent' || isEffectivelyOnRent(b));
     } else if (statusFilter === 'completed') {
       result = result.filter(b => b.status === 'completed');
     } else if (statusFilter === 'cancelled') {
@@ -220,8 +237,8 @@ if (dateFrom) {
       switch (sortBy) {
         case 'nextPickup': {
           const now = new Date().toISOString();
-          const aOnRent = a.status === 'on_rent';
-          const bOnRent = b.status === 'on_rent';
+          const aOnRent = a.status === 'on_rent' || isEffectivelyOnRent(a);
+          const bOnRent = b.status === 'on_rent' || isEffectivelyOnRent(b);
           if (aOnRent !== bOnRent) return aOnRent ? -1 : 1;
           const aFuture = a.pickup_at >= now;
           const bFuture = b.pickup_at >= now;
@@ -230,8 +247,8 @@ if (dateFrom) {
           return aFuture ? -1 : 1;
         }
         case 'rentingNow': {
-          const aOnRent = a.status === 'on_rent';
-          const bOnRent = b.status === 'on_rent';
+          const aOnRent = a.status === 'on_rent' || isEffectivelyOnRent(a);
+          const bOnRent = b.status === 'on_rent' || isEffectivelyOnRent(b);
           if (aOnRent !== bOnRent) return aOnRent ? -1 : 1;
           return a.pickup_at.localeCompare(b.pickup_at);
         }
@@ -294,11 +311,13 @@ setDateFrom('');
     }
   };
 
+  const tz = company?.company_timezone ?? 'Europe/Bratislava';
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString(t("date.locale"), {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: tz,
     });
   };
 
@@ -420,6 +439,7 @@ setDateFrom('');
 
   const getNextAction = (booking: Booking) => {
     const checklists = booking.checklists || [];
+    const effectiveOnRent = booking.status === 'on_rent' || isEffectivelyOnRent(booking);
 
     if (booking.status === 'draft') {
       return (
@@ -431,7 +451,7 @@ setDateFrom('');
       );
     }
 
-    if (['confirmed', 'blocked'].includes(booking.status)) {
+    if (['confirmed', 'blocked'].includes(booking.status) && !isEffectivelyOnRent(booking)) {
       const hasIncomplete = checklists.some(cl => cl.status !== 'completed');
       if (hasIncomplete) {
         const first = checklists.find(cl => cl.status !== 'completed');
@@ -454,7 +474,7 @@ setDateFrom('');
       );
     }
 
-    if (booking.status === 'on_rent') {
+    if (effectiveOnRent) {
       const hasIncomplete = checklists.some(cl => cl.status !== 'completed');
       if (hasIncomplete) {
         const first = checklists.find(cl => cl.status !== 'completed');
@@ -846,6 +866,7 @@ setDateFrom('');
                           </tr>
                           {isExpanded && items.map((booking) => {
                             const timeToPickup = getTimeToPickup(booking.pickup_at);
+                            const effectiveStatus = isEffectivelyOnRent(booking) ? 'on_rent' : booking.status;
                             return (
                               <tr
                                 key={booking.id}
@@ -876,19 +897,19 @@ setDateFrom('');
                                   {formatDate(booking.pickup_at)}
                                 </td>
                                 <td style={td}>
-                                  {booking.status !== 'on_rent' && timeToPickup ? timeToPickup : <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
+                                  {effectiveStatus !== 'on_rent' && timeToPickup ? timeToPickup : <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                 </td>
                                 <td style={td}>
                                   {formatDate(booking.return_at)}
                                 </td>
                                 <td style={td}>
-                                  {['completed', 'cancelled'].includes(booking.status)
+                                  {['completed', 'cancelled'].includes(effectiveStatus)
                                     ? <span style={{ color: 'rgb(var(--muted))' }}>—</span>
                                     : (getTimeToReturn(booking.return_at) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>)}
                                 </td>
                                 <td style={td}>
-                                  <span style={getStatusChipStyle(booking.status)}>
-                                    {getStatusLabel(booking.status)}
+                                  <span style={getStatusChipStyle(effectiveStatus)}>
+                                    {getStatusLabel(effectiveStatus)}
                                   </span>
                                 </td>
                                 <td style={td}>
@@ -942,6 +963,7 @@ setDateFrom('');
                       </button>
                       {isExpanded && items.map((booking) => {
                   const timeToPickup = getTimeToPickup(booking.pickup_at);
+                  const effectiveStatus = isEffectivelyOnRent(booking) ? 'on_rent' : booking.status;
                   return (
                     <div
                       key={booking.id}
@@ -971,8 +993,8 @@ setDateFrom('');
                               {booking.booking_number}
                             </div>
                           </div>
-                          <span style={getStatusChipStyle(booking.status)}>
-                            {getStatusLabel(booking.status)}
+                          <span style={getStatusChipStyle(effectiveStatus)}>
+                            {getStatusLabel(effectiveStatus)}
                           </span>
                         </div>
                       )}
@@ -984,8 +1006,8 @@ setDateFrom('');
                           paddingBottom: 'var(--space-3)',
                           borderBottom: '1px solid rgb(var(--border))'
                         }}>
-                          <span style={getStatusChipStyle(booking.status)}>
-                            {getStatusLabel(booking.status)}
+                          <span style={getStatusChipStyle(effectiveStatus)}>
+                            {getStatusLabel(effectiveStatus)}
                           </span>
                         </div>
                       )}
@@ -1026,7 +1048,7 @@ setDateFrom('');
                           <div style={{ color: 'rgb(var(--text))' }}>
                             {formatDate(booking.pickup_at)}
                           </div>
-                          {timeToPickup && booking.status !== 'on_rent' && (
+                          {timeToPickup && effectiveStatus !== 'on_rent' && (
                             <div style={{ marginTop: '4px' }}>
                               {timeToPickup}
                             </div>
