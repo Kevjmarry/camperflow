@@ -178,9 +178,19 @@ export function normalizeICalEvent(
   const pickupAt = dtStartProp
     ? parseDtToIso(dtStartProp.value, dtStartProp.params["TZID"])
     : "";
-  const returnAt = dtEndProp
+
+  // RFC 5545 §3.6.1: DATE-only DTEND is exclusive — e.g. DTEND:20240616 means
+  // the last occupied day is June 15, not June 16. Subtract 1 calendar day so
+  // the company dropoff time is applied on the correct date.
+  const dtEndIsDateOnly = dtEndProp ? /^\d{8}$/.test(dtEndProp.value) : false;
+  let returnAt = dtEndProp
     ? parseDtToIso(dtEndProp.value, dtEndProp.params["TZID"])
     : "";
+  if (dtEndIsDateOnly && returnAt) {
+    const d = new Date(returnAt);
+    d.setUTCDate(d.getUTCDate() - 1);
+    returnAt = d.toISOString();
+  }
   const EXPLICIT_UTC_RE = /^\d{8}T\d{6}Z$/;
   const pickupAtExplicitUtc = dtStartProp
     ? EXPLICIT_UTC_RE.test(dtStartProp.value)

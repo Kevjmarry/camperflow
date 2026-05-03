@@ -3,6 +3,16 @@ import { createClient } from '@/lib/supabase/server'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
 
+const TZ = 'Europe/Bratislava'
+const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
+function isTodayOrTomorrow(isoString: string): boolean {
+  const now = new Date()
+  const todayStr    = dateFmt.format(now)
+  const tomorrowStr = dateFmt.format(new Date(now.getTime() + 86_400_000))
+  const eventStr    = dateFmt.format(new Date(isoString))
+  return eventStr === todayStr || eventStr === tomorrowStr
+}
+
 export interface OpsInvoiceReminder {
   type: 'balance_invoice' | 'pre_arrival' | 'return_prep'
   id: string
@@ -35,12 +45,9 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const { data: settings } = await supabase
     .from('company_settings')
-    .select('final_payment_reminders_enabled, final_payment_due_days, final_payment_urgent_days, pre_arrival_reminders_enabled, return_prep_reminders_enabled')
+    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled')
     .eq('id', companyId)
     .maybeSingle()
-
-  const reminderDays: number = settings?.final_payment_due_days ?? 35
-  const urgentDays: number   = settings?.final_payment_urgent_days ?? 14
 
   const { data, error } = await supabase
     .from('bookings')
@@ -55,10 +62,13 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       balance_invoice_sent,
       prearrival_whatsapp_sent,
       return_whatsapp_sent,
+      balance_invoice_reminder_enabled,
+      prearrival_reminder_enabled,
+      return_prep_reminder_enabled,
       vehicles ( name )
     `)
     .eq('company_id', companyId)
-    .eq('status', 'confirmed')
+    .in('status', ['confirmed', 'on_rent'])
     .order('pickup_at', { ascending: true })
 
   if (error) throw error
@@ -74,16 +84,16 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     const pickupMs = new Date(b.pickup_at).getTime()
     const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
 
-    // Balance invoice reminder: split payment, not yet sent, within company window, pickup upcoming
+    // Final payment check: split payment, not yet sent, pickup within 10 days
     if (
+      b.status === 'confirmed' &&
       settings?.final_payment_reminders_enabled &&
+      b.balance_invoice_reminder_enabled !== false &&
       b.payment_type === 'split' &&
-      b.balance_invoice_sent === false &&
-      daysUntilPickup > 0 &&
-      daysUntilPickup > urgentDays &&
-      daysUntilPickup <= reminderDays
+      b.balance_invoice_sent !== true &&
+      daysUntilPickup >= 0 &&
+      daysUntilPickup <= 10
     ) {
-      const dueMs = pickupMs - reminderDays * 86400000
       results.push({
         type: 'balance_invoice',
         id: b.id,
@@ -93,16 +103,16 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at,
         daysUntilPickup,
-        dueAt: new Date(dueMs).toISOString(),
-        daysUntilDue: Math.round((dueMs - now) / 86400000),
       })
     }
 
-    // Pre-arrival WhatsApp: pickup is tomorrow, not yet sent, toggle enabled
+    // Pre-arrival WhatsApp: confirmed, not yet sent, pickup today or tomorrow (Bratislava)
     if (
+      b.status === 'confirmed' &&
       (settings?.pre_arrival_reminders_enabled ?? true) &&
-      daysUntilPickup === 1 &&
-      b.prearrival_whatsapp_sent === false
+      b.prearrival_reminder_enabled !== false &&
+      b.prearrival_whatsapp_sent === false &&
+      isTodayOrTomorrow(b.pickup_at)
     ) {
       results.push({
         type: 'pre_arrival',
@@ -116,11 +126,11 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       })
     }
 
-    // Return-prep WhatsApp: return is tomorrow, not yet sent, toggle enabled, return upcoming
-    if ((settings?.return_prep_reminders_enabled ?? true) && b.return_at) {
+    // Return-prep WhatsApp: confirmed/on_rent, not yet sent, return today or tomorrow (Bratislava)
+    if ((settings?.return_prep_reminders_enabled ?? true) && b.return_prep_reminder_enabled !== false && b.return_at && isTodayOrTomorrow(b.return_at)) {
       const returnMs = new Date(b.return_at).getTime()
       const daysUntilReturn = Math.round((returnMs - now) / 86400000)
-      if (daysUntilReturn === 1 && b.return_whatsapp_sent === false) {
+      if (b.return_whatsapp_sent === false) {
         results.push({
           type: 'return_prep',
           id: `${b.id}-return-prep`,

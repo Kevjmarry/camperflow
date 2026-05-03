@@ -1395,17 +1395,23 @@
       "invoiceSetupLabel": "Invoice setup",
       "invoiceSetupHint": "Determines whether CamperFlow should remind staff to send the remaining balance invoice before pickup.",
       "tasksProgress": "Operational tasks: {done} / {total} completed",
+      "tasksHint": "Tick tasks after they are done — ticked tasks stop appearing in Operations reminders.",
       "paymentPlan": {
         "notSet": "Not set",
         "split": "50% now + 50% later",
         "full": "100% upfront"
       },
       "task": {
-        "balanceInvoice": "Remaining 50% invoice",
+        "balanceInvoice": "Final payment checked",
         "preArrivalMessage": "Pre-arrival WhatsApp message",
         "returnPrepMessage": "Return-prep WhatsApp message",
         "statusLabel": "Status:",
-        "notSent": "Not sent",
+        "notSent": "Not done",
+        "sent": "Done",
+        "markChecked": "Mark checked",
+        "markSent": "Mark sent",
+        "disableReminder": "Disable reminder",
+        "reminderDisabled": "Reminder off · Enable",
         "sentAt": "Sent · {date}",
         "clear": "Clear"
       }

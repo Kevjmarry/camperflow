@@ -32,16 +32,40 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
   const companyId = profile?.company_id
   if (!isUUID(companyId)) return []
 
-  // Fetch all on-rent bookings
-  const { data: onRent, error: onRentError } = await supabase
+  const now = new Date()
+
+  // Candidate bookings: active (not cancelled/completed/draft), pickup already started
+  const { data: candidates, error: candidatesError } = await supabase
     .from('ops_bookings')
     .select('id, booking_number, customer_name, vehicle_name, vehicle_id, return_at')
     .eq('company_id', companyId)
-    .eq('booking_status', 'on_rent')
+    .not('booking_status', 'in', '(cancelled,completed,draft)')
+    .lte('pickup_at', now.toISOString())
     .order('return_at', { ascending: true })
 
-  if (onRentError) throw onRentError
-  if (!onRent || onRent.length === 0) return []
+  if (candidatesError) throw candidatesError
+  if (!candidates || candidates.length === 0) return []
+
+  const candidateIds = candidates.map((b) => b.id)
+
+  // Completed handover and return checklists for these bookings
+  const { data: instances } = await supabase
+    .from('checklist_instances')
+    .select('booking_id, checklist_type')
+    .in('booking_id', candidateIds)
+    .in('checklist_type', ['handover', 'return'])
+    .eq('status', 'completed')
+
+  const handoverDone = new Set<string>()
+  const returnDone = new Set<string>()
+  for (const ci of instances ?? []) {
+    if (ci.checklist_type === 'handover') handoverDone.add(ci.booking_id)
+    if (ci.checklist_type === 'return') returnDone.add(ci.booking_id)
+  }
+
+  // On rent now = handover complete AND return NOT complete
+  const onRent = candidates.filter((b) => handoverDone.has(b.id) && !returnDone.has(b.id))
+  if (onRent.length === 0) return []
 
   const vehicleIds = onRent.map((b) => b.vehicle_id).filter(isUUID)
 
@@ -69,7 +93,6 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
     upcomingByVehicle.get(u.vehicle_id)!.push({ id: u.id, pickupAt: u.pickup_at })
   }
 
-  const now = new Date()
   const MS_PER_HOUR = 1000 * 60 * 60
   const MS_PER_DAY = MS_PER_HOUR * 24
 
@@ -82,9 +105,9 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
     let nextBookingId: string | null = null
 
     if (isUUID(b.vehicle_id)) {
-      const candidates = upcomingByVehicle.get(b.vehicle_id) ?? []
+      const upcoming = upcomingByVehicle.get(b.vehicle_id) ?? []
       // First candidate whose pickupAt >= return_at
-      const next = candidates.find((u) => u.pickupAt >= b.return_at)
+      const next = upcoming.find((u) => u.pickupAt >= b.return_at)
       if (next) {
         nextBookingPickupAt = next.pickupAt
         nextBookingId = next.id

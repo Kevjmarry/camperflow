@@ -1395,17 +1395,23 @@
       "invoiceSetupLabel": "Rechnungsaufstellung",
       "invoiceSetupHint": "Legt fest, ob CamperFlow Mitarbeiter daran erinnern soll, die Restbetragsrechnung vor der Abholung zu versenden.",
       "tasksProgress": "Operative Aufgaben: {done} / {total} abgeschlossen",
+      "tasksHint": "Aufgaben nach Erledigung anhaken — angehakte Aufgaben erscheinen nicht mehr in den Operations-Erinnerungen.",
       "paymentPlan": {
         "notSet": "Nicht gesetzt",
         "split": "50% jetzt + 50% später",
         "full": "100% im Voraus"
       },
       "task": {
-        "balanceInvoice": "Restbetrag-Rechnung (50%)",
+        "balanceInvoice": "Abschlusszahlung geprüft",
         "preArrivalMessage": "WhatsApp-Nachricht vor Ankunft",
         "returnPrepMessage": "WhatsApp-Nachricht zur Rückgabevorbereitung",
         "statusLabel": "Status:",
-        "notSent": "Nicht gesendet",
+        "notSent": "Nicht erledigt",
+        "sent": "Erledigt",
+        "markChecked": "Als geprüft markieren",
+        "markSent": "Als gesendet markieren",
+        "disableReminder": "Erinnerung deaktivieren",
+        "reminderDisabled": "Erinnerung aus · Aktivieren",
         "sentAt": "Gesendet · {date}",
         "clear": "Zurücksetzen"
       }

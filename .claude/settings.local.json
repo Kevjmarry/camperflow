@@ -36,7 +36,9 @@
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Recurse -Directory -ErrorAction SilentlyContinue)",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Get-ChildItem -Recurse \"c:\\\\CamperFlow\\\\camperflow\\\\app\\\\[locale]\\\\guest\")",
-      "Read(//c/CamperFlow/camperflow/app/**)"
+      "Read(//c/CamperFlow/camperflow/app/**)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Force)",
+      "Bash(Select-Object Name, FullName)"
     ]
   }
 }
