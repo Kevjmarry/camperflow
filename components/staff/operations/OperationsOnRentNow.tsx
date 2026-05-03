@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -8,8 +9,6 @@ import type { OpsOnRentRow } from '@/lib/staff/operations/getOpsOnRentNow'
 interface Props {
   rows: OpsOnRentRow[]
 }
-
-// ── Formatting helpers (locale-aware, defined inside component via closures) ──
 
 // ── Severity chip ─────────────────────────────────────────────────────────────
 
@@ -62,6 +61,10 @@ export default function OperationsOnRentNow({ rows }: Props) {
   const t = useTranslations('staff.operations.onRentNow')
   const tOps = useTranslations('staff.operations')
 
+  // Keyed by String(row.id). Initialized empty so server render and first
+  // client render both output absolute text only. Populated after mount.
+  const [relSuffixes, setRelSuffixes] = useState<Record<string, string>>({})
+
   function formatDateShort(iso: string) {
     const d = new Date(iso)
     const now = new Date()
@@ -74,15 +77,29 @@ export default function OperationsOnRentNow({ rows }: Props) {
     return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   }
 
-  function formatComingBack(returnAt: string, isOverdue: boolean): { main: string; overdueFlag: boolean } {
-    const diffMs = new Date(returnAt).getTime() - Date.now()
-    const absDiffMs = Math.abs(diffMs)
-    const absDiffH = Math.round(absDiffMs / (1000 * 60 * 60))
-    const absDiffD = Math.round(absDiffMs / (1000 * 60 * 60 * 24))
-    const relLabel = isOverdue
-      ? (absDiffH < 24 ? t('overdueHours', { count: absDiffH }) : t('overdueDays', { count: absDiffD }))
-      : (absDiffH < 24 ? t('inHours', { count: absDiffH }) : t('inDaysShort', { count: absDiffD }))
-    return { main: `${formatDateShort(returnAt)}, ${formatTime(returnAt)} (${relLabel})`, overdueFlag: isOverdue }
+  function absReturnText(returnAt: string): string {
+    return `${formatDateShort(returnAt)}, ${formatTime(returnAt)}`
+  }
+
+  // Runs once after mount — safe to read Date.now() here, never during render
+  useEffect(() => {
+    const suffixes: Record<string, string> = {}
+    rows.forEach((r) => {
+      const diffMs = new Date(r.returnAt).getTime() - Date.now()
+      const absDiffMs = Math.abs(diffMs)
+      const absDiffH = Math.round(absDiffMs / (1000 * 60 * 60))
+      const absDiffD = Math.round(absDiffMs / (1000 * 60 * 60 * 24))
+      suffixes[String(r.id)] = r.isOverdue
+        ? (absDiffH < 24 ? t('overdueHours', { count: absDiffH }) : t('overdueDays', { count: absDiffD }))
+        : (absDiffH < 24 ? t('inHours', { count: absDiffH }) : t('inDaysShort', { count: absDiffD }))
+    })
+    setRelSuffixes(suffixes)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function returnLabel(r: OpsOnRentRow): string {
+    const abs = absReturnText(r.returnAt)
+    const rel = relSuffixes[String(r.id)]
+    return rel ? `${abs} (${rel})` : abs
   }
 
   function formatPrepWindow(prepWindowMs: number): string {
@@ -213,7 +230,7 @@ export default function OperationsOnRentNow({ rows }: Props) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {rows.map((r) => {
-            const comingBack = formatComingBack(r.returnAt, r.isOverdue)
+            const label = returnLabel(r)
             return (
               <div key={r.id} className="on-rent-row">
 
@@ -260,17 +277,17 @@ export default function OperationsOnRentNow({ rows }: Props) {
                   <div
                     style={{
                       fontSize: '14px',
-                      fontWeight: comingBack.overdueFlag ? 600 : 400,
-                      color: comingBack.overdueFlag ? 'rgb(var(--danger))' : 'rgb(var(--text))',
+                      fontWeight: r.isOverdue ? 600 : 400,
+                      color: r.isOverdue ? 'rgb(var(--danger))' : 'rgb(var(--text))',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {comingBack.overdueFlag && (
+                    {r.isOverdue && (
                       <span style={{ marginRight: '4px' }}>⚠</span>
                     )}
-                    {comingBack.main}
+                    {label}
                   </div>
                 </div>
 
@@ -337,12 +354,12 @@ export default function OperationsOnRentNow({ rows }: Props) {
                     <span
                       className="on-rent-data-value"
                       style={{
-                        fontWeight: comingBack.overdueFlag ? 600 : 400,
-                        color: comingBack.overdueFlag ? 'rgb(var(--danger))' : 'rgb(var(--text))',
+                        fontWeight: r.isOverdue ? 600 : 400,
+                        color: r.isOverdue ? 'rgb(var(--danger))' : 'rgb(var(--text))',
                       }}
                     >
-                      {comingBack.overdueFlag && <span style={{ marginRight: '3px' }}>⚠</span>}
-                      {comingBack.main}
+                      {r.isOverdue && <span style={{ marginRight: '3px' }}>⚠</span>}
+                      {label}
                     </span>
                   </div>
 

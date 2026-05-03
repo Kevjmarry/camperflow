@@ -38,7 +38,8 @@
       "Bash(Get-ChildItem -Recurse \"c:\\\\CamperFlow\\\\camperflow\\\\app\\\\[locale]\\\\guest\")",
       "Read(//c/CamperFlow/camperflow/app/**)",
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Force)",
-      "Bash(Select-Object Name, FullName)"
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

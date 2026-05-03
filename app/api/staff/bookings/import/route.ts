@@ -539,6 +539,7 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
+    const syncRunId = crypto.randomUUID();
     let created = 0;
     let updated = 0;
     let blocked = 0;
@@ -640,6 +641,7 @@ export async function POST(request: NextRequest) {
               return_at: mergedReturnAt,
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
+              sync_run_id: syncRunId,
               ...(customerId ? { customer_id: customerId } : {}),
               ...(updatedStaffMetaBmIcal ? { staff_metadata: updatedStaffMetaBmIcal } : {}),
             })
@@ -699,6 +701,7 @@ export async function POST(request: NextRequest) {
               source_reference: n.sourceReference ?? null,
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
+              sync_run_id: syncRunId,
               ...(customerId ? { customer_id: customerId } : {}),
               ...(updatedStaffMetaUpdate ? { staff_metadata: updatedStaffMetaUpdate } : {}),
             })
@@ -743,9 +746,14 @@ export async function POST(request: NextRequest) {
             source_reference: n.sourceReference ?? null,
             import_last_seen_at: now,
             source_metadata: n.rawMetadata,
+            sync_run_id: syncRunId,
             booking_number: generateBookingNumber(),
             booking_code: generateBookingCode(),
             imported_at: now,
+            payment_type: null,
+            balance_invoice_sent: null,
+            prearrival_whatsapp_sent: null,
+            return_whatsapp_sent: null,
             ...(customerId ? { customer_id: customerId } : {}),
             ...(initialStaffMeta ? { staff_metadata: initialStaffMeta } : {}),
           });
@@ -801,7 +809,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ created, updated, blocked, errors });
+    // Cancel stale bookings that were not seen in this sync run.
+    // Applies only to source types that are fully replaced each import.
+    let cancelled = 0;
+    const { data: staleBookings } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('company_id', companyId)
+      .in('source_type', ['bookingmood_csv', 'ical'])
+      .neq('sync_run_id', syncRunId)
+      .not('status', 'in', '("cancelled","completed")');
+
+    if (staleBookings && staleBookings.length > 0) {
+      const staleIds = staleBookings.map((b) => b.id);
+      const { error: cancelError } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .in('id', staleIds);
+
+      if (!cancelError) cancelled = staleIds.length;
+    }
+
+    return NextResponse.json({ created, updated, blocked, cancelled, errors });
   } catch (err: unknown) {
     console.error('Booking import route error:', err);
     const message = err instanceof Error ? err.message : 'Internal server error';

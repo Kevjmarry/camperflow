@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
 
+const IMPORT_SOURCE_TYPES = ['ical', 'bookingmood_csv', 'bookingmood_json'] as const
+
 const TZ = 'Europe/Bratislava'
 const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
 function isTodayOrTomorrow(isoString: string): boolean {
@@ -14,7 +16,8 @@ function isTodayOrTomorrow(isoString: string): boolean {
 }
 
 export interface OpsInvoiceReminder {
-  type: 'balance_invoice' | 'pre_arrival' | 'return_prep'
+  type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_imported'
+  key?: string
   id: string
   bookingId: string
   bookingNumber: string
@@ -58,6 +61,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       pickup_at,
       return_at,
       status,
+      source_type,
       payment_type,
       balance_invoice_sent,
       prearrival_whatsapp_sent,
@@ -88,7 +92,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     if (
       b.status === 'confirmed' &&
       settings?.final_payment_reminders_enabled &&
-      b.balance_invoice_reminder_enabled !== false &&
+      b.balance_invoice_reminder_enabled === true &&
       b.payment_type === 'split' &&
       b.balance_invoice_sent !== true &&
       daysUntilPickup >= 0 &&
@@ -110,8 +114,8 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     if (
       b.status === 'confirmed' &&
       (settings?.pre_arrival_reminders_enabled ?? true) &&
-      b.prearrival_reminder_enabled !== false &&
-      b.prearrival_whatsapp_sent === false &&
+      b.prearrival_reminder_enabled === true &&
+      b.prearrival_whatsapp_sent !== true &&
       isTodayOrTomorrow(b.pickup_at)
     ) {
       results.push({
@@ -127,10 +131,10 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     }
 
     // Return-prep WhatsApp: confirmed/on_rent, not yet sent, return today or tomorrow (Bratislava)
-    if ((settings?.return_prep_reminders_enabled ?? true) && b.return_prep_reminder_enabled !== false && b.return_at && isTodayOrTomorrow(b.return_at)) {
+    if ((settings?.return_prep_reminders_enabled ?? true) && b.return_prep_reminder_enabled === true && b.return_at && isTodayOrTomorrow(b.return_at)) {
       const returnMs = new Date(b.return_at).getTime()
       const daysUntilReturn = Math.round((returnMs - now) / 86400000)
-      if (b.return_whatsapp_sent === false) {
+      if (b.return_whatsapp_sent !== true) {
         results.push({
           type: 'return_prep',
           id: `${b.id}-return-prep`,
@@ -144,6 +148,39 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
           daysUntilReturn,
         })
       }
+    }
+
+    // Review imported: booking was imported from an external source,
+    // is still active, the return date has not yet passed,
+    // and at least one per-booking reminder field has not yet been reviewed (still null).
+    const needsReview =
+      b.balance_invoice_reminder_enabled === null ||
+      b.prearrival_reminder_enabled === null ||
+      b.return_prep_reminder_enabled === null
+
+    const isImportedCandidate =
+      b.source_type &&
+      (IMPORT_SOURCE_TYPES as readonly string[]).includes(b.source_type) &&
+      b.status !== 'completed' &&
+      b.status !== 'cancelled' &&
+      b.return_at &&
+      new Date(b.return_at).getTime() >= now
+
+    if (
+      isImportedCandidate &&
+      needsReview
+    ) {
+      results.push({
+        type: 'review_imported',
+        key: 'ops.review_imported_booking',
+        id: `${b.id}-review-imported`,
+        bookingId: b.id,
+        bookingNumber: b.booking_number ?? '',
+        customerName: b.customer_name ?? '',
+        vehicleName: vehicle?.name ?? '',
+        pickupAt: b.pickup_at,
+        daysUntilPickup,
+      })
     }
   }
 

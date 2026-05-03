@@ -1129,7 +1129,8 @@
         "type": {
           "balance_invoice": "Restrechnung (50%) senden",
           "pre_arrival": "WhatsApp vor Ankunft senden",
-          "return_prep": "WhatsApp zur Rückgabevorbereitung senden"
+          "return_prep": "WhatsApp zur Rückgabevorbereitung senden",
+          "review_imported": "Erinnerungen prüfen"
         },
         "timing": {
           "returnTomorrow": "Rückgabe morgen",
@@ -1373,6 +1374,9 @@
       "internalNotes": "Interne Notizen",
       "extras": "Extras",
       "operations": "Abläufe"
+    },
+    "booking": {
+      "reminders": "Erinnerungen"
     },
     "customer": {
       "title": "Kunde",

@@ -67,6 +67,15 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
             display: none;
           }
         }
+        .ops-reminder-row-link {
+          display: flex;
+          text-decoration: none;
+          color: inherit;
+          cursor: pointer;
+        }
+        .ops-reminder-row-link:hover {
+          background: rgb(var(--brand) / 0.04);
+        }
       `}</style>
 
       <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
@@ -92,26 +101,44 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
         <div style={{ border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           {visible.map((r, idx) => {
             const isLoading = handling.has(r.id)
-            return (
-              <div
-                key={r.id}
-                className="ops-reminder-row"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  padding: 'var(--space-3) var(--space-4)',
-                  borderTop: idx > 0 ? '1px solid rgb(var(--border))' : undefined,
-                  opacity: isLoading ? 0.5 : 1,
-                  transition: 'opacity 0.15s',
-                }}
-              >
+            const isCheckable = r.type !== 'review_imported'
+            const bookingHref = `/${locale}/staff/bookings/${r.bookingId}`
+
+            const rowStyle: React.CSSProperties = {
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3) var(--space-4)',
+              borderTop: idx > 0 ? '1px solid rgb(var(--border))' : undefined,
+              opacity: isLoading ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+            }
+
+            const timingLabel =
+              r.type === 'return_prep' ? t('timing.returnTomorrow')
+              : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
+              : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
+              : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
+              : t('timing.pickupInDays', { count: r.daysUntilPickup })
+
+            const inner = (
+              <>
                 <input
                   type="checkbox"
-                  disabled={isLoading}
-                  onChange={() => markHandled(r)}
-                  style={{ cursor: isLoading ? 'default' : 'pointer', flexShrink: 0 }}
-                  aria-label={`Mark ${r.bookingNumber} handled`}
+                  disabled={!isCheckable || isLoading}
+                  onChange={isCheckable ? () => markHandled(r) : undefined}
+                  style={{
+                    cursor: isCheckable && !isLoading ? 'pointer' : 'default',
+                    flexShrink: 0,
+                    visibility: isCheckable ? 'visible' : 'hidden',
+                    pointerEvents: isCheckable ? 'auto' : 'none',
+                  }}
+                  aria-hidden={!isCheckable}
+                  aria-label={
+                    r.type === 'balance_invoice'
+                      ? 'Final payment received'
+                      : `Mark ${r.bookingNumber} handled`
+                  }
                 />
                 <div
                   className="ops-reminder-mid"
@@ -128,29 +155,38 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   </span>
                   {/* Timing shown here only on mobile */}
                   <span className="ops-reminder-timing-mobile" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                    {r.type === 'return_prep' ? t('timing.returnTomorrow')
-                      : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
-                      : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
-                      : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
-                      : t('timing.pickupInDays', { count: r.daysUntilPickup })}
+                    {timingLabel}
                   </span>
                 </div>
                 {/* Timing shown here only on desktop */}
                 <span className="ops-reminder-timing-desktop" style={{ fontSize: '12px', color: 'rgb(var(--muted))', flexShrink: 0 }}>
-                  {r.type === 'return_prep' ? t('timing.returnTomorrow')
-                    : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
-                    : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
-                    : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
-                    : t('timing.pickupInDays', { count: r.daysUntilPickup })}
+                  {timingLabel}
                 </span>
-                <Link
-                  href={`/${locale}/staff/bookings/${r.bookingId}`}
-                  className="ops-reminder-view"
-                  style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none', flexShrink: 0 }}
-                >
-                  {t('view')}
-                </Link>
+                {isCheckable && (
+                  <Link
+                    href={bookingHref}
+                    className="ops-reminder-view"
+                    style={{ fontSize: '13px', color: 'rgb(var(--brand))', textDecoration: 'none', flexShrink: 0 }}
+                  >
+                    {t('view')}
+                  </Link>
+                )}
+              </>
+            )
+
+            return isCheckable ? (
+              <div key={r.id} className="ops-reminder-row" style={rowStyle}>
+                {inner}
               </div>
+            ) : (
+              <Link
+                key={r.id}
+                href={bookingHref}
+                className="ops-reminder-row ops-reminder-row-link"
+                style={rowStyle}
+              >
+                {inner}
+              </Link>
             )
           })}
         </div>

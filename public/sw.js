@@ -61,6 +61,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Dev server rewrites JS chunks without changing filenames, so cache-first
+  // would serve stale bundles and cause hydration mismatches. Skip all SW
+  // caching on localhost so every request goes straight to the network.
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+
   if (url.origin !== self.location.origin) return;
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;

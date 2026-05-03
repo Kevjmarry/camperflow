@@ -1129,7 +1129,8 @@
         "type": {
           "balance_invoice": "Send remaining 50% invoice",
           "pre_arrival": "Send pre-arrival WhatsApp",
-          "return_prep": "Send return-prep WhatsApp"
+          "return_prep": "Send return-prep WhatsApp",
+          "review_imported": "Review reminders"
         },
         "timing": {
           "returnTomorrow": "Return tomorrow",
@@ -1373,6 +1374,9 @@
       "internalNotes": "Internal Notes",
       "extras": "Extras",
       "operations": "Operations"
+    },
+    "booking": {
+      "reminders": "Reminders"
     },
     "customer": {
       "title": "Customer",

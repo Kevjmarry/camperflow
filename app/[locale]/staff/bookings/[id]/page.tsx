@@ -350,8 +350,8 @@ export default function BookingDetailPage() {
   const [reverting, setReverting] = useState(false);
   const [revertError, setRevertError] = useState("");
   const [reminderSaving, setReminderSaving] = useState<string | null>(null);
-  const [opsSent, setOpsSent] = useState({ balance_invoice_sent: false, prearrival_whatsapp_sent: false, return_whatsapp_sent: false });
-  const [opsEnabled, setOpsEnabled] = useState({ balance_invoice_reminder_enabled: true, prearrival_reminder_enabled: true, return_prep_reminder_enabled: true });
+  const [opsSent, setOpsSent] = useState<{ balance_invoice_sent: boolean | null; prearrival_whatsapp_sent: boolean | null; return_whatsapp_sent: boolean | null }>({ balance_invoice_sent: null, prearrival_whatsapp_sent: null, return_whatsapp_sent: null });
+  const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null });
 
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
@@ -500,14 +500,14 @@ export default function BookingDetailPage() {
           invoice_reminder_dismissed_at: typeof sm.invoice_reminder_dismissed_at === 'string' ? sm.invoice_reminder_dismissed_at : null,
         });
         setOpsSent({
-          balance_invoice_sent:     Boolean(data.balance_invoice_sent),
-          prearrival_whatsapp_sent: Boolean(data.prearrival_whatsapp_sent),
-          return_whatsapp_sent:     Boolean(data.return_whatsapp_sent),
+          balance_invoice_sent:     data.balance_invoice_sent ?? null,
+          prearrival_whatsapp_sent: data.prearrival_whatsapp_sent ?? null,
+          return_whatsapp_sent:     data.return_whatsapp_sent ?? null,
         });
         setOpsEnabled({
-          balance_invoice_reminder_enabled: data.balance_invoice_reminder_enabled !== false,
-          prearrival_reminder_enabled:      data.prearrival_reminder_enabled !== false,
-          return_prep_reminder_enabled:     data.return_prep_reminder_enabled !== false,
+          balance_invoice_reminder_enabled: data.balance_invoice_reminder_enabled === true ? true : data.balance_invoice_reminder_enabled === false ? false : null,
+          prearrival_reminder_enabled:      data.prearrival_reminder_enabled === true ? true : data.prearrival_reminder_enabled === false ? false : null,
+          return_prep_reminder_enabled:     data.return_prep_reminder_enabled === true ? true : data.return_prep_reminder_enabled === false ? false : null,
         });
 
         // extras stored as array of catalog IDs; ignore old boolean-object format
@@ -851,6 +851,9 @@ export default function BookingDetailPage() {
           notes: formData.notes.trim() || null,
           staff_metadata: staffMetaDb,
           internal_notes: internalNotes.trim() || null,
+          balance_invoice_sent: opsSent.balance_invoice_sent,
+          prearrival_whatsapp_sent: opsSent.prearrival_whatsapp_sent,
+          return_whatsapp_sent: opsSent.return_whatsapp_sent,
         })
         .eq('id', id)
         .select('id')
@@ -1675,7 +1678,7 @@ export default function BookingDetailPage() {
               borderTop: '1px solid rgb(var(--border) / 0.4)',
             }}>
               <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                {t("section.operations")}
+                {t("booking.reminders")}
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div>
@@ -1700,44 +1703,57 @@ export default function BookingDetailPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                   <p style={{ margin: '0 0 var(--space-1)', fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {t("operations.tasksProgress", {
-                      done: [opsSent.balance_invoice_sent, opsSent.prearrival_whatsapp_sent, opsSent.return_whatsapp_sent].filter(Boolean).length,
-                      total: 3,
+                      done: [
+                        ...(staffMeta.payment_plan === 'split' ? [opsSent.balance_invoice_sent] : []),
+                        opsSent.prearrival_whatsapp_sent,
+                        opsSent.return_whatsapp_sent,
+                      ].filter(Boolean).length,
+                      total: staffMeta.payment_plan === 'split' ? 3 : 2,
                     })}
                   </p>
                   <p style={{ margin: '0 0 var(--space-2)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
                     {t("operations.tasksHint")}
                   </p>
-                  {/* Task: Final payment checked */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                  {/* Task: Final payment checked — only for split payment */}
+                  {staffMeta.payment_plan === 'split' && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <button
                         type="button"
                         aria-label={opsEnabled.balance_invoice_reminder_enabled ? "Disable reminder" : "Enable reminder"}
                         disabled={reminderSaving === 'balance_invoice_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('balance_invoice_reminder_enabled', !opsEnabled.balance_invoice_reminder_enabled)}
-                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.balance_invoice_reminder_enabled ? 'rgb(var(--success))' : 'rgb(var(--error))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
+                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.balance_invoice_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.balance_invoice_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
                       >
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.balance_invoice_reminder_enabled ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.balance_invoice_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.balanceInvoice")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.balance_invoice_sent ? 'rgb(var(--success))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.balance_invoice_sent ? t("operations.task.sent") : t("operations.task.notSent")}
+                        <div style={{ fontSize: '12px', color: opsSent.balance_invoice_sent === true ? 'rgb(var(--success))' : opsSent.balance_invoice_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                          {opsSent.balance_invoice_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
                         </div>
                       </div>
                     </div>
-                    {!opsSent.balance_invoice_sent && (
+                    {opsSent.balance_invoice_sent === true ? (
+                      <button
+                        type="button"
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
+                        disabled={reminderSaving === 'balance_invoice_sent'}
+                        onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', false)}
+                      >
+                        ✓ {t("operations.task.sent")}
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        style={{ fontSize: '13px', whiteSpace: 'nowrap' }}
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.balance_invoice_sent === null ? 0.55 : 1 }}
                         disabled={reminderSaving === 'balance_invoice_sent'}
                         onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', true)}
                       >
                         {t("operations.task.markChecked")}
                       </button>
                     )}
-                  </div>
+                  </div>}
                   {/* Task: Pre-arrival WhatsApp message */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -1746,22 +1762,31 @@ export default function BookingDetailPage() {
                         aria-label={opsEnabled.prearrival_reminder_enabled ? "Disable reminder" : "Enable reminder"}
                         disabled={reminderSaving === 'prearrival_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('prearrival_reminder_enabled', !opsEnabled.prearrival_reminder_enabled)}
-                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.prearrival_reminder_enabled ? 'rgb(var(--success))' : 'rgb(var(--error))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
+                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.prearrival_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.prearrival_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
                       >
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.prearrival_reminder_enabled ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.prearrival_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.preArrivalMessage")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.prearrival_whatsapp_sent ? 'rgb(var(--success))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.prearrival_whatsapp_sent ? t("operations.task.sent") : t("operations.task.notSent")}
+                        <div style={{ fontSize: '12px', color: opsSent.prearrival_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.prearrival_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                          {opsSent.prearrival_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
                         </div>
                       </div>
                     </div>
-                    {!opsSent.prearrival_whatsapp_sent && (
+                    {opsSent.prearrival_whatsapp_sent === true ? (
+                      <button
+                        type="button"
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
+                        disabled={reminderSaving === 'prearrival_whatsapp_sent'}
+                        onClick={() => handleReminderToggle('prearrival_whatsapp_sent', 'pre_arrival', false)}
+                      >
+                        ✓ {t("operations.task.sent")}
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        style={{ fontSize: '13px', whiteSpace: 'nowrap' }}
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.prearrival_whatsapp_sent === null ? 0.55 : 1 }}
                         disabled={reminderSaving === 'prearrival_whatsapp_sent'}
                         onClick={() => handleReminderToggle('prearrival_whatsapp_sent', 'pre_arrival', true)}
                       >
@@ -1777,22 +1802,31 @@ export default function BookingDetailPage() {
                         aria-label={opsEnabled.return_prep_reminder_enabled ? "Disable reminder" : "Enable reminder"}
                         disabled={reminderSaving === 'return_prep_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('return_prep_reminder_enabled', !opsEnabled.return_prep_reminder_enabled)}
-                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.return_prep_reminder_enabled ? 'rgb(var(--success))' : 'rgb(var(--error))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
+                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.return_prep_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.return_prep_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
                       >
-                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.return_prep_reminder_enabled ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.return_prep_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.returnPrepMessage")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.return_whatsapp_sent ? 'rgb(var(--success))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.return_whatsapp_sent ? t("operations.task.sent") : t("operations.task.notSent")}
+                        <div style={{ fontSize: '12px', color: opsSent.return_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.return_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                          {opsSent.return_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
                         </div>
                       </div>
                     </div>
-                    {!opsSent.return_whatsapp_sent && (
+                    {opsSent.return_whatsapp_sent === true ? (
+                      <button
+                        type="button"
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
+                        disabled={reminderSaving === 'return_whatsapp_sent'}
+                        onClick={() => handleReminderToggle('return_whatsapp_sent', 'return_prep', false)}
+                      >
+                        ✓ {t("operations.task.sent")}
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        style={{ fontSize: '13px', whiteSpace: 'nowrap' }}
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.return_whatsapp_sent === null ? 0.55 : 1 }}
                         disabled={reminderSaving === 'return_whatsapp_sent'}
                         onClick={() => handleReminderToggle('return_whatsapp_sent', 'return_prep', true)}
                       >
