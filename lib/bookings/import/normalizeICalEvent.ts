@@ -108,6 +108,7 @@ export function parseDtToIso(value: string, tzid?: string): string {
  */
 const BLOCKED_PATTERNS: RegExp[] = [
   /\bblocked?\b/i,
+  /\bblocked\s+period\b/i, // Bookingmood explicit
   /\bnot[\s-]?available\b/i,
   /\bunavailable\b/i,
   /\bunavailability\b/i,
@@ -217,8 +218,17 @@ export function normalizeICalEvent(
     ),
   };
 
+  // ── customer info (needed for blocked detection below) ───────────────────
+  const attendeeName = extractAttendeeName(event);
+  const customerEmail = extractAttendeeEmail(event);
+
   // ── blocked period ────────────────────────────────────────────────────────
-  if (isBlockedSummary(summary)) {
+  // Catch summary-based blocks (e.g. "Blocked period" from Bookingmood) and
+  // events with no customer info and no booking UID (generic unavailability).
+  const isBlocked =
+    isBlockedSummary(summary) || (!attendeeName && !customerEmail && !uid);
+
+  if (isBlocked) {
     return {
       sourceType: "ical",
       sourceBookingId: uid,
@@ -234,8 +244,7 @@ export function normalizeICalEvent(
   }
 
   // ── real booking ──────────────────────────────────────────────────────────
-  const customerName = extractAttendeeName(event) ?? (summary || undefined);
-  const customerEmail = extractAttendeeEmail(event);
+  const customerName = attendeeName ?? (summary || undefined);
 
   return {
     sourceType: "ical",

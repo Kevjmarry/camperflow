@@ -816,6 +816,7 @@ export async function POST(request: NextRequest) {
       .from('bookings')
       .select('id')
       .eq('company_id', companyId)
+      .in('vehicle_id', [...validVehicleIds])
       .in('source_type', ['bookingmood_csv', 'ical'])
       .neq('sync_run_id', syncRunId)
       .not('status', 'in', '("cancelled","completed")');
