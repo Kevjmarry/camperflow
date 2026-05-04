@@ -97,6 +97,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
     .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked, booking_status')
     .eq('company_id', companyId)
     .neq('booking_status', 'completed')
+    .neq('booking_status', 'cancelled')
     .gte('return_at', startOfToday.toISOString())
     .order('return_at', { ascending: true })
     .limit(20)

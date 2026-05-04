@@ -39,7 +39,10 @@
       "Read(//c/CamperFlow/camperflow/app/**)",
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Force)",
       "Bash(Select-Object Name, FullName)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\CamperFlow\\\\camperflow\\\\app\" -Directory)",
+      "PowerShell(head -20)",
+      "PowerShell(grep -i checklist)"
     ]
   }
 }

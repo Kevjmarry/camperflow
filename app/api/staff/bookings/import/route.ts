@@ -2,6 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ImportPreviewRow, NormalizedImportBooking } from '@/lib/bookings/import/types';
+import { provisionBookingChecklists } from '@/lib/checklists/provisionBookingChecklists';
 
 // ── internal helpers ──────────────────────────────────────────────────────────
 
@@ -544,6 +545,7 @@ export async function POST(request: NextRequest) {
     let updated = 0;
     let blocked = 0;
     const errors: { rowNumber: number; message: string }[] = [];
+    const newBookingIds: string[] = [];
 
     // ── process booking rows ──────────────────────────────────────────────────
     for (const row of bookingRows) {
@@ -729,7 +731,7 @@ export async function POST(request: NextRequest) {
         const parsedMetaInsert = parseNotesForTripDetails(n.notes ?? null);
         const initialStaffMeta = mergeStaffMeta(null, parsedMetaInsert);
 
-        const { error } = await supabase
+        const { data: newBooking, error } = await supabase
           .from('bookings')
           .insert({
             company_id: companyId,
@@ -756,12 +758,15 @@ export async function POST(request: NextRequest) {
             return_whatsapp_sent: null,
             ...(customerId ? { customer_id: customerId } : {}),
             ...(initialStaffMeta ? { staff_metadata: initialStaffMeta } : {}),
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) {
           errors.push({ rowNumber: row.rowNumber, message: error.message });
         } else {
           created++;
+          newBookingIds.push(newBooking.id);
         }
       }
     }
@@ -830,6 +835,15 @@ export async function POST(request: NextRequest) {
 
       if (!cancelError) cancelled = staleIds.length;
     }
+
+    // Provision checklists for newly created bookings; failures are non-fatal.
+    await Promise.all(
+      newBookingIds.map((id) =>
+        provisionBookingChecklists(id).catch((err) =>
+          console.error('[import] provisionBookingChecklists failed for booking', id, err)
+        )
+      )
+    );
 
     return NextResponse.json({ created, updated, blocked, cancelled, errors });
   } catch (err: unknown) {
