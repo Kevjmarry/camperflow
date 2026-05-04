@@ -42,7 +42,11 @@
       "Bash(Select-Object Name)",
       "Bash(Get-ChildItem -Path \"C:\\\\CamperFlow\\\\camperflow\\\\app\" -Directory)",
       "PowerShell(head -20)",
-      "PowerShell(grep -i checklist)"
+      "PowerShell(grep -i checklist)",
+      "Bash(xargs -0 grep -l \"checklist_instance_items\\\\|checklist_instances\")",
+      "Bash(xargs -0 grep -l \"CREATE TABLE.*checklist\")",
+      "Bash(xargs -0 grep -l \"current_staff_company_id\\\\|current_user_company\")",
+      "Bash(xargs -0 grep -l \"CREATE TABLE.*checklist_instances\\\\|CREATE TABLE.*checklist_instance_items\")"
     ]
   }
 }

@@ -483,9 +483,11 @@ export default function NewChecklistTemplatePage() {
   if (globalError) {
     return (
       <PageContainer maxWidth="1400px">
-        <div className="surface page-surface">
-          <BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink>
-          <div style={ERROR_BOX}>{globalError}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div><BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink></div>
+          <div className="surface page-surface">
+            <div style={ERROR_BOX}>{globalError}</div>
+          </div>
         </div>
       </PageContainer>
     );
@@ -497,18 +499,18 @@ export default function NewChecklistTemplatePage() {
 
   return (
     <PageContainer maxWidth="1400px">
-      <div
-        className="surface"
-        style={{
-          padding: isMobile ? 'var(--space-4)' : 'var(--space-8)',
-          overflowX: 'hidden',
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div><BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink></div>
+        <div
+          className="surface"
+          style={{
+            padding: isMobile ? 'var(--space-4)' : 'var(--space-8)',
+            overflowX: 'hidden',
+          }}
+        >
         <div
           style={{
             width: '100%',
-            maxWidth: isTabletOrAbove ? '960px' : undefined,
-            margin: isTabletOrAbove ? '0 auto' : undefined,
             display: 'flex',
             flexDirection: 'column',
             gap: 'var(--space-6)',
@@ -517,7 +519,6 @@ export default function NewChecklistTemplatePage() {
         >
           {/* ── Page header ── */}
           <div>
-            <BackLink href={`/${locale}/staff/checklists/templates`}>{t('backToTemplates')}</BackLink>
             <h1
               style={{
                 fontSize: isMobile ? '22px' : '28px',
@@ -677,6 +678,7 @@ export default function NewChecklistTemplatePage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </PageContainer>

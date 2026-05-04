@@ -67,7 +67,7 @@ export default async function ChecklistDetailPage({
   }
 
   // Fetch items
-  const { data: itemsRaw } = await supabase
+  const { data: itemsRaw, error: itemsError } = await supabase
     .from('checklist_instance_items')
     .select(
       `
@@ -84,7 +84,7 @@ export default async function ChecklistDetailPage({
       issue_severity,
       issue_blocking,
       linked_vehicle_issue_id,
-      template:checklist_template_items (
+      template:checklist_template_items!template_item_id (
         label,
         sort_order,
         section,

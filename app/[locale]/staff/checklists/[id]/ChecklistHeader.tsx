@@ -2,21 +2,17 @@
 
 type ChecklistHeaderProps = {
   title: string;
-  backLabel: string;
-  onBack: () => void;
   statusLabel: string;
   contextLine: string;
 };
 
 export default function ChecklistHeader({
   title,
-  backLabel,
-  onBack,
   statusLabel,
   contextLine,
 }: ChecklistHeaderProps) {
   return (
-    <div className="surface" style={{ borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+    <div className="surface" style={{ borderRadius: '8px', padding: '16px', marginTop: '16px', marginBottom: '16px' }}>
       <div
         style={{
           display: 'flex',
@@ -27,24 +23,6 @@ export default function ChecklistHeader({
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <button
-            onClick={onBack}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '14px',
-              color: 'rgb(var(--muted))',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              marginBottom: '8px',
-            }}
-          >
-            <span>←</span>
-            {backLabel}
-          </button>
           <h1
             style={{
               fontSize: '20px',

@@ -1120,17 +1120,13 @@ export default function ChecklistDetailClient({
   })();
 
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);
-  const sectionMap = new Map<string, ChecklistItemType[]>();
-  for (const item of sortedItems) {
-    const sectionName = item.template.section?.trim() || t('sectionOther');
-    if (!sectionMap.has(sectionName)) sectionMap.set(sectionName, []);
-    sectionMap.get(sectionName)!.push(item);
-  }
-  const sections: { name: string; items: ChecklistItemType[] }[] = [];
-  sectionMap.forEach((items, name) => sections.push({ name, items }));
-
   const checklistActionsSections: { name: string; items: ChecklistItemType[] }[] = (() => {
-    const filtered = sortedItems.filter((item) => item.template.ui_section === 'checklist_actions');
+    // vehicle_data items are handled by VehicleDataBlock in pickup/handover/return only.
+    // For all other types (cleaning, mechanical, …) include every item unconditionally.
+    const usesVehicleDataBlock = isPickupOrHandover || instance.checklist_type === 'return';
+    const filtered = usesVehicleDataBlock
+      ? sortedItems.filter((item) => item.template.ui_section !== 'vehicle_data')
+      : sortedItems;
     const map = new Map<string, ChecklistItemType[]>();
     for (const item of filtered) {
       const name = item.template.section?.trim() || t('sectionOther');
@@ -1235,8 +1231,6 @@ export default function ChecklistDetailClient({
       <BackLink href={backHref}>{backButtonLabel}</BackLink>
       <ChecklistHeader
         title={checklistTitle}
-        backLabel={backButtonLabel}
-        onBack={handleBackClick}
         statusLabel={statusLabel}
         contextLine={contextLine}
       />
@@ -1659,14 +1653,16 @@ export default function ChecklistDetailClient({
           )}
         </div>
       ) : (
-        <StandardChecklistSections
-          sections={sections}
-          isChecklistLocked={isChecklistLocked}
-          collapsedSections={collapsedSections}
-          onToggleSection={toggleSection}
-          onCompleteSection={handleCompleteSection}
-          renderItemProps={renderItemProps}
-        />
+        <>
+          <StandardChecklistSections
+            sections={checklistActionsSections}
+            isChecklistLocked={isChecklistLocked}
+            collapsedSections={collapsedSections}
+            onToggleSection={toggleSection}
+            onCompleteSection={handleCompleteSection}
+            renderItemProps={renderItemProps}
+          />
+        </>
       )}
 
       {/* Reopen/revert history — handover only */}
