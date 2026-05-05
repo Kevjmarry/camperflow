@@ -86,6 +86,15 @@ export default function ChecklistDetailClient({
     const returnedIds: string[] = bk?.staff_metadata?.extras_returned ?? [];
     return Object.fromEntries(returnedIds.map((id) => [id, true]));
   });
+  const [pickupExtrasChecked, setPickupExtrasChecked] = useState<Record<string, boolean>>(() => {
+    if (instance.checklist_type !== 'pickup' && instance.checklist_type !== 'handover') return {};
+    const bk = instance.bookings as (typeof instance.bookings & { staff_metadata?: { handed_over_extras?: string[] } }) | null;
+    const handedOverIds: string[] = bk?.staff_metadata?.handed_over_extras ?? [];
+    return Object.fromEntries(handedOverIds.map((id) => [id, true]));
+  });
+  const pickupExtrasCheckedRef = useRef(pickupExtrasChecked);
+  pickupExtrasCheckedRef.current = pickupExtrasChecked;
+
   const [evidencePhotos, setEvidencePhotos] = useState<{ general: EvidencePhoto[]; damage: EvidencePhoto[]; id: EvidencePhoto[] }>({
     general: [],
     damage: [],
@@ -133,7 +142,7 @@ export default function ChecklistDetailClient({
   // Used as the merge base when writing return_vehicle_data or extras_returned so
   // neither writer clobbers the other's changes.
   const staffMetaRef = useRef<Record<string, unknown>>(
-    (instance.checklist_type === 'return' || instance.checklist_type === 'handover')
+    (instance.checklist_type === 'return' || instance.checklist_type === 'handover' || instance.checklist_type === 'pickup')
       ? ((instance.bookings as any)?.staff_metadata ?? {})
       : {}
   );
@@ -171,8 +180,14 @@ export default function ChecklistDetailClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusItemId, localItems]);
   useEffect(() => {
-    if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover') return;
+    if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover' && instance.checklist_type !== 'pickup') return;
     staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
+
+    if (instance.checklist_type === 'pickup') {
+      const handedOverIds: string[] = (instance.bookings as any)?.staff_metadata?.handed_over_extras ?? [];
+      setPickupExtrasChecked(Object.fromEntries(handedOverIds.map((id: string) => [id, true])));
+      return;
+    }
 
     // Accept both legacy plain-string paths and new { path, rotation } objects.
     type EvidenceEntry = string | { path: string; rotation?: number };
@@ -198,6 +213,8 @@ export default function ChecklistDetailClient({
     }
 
     if (instance.checklist_type === 'handover') {
+      const handedOverIds: string[] = (instance.bookings as any)?.staff_metadata?.handed_over_extras ?? [];
+      setPickupExtrasChecked(Object.fromEntries(handedOverIds.map((id: string) => [id, true])));
       const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
       setVehicleData({ km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' });
       const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: EvidenceEntry[]; damage?: EvidenceEntry[]; id?: EvidenceEntry[] } | undefined;
@@ -214,6 +231,7 @@ export default function ChecklistDetailClient({
     !!instance.booking_id &&
     (instance.checklist_type === 'handover' || instance.checklist_type === 'return') &&
     instance.bookings?.status === 'completed';
+  const isReadOnly = isChecklistLocked || localInstance.status === 'completed';
 
   const isPickupOrHandover =
     instance.checklist_type === 'pickup' || instance.checklist_type === 'handover';
@@ -356,7 +374,7 @@ export default function ChecklistDetailClient({
     bookingId: instance.booking_id,
     localItems,
     setLocalItems,
-    isChecklistLocked,
+    isChecklistLocked: isReadOnly,
     setSyncError,
     t,
   });
@@ -395,7 +413,7 @@ export default function ChecklistDetailClient({
     localInstance,
     setLocalInstance,
     localItems,
-    isChecklistLocked,
+    isChecklistLocked: isReadOnly,
     setSyncError,
     setLockNotice,
     lockMessageFromError,
@@ -404,6 +422,8 @@ export default function ChecklistDetailClient({
     setHandoverSafetyModal,
     getMissingPickupData,
     navigateAfterCompletion,
+    pickupExtrasCheckedRef,
+    staffMetaRef,
     t,
   });
 
@@ -418,7 +438,7 @@ export default function ChecklistDetailClient({
     localInstance,
     setLocalInstance,
     localItems,
-    isChecklistLocked,
+    isChecklistLocked: isReadOnly,
     setSyncError,
     setLockNotice,
     lockMessageFromError,
@@ -429,8 +449,12 @@ export default function ChecklistDetailClient({
   });
 
   // ── Page-load safety: sync instance status if items are already all-checked but status isn't completed (or vice versa) ──
+  // Handover checklists are completed via an explicit button, not by all items being checked.
+  // vehicle_data and office items always have checked=false, so allChecked is permanently false
+  // for a completed handover — running this sync would downgrade status back to in_progress.
   useEffect(() => {
-    if (isChecklistLocked) return;
+    if (instance.checklist_type === 'handover') return;
+    if (isReadOnly) return;
     if (initialItems.length === 0) return;
     const allChecked = initialItems.every((it) => it.checked);
     const alreadyComplete = instance.status === 'completed';
@@ -556,7 +580,7 @@ export default function ChecklistDetailClient({
   // ── Office field toggle ───────────────────────────────────────────────────────
 
   const handleOfficeFieldToggle = async (field: HandoverField) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const current = !!(localInstance as any)[field];
     const newValue = !current;
     setLocalInstance((prev) => ({ ...prev, [field]: newValue }));
@@ -589,7 +613,7 @@ export default function ChecklistDetailClient({
   type ReturnBooleanField = 'return_keys_received' | 'return_documents_received' | 'return_contract_closed';
 
   const handleReturnFieldToggle = async (field: ReturnBooleanField) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const current = !!(localInstance as any)[field];
     const newValue = !current;
     setLocalInstance((prev) => ({ ...prev, [field]: newValue }));
@@ -617,7 +641,7 @@ export default function ChecklistDetailClient({
   };
 
   const handleReturnDepositStatus = async (value: string) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const prev = localInstance.return_deposit_status;
     setLocalInstance((prev) => ({ ...prev, return_deposit_status: value }));
     const { error } = await supabase
@@ -650,7 +674,7 @@ export default function ChecklistDetailClient({
 
   const promoteReturnToInProgress = async () => {
     if (instance.checklist_type !== 'return') return;
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const isPending = localInstance.status === 'pending' || localInstance.status === 'not_started';
     if (!isPending) return;
     const now = new Date().toISOString();
@@ -852,7 +876,7 @@ export default function ChecklistDetailClient({
   // ── Item toggle ───────────────────────────────────────────────────────────────
 
   const handleToggle = async (itemId: string, currentChecked: boolean) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -951,6 +975,12 @@ export default function ChecklistDetailClient({
           .eq('id', itemId);
         return;
       }
+      if (instance.checklist_type === 'pickup' && nextItems.every((it) => it.checked) && instance.booking_id) {
+        const handedOverIds = Object.entries(pickupExtrasCheckedRef.current).filter(([, v]) => v).map(([k]) => k);
+        const newMeta = { ...staffMetaRef.current, handed_over_extras: handedOverIds };
+        staffMetaRef.current = newMeta;
+        await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+      }
       router.refresh();
     } catch {
       setLocalItems(initialItems);
@@ -962,7 +992,7 @@ export default function ChecklistDetailClient({
   // ── Section complete ──────────────────────────────────────────────────────────
 
   const handleCompleteSection = async (sectionName: string, sectionItems: ChecklistItemType[]) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     const uncheckedItems = sectionItems.filter((it) => !it.checked);
     if (uncheckedItems.length === 0) return;
 
@@ -1070,6 +1100,12 @@ export default function ChecklistDetailClient({
         );
         return;
       }
+      if (instance.checklist_type === 'pickup' && nextItems.every((it) => it.checked) && instance.booking_id) {
+        const handedOverIds = Object.entries(pickupExtrasCheckedRef.current).filter(([, v]) => v).map(([k]) => k);
+        const newMeta = { ...staffMetaRef.current, handed_over_extras: handedOverIds };
+        staffMetaRef.current = newMeta;
+        await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+      }
       router.refresh();
     } catch {
       setLocalItems(initialItems);
@@ -1081,12 +1117,12 @@ export default function ChecklistDetailClient({
   // ── Notes / section collapse ──────────────────────────────────────────────────
 
   const handleNotesChange = (itemId: string, notes: string) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     setLocalItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, notes } : it)));
   };
 
   const handleNotesBlur = async (itemId: string, notes: string) => {
-    if (isChecklistLocked) return;
+    if (isReadOnly) return;
     try {
       await supabase.from('checklist_instance_items').update({ notes }).eq('id', itemId);
     } catch {
@@ -1108,15 +1144,23 @@ export default function ChecklistDetailClient({
   const returnExtras = (() => {
     if (instance.checklist_type !== 'return') return [];
     const bookings = instance.bookings as (typeof instance.bookings & {
-      staff_metadata?: { extras?: string[] };
+      staff_metadata?: { handed_over_extras?: string[] };
       company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] };
     }) | null;
-    const rawExtras = bookings?.staff_metadata?.extras;
-    const selectedIds: string[] = Array.isArray(rawExtras) ? rawExtras : [];
+    const handedOverIds: string[] = bookings?.staff_metadata?.handed_over_extras ?? [];
     const catalog: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] = bookings?.company_settings?.extras_catalog ?? [];
-    return selectedIds
+    return handedOverIds
       .map((id) => catalog.find((e) => e.id === id))
       .filter((e): e is { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } } => e !== undefined);
+  })();
+
+  // ── Pickup extras — full catalog ───────────────────────────────────────────────
+  const pickupExtras = (() => {
+    if (!isPickupOrHandover) return [];
+    const bookings = instance.bookings as (typeof instance.bookings & {
+      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] };
+    }) | null;
+    return (bookings?.company_settings?.extras_catalog ?? []) as { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[];
   })();
 
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);
@@ -1125,8 +1169,8 @@ export default function ChecklistDetailClient({
     // For all other types (cleaning, mechanical, …) include every item unconditionally.
     const usesVehicleDataBlock = isPickupOrHandover || instance.checklist_type === 'return';
     const filtered = usesVehicleDataBlock
-      ? sortedItems.filter((item) => item.template.ui_section !== 'vehicle_data')
-      : sortedItems;
+      ? sortedItems.filter((item) => item.template.ui_section !== 'vehicle_data' && item.template.ui_section !== 'office')
+      : sortedItems.filter((item) => item.template.ui_section !== 'office');
     const map = new Map<string, ChecklistItemType[]>();
     for (const item of filtered) {
       const name = item.template.section?.trim() || t('sectionOther');
@@ -1188,9 +1232,9 @@ export default function ChecklistDetailClient({
   /** Builds all props needed by a ChecklistItem row. */
   const renderItemProps = (item: ChecklistItemType): ComponentProps<typeof ChecklistItem> => ({
     item,
-    isChecklistLocked,
+    isChecklistLocked: isReadOnly,
     isNotesOpen: !!openNotesById[item.id],
-    isFlagPanelOpen: !isChecklistLocked && !!openFlagPanelById[item.id],
+    isFlagPanelOpen: !isReadOnly && !!openFlagPanelById[item.id],
     flagDraft: flagDraftById[item.id] ?? null,
     isResolvingFlag: !!resolvingFlagById[item.id],
     initialsByUserId,
@@ -1279,7 +1323,7 @@ export default function ChecklistDetailClient({
                   setVehicleData((prev) => ({ ...prev, [field]: value }));
                   saveHandoverVehicleField(field as 'km' | 'fuel' | 'adblue', value);
                 }}
-                isLocked={isChecklistLocked}
+                isLocked={isReadOnly}
                 highlight={validationHighlights.missingVehicleData}
                 fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
                 adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
@@ -1346,18 +1390,97 @@ export default function ChecklistDetailClient({
                   const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
                   await saveHandoverEvidencePhotos(newRep);
                 }}
-                isLocked={isChecklistLocked}
+                isLocked={isReadOnly}
                 highlight={validationHighlights.missingPhotos}
               />
               <AuditChecklistBlock
                 sections={checklistActionsSections}
-                isChecklistLocked={isChecklistLocked}
+                isChecklistLocked={isReadOnly}
                 collapsedSections={collapsedSections}
                 onToggleSection={toggleSection}
                 onCompleteSection={handleCompleteSection}
                 renderItemProps={renderItemProps}
                 getDisplayLabel={getPickupAuditDisplayLabel}
                 highlight={validationHighlights.missingAudit}
+                footerContent={isPickupOrHandover && pickupExtras.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
+                      Extras handed over
+                    </span>
+                    {pickupExtras.map((extra) => (
+                      <div
+                        key={extra.id}
+                        style={{
+                          border: '1px solid rgb(var(--border))',
+                          borderRadius: '6px',
+                          padding: '12px',
+                          opacity: isReadOnly ? 0.75 : 1,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <label
+                            htmlFor={isReadOnly ? undefined : `pickup-extras-check-${extra.id}`}
+                            style={{
+                              marginTop: '2px',
+                              cursor: isReadOnly ? 'default' : 'pointer',
+                              flexShrink: 0,
+                              position: 'relative',
+                              display: 'block',
+                            }}
+                          >
+                            {!isReadOnly && (
+                              <input
+                                type="checkbox"
+                                id={`pickup-extras-check-${extra.id}`}
+                                checked={!!pickupExtrasChecked[extra.id]}
+                                onChange={async () => {
+                                  const next = { ...pickupExtrasChecked, [extra.id]: !pickupExtrasChecked[extra.id] };
+                                  setPickupExtrasChecked(next);
+                                  if (instance.booking_id) {
+                                    const handedOverIds = Object.entries(next).filter(([, v]) => v).map(([k]) => k);
+                                    const newMeta = { ...staffMetaRef.current, handed_over_extras: handedOverIds };
+                                    staffMetaRef.current = newMeta;
+                                    await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+                                  }
+                                }}
+                                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                              />
+                            )}
+                            <div
+                              style={{
+                                width: '20px',
+                                height: '20px',
+                                border: pickupExtrasChecked[extra.id]
+                                  ? '2px solid rgb(var(--brand))'
+                                  : '2px solid rgb(var(--border))',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgb(var(--surface))',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {pickupExtrasChecked[extra.id] && (
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path
+                                    d="M13.3332 4L5.99984 11.3333L2.6665 8"
+                                    stroke="rgb(var(--brand))"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                          </label>
+                          <span style={{ fontWeight: 500, marginTop: '2px' }}>
+                            {(extra.name_i18n as Record<string, string> | undefined)?.[locale] || extra.name_i18n?.sk || extra.name} handed over
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : undefined}
               />
             </div>
           </PhaseCard>
@@ -1366,7 +1489,7 @@ export default function ChecklistDetailClient({
           <PhaseCard phase={3} label={t('phase3Label')}>
             <OfficeSectionCard
               localInstance={localInstance}
-              isChecklistLocked={isChecklistLocked}
+              isChecklistLocked={isReadOnly}
               onToggleField={handleOfficeFieldToggle}
               highlight={validationHighlights.missingOffice || validationHighlights.missingHandover}
             />
@@ -1374,8 +1497,7 @@ export default function ChecklistDetailClient({
 
           {/* Handover complete button — handover type only */}
           {instance.checklist_type === 'handover' &&
-            !isChecklistLocked &&
-            localInstance.status !== 'completed' && (
+            !isReadOnly && (
               <HandoverFooter
                 completing={handoverCompleting || handoverValidating}
                 blockedError={handoverBlockedError}
@@ -1440,7 +1562,7 @@ export default function ChecklistDetailClient({
                   }
                 }}
                 kmError={returnKmError ?? undefined}
-                isLocked={isChecklistLocked}
+                isLocked={isReadOnly}
                 highlight={false}
                 fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
                 adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
@@ -1515,13 +1637,13 @@ export default function ChecklistDetailClient({
                   const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
                   await saveReturnEvidencePhotos(newRep);
                 }}
-                isLocked={isChecklistLocked}
+                isLocked={isReadOnly}
                 highlight={false}
                 variant="return"
               />
               <AuditChecklistBlock
                 sections={checklistActionsSections}
-                isChecklistLocked={isChecklistLocked}
+                isChecklistLocked={isReadOnly}
                 collapsedSections={collapsedSections}
                 onToggleSection={toggleSection}
                 onCompleteSection={handleCompleteSection}
@@ -1540,21 +1662,21 @@ export default function ChecklistDetailClient({
                           border: '1px solid rgb(var(--border))',
                           borderRadius: '6px',
                           padding: '12px',
-                          opacity: isChecklistLocked ? 0.75 : 1,
+                          opacity: isReadOnly ? 0.75 : 1,
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                           <label
-                            htmlFor={isChecklistLocked ? undefined : `extras-check-${extra.id}`}
+                            htmlFor={isReadOnly ? undefined : `extras-check-${extra.id}`}
                             style={{
                               marginTop: '2px',
-                              cursor: isChecklistLocked ? 'default' : 'pointer',
+                              cursor: isReadOnly ? 'default' : 'pointer',
                               flexShrink: 0,
                               position: 'relative',
                               display: 'block',
                             }}
                           >
-                            {!isChecklistLocked && (
+                            {!isReadOnly && (
                               <input
                                 type="checkbox"
                                 id={`extras-check-${extra.id}`}
@@ -1616,14 +1738,14 @@ export default function ChecklistDetailClient({
           <PhaseCard phase={3} label="Close-out">
             <ReturnOfficeSectionCard
               localInstance={localInstance}
-              isChecklistLocked={isChecklistLocked}
+              isChecklistLocked={isReadOnly}
               onToggleField={handleReturnFieldToggle}
               onSetDepositStatus={handleReturnDepositStatus}
             />
           </PhaseCard>
 
           {/* Phase 4: Complete button */}
-          {!isChecklistLocked && localInstance.status !== 'completed' && (
+          {!isReadOnly && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {returnBlockedError && (
                 <p style={{ color: 'rgb(239,68,68)', fontSize: '13px', margin: 0, textAlign: 'center' }}>
@@ -1656,7 +1778,7 @@ export default function ChecklistDetailClient({
         <>
           <StandardChecklistSections
             sections={checklistActionsSections}
-            isChecklistLocked={isChecklistLocked}
+            isChecklistLocked={isReadOnly}
             collapsedSections={collapsedSections}
             onToggleSection={toggleSection}
             onCompleteSection={handleCompleteSection}

@@ -13,7 +13,6 @@ import { getStatusChipStyle } from "@/lib/statusChip";
 import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
 import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
 import type { BookingFormData } from "@/components/bookings/BookingEditForm";
-import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
 type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
@@ -332,8 +331,6 @@ export default function BookingDetailPage() {
   // handover_evidence_photos, return_vehicle_data, return_evidence_photos).
   // Preserved verbatim on every save to prevent overwrite data loss.
   const staffMetaPassthroughRef = useRef<Record<string, unknown>>({});
-  const [catalogExtras, setCatalogExtras] = useState<ExtraCatalogItem[]>([]);
-  const [selectedExtraIds, setSelectedExtraIds] = useState<string[]>([]);
   const [internalNotes, setInternalNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -440,20 +437,6 @@ export default function BookingDetailPage() {
     }
   };
 
-  const fetchExtrasCatalog = async (companyId: string) => {
-    try {
-      const { data } = await supabase
-        .from('company_settings')
-        .select('extras_catalog')
-        .eq('id', companyId)
-        .maybeSingle();
-      const catalog = ((data as any)?.extras_catalog ?? []) as ExtraCatalogItem[];
-      setCatalogExtras(catalog.filter((item) => item.active));
-    } catch {
-      // silently fail — extras section will be empty
-    }
-  };
-
   const fetchBooking = async () => {
     try {
       setLoading(true);
@@ -510,17 +493,12 @@ export default function BookingDetailPage() {
           return_prep_reminder_enabled:     data.return_prep_reminder_enabled === true ? true : data.return_prep_reminder_enabled === false ? false : null,
         });
 
-        // extras stored as array of catalog IDs; ignore old boolean-object format
-        const rawExtras = sm.extras;
-        setSelectedExtraIds(Array.isArray(rawExtras) ? (rawExtras as string[]) : []);
-
         // Capture every key the booking form doesn't manage so we can round-trip
         // them unchanged on save (prevents overwriting checklist-saved data).
         const FORM_OWNED_KEYS = new Set([
           'pets', 'guest_count', 'airport_transfer', 'extra_driver',
           'whatsapp_optin', 'marketing_optin', 'payment_plan',
           'invoice_reminder_dismissed_at',
-          'extras',
         ]);
         const passthrough: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(sm)) {
@@ -542,10 +520,7 @@ export default function BookingDetailPage() {
           setLinkedCustomer(null);
         }
 
-        await Promise.all([
-          fetchChecklistInstances(),
-          fetchExtrasCatalog(data.company_id),
-        ]);
+        await fetchChecklistInstances();
       }
     } catch (err: any) {
       console.error('Fetch booking error:', err);
@@ -829,12 +804,10 @@ export default function BookingDetailPage() {
 
     // Build staff_metadata: start with passthrough keys (checklist data etc.),
     // then overlay form-owned keys that have an explicit override (non-null).
-    // extras stored as array of selected catalog IDs.
     const staffMetaObj: Record<string, unknown> = { ...staffMetaPassthroughRef.current };
     for (const [k, v] of Object.entries(staffMeta)) {
       if (v !== null) staffMetaObj[k] = v;
     }
-    staffMetaObj.extras = selectedExtraIds;
     const staffMetaDb = staffMetaObj;
 
     try {
@@ -1627,49 +1600,6 @@ export default function BookingDetailPage() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* ── Extras ───────────────────────────────────────────────────── */}
-            <div style={{
-              paddingTop: 'var(--space-2)',
-              borderTop: '1px solid rgb(var(--border) / 0.4)',
-            }}>
-              <h2 style={{ fontSize: '18px', marginBottom: 'var(--space-4)', color: 'rgb(var(--text))' }}>
-                {t("section.extras")}
-              </h2>
-              {catalogExtras.length > 0 ? (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2)',
-                }}>
-                  {catalogExtras.map((item) => (
-                    <label
-                      key={item.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedExtraIds.includes(item.id)}
-                        onChange={(e) =>
-                          setSelectedExtraIds(prev =>
-                            e.target.checked
-                              ? [...prev, item.id]
-                              : prev.filter(xid => xid !== item.id)
-                          )
-                        }
-                      />
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>
-                        {(item.name_i18n as Record<string, string> | undefined)?.[locale] || item.name_i18n?.sk || item.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>
-                  {t("extras.emptyHint")}
-                </p>
-              )}
             </div>
 
             {/* ── Operations ───────────────────────────────────────────────── */}

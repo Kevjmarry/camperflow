@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChecklistInstanceType, ChecklistItemType, SyncError } from './types';
 import { parseSyncError, isLockError, getPickupAuditDisplayLabel } from './helpers';
@@ -32,6 +32,8 @@ interface UseHandoverCompletionProps {
   } | null>>;
   getMissingPickupData: () => string[];
   navigateAfterCompletion: () => void;
+  pickupExtrasCheckedRef: MutableRefObject<Record<string, boolean>>;
+  staffMetaRef: MutableRefObject<Record<string, unknown>>;
   t: (key: string, ...args: any[]) => string;
 }
 
@@ -50,6 +52,8 @@ export function useHandoverCompletion({
   setHandoverSafetyModal,
   getMissingPickupData,
   navigateAfterCompletion,
+  pickupExtrasCheckedRef,
+  staffMetaRef,
   t,
 }: UseHandoverCompletionProps) {
   const [handoverCompleting, setHandoverCompleting] = useState(false);
@@ -92,12 +96,18 @@ export function useHandoverCompletion({
       return;
     }
 
-    // Transition booking to on_rent when handover checklist is completed.
+    // Transition booking to on_rent and persist handed_over_extras in one write.
     // The DB trigger on bookings (migration 011) will recompute vehicle readiness.
     if (instance.checklist_type === 'handover' && instance.booking_id) {
+      const handedOverIds = Object.entries(pickupExtrasCheckedRef.current)
+        .filter(([, v]) => v)
+        .map(([k]) => k);
       await supabase
         .from('bookings')
-        .update({ status: 'on_rent' })
+        .update({
+          status: 'on_rent',
+          staff_metadata: { ...staffMetaRef.current, handed_over_extras: handedOverIds },
+        })
         .eq('id', instance.booking_id)
         .eq('status', 'confirmed');
     }

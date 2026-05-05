@@ -102,7 +102,7 @@ export default async function ChecklistDetailPage({
   // Fetch company_settings for return checklists (needed for extras_catalog)
   let extrasCatalog: { id: string; name: string }[] | null = null;
   const companyId = (bk as any)?.company_id ?? null;
-  if (instance.checklist_type === 'return' && companyId) {
+  if ((instance.checklist_type === 'return' || instance.checklist_type === 'pickup' || instance.checklist_type === 'handover') && companyId) {
     const { data: cs } = await supabase
       .from('company_settings')
       .select('extras_catalog')
