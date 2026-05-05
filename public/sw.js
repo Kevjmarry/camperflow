@@ -1,5 +1,6 @@
 const CACHE_NAME = 'camperflow-v7';
 const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
+const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
 const PRE_CACHE = [
   '/',
@@ -67,17 +68,22 @@ self.addEventListener('fetch', (event) => {
   // Background HTML pre-fetch requests initiated by this SW — let them pass straight to network.
   if (request.headers.get('x-sw-bypass')) return;
 
-  // Cache-first for Next.js static chunks (content-hashed, immutable)
+  // Cache-first for Next.js static chunks (content-hashed, immutable).
+  // In dev, pass through so HMR and fresh builds are never blocked by stale cache.
   if (url.pathname.startsWith('/_next/static/')) {
+    if (IS_DEV) return;
     event.respondWith(
       caches.match(request).then(
-        (cached) =>
-          cached ||
-          fetch(request).then((res) => {
+        (cached) => {
+          console.log('[SW][STATIC]', cached ? 'HIT' : 'MISS', '| key:', request.url);
+          if (cached) return cached;
+          return fetch(request).then((res) => {
+            console.log('[SW][STATIC] fetched from network, caching key:', request.url, '| status:', res.status);
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
             return res;
-          })
+          });
+        }
       )
     );
     return;
@@ -131,6 +137,7 @@ self.addEventListener('fetch', (event) => {
           // [FIX] Never cache redirected responses — serving one offline confuses the browser
           if (res.ok && !res.redirected) {
             const clone = res.clone();
+            console.log('[SW][NAV] caching navigate response, key:', request.url, '| cache:', CACHE_NAME);
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return res;
