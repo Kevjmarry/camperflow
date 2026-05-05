@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { InstallBanner } from "@/components/InstallBanner";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { OfflineBadge } from "@/components/OfflineBadge";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -55,6 +56,7 @@ export default async function RootLayout({
           <ThemeProvider>{children}</ThemeProvider>
           <InstallBanner />
           <ServiceWorkerRegistration />
+          <OfflineBadge />
         </NextIntlClientProvider>
       </body>
     </html>

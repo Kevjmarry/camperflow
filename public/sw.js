@@ -61,11 +61,6 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Dev server rewrites JS chunks without changing filenames, so cache-first
-  // would serve stale bundles and cause hydration mismatches. Skip all SW
-  // caching on localhost so every request goes straight to the network.
-  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
-
   if (url.origin !== self.location.origin) return;
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
@@ -143,29 +138,29 @@ self.addEventListener('fetch', (event) => {
         .catch((netErr) => {
           // [TEMP LOG] network failed, entering cache fallback
           console.warn('[SW][NAV] network MISS for:', url.pathname, '| error:', netErr && netErr.message);
-          return caches.open(CACHE_NAME).then((cache) =>
-            cache.match(request, { ignoreVary: true }).then((cached) => {
-              // [TEMP LOG] exact-url cache result
-              console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
-              if (cached) return cached;
+          return caches.match(event.request, { ignoreVary: true }).then((cached) => {
+            // [TEMP LOG] exact-url cache result
+            console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
+            if (cached) return cached;
 
-              // [FIX] For dynamic staff routes not individually cached, serve any cached staff
-              // page — Next.js re-renders client-side from the shared app shell.
-              if (STAFF_RE.test(url.pathname)) {
-                return cache.keys().then((keys) => {
+            // [FIX] For dynamic staff routes not individually cached, serve any cached staff
+            // page — Next.js re-renders client-side from the shared app shell.
+            if (STAFF_RE.test(url.pathname)) {
+              return caches.open(CACHE_NAME).then((cache) =>
+                cache.keys().then((keys) => {
                   const match = keys.find((k) => STAFF_RE.test(new URL(k.url).pathname));
                   console.log('[SW][NAV] staff fallback cache:', match ? match.url : 'MISS');
-                  return match ? cache.match(match, { ignoreVary: true }) : cache.match('/');
-                });
-              }
+                  return match ? cache.match(match, { ignoreVary: true }) : caches.match('/');
+                })
+              );
+            }
 
-              return cache.match('/').then((rootCached) => {
-                // [TEMP LOG] root '/' fallback result
-                console.log('[SW][NAV] root "/" fallback:', rootCached ? 'HIT' : 'MISS');
-                return rootCached;
-              });
-            })
-          ).then((r) => {
+            return caches.match('/').then((rootCached) => {
+              // [TEMP LOG] root '/' fallback result
+              console.log('[SW][NAV] root "/" fallback:', rootCached ? 'HIT' : 'MISS');
+              return rootCached;
+            });
+          }).then((r) => {
             if (!r) {
               // [TEMP LOG] all cache lookups failed — serving offline stub
               console.error('[SW][NAV] ALL CACHE MISSES for:', url.pathname, '— serving offline stub');
