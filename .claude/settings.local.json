@@ -50,7 +50,9 @@
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Recurse -Directory)",
       "Bash(Format-Table FullName)",
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Directory -Exclude node_modules)",
-      "Bash(Select-Object -ExpandProperty Name)"
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(git show *)",
+      "Bash(git log *)"
     ]
   }
 }

@@ -1,6 +1,11 @@
 const CACHE_NAME = 'camperflow-v8';
 const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
-const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+// Probe once per SW lifecycle: /_next/static/development/ only exists when next dev is running.
+// next start (production build on localhost) returns 404, so IS_DEV resolves false and caching proceeds.
+const IS_DEV = (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1')
+  ? fetch('/_next/static/development/_buildManifest.js', { method: 'HEAD', cache: 'no-store', headers: { 'x-sw-bypass': '1' } })
+      .then((r) => r.ok).catch(() => false)
+  : Promise.resolve(false);
 
 const PRE_CACHE = [
   '/',
@@ -102,20 +107,22 @@ self.addEventListener('fetch', (event) => {
   // Cache-first for Next.js static chunks (content-hashed, immutable).
   // In dev, pass through so HMR and fresh builds are never blocked by stale cache.
   if (url.pathname.startsWith('/_next/static/')) {
-    if (IS_DEV) return;
     event.respondWith(
-      caches.match(request).then(
-        (cached) => {
-          console.log('[SW][STATIC]', cached ? 'HIT' : 'MISS', '| key:', request.url);
-          if (cached) return cached;
-          return fetch(request).then((res) => {
-            console.log('[SW][STATIC] fetched from network, caching key:', request.url, '| status:', res.status);
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-            return res;
-          });
-        }
-      )
+      IS_DEV.then((dev) => {
+        if (dev) return fetch(request);
+        return caches.match(request).then(
+          (cached) => {
+            console.log('[SW][STATIC]', cached ? 'HIT' : 'MISS', '| key:', request.url);
+            if (cached) return cached;
+            return fetch(request).then((res) => {
+              console.log('[SW][STATIC] fetched from network, caching key:', request.url, '| status:', res.status);
+              const clone = res.clone();
+              event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)));
+              return res;
+            });
+          }
+        );
+      })
     );
     return;
   }
@@ -176,22 +183,12 @@ self.addEventListener('fetch', (event) => {
         .catch((netErr) => {
           // [TEMP LOG] network failed, entering cache fallback
           console.warn('[SW][NAV] network MISS for:', url.pathname, '| error:', netErr && netErr.message);
-          return caches.match(event.request, { ignoreVary: true }).then((cached) => {
+          // Use the same clean key (origin + pathname) as the background prefetch so that
+          // client-side-routed pages can be found offline via a hard navigate.
+          return caches.match(url.origin + url.pathname, { ignoreVary: true }).then((cached) => {
             // [TEMP LOG] exact-url cache result
             console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
             if (cached) return cached;
-
-            // [FIX] For dynamic staff routes not individually cached, serve any cached staff
-            // page — Next.js re-renders client-side from the shared app shell.
-            if (STAFF_RE.test(url.pathname)) {
-              return caches.open(CACHE_NAME).then((cache) =>
-                cache.keys().then((keys) => {
-                  const match = keys.find((k) => STAFF_RE.test(new URL(k.url).pathname));
-                  console.log('[SW][NAV] staff fallback cache:', match ? match.url : 'MISS');
-                  return match ? cache.match(match, { ignoreVary: true }) : caches.match('/');
-                })
-              );
-            }
 
             return caches.match('/').then((rootCached) => {
               // [TEMP LOG] root '/' fallback result

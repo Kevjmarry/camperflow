@@ -220,17 +220,11 @@ export default function GuestContentPage() {
   useEffect(() => {
     if (!companyId) return;
     const load = async () => {
-      const [{ data: settings }, { data: template }, { data: companyRow }] = await Promise.all([
+      const [{ data: settings }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
           .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n")
           .eq("id", companyId)
-          .maybeSingle(),
-        supabase
-          .from("checklist_templates")
-          .select("id, name, active, item_count")
-          .eq("company_id", companyId)
-          .eq("type", "guest_prereturn")
           .maybeSingle(),
         supabase
           .from("companies")
@@ -238,6 +232,20 @@ export default function GuestContentPage() {
           .eq("id", companyId)
           .maybeSingle(),
       ]);
+
+      // Non-blocking: checklist template query is optional — must not abort the page load
+      let template: ReturnChecklist | null = null;
+      try {
+        const { data } = await supabase
+          .from("checklist_templates")
+          .select("id, name, active, item_count")
+          .eq("company_id", companyId)
+          .eq("type", "return")
+          .maybeSingle();
+        template = data ?? null;
+      } catch {
+        // Non-fatal
+      }
 
       // The JSONB column holds { EN: {...}, DE: {...}, SK: {...} } or null
       const rawJson: I18nJson = ((settings as any)?.guest_content_i18n ?? {}) as I18nJson;
@@ -288,7 +296,9 @@ export default function GuestContentPage() {
         emergency_breakdown_phone_primary:   (companyRow as any)?.emergency_breakdown_phone_primary   ?? "",
         emergency_breakdown_phone_secondary: (companyRow as any)?.emergency_breakdown_phone_secondary ?? "",
       });
-      setReturnNearbyPlaces((settings as any)?.return_nearby_places ?? []);
+      const rawNearbyPlaces = (settings as any)?.return_nearby_places;
+      console.log('[GuestContent] load: settings.return_nearby_places =', rawNearbyPlaces);
+      setReturnNearbyPlaces(rawNearbyPlaces ?? []);
       setReturnChecklist(template ?? null);
       setLoading(false);
     };
@@ -392,6 +402,8 @@ export default function GuestContentPage() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   const countLines = (val: string, min = 3) => Math.max(min, val.split("\n").length);
+
+  console.log('[GuestContent] render: returnNearbyPlaces =', returnNearbyPlaces);
 
   return (
     <PageContainer maxWidth="1400px">
@@ -621,6 +633,7 @@ export default function GuestContentPage() {
                       <div>
                         <label className="label">Nearby places <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— shown as tappable Maps links on the return page</span></label>
                         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+                          {(() => { console.log('[GuestContent] NearbyPlaces UI render, array:', returnNearbyPlaces); return null; })()}
                           {returnNearbyPlaces.map((place, i) => (
                             <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr 56px", gap: "var(--space-2)", alignItems: "center" }}>
                               <input

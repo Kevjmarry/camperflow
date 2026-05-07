@@ -32,6 +32,7 @@ import { useChecklistReopen } from './useChecklistReopen';
 import { useHandoverCompletion } from './useHandoverCompletion';
 import { useReturnCompletion } from './useReturnCompletion';
 import { isLockError, parseSyncError, getPickupAuditDisplayLabel, getReturnAuditDisplayLabel } from './helpers';
+import { saveChecklistSnapshot, loadChecklistSnapshot } from '@/lib/offline/checklist-cache';
 
 import type {
   ChecklistInstanceType,
@@ -150,6 +151,21 @@ export default function ChecklistDetailClient({
   useEffect(() => { localInstanceRef.current = localInstance; }, [localInstance]);
   useEffect(() => { setLocalItems(initialItems); }, [initialItems]);
   useEffect(() => { setLocalInstance(instance); }, [instance]);
+
+  // Persist a read cache for offline use — fire-and-forget, never blocks the UI
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { saveChecklistSnapshot(instance, initialItems); }, [instance.id]);
+
+  // Offline fallback: if the SW served a stale shell and we have no live data, hydrate from IDB
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (navigator.onLine) return;
+    loadChecklistSnapshot(instance.id).then((snapshot) => {
+      if (!snapshot) return;
+      setLocalInstance(snapshot.instance);
+      setLocalItems(snapshot.items);
+    });
+  }, [instance.id]);
 
   // ── Focus a specific item from the focusItem / itemId query param ────────────
   useEffect(() => {
