@@ -1313,7 +1313,7 @@ export default function BookingDetailPage() {
                   href={`/${locale}/staff/customers/${linkedCustomer.id}`}
                   style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--accent))', textDecoration: 'none' }}
                 >
-                  {linkedCustomer.full_name ?? t("customer.unnamed")}
+                  {(linkedCustomer.full_name ?? "").replace(/^(\[\?\]|\?)\s*/, '').trim() || t("customer.unnamed")}
                 </Link>
                 <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap', fontSize: '14px', color: 'rgb(var(--muted))' }}>
                   {linkedCustomer.email && <span>{linkedCustomer.email}</span>}
@@ -1349,7 +1349,7 @@ export default function BookingDetailPage() {
                 >
                   <option value="">{t("customer.selectPlaceholder")}</option>
                   {allCustomers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.full_name ?? t("customer.unnamed")}</option>
+                    <option key={c.id} value={c.id}>{(c.full_name ?? "").replace(/^(\[\?\]|\?)\s*/, '').trim() || t("customer.unnamed")}</option>
                   ))}
                 </select>
                 <p style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginTop: 'var(--space-1)', margin: '4px 0 0' }}>

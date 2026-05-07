@@ -156,7 +156,7 @@ export default async function CustomerDetailPage({
                   margin: 0,
                 }}
               >
-                {customer.full_name ?? t("unnamedCustomer")}
+                {(customer.full_name ?? "").replace(/^(\[\?\]|\?)\s*/, '').trim() || t("unnamedCustomer")}
               </h1>
               <Link
                 href={`/${locale}/staff/bookings`}

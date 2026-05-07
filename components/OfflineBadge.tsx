@@ -9,7 +9,7 @@ async function checkOffline(): Promise<boolean> {
     return true;
   }
   try {
-    await fetch("/manifest.json", { cache: "no-store" });
+    await fetch(`/manifest.json?t=${Date.now()}`, { cache: "no-store" });
     console.log('[OfflineBadge] manifest fetch OK → offline=false');
     return false;
   } catch (err) {

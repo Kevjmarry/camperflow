@@ -76,7 +76,7 @@ export function BookingSummaryCard({ booking, selectedVehicle, locale, t }: Prop
       }}>
         <div>
           {t("summary.customer")}:{' '}
-          <span style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || "-"}</span>
+          <span style={{ color: 'rgb(var(--text))' }}>{booking.customer_name?.replace(/^(\[\?\]|\?)\s*/, '').trim() || "-"}</span>
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
           <span>{t("summary.vehicle")}:</span>{' '}

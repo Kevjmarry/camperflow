@@ -1,4 +1,4 @@
-const CACHE_NAME = 'camperflow-v7';
+const CACHE_NAME = 'camperflow-v8';
 const STAFF_RE = /^\/(en|de)\/staff(\/|$)/;
 const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
@@ -64,6 +64,37 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
   if (request.method !== 'GET') return;
+
+  // Network-first + cache fallback for offline read snapshot routes (must precede /api/ skip)
+  if (url.pathname === '/api/staff/ops-snapshot' || url.pathname === '/api/staff/bookings-snapshot') {
+    const networkPromise = fetch(request);
+    event.waitUntil(
+      networkPromise.then((res) => {
+        if (res.ok) return caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+      }).catch(() => {})
+    );
+    const fromCache = () =>
+      caches.match(request, { ignoreVary: true }).then((cached) =>
+        cached ||
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+    // Race network against a 3 s timeout so a hanging fetch (offline dev) falls
+    // back to cache immediately rather than waiting for TCP timeout.
+    const raceNetwork = Promise.race([
+      networkPromise,
+      new Promise((_, reject) => setTimeout(reject, 3000)),
+    ]);
+    event.respondWith(
+      raceNetwork
+        .then((res) => (res.ok ? res : fromCache()))
+        .catch(fromCache)
+    );
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) return;
   // Background HTML pre-fetch requests initiated by this SW — let them pass straight to network.
   if (request.headers.get('x-sw-bypass')) return;

@@ -36,7 +36,7 @@ function CustomerRow({
             fontWeight: 500,
           }}
         >
-          {customer.full_name ?? "—"}
+          {(customer.full_name ?? "").replace(/^(\[\?\]|\?)\s*/, '').trim() || "—"}
         </Link>
       </td>
       <td

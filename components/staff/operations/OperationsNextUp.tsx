@@ -284,7 +284,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               {pickup.vehicleName}
             </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-              {pickup.customerName} · {pickup.bookingNumber}
+              {(pickup.customerName ?? '').replace(/^(\[\?\]|\?)\s*/, '')} · {pickup.bookingNumber}
             </span>
             {pickup.handoverDone
               ? <span style={{ ...getStatusChipStyle('completed'), alignSelf: 'flex-start' }}>Handover complete</span>
@@ -348,7 +348,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               {ret.vehicleName}
             </span>
             <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
-              {ret.customerName} · {ret.bookingNumber}
+              {(ret.customerName ?? '').replace(/^(\[\?\]|\?)\s*/, '')} · {ret.bookingNumber}
             </span>
             {(() => {
               const diff = countdownDays(ret.returnAt)

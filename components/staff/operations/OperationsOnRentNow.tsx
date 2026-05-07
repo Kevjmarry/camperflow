@@ -61,15 +61,18 @@ export default function OperationsOnRentNow({ rows }: Props) {
   const t = useTranslations('staff.operations.onRentNow')
   const tOps = useTranslations('staff.operations')
 
-  // Keyed by String(row.id). Initialized empty so server render and first
-  // client render both output absolute text only. Populated after mount.
+  // Both states start empty/false so SSR and the first hydration pass produce
+  // identical output (absolute date only). Populated together after mount.
+  const [mounted, setMounted] = useState(false)
   const [relSuffixes, setRelSuffixes] = useState<Record<string, string>>({})
 
   function formatDateShort(iso: string) {
     const d = new Date(iso)
-    const now = new Date()
-    if (d.toDateString() === now.toDateString()) return tOps('countdown.today')
-    if (d.toDateString() === new Date(now.getTime() + 86_400_000).toDateString()) return tOps('countdown.tomorrow')
+    if (mounted) {
+      const now = new Date()
+      if (d.toDateString() === now.toDateString()) return tOps('countdown.today')
+      if (d.toDateString() === new Date(now.getTime() + 86_400_000).toDateString()) return tOps('countdown.tomorrow')
+    }
     return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
   }
 
@@ -81,8 +84,11 @@ export default function OperationsOnRentNow({ rows }: Props) {
     return `${formatDateShort(returnAt)}, ${formatTime(returnAt)}`
   }
 
-  // Runs once after mount — safe to read Date.now() here, never during render
+  // Runs once after mount — safe to read Date.now() here, never during render.
+  // React 18 batches setMounted + setRelSuffixes into a single re-render.
   useEffect(() => {
+    fetch('/api/staff/ops-snapshot').catch(() => {})
+    setMounted(true)
     const suffixes: Record<string, string> = {}
     rows.forEach((r) => {
       const diffMs = new Date(r.returnAt).getTime() - Date.now()

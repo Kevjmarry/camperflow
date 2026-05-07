@@ -59,7 +59,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   const t = await getTranslations("guestReturn");
   const tBooking = await getTranslations("guestBooking");
 
-  const dateLocale = locale === "de" ? "de-DE" : "en-US";
+  const dateLocale = locale === "de" ? "de-DE" : "en-GB";
 
   if (!code) {
     return (

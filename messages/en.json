@@ -541,13 +541,13 @@
     },
     "unassigned": "Unassigned",
     "date": {
-      "locale": "en-US"
+      "locale": "en-GB"
     },
     "placeholder": {
       "dash": "-"
     },
     "statusLabels": {
-      "draft": "Draft",
+      "draft": "Pending",
       "confirmed": "Confirmed",
       "blocked": "Blocked",
       "onRent": "On Rent",
@@ -1323,7 +1323,7 @@
     "title": "Booking Details",
     "loading": "Loading booking...",
     "date": {
-      "locale": "en-US"
+      "locale": "en-GB"
     },
     "notFound": {
       "title": "Booking not found",

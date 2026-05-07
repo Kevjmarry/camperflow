@@ -22,7 +22,7 @@ const DAY_BG = `repeating-linear-gradient(to right, rgb(var(--muted) / 0.03) 0, 
 const TODAY_L = DAYS_BACK * PX_PER_DAY
 
 const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; bgImage?: string }> = {
-  draft:     { bg: 'rgb(234 179 8 / 0.13)', bgImage: 'repeating-linear-gradient(45deg, rgb(234 179 8 / 0.30) 0, rgb(234 179 8 / 0.30) 3px, transparent 3px, transparent 9px)', border: 'rgb(234 179 8 / 0.60)', text: '#fff' },
+  draft:     { bg: 'rgb(234 179 8 / 0.13)', bgImage: 'repeating-linear-gradient(45deg, rgb(234 179 8 / 0.30) 0, rgb(234 179 8 / 0.30) 3px, transparent 3px, transparent 9px)', border: 'rgb(234 179 8 / 0.60)', text: 'rgb(var(--muted))' },
   confirmed: { bg: 'rgb(var(--success) / 0.65)', border: 'rgb(var(--success) / 0.90)', text: '#fff' },
   blocked:   { bg: 'rgb(var(--danger) / 0.22)',  border: 'rgb(var(--danger) / 0.65)',  text: '#fff' },
   on_rent:   { bg: 'rgb(var(--success) / 0.85)', border: 'rgb(var(--success))',        text: '#fff' },
@@ -34,7 +34,7 @@ const LEGEND = [
   { status: 'confirmed', label: 'Confirmed' },
   { status: 'on_rent',   label: 'On Rent' },
   { status: 'blocked',   label: 'Blocked' },
-  { status: 'draft',     label: 'Draft' },
+  { status: 'draft',     label: 'Pending' },
   { status: 'completed', label: 'Completed' },
 ] as const
 
@@ -254,7 +254,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                       const leftPct = (cStart / TOTAL_DAYS) * 100
                       const widthPct = ((cEnd - cStart) / TOTAL_DAYS) * 100
                       const s = STATUS_STYLE[b.status] ?? FALLBACK_STYLE
-                      const label = b.customerName || b.bookingNumber
+                      const label = (b.customerName || b.bookingNumber || '').replace(/^(\[\?\]|\?)\s*/, '')
                       return (
                         <Link
                           key={b.id}

@@ -6,8 +6,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
 import LocalizedDateInput from "@/components/LocalizedDateInput";
-import { createClient } from "@/lib/supabase/client";
-import { getEffectiveUser } from "@/lib/supabase/getEffectiveUser";
 import { getStatusChipStyle } from "@/lib/statusChip";
 import BackLink from "@/components/staff/BackLink";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -45,7 +43,6 @@ interface Booking {
 export default function BookingsPage() {
   const { locale } = useParams<{ locale: string }>();
   const t = useTranslations("bookings");
-  const supabase = createClient();
   const { company } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,108 +63,25 @@ const [dateFrom, setDateFrom] = useState<string>("");
   const [expandedYears, setExpandedYears] = useState<Set<number>>(() => new Set([new Date().getFullYear()]));
 
   useEffect(() => {
-    checkUserCapabilities();
+    fetchSnapshot();
   }, []);
 
-  useEffect(() => {
-    if (canManage !== null) {
-      fetchBookings();
-    }
-  }, [canManage]);
-
-  const checkUserCapabilities = async () => {
-    try {
-      const user = await getEffectiveUser(supabase);
-      if (!user) {
-        console.error("[BOOKINGS_AUTH_BRANCH] notAuthenticated", { user });
-        setError(t("error.notAuthenticated"));
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('staff_profiles')
-        .select('can_manage, role')
-        .eq('auth_user_id', user.id)
-        .single();
-
-      setCanManage(profileError ? true : (profile?.can_manage ?? false));
-      setIsAdmin(profileError ? false : profile?.role === 'admin');
-    } catch (err: any) {
-      setError(err.message || t("error.permissionsFailed"));
-      setLoading(false);
-    }
-  };
-
-  const fetchBookings = async () => {
+  const fetchSnapshot = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      let rawBookings: Booking[] = [];
-
-      if (canManage) {
-        const now = new Date().toISOString();
-        await supabase
-          .from('bookings')
-          .update({ status: 'on_rent' })
-          .eq('status', 'confirmed')
-          .lte('pickup_at', now)
-          .gte('return_at', now);
-
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('*, vehicles(id, name, status)')
-          .order('pickup_at', { ascending: true });
-
-        if (error) throw error;
-        rawBookings = data || [];
-      } else {
-        const { data, error } = await supabase.rpc('list_staff_bookings_redacted');
-        if (error) throw error;
-
-        const filtered = data || [];
-        const vehicleIds = [...new Set(filtered.map((b: Booking) => b.vehicle_id).filter(Boolean))];
-        if (vehicleIds.length > 0) {
-          const { data: vehicles } = await supabase
-            .from('vehicles')
-            .select('id, name, status')
-            .in('id', vehicleIds);
-
-          const vehicleMap = new Map(vehicles?.map(v => [v.id, { name: v.name, status: v.status }]) || []);
-          rawBookings = filtered.map((b: Booking) => ({
-            ...b,
-            vehicle_name: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.name : null,
-            vehicle_status: b.vehicle_id ? vehicleMap.get(b.vehicle_id)?.status : null,
-          }));
-        } else {
-          rawBookings = filtered;
-        }
+      setError('');
+      const res = await fetch('/api/staff/bookings-snapshot');
+      if (res.status === 401) {
+        setError(t('error.notAuthenticated'));
+        return;
       }
-
-      // Fetch checklist instances with item counts for all bookings
-      const bookingIds = rawBookings.map(b => b.id);
-      let checklistsByBooking: Record<string, ChecklistInstance[]> = {};
-
-      if (bookingIds.length > 0) {
-        const { data: instances } = await supabase
-          .from('checklist_instances')
-          .select('id, booking_id, status, checklist_instance_items(checked)')
-          .in('booking_id', bookingIds);
-
-        if (instances) {
-          for (const inst of instances) {
-            if (!checklistsByBooking[inst.booking_id]) {
-              checklistsByBooking[inst.booking_id] = [];
-            }
-            checklistsByBooking[inst.booking_id].push(inst as ChecklistInstance);
-          }
-        }
-      }
-
-      setBookings(rawBookings.map(b => ({ ...b, checklists: checklistsByBooking[b.id] || [] })));
+      if (!res.ok) throw new Error(t('error.loadFailed'));
+      const { canManage: cm, isAdmin: ia, bookings: data } = await res.json();
+      setCanManage(cm);
+      setIsAdmin(ia);
+      setBookings(data);
     } catch (err: any) {
-      setError(err.message || t("error.loadFailed"));
+      setError(err.message || t('error.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -885,7 +799,7 @@ setDateFrom('');
                                 {canManage && (
                                   <td style={td}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.35' }}>
-                                      <div style={{ color: 'rgb(var(--text))' }}>{booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
+                                      <div style={{ color: 'rgb(var(--text))' }}>{(booking.customer_name?.replace(/^(\[\?\]|\?)\s*/, '').trim()) || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
                                       <div style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}</div>
                                     </div>
                                   </td>
@@ -1018,7 +932,7 @@ setDateFrom('');
                             {t("table.customer")}
                           </div>
                           <div style={{ color: 'rgb(var(--text))' }}>
-                            {booking.customer_name || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}
+                            {(booking.customer_name?.replace(/^(\[\?\]|\?)\s*/, '').trim()) || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}
                           </div>
                           <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginTop: 'var(--space-1)' }}>
                             {booking.customer_phone || <span style={{ color: 'rgb(var(--muted))' }}>{t("placeholder.dash")}</span>}

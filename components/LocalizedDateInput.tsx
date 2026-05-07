@@ -99,8 +99,9 @@ export default function LocalizedDateInput({ value, onChange, className, style }
     today.getMonth()    === viewMonth &&
     today.getDate()     === d;
 
+  const displayLocale = locale === "en" ? "en-GB" : locale;
   const display = parsed
-    ? new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(parsed)
+    ? new Intl.DateTimeFormat(displayLocale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(parsed)
     : "";
 
   return (
