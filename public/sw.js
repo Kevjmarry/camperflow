@@ -175,8 +175,9 @@ self.addEventListener('fetch', (event) => {
           // [FIX] Never cache redirected responses — serving one offline confuses the browser
           if (res.ok && !res.redirected) {
             const clone = res.clone();
-            console.log('[SW][NAV] caching navigate response, key:', request.url, '| cache:', CACHE_NAME);
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            const navKey = url.origin + url.pathname;
+            console.log('[SW][NAV] caching navigate response, key:', navKey, '| cache:', CACHE_NAME);
+            caches.open(CACHE_NAME).then((cache) => cache.put(navKey, clone));
           }
           return res;
         })
@@ -190,6 +191,11 @@ self.addEventListener('fetch', (event) => {
             console.log('[SW][NAV] exact cache match for', url.pathname, ':', cached ? 'HIT' : 'MISS');
             if (cached) return cached;
 
+            // Do not fall back to '/' for staff routes — it serves wrong-checklist content offline.
+            if (STAFF_RE.test(url.pathname)) {
+              console.warn('[SW][NAV] staff route exact miss, skipping "/" fallback for:', url.pathname);
+              return null;
+            }
             return caches.match('/').then((rootCached) => {
               // [TEMP LOG] root '/' fallback result
               console.log('[SW][NAV] root "/" fallback:', rootCached ? 'HIT' : 'MISS');

@@ -2506,6 +2506,7 @@
     "returnErrorAuditIncomplete": "Alle Rückgabe-Prüfpunkte müssen abgehakt sein, bevor die Rückgabe abgeschlossen werden kann.",
     "returnErrorCloseIncomplete": "Alle Rückgabe-Abschlussbestätigungen (Schlüssel, Dokumente, Vertrag) müssen abgeschlossen sein.",
     "returnErrorDepositRequired": "Der Kautionsstatus muss gesetzt werden, bevor die Rückgabe abgeschlossen werden kann.",
+    "returnErrorExtrasIncomplete": "Alle übergebenen Extras müssen als zurückgegeben markiert werden, bevor die Rückgabe abgeschlossen werden kann.",
     "returnKmBelowHandover": "Rückgabe-Kilometer darf nicht unter dem Übergabe-Kilometerstand ({handoverKm} km) liegen.",
     "returnKmHighJumpConfirm": "Rückgabe-Kilometerstand ({returnKm} km) liegt {diff} km über dem Übergabe-Kilometerstand ({handoverKm} km). Diesen Wert speichern?",
     "returnPhaseInspection": "Inspektion",

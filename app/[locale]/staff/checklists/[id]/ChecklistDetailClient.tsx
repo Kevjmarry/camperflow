@@ -153,8 +153,15 @@ export default function ChecklistDetailClient({
   useEffect(() => { setLocalInstance(instance); }, [instance]);
 
   // Persist a read cache for offline use — fire-and-forget, never blocks the UI
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { saveChecklistSnapshot(instance, initialItems); }, [instance.id]);
+  useEffect(() => {
+    // DEBUG: prove what labels reach saveChecklistSnapshot on every render cycle
+    console.log('[saveChecklistSnapshot] called with', {
+      instanceId: instance.id,
+      itemCount: initialItems.length,
+      labels: initialItems.map((it) => ({ id: it.id, templateItemId: it.template_item_id, label: it.template.label })),
+    });
+    saveChecklistSnapshot(instance, initialItems);
+  }, [instance, initialItems]);
 
   // Offline fallback: if the SW served a stale shell and we have no live data, hydrate from IDB
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -461,6 +468,10 @@ export default function ChecklistDetailClient({
     showReturnModal: (urgentItems, onConfirm) =>
       showHandoverSafetyModal(urgentItems, onConfirm, [], '', ''),
     navigateAfterCompletion,
+    returnExtrasIds: instance.checklist_type === 'return'
+      ? (((instance.bookings as any)?.staff_metadata?.handed_over_extras ?? []) as string[])
+      : [],
+    extrasChecked,
     t,
   });
 
@@ -1181,11 +1192,10 @@ export default function ChecklistDetailClient({
 
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);
   const checklistActionsSections: { name: string; items: ChecklistItemType[] }[] = (() => {
-    // vehicle_data items are handled by VehicleDataBlock in pickup/handover/return only.
-    // For all other types (cleaning, mechanical, …) include every item unconditionally.
-    const usesVehicleDataBlock = isPickupOrHandover || instance.checklist_type === 'return';
-    const filtered = usesVehicleDataBlock
-      ? sortedItems.filter((item) => item.template.ui_section !== 'vehicle_data' && item.template.ui_section !== 'office')
+    const filtered = instance.checklist_type === 'return'
+      ? sortedItems.filter((item) => item.template.ui_section === 'checklist_actions')
+      : isPickupOrHandover
+      ? sortedItems.filter((item) => item.template.ui_section !== 'vehicle_data' && item.template.ui_section !== 'office' && item.template.ui_section !== 'return_close_out' && item.template.ui_section !== 'deposit_status')
       : sortedItems.filter((item) => item.template.ui_section !== 'office');
     const map = new Map<string, ChecklistItemType[]>();
     for (const item of filtered) {

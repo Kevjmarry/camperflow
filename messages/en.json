@@ -2506,6 +2506,7 @@
     "returnErrorAuditIncomplete": "All return audit items must be checked before the return can be completed.",
     "returnErrorCloseIncomplete": "All return close-out confirmations (keys, documents, contract) must be completed.",
     "returnErrorDepositRequired": "Deposit status must be set before the return can be completed.",
+    "returnErrorExtrasIncomplete": "All handed-over extras must be marked as returned before the return can be completed.",
     "returnKmBelowHandover": "Return km cannot be lower than the handover km ({handoverKm} km).",
     "returnKmHighJumpConfirm": "Return km ({returnKm} km) is {diff} km above the handover km ({handoverKm} km). Save this value?",
     "returnPhaseInspection": "Inspection",

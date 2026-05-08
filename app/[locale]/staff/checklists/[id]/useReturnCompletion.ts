@@ -18,6 +18,8 @@ interface UseReturnCompletionProps {
   lockMessageFromError: (error: any) => string;
   showReturnModal: (urgentItems: ChecklistItemType[], onConfirm: () => Promise<void>) => void;
   navigateAfterCompletion: () => void;
+  returnExtrasIds: string[];
+  extrasChecked: Record<string, boolean>;
   t: (key: string, ...args: any[]) => string;
 }
 
@@ -33,6 +35,8 @@ export function useReturnCompletion({
   lockMessageFromError,
   showReturnModal,
   navigateAfterCompletion,
+  returnExtrasIds,
+  extrasChecked,
   t,
 }: UseReturnCompletionProps) {
   const [returnCompleting, setReturnCompleting] = useState(false);
@@ -111,7 +115,13 @@ export function useReturnCompletion({
       return;
     }
 
-    // 2. Return close-out confirmations must be complete (blocking)
+    // 2. All handed-over extras must be marked as returned (blocking)
+    if (returnExtrasIds.some((id) => !extrasChecked[id])) {
+      setReturnBlockedError(t('returnErrorExtrasIncomplete'));
+      return;
+    }
+
+    // 3. Return close-out confirmations must be complete (blocking)
     if (
       !localInstance.return_keys_received ||
       !localInstance.return_documents_received ||
@@ -121,7 +131,7 @@ export function useReturnCompletion({
       return;
     }
 
-    // 3. Deposit status must be set (blocking)
+    // 4. Deposit status must be set (blocking)
     if (!localInstance.return_deposit_status) {
       setReturnBlockedError(t('returnErrorDepositRequired'));
       return;
