@@ -11,7 +11,7 @@ export default function LocaleSwitcher() {
   const segments = pathname.split('/');
   const currentLocale = segments[1];
 
-  function switchLocale(newLocale: 'en' | 'de') {
+  function switchLocale(newLocale: 'en' | 'de' | 'sk') {
     if (currentLocale === newLocale) return;
     const nextPath = '/' + [newLocale, ...segments.slice(2)].join('/');
     // Preserve query string (e.g. ?code=... for guest flow)
@@ -23,7 +23,7 @@ export default function LocaleSwitcher() {
 
   return (
     <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-      {(['en', 'de'] as const).map((loc) => (
+      {(['en', 'de', 'sk'] as const).map((loc) => (
         <button
           key={loc}
           onClick={() => switchLocale(loc)}

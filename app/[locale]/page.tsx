@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { InstallBanner } from "@/components/InstallBanner";
 
-type Locale = "en" | "de";
+type Locale = "en" | "de" | "sk";
 
 export default function AppEntryPage() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function AppEntryPage() {
 
   const locale = useMemo<Locale>(() => {
     const raw = params?.locale;
-    return raw === "de" ? "de" : "en";
+    return raw === "de" ? "de" : raw === "sk" ? "sk" : "en";
   }, [params]);
 
   useEffect(() => {
@@ -86,39 +86,25 @@ export default function AppEntryPage() {
             </div>
 
             <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
-              <button
-                onClick={() => handleLocaleChange("en")}
-                style={{
-                  padding: "var(--space-1) var(--space-3)",
-                  fontSize: "14px",
-                  fontWeight: locale === "en" ? 600 : 400,
-                  color: locale === "en" ? "rgb(var(--primary))" : "rgb(var(--muted))",
-                  border: "none",
-                  borderRadius: "var(--radius)",
-                  background: locale === "en" ? "rgb(var(--primary) / 0.1)" : "transparent",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-              >
-                EN
-              </button>
-
-              <button
-                onClick={() => handleLocaleChange("de")}
-                style={{
-                  padding: "var(--space-1) var(--space-3)",
-                  fontSize: "14px",
-                  fontWeight: locale === "de" ? 600 : 400,
-                  color: locale === "de" ? "rgb(var(--primary))" : "rgb(var(--muted))",
-                  border: "none",
-                  borderRadius: "var(--radius)",
-                  background: locale === "de" ? "rgb(var(--primary) / 0.1)" : "transparent",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-              >
-                DE
-              </button>
+              {(["en", "de", "sk"] as const).map((loc) => (
+                <button
+                  key={loc}
+                  onClick={() => handleLocaleChange(loc)}
+                  style={{
+                    padding: "var(--space-1) var(--space-3)",
+                    fontSize: "14px",
+                    fontWeight: locale === loc ? 600 : 400,
+                    color: locale === loc ? "rgb(var(--primary))" : "rgb(var(--muted))",
+                    border: "none",
+                    borderRadius: "var(--radius)",
+                    background: locale === loc ? "rgb(var(--primary) / 0.1)" : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {loc.toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
         </div>

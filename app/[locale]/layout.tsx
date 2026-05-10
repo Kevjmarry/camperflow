@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
 };
 
-const locales = ["en", "de"] as const;
+const locales = ["en", "de", "sk"] as const;
 
 export default async function RootLayout({
   children,

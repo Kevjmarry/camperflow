@@ -253,7 +253,11 @@
         "save": "Save",
         "nameLabel": "Compliance name",
         "errorNameRequired": "Please enter a name.",
-        "blocksReadinessLabel": "Blocks vehicle readiness"
+        "blocksReadinessLabel": "Blocks vehicle readiness",
+        "serviceDueKmLabel": "Service due at km",
+        "errorDateOrKmRequired": "Please enter an expiry date or service due km",
+        "warningDaysOverrideLabel": "Custom warning days before expiry",
+        "warningKmOverrideLabel": "Custom warning km before service"
       },
       "addModal": {
         "title": "Add compliance",
@@ -272,14 +276,19 @@
         "customNameLabel": "Compliance name",
         "customNamePlaceholder": "e.g. Fire extinguisher …",
         "errorCustomNameRequired": "Please enter a name.",
-        "customBlocksReadinessLabel": "Blocks vehicle readiness"
+        "customBlocksReadinessLabel": "Blocks vehicle readiness",
+        "serviceDueKmLabel": "Service due at km",
+        "errorDateOrKmRequired": "Please enter an expiry date or service due km",
+        "warningDaysOverrideLabel": "Custom warning days before expiry",
+        "warningKmOverrideLabel": "Custom warning km before service"
       },
       "systemTypes": {
         "technicalInspection": "Technical Inspection",
         "insurance": "Insurance",
         "gasInspection": "Gas Inspection",
         "habitationService": "Habitation Service",
-        "generalService": "General Service"
+        "generalService": "General Service",
+        "engineService": "Engine Service"
       }
     },
     "checklists": {
@@ -1118,6 +1127,7 @@
         "blocked": "Blocked",
         "checklistIssue": "Checklist issue",
         "expiredCompliance": "Expired compliance",
+        "warningCompliance": "Compliance due soon",
         "vehicleIssue": "Vehicle issue",
         "urgentIssue": "Urgent issue",
         "attentionIssue": "Attention issue"
@@ -2651,7 +2661,7 @@
       "phone": "Phone",
       "created": "Created"
     },
-    "missingPhone": "Missing phone number ({count}) *",
+    "missingPhone": "Missing contact details ({count}) *",
     "missingPhoneNote": "* Customers imported from your booking system may be missing contact details. Open each record to add or update them so they display and work correctly in CamperFlow."
   },
   "staffCustomerDetail": {
@@ -2663,6 +2673,11 @@
     "noContactInfo": "No contact info",
     "totalBookings": "Total bookings:",
     "lastBooking": "Last booking:",
+    "email": "Email",
+    "phone": "Phone",
+    "saveContact": "Save",
+    "savedSuccess": "Contact info saved.",
+    "saveError": "Failed to save contact info.",
     "bookingsTitle": "Bookings",
     "noBookings": "No bookings for this customer yet",
     "table": {

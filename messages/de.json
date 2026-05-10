@@ -253,7 +253,11 @@
         "save": "Speichern",
         "nameLabel": "Bezeichnung",
         "errorNameRequired": "Bitte einen Namen eingeben.",
-        "blocksReadinessLabel": "Blockiert Fahrzeugbereitschaft"
+        "blocksReadinessLabel": "Blockiert Fahrzeugbereitschaft",
+        "serviceDueKmLabel": "Fälliger Kilometerstand",
+        "errorDateOrKmRequired": "Bitte Ablaufdatum oder Kilometerstand angeben",
+        "warningDaysOverrideLabel": "Eigene Warntage vor Ablauf",
+        "warningKmOverrideLabel": "Eigene Warn-km vor Service"
       },
       "addModal": {
         "title": "Compliance hinzufügen",
@@ -272,14 +276,19 @@
         "customNameLabel": "Bezeichnung",
         "customNamePlaceholder": "z.B. Feuerlöscher-Service",
         "errorCustomNameRequired": "Bitte einen Namen eingeben.",
-        "customBlocksReadinessLabel": "Blockiert Fahrzeugbereitschaft"
+        "customBlocksReadinessLabel": "Blockiert Fahrzeugbereitschaft",
+        "serviceDueKmLabel": "Fälliger Kilometerstand",
+        "errorDateOrKmRequired": "Bitte Ablaufdatum oder Kilometerstand angeben",
+        "warningDaysOverrideLabel": "Eigene Warntage vor Ablauf",
+        "warningKmOverrideLabel": "Eigene Warn-km vor Service"
       },
       "systemTypes": {
         "technicalInspection": "Hauptuntersuchung",
         "insurance": "Versicherung",
         "gasInspection": "Gasprüfung",
         "habitationService": "Wohnraumwartung",
-        "generalService": "Allgemeine Wartung"
+        "generalService": "Allgemeine Wartung",
+        "engineService": "Motorwartung"
       }
     },
     "checklists": {
@@ -1118,6 +1127,7 @@
         "blocked": "Gesperrt",
         "checklistIssue": "Checklisten-Problem",
         "expiredCompliance": "Abgelaufene Prüfung",
+        "warningCompliance": "Prüfung bald fällig",
         "vehicleIssue": "Fahrzeugproblem",
         "urgentIssue": "Dringendes Problem",
         "attentionIssue": "Aufmerksamkeit erforderlich"
@@ -2651,7 +2661,7 @@
       "phone": "Telefon",
       "created": "Erstellt"
     },
-    "missingPhone": "Fehlende Telefonnummer ({count}) *",
+    "missingPhone": "Fehlende Kontaktdaten ({count}) *",
     "missingPhoneNote": "* Kunden, die aus Ihrem Buchungssystem importiert wurden, können fehlende Kontaktdaten haben. Öffnen Sie jeden Datensatz, um diese hinzuzufügen oder zu aktualisieren, damit sie korrekt in CamperFlow angezeigt werden."
   },
   "staffCustomerDetail": {
@@ -2663,6 +2673,11 @@
     "noContactInfo": "Keine Kontaktdaten",
     "totalBookings": "Buchungen gesamt:",
     "lastBooking": "Letzte Buchung:",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "saveContact": "Speichern",
+    "savedSuccess": "Kontaktdaten gespeichert.",
+    "saveError": "Kontaktdaten konnten nicht gespeichert werden.",
     "bookingsTitle": "Buchungen",
     "noBookings": "Noch keine Buchungen für diesen Kunden",
     "table": {

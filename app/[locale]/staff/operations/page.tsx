@@ -199,10 +199,16 @@ export default async function OperationsPage({
   // current booking-based entry (e.g. out-of-season fleet with expired compliance).
   for (const v of blockedVehicles) {
     if (seenVehicleNames.has(v.name)) continue
+    if (!v.hasExpiredCompliance && !v.hasWarningCompliance && !v.hasOpenVehicleIssue) continue
     const chips: Chip[] = []
     if (v.hasExpiredCompliance) chips.push({
       label: t('attentionChip.expiredCompliance'),
       severity: 'critical',
+      href: `/${locale}/staff/vehicles/${v.id}#compliance`,
+    })
+    if (!v.hasExpiredCompliance && v.hasWarningCompliance) chips.push({
+      label: t('attentionChip.warningCompliance'),
+      severity: 'warning',
       href: `/${locale}/staff/vehicles/${v.id}#compliance`,
     })
     if (v.hasOpenVehicleIssue) chips.push({

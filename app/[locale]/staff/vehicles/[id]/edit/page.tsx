@@ -35,6 +35,7 @@ interface Vehicle {
   operational_hold: boolean;
   hold_reason: string | null;
   youtube_url: string | null;
+  latest_odometer: number | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -204,12 +205,12 @@ export default function EditVehiclePage({
         supabase
           .from("vehicle_compliance")
           .select(
-            "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple)"
+            "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple)"
           )
           .eq("vehicle_id", vehicle!.id),
         supabase
           .from("compliance_types")
-          .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
+          .select("id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
           .eq("is_active", true)
           .order("sort_order", { ascending: true }),
       ]);
@@ -239,10 +240,10 @@ export default function EditVehiclePage({
     }
   };
 
-  const handleEditSave = async (rowId: string, expiryDate: string, notes: string, customTypeName?: string, customBlocksReadiness?: boolean) => {
+  const handleEditSave = async (rowId: string, expiryDate: string, notes: string, customTypeName?: string, customBlocksReadiness?: boolean, serviceDueOdometerKm?: number | null, warningDaysOverride?: number | null, warningKmOverride?: number | null) => {
     const { error } = await supabase
       .from("vehicle_compliance")
-      .update({ expiry_date: expiryDate, notes: notes || null })
+      .update({ expiry_date: expiryDate || null, notes: notes || null, service_due_odometer_km: serviceDueOdometerKm ?? null, warning_days_before_override: warningDaysOverride ?? null, warning_km_before_override: warningKmOverride ?? null })
       .eq("id", rowId);
     if (error) throw new Error(error.message);
 
@@ -265,8 +266,11 @@ export default function EditVehiclePage({
         r.id === rowId
           ? {
               ...r,
-              expiry_date: expiryDate,
+              expiry_date: expiryDate || null,
               notes: notes || null,
+              service_due_odometer_km: serviceDueOdometerKm ?? null,
+              warning_days_before_override: warningDaysOverride ?? null,
+              warning_km_before_override: warningKmOverride ?? null,
               compliance_types:
                 !r.compliance_types.is_system
                   ? {
@@ -289,7 +293,10 @@ export default function EditVehiclePage({
     expiryDate: string,
     notes: string,
     customTypeName?: string,
-    customBlocksReadiness?: boolean
+    customBlocksReadiness?: boolean,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => {
     let resolvedTypeId = complianceTypeId;
 
@@ -303,7 +310,7 @@ export default function EditVehiclePage({
 
       const { data: existingType } = await supabase
         .from("compliance_types")
-        .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
+        .select("id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
         .eq("company_id", companyId)
         .eq("normalized_name", normalized)
         .eq("is_active", true)
@@ -333,13 +340,13 @@ export default function EditVehiclePage({
             warning_days_before: 30,
             sort_order: maxSortOrder + 1,
           })
-          .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
+          .select("id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
           .single();
 
         if (insertError) {
           const { data: racedType, error: refetchError } = await supabase
             .from("compliance_types")
-            .select("id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
+            .select("id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple")
             .eq("company_id", companyId)
             .eq("normalized_name", normalized)
             .eq("is_active", true)
@@ -367,11 +374,14 @@ export default function EditVehiclePage({
       .insert({
         vehicle_id: vId,
         compliance_type_id: resolvedTypeId,
-        expiry_date: expiryDate,
+        expiry_date: expiryDate || null,
         notes: notes || null,
+        service_due_odometer_km: serviceDueOdometerKm ?? null,
+        warning_days_before_override: warningDaysOverride ?? null,
+        warning_km_before_override: warningKmOverride ?? null,
       })
       .select(
-        "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple)"
+        "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id, blocks_readiness, allow_multiple)"
       )
       .single();
 
@@ -656,6 +666,7 @@ export default function EditVehiclePage({
             onDeleteRow={handleDeleteRow}
             onEditSave={handleEditSave}
             onAddSave={handleAddSave}
+            latestOdometer={vehicle?.latest_odometer ?? null}
             initialCalendarSyncUrl={calendarSyncUrl}
             syncInterval={calendarSyncInterval}
             onSyncIntervalChange={handleSyncIntervalChange}

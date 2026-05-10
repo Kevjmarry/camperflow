@@ -230,7 +230,7 @@ async function findOrCreateCustomer(
   fullName: string,
   phone: string | null,
   email: string | null,
-): Promise<string | null> {
+): Promise<{ id: string; isNew: boolean } | null> {
   const trimmedEmail = email?.trim() || null;
   const trimmedPhone = phone?.trim() || null;
   const trimmedName = fullName?.trim() || null;
@@ -243,7 +243,7 @@ async function findOrCreateCustomer(
       .eq('company_id', companyId)
       .eq('email', trimmedEmail)
       .maybeSingle();
-    if (byEmail) return byEmail.id;
+    if (byEmail) return { id: byEmail.id, isNew: false };
   }
 
   // Fallback: match by full_name + phone
@@ -255,7 +255,20 @@ async function findOrCreateCustomer(
       .eq('full_name', trimmedName)
       .eq('phone', trimmedPhone)
       .maybeSingle();
-    if (byNamePhone) return byNamePhone.id;
+    if (byNamePhone) return { id: byNamePhone.id, isNew: false };
+  }
+
+  // Last resort: iCal events carry no phone and often no email.
+  // Match on name alone to avoid creating a null-contact duplicate of an
+  // existing record and losing its stored email/phone.
+  if (trimmedName && !trimmedEmail && !trimmedPhone) {
+    const { data: byName } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('full_name', trimmedName)
+      .maybeSingle();
+    if (byName) return { id: byName.id, isNew: false };
   }
 
   // Create new customer
@@ -271,7 +284,20 @@ async function findOrCreateCustomer(
     .single();
 
   if (error || !created) return null;
-  return created.id;
+  return { id: created.id, isNew: true };
+}
+
+async function deleteCustomerIfUnreferenced(
+  supabase: SupabaseClient,
+  customerId: string,
+): Promise<void> {
+  const { count } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', customerId);
+  if ((count ?? 0) === 0) {
+    await supabase.from('customers').delete().eq('id', customerId);
+  }
 }
 
 // ── Trip-detail extraction from freetext notes ────────────────────────────────
@@ -371,6 +397,8 @@ interface ExistingBookingData {
   source_reference: string | null;
   pickup_at: string | null;
   return_at: string | null;
+  vehicle_id: string | null;
+  customer_id: string | null;
   staff_metadata: Record<string, unknown> | null;
 }
 
@@ -509,7 +537,7 @@ export async function POST(request: NextRequest) {
       const { data: existing } = await supabase
         .from('bookings')
         .select(
-          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at, staff_metadata',
+          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at, vehicle_id, customer_id, staff_metadata',
         )
         .eq('company_id', companyId)
         .in('source_type', [...querySourceTypes])
@@ -533,6 +561,8 @@ export async function POST(request: NextRequest) {
             source_reference: e.source_reference ?? null,
             pickup_at: e.pickup_at ?? null,
             return_at: e.return_at ?? null,
+            vehicle_id: e.vehicle_id ?? null,
+            customer_id: e.customer_id ?? null,
             staff_metadata: (e.staff_metadata as Record<string, unknown> | null) ?? null,
           };
         }
@@ -644,46 +674,44 @@ export async function POST(request: NextRequest) {
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
               sync_run_id: syncRunId,
-              ...(customerId ? { customer_id: customerId } : {}),
+              ...(customerId ? { customer_id: customerId.id } : {}),
               ...(updatedStaffMetaBmIcal ? { staff_metadata: updatedStaffMetaBmIcal } : {}),
             })
             .eq('id', existingId);
 
           if (error) {
             errors.push({ rowNumber: row.rowNumber, message: error.message });
+            if (customerId?.isNew) await deleteCustomerIfUnreferenced(supabase, customerId.id);
           } else {
             updated++;
           }
         } else {
-          // Standard update: full overwrite with incoming values.
-          // Exception for iCal: if the normalized time looks date-only or
-          // midnight (no real time component), keep the existing stored time
-          // only when it is meaningful (non-midnight). If the existing stored
-          // time is also midnight or null, replace it with the company default.
-          // Uses looksDateOnly — not isIcalAllDay — to catch both pure DATE
-          // (YYYYMMDD) and midnight DATE-TIME (YYYYMMDDTHHMMSSZ where
-          // HH:MM:SS = 00:00:00), which many platforms emit for all-day events
-          // even though the raw value is not 8 digits.
-          const pickupIsDateOnly = n.sourceType === 'ical' && !n.pickupAtExplicitUtc && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt, companyTimezone));
-          const returnIsDateOnly = n.sourceType === 'ical' && !n.returnAtExplicitUtc && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt, companyTimezone));
-          const resolvedPickupAt =
-            pickupIsDateOnly && existing?.pickup_at && !looksDateOnly(existing.pickup_at) && !isMidnightInCompanyTz(existing.pickup_at, companyTimezone)
-              ? existing.pickup_at
-              : applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc);
-          const resolvedReturnAt =
-            returnIsDateOnly && existing?.return_at && !looksDateOnly(existing.return_at) && !isMidnightInCompanyTz(existing.return_at, companyTimezone)
-              ? existing.return_at
-              : applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true);
+          // Standard update: preserve existing non-empty operational fields;
+          // imports may only fill fields that are currently empty.
+          const mergedCustomerName = existing?.customer_name?.trim() || n.customerName!;
+          const mergedCustomerPhone = (existing?.customer_phone?.trim() || n.customerPhone) ?? '';
+          const mergedCustomerEmail = (existing?.customer_email?.trim() || n.customerEmail) ?? null;
+          const mergedNotes = (existing?.notes?.trim() || n.notes) ?? null;
+          const mergedSourceRef = (existing?.source_reference?.trim() || n.sourceReference) ?? null;
+          const mergedVehicleId = existing?.vehicle_id || row.matchedVehicleId;
 
-          const customerId = await findOrCreateCustomer(
-            supabase,
-            companyId,
-            n.customerName!,
-            n.customerPhone ?? null,
-            n.customerEmail ?? null,
-          );
+          const resolvedPickupAt = existing?.pickup_at ||
+            applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc);
+          const resolvedReturnAt = existing?.return_at ||
+            applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true);
 
-          const parsedMetaUpdate = parseNotesForTripDetails(n.notes ?? null);
+          let customerId: { id: string; isNew: boolean } | null = null;
+          if (!existing?.customer_id) {
+            customerId = await findOrCreateCustomer(
+              supabase,
+              companyId,
+              mergedCustomerName,
+              mergedCustomerPhone || null,
+              mergedCustomerEmail,
+            );
+          }
+
+          const parsedMetaUpdate = parseNotesForTripDetails(mergedNotes);
           const updatedStaffMetaUpdate = mergeStaffMeta(existing?.staff_metadata ?? null, parsedMetaUpdate);
 
           const { error } = await supabase
@@ -693,24 +721,29 @@ export async function POST(request: NextRequest) {
               status: mapExternalStatus(n.externalStatus),
               pickup_at: resolvedPickupAt,
               return_at: resolvedReturnAt,
-              vehicle_id: row.matchedVehicleId,
-              customer_name: n.customerName!,
-              customer_phone: n.customerPhone ?? '',
-              customer_email: n.customerEmail ?? null,
-              notes: n.notes ?? null,
+              vehicle_id: mergedVehicleId,
+              customer_name: mergedCustomerName,
+              customer_phone: mergedCustomerPhone,
+              customer_email: mergedCustomerEmail,
+              notes: mergedNotes,
               source_type: n.sourceType,
               source_booking_id: n.sourceBookingId,
-              source_reference: n.sourceReference ?? null,
+              source_reference: mergedSourceRef,
               import_last_seen_at: now,
               source_metadata: n.rawMetadata,
               sync_run_id: syncRunId,
-              ...(customerId ? { customer_id: customerId } : {}),
+              ...(existing?.customer_id
+                ? { customer_id: existing.customer_id }
+                : customerId
+                  ? { customer_id: customerId.id }
+                  : {}),
               ...(updatedStaffMetaUpdate ? { staff_metadata: updatedStaffMetaUpdate } : {}),
             })
             .eq('id', existingId);
 
           if (error) {
             errors.push({ rowNumber: row.rowNumber, message: error.message });
+            if (customerId?.isNew) await deleteCustomerIfUnreferenced(supabase, customerId.id);
           } else {
             updated++;
           }
@@ -756,7 +789,7 @@ export async function POST(request: NextRequest) {
             balance_invoice_sent: null,
             prearrival_whatsapp_sent: null,
             return_whatsapp_sent: null,
-            ...(customerId ? { customer_id: customerId } : {}),
+            ...(customerId ? { customer_id: customerId.id } : {}),
             ...(initialStaffMeta ? { staff_metadata: initialStaffMeta } : {}),
           })
           .select('id')
@@ -764,6 +797,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           errors.push({ rowNumber: row.rowNumber, message: error.message });
+          if (customerId?.isNew) await deleteCustomerIfUnreferenced(supabase, customerId.id);
         } else {
           created++;
           newBookingIds.push(newBooking.id);

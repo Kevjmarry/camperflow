@@ -30,6 +30,7 @@ export interface ComplianceTypeShape {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -41,9 +42,12 @@ export interface ComplianceRow {
   id: string;
   vehicle_id: string;
   compliance_type_id: string;
-  expiry_date: string;
+  expiry_date: string | null;
   last_completed_at: string | null;
   notes: string | null;
+  service_due_odometer_km: number | null;
+  warning_days_before_override: number | null;
+  warning_km_before_override: number | null;
   compliance_types: ComplianceTypeShape;
 }
 
@@ -51,9 +55,12 @@ export interface ComplianceRowRaw {
   id: string;
   vehicle_id: string;
   compliance_type_id: string;
-  expiry_date: string;
+  expiry_date: string | null;
   last_completed_at: string | null;
   notes: string | null;
+  service_due_odometer_km: number | null;
+  warning_days_before_override: number | null;
+  warning_km_before_override: number | null;
   compliance_types: ComplianceTypeShape | ComplianceTypeShape[] | null;
 }
 
@@ -62,6 +69,7 @@ export interface ComplianceType {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -102,7 +110,10 @@ interface Props {
     expiryDate: string,
     notes: string,
     customTypeName?: string,
-    customBlocksReadiness?: boolean
+    customBlocksReadiness?: boolean,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => Promise<void>;
   onAddSave: (
     vId: string,
@@ -110,8 +121,12 @@ interface Props {
     expiryDate: string,
     notes: string,
     customTypeName?: string,
-    customBlocksReadiness?: boolean
+    customBlocksReadiness?: boolean,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => Promise<void>;
+  latestOdometer?: number | null;
   // Calendar sync
   initialCalendarSyncUrl?: string;
   syncInterval?: string;
@@ -153,6 +168,7 @@ export default function VehicleEditForm({
   onDeleteRow,
   onEditSave,
   onAddSave,
+  latestOdometer,
   initialCalendarSyncUrl = "",
   syncInterval = "none",
   onSyncIntervalChange,
@@ -458,6 +474,7 @@ export default function VehicleEditForm({
         availableToAdd={availableToAdd}
         vehicleId={vehicleId}
         locale={locale}
+        latestOdometer={latestOdometer}
         editingRow={editingRow}
         onEditRow={onEditRow}
         showAddModal={showAddModal}

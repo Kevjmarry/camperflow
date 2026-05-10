@@ -724,10 +724,21 @@ export default function ChecklistDetailClient({
     const newMeta = { ...staffMetaRef.current, return_vehicle_data: newRvd };
     staffMetaRef.current = newMeta;
     await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
-    if (field === 'km' && value && instance.vehicle_id) {
+    const returnVehicleId = localInstance.vehicle_id ?? instance.vehicle_id ?? instance.bookings?.vehicle_id;
+    console.log('[saveReturnVehicleField] debug', {
+      field,
+      value,
+      'localInstance.vehicle_id': localInstance.vehicle_id,
+      'instance.vehicle_id': instance.vehicle_id,
+      'instance.bookings': instance.bookings,
+      returnVehicleId,
+    });
+    if (field === 'km' && value && returnVehicleId) {
       const kmNum = parseInt(value, 10);
       if (!isNaN(kmNum)) {
-        await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', instance.vehicle_id);
+        console.log('[saveReturnVehicleField] calling vehicles.update', { returnVehicleId, kmNum });
+        const { error: odometerError } = await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', returnVehicleId);
+        if (odometerError) console.error('saveReturnVehicleField: odometer update failed', odometerError);
       }
     }
   };
@@ -764,10 +775,12 @@ export default function ChecklistDetailClient({
     const newMeta = { ...staffMetaRef.current, handover_vehicle_data: newHvd };
     staffMetaRef.current = newMeta;
     await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
-    if (field === 'km' && value && instance.vehicle_id) {
+    const handoverVehicleId = localInstance.vehicle_id ?? instance.vehicle_id ?? instance.bookings?.vehicle_id;
+    if (field === 'km' && value && handoverVehicleId) {
       const kmNum = parseInt(value, 10);
       if (!isNaN(kmNum)) {
-        await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', instance.vehicle_id);
+        const { error: odometerError } = await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', handoverVehicleId);
+        if (odometerError) console.error('saveHandoverVehicleField: odometer update failed', odometerError);
       }
     }
   };

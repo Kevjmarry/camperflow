@@ -35,10 +35,13 @@ function formatDate(value: string | null, locale: string): string {
 
 export default async function CustomerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const { locale, id } = await params;
+  const { saved, error: saveError } = await searchParams;
   const t = await getTranslations({ locale, namespace: "staffCustomerDetail" });
 
   const statusLabels: Record<string, string> = {
@@ -105,6 +108,40 @@ export default async function CustomerDetailPage({
     );
   }
 
+  async function saveContactInfo(fd: FormData) {
+    "use server";
+    const email = (fd.get("email") as string | null)?.trim() || null;
+    const phone = (fd.get("phone") as string | null)?.trim() || null;
+
+    const supa = await createClient();
+    const { data: { user } } = await supa.auth.getUser();
+    if (!user) redirect(`/${locale}/staff/login`);
+
+    const { data: prof } = await supa
+      .from("staff_profiles")
+      .select("company_id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (!prof?.company_id) redirect(`/${locale}/staff/customers/${id}?error=1`);
+
+    const { error: custErr } = await supa
+      .from("customers")
+      .update({ email, phone })
+      .eq("id", id)
+      .eq("company_id", prof.company_id);
+
+    if (custErr) redirect(`/${locale}/staff/customers/${id}?error=1`);
+
+    await supa
+      .from("bookings")
+      .update({ customer_email: email, customer_phone: phone ?? "" })
+      .eq("customer_id", id)
+      .neq("status", "completed");
+
+    redirect(`/${locale}/staff/customers/${id}?saved=1`);
+  }
+
   // Fetch bookings for this customer, sorted by pickup_at DESC
   let bookings: Booking[] = [];
   const { data: bookingsData } = await supabase
@@ -131,6 +168,14 @@ export default async function CustomerDetailPage({
             gap: "var(--space-6)",
           }}
         >
+
+          {/* Save feedback */}
+          {saved === "1" && (
+            <p style={{ margin: 0, fontSize: "14px", color: "rgb(34 197 94)" }}>{t("savedSuccess")}</p>
+          )}
+          {saveError === "1" && (
+            <p style={{ margin: 0, fontSize: "14px", color: "rgb(var(--error))" }}>{t("saveError")}</p>
+          )}
 
           {/* Header */}
           <div
@@ -166,19 +211,36 @@ export default async function CustomerDetailPage({
                 {t("viewAllBookings")}
               </Link>
             </div>
-            <div
-              style={{
-                display: "flex",
-                gap: "var(--space-5)",
-                flexWrap: "wrap",
-                fontSize: "14px",
-                color: "rgb(var(--muted))",
-              }}
+            <form
+              action={saveContactInfo}
+              style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-end", flexWrap: "wrap", marginTop: "var(--space-1)" }}
             >
-              {customer.email && <span>{customer.email}</span>}
-              {customer.phone && <span>{customer.phone}</span>}
-              {!customer.email && !customer.phone && <span>{t("noContactInfo")}</span>}
-            </div>
+              <div>
+                <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: "2px" }}>
+                  {t("email")}
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  defaultValue={customer.email ?? ""}
+                  className="input"
+                  style={{ width: "220px" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: "2px" }}>
+                  {t("phone")}
+                </label>
+                <input
+                  name="phone"
+                  type="tel"
+                  defaultValue={customer.phone ?? ""}
+                  className="input"
+                  style={{ width: "180px" }}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary">{t("saveContact")}</button>
+            </form>
 
             {/* Stats row */}
             <div

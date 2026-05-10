@@ -34,6 +34,7 @@ interface ComplianceTypeShape {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -44,9 +45,12 @@ interface ComplianceRowRaw {
   id: string;
   vehicle_id: string;
   compliance_type_id: string;
-  expiry_date: string;
+  expiry_date: string | null;
   last_completed_at: string | null;
   notes: string | null;
+  service_due_odometer_km: number | null;
+  warning_days_before_override: number | null;
+  warning_km_before_override: number | null;
   compliance_types: ComplianceTypeShape | ComplianceTypeShape[] | null;
 }
 
@@ -66,6 +70,7 @@ const SYSTEM_SLUG_KEYS: Record<string, string> = {
   "gas-inspection":       "gasInspection",
   "habitation-service":   "habitationService",
   "general-service":      "generalService",
+  "engine-service":       "engineService",
 };
 
 function getYouTubeEmbedId(url: string): string | null {
@@ -105,18 +110,33 @@ function normalizeRow(raw: ComplianceRowRaw): ComplianceRow | null {
 }
 
 function getComplianceStatus(
-  expiryDate: string,
-  warningDaysBefore: number
+  expiryDate: string | null,
+  warningDaysBefore: number,
+  latestOdometer?: number | null,
+  serviceDueOdometerKm?: number | null,
+  warningKmBefore?: number | null
 ): ComplianceStatus {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  const diffDays = Math.floor(
-    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (diffDays < 0) return "expired";
-  if (diffDays <= warningDaysBefore) return "expiring";
+  let dateStatus: ComplianceStatus = "ok";
+  if (expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor(
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays < 0) dateStatus = "expired";
+    else if (diffDays <= warningDaysBefore) dateStatus = "expiring";
+  }
+
+  let kmStatus: ComplianceStatus = "ok";
+  if (serviceDueOdometerKm != null && latestOdometer != null) {
+    if (latestOdometer >= serviceDueOdometerKm) kmStatus = "expired";
+    else if (warningKmBefore != null && latestOdometer >= serviceDueOdometerKm - warningKmBefore) kmStatus = "expiring";
+  }
+
+  if (dateStatus === "expired" || kmStatus === "expired") return "expired";
+  if (dateStatus === "expiring" || kmStatus === "expiring") return "expiring";
   return "ok";
 }
 
@@ -179,9 +199,9 @@ export default function VehicleDetailPage({
   // Change this one key to update the displayed sync schedule site-wide (e.g. "interval1h" on Pro).
   const CRON_SCHEDULE_KEY = "cronScheduleLabel" as const;
 
-  const formatDate = (dateStr: string): string => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(locale, {
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString(locale, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -276,12 +296,12 @@ export default function VehicleDetailPage({
           supabase
             .from("vehicle_compliance")
             .select(
-              "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id)"
+              "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id)"
             )
             .eq("vehicle_id", vehicle.id),
           supabase
             .from("compliance_types")
-            .select("id, name, slug, warning_days_before, sort_order, is_system, company_id")
+            .select("id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id")
             .eq("is_active", true)
             .order("sort_order", { ascending: true }),
         ]);
@@ -462,17 +482,19 @@ export default function VehicleDetailPage({
     loadVehicleChecklists();
   }, [vehicle, companyId, supabase]);
 
-  const handleEditSave = async (rowId: string, expiryDate: string, notes: string) => {
+  const handleEditSave = async (rowId: string, expiryDate: string, notes: string, serviceDueOdometerKm?: number | null, warningDaysOverride?: number | null, warningKmOverride?: number | null) => {
     const { error } = await supabase
       .from("vehicle_compliance")
-      .update({ expiry_date: expiryDate, notes: notes || null })
+      .update({ expiry_date: expiryDate || null, notes: notes || null, service_due_odometer_km: serviceDueOdometerKm ?? null, warning_days_before_override: warningDaysOverride ?? null, warning_km_before_override: warningKmOverride ?? null })
       .eq("id", rowId);
 
     if (error) throw new Error(error.message);
 
     setCompliance((prev) =>
       prev.map((r) =>
-        r.id === rowId ? { ...r, expiry_date: expiryDate, notes: notes || null } : r
+        r.id === rowId
+          ? { ...r, expiry_date: expiryDate || null, notes: notes || null, service_due_odometer_km: serviceDueOdometerKm ?? null, warning_days_before_override: warningDaysOverride ?? null, warning_km_before_override: warningKmOverride ?? null }
+          : r
       )
     );
   };
@@ -481,18 +503,24 @@ export default function VehicleDetailPage({
     vehicleId: string,
     complianceTypeId: string,
     expiryDate: string,
-    notes: string
+    notes: string,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => {
     const { data, error } = await supabase
       .from("vehicle_compliance")
       .insert({
         vehicle_id: vehicleId,
         compliance_type_id: complianceTypeId,
-        expiry_date: expiryDate,
+        expiry_date: expiryDate || null,
         notes: notes || null,
+        service_due_odometer_km: serviceDueOdometerKm ?? null,
+        warning_days_before_override: warningDaysOverride ?? null,
+        warning_km_before_override: warningKmOverride ?? null,
       })
       .select(
-        "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, compliance_types(id, name, slug, warning_days_before, sort_order, is_system, company_id)"
+        "id, vehicle_id, compliance_type_id, expiry_date, last_completed_at, notes, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(id, name, slug, warning_days_before, warning_km_before, sort_order, is_system, company_id)"
       )
       .single();
 
@@ -968,7 +996,10 @@ export default function VehicleDetailPage({
                   {compliance.map((row) => {
                     const cs = getComplianceStatus(
                       row.expiry_date,
-                      row.compliance_types.warning_days_before
+                      row.warning_days_before_override ?? row.compliance_types.warning_days_before,
+                      vehicle.latest_odometer,
+                      row.service_due_odometer_km,
+                      row.warning_km_before_override ?? row.compliance_types.warning_km_before
                     );
                     return (
                       <div
@@ -1007,7 +1038,12 @@ export default function VehicleDetailPage({
                         </div>
 
                         <div className="compliance-row-date" style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
-                          {formatDate(row.expiry_date)}
+                          <div>{formatDate(row.expiry_date)}</div>
+                          {row.service_due_odometer_km != null && (
+                            <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
+                              Due at {row.service_due_odometer_km.toLocaleString(locale)} km
+                            </div>
+                          )}
                         </div>
 
                         <div className="compliance-row-status">

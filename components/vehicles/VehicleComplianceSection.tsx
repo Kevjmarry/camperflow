@@ -23,6 +23,7 @@ const SYSTEM_SLUG_KEYS: Record<string, string> = {
   "gas-inspection":       "gasInspection",
   "habitation-service":   "habitationService",
   "general-service":      "generalService",
+  "engine-service":       "engineService",
 };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -32,6 +33,7 @@ interface ComplianceTypeShape {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -43,9 +45,12 @@ export interface ComplianceRow {
   id: string;
   vehicle_id: string;
   compliance_type_id: string;
-  expiry_date: string;
+  expiry_date: string | null;
   last_completed_at: string | null;
   notes: string | null;
+  service_due_odometer_km: number | null;
+  warning_days_before_override: number | null;
+  warning_km_before_override: number | null;
   compliance_types: ComplianceTypeShape;
 }
 
@@ -54,6 +59,7 @@ export interface ComplianceType {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -66,18 +72,33 @@ export interface ComplianceType {
 type ComplianceStatus = "expired" | "expiring" | "ok";
 
 function getComplianceStatus(
-  expiryDate: string,
-  warningDaysBefore: number
+  expiryDate: string | null,
+  warningDaysBefore: number,
+  latestOdometer?: number | null,
+  serviceDueOdometerKm?: number | null,
+  warningKmBefore?: number | null
 ): ComplianceStatus {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  const diffDays = Math.floor(
-    (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (diffDays < 0) return "expired";
-  if (diffDays <= warningDaysBefore) return "expiring";
+  let dateStatus: ComplianceStatus = "ok";
+  if (expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor(
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diffDays < 0) dateStatus = "expired";
+    else if (diffDays <= warningDaysBefore) dateStatus = "expiring";
+  }
+
+  let kmStatus: ComplianceStatus = "ok";
+  if (serviceDueOdometerKm != null && latestOdometer != null) {
+    if (latestOdometer >= serviceDueOdometerKm) kmStatus = "expired";
+    else if (warningKmBefore != null && latestOdometer >= serviceDueOdometerKm - warningKmBefore) kmStatus = "expiring";
+  }
+
+  if (dateStatus === "expired" || kmStatus === "expired") return "expired";
+  if (dateStatus === "expiring" || kmStatus === "expiring") return "expiring";
   return "ok";
 }
 
@@ -101,6 +122,7 @@ interface VehicleComplianceSectionProps {
   availableToAdd: ComplianceType[];
   vehicleId: string;
   locale: string;
+  latestOdometer?: number | null;
   editingRow: ComplianceRow | null;
   onEditRow: (row: ComplianceRow | null) => void;
   showAddModal: boolean;
@@ -114,7 +136,10 @@ interface VehicleComplianceSectionProps {
     expiryDate: string,
     notes: string,
     customTypeName?: string,
-    customBlocksReadiness?: boolean
+    customBlocksReadiness?: boolean,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => Promise<void>;
   onAddSave: (
     vehicleId: string,
@@ -122,7 +147,10 @@ interface VehicleComplianceSectionProps {
     expiryDate: string,
     notes: string,
     customName?: string,
-    customBlocksReadiness?: boolean
+    customBlocksReadiness?: boolean,
+    serviceDueOdometerKm?: number | null,
+    warningDaysOverride?: number | null,
+    warningKmOverride?: number | null
   ) => Promise<void>;
 }
 
@@ -134,6 +162,7 @@ export default function VehicleComplianceSection({
   availableToAdd,
   vehicleId,
   locale,
+  latestOdometer,
   editingRow,
   onEditRow,
   showAddModal,
@@ -150,12 +179,14 @@ export default function VehicleComplianceSection({
 
   const lang = locale === "de" ? "de" : "en";
 
-  const formatDate = (dateStr: string): string =>
-    new Date(dateStr).toLocaleDateString(locale, {
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString(locale, {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
 
   const resolveTypeName = (ct: {
     name: string;
@@ -191,7 +222,9 @@ export default function VehicleComplianceSection({
           row={editingRow}
           locale={locale}
           onClose={() => onEditRow(null)}
-          onSave={onEditSave}
+          onSave={(id, exp, notes, km, warnDays, warnKm) =>
+            onEditSave(id, exp, notes, undefined, undefined, km, warnDays, warnKm)
+          }
         />
       )}
 
@@ -201,7 +234,9 @@ export default function VehicleComplianceSection({
           availableTypes={availableToAdd}
           locale={locale}
           onClose={() => onShowAddModal(false)}
-          onSave={onAddSave}
+          onSave={(vid, tid, exp, notes, km, warnDays, warnKm) =>
+            onAddSave(vid, tid, exp, notes, undefined, undefined, km, warnDays, warnKm)
+          }
         />
       )}
 
@@ -283,7 +318,10 @@ export default function VehicleComplianceSection({
             {compliance.map((row) => {
               const cs = getComplianceStatus(
                 row.expiry_date,
-                row.compliance_types.warning_days_before
+                row.warning_days_before_override ?? row.compliance_types.warning_days_before,
+                latestOdometer,
+                row.service_due_odometer_km,
+                row.warning_km_before_override ?? row.compliance_types.warning_km_before
               );
               const blocksReadiness = row.compliance_types.blocks_readiness;
               return (
@@ -341,7 +379,12 @@ export default function VehicleComplianceSection({
                   </div>
 
                   <div style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
-                    {formatDate(row.expiry_date)}
+                    <div>{formatDate(row.expiry_date)}</div>
+                    {row.service_due_odometer_km != null && (
+                      <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
+                        Due at {row.service_due_odometer_km.toLocaleString(locale)} km
+                      </div>
+                    )}
                   </div>
 
                   <div>

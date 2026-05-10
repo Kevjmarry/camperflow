@@ -51,7 +51,8 @@ export default async function ChecklistDetailPage({
         customer_name,
         status,
         company_id,
-        staff_metadata
+        staff_metadata,
+        vehicle_id
       ),
       vehicle:vehicles (
         id,

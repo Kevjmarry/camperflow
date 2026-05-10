@@ -11,6 +11,7 @@ interface ComplianceTypeShape {
   name: string;
   slug: string;
   warning_days_before: number;
+  warning_km_before: number | null;
   sort_order: number;
   is_system: boolean;
   company_id: string | null;
@@ -20,9 +21,12 @@ export interface ComplianceRow {
   id: string;
   vehicle_id: string;
   compliance_type_id: string;
-  expiry_date: string;
+  expiry_date: string | null;
   last_completed_at: string | null;
   notes: string | null;
+  service_due_odometer_km: number | null;
+  warning_days_before_override: number | null;
+  warning_km_before_override: number | null;
   compliance_types: ComplianceTypeShape;
 }
 
@@ -34,6 +38,7 @@ const SYSTEM_SLUG_KEYS: Record<string, string> = {
   "gas-inspection":       "gasInspection",
   "habitation-service":   "habitationService",
   "general-service":      "generalService",
+  "engine-service":       "engineService",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -47,15 +52,26 @@ export default function EditComplianceModal({
   row: ComplianceRow;
   locale: string;
   onClose: () => void;
-  onSave: (id: string, expiryDate: string, notes: string) => Promise<void>;
+  onSave: (id: string, expiryDate: string, notes: string, serviceDueOdometerKm?: number | null, warningDaysOverride?: number | null, warningKmOverride?: number | null) => Promise<void>;
 }) {
   const t = useTranslations("vehicleDetail");
   const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
 
-  const [expiryDate, setExpiryDate] = useState(row.expiry_date);
+  const [expiryDate, setExpiryDate] = useState(row.expiry_date ?? "");
+  const [serviceDueKm, setServiceDueKm] = useState(
+    row.service_due_odometer_km?.toString() ?? ""
+  );
   const [notes, setNotes] = useState(row.notes ?? "");
+  const [warnDaysOverride, setWarnDaysOverride] = useState(
+    row.warning_days_before_override?.toString() ?? ""
+  );
+  const [warnKmOverride, setWarnKmOverride] = useState(
+    row.warning_km_before_override?.toString() ?? ""
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const isKmType = row.compliance_types.warning_km_before != null;
 
   const typeName =
     row.compliance_types.is_system && SYSTEM_SLUG_KEYS[row.compliance_types.slug]
@@ -63,14 +79,22 @@ export default function EditComplianceModal({
       : row.compliance_types.name;
 
   const handleSave = async () => {
-    if (!expiryDate) {
+    if (isKmType) {
+      if (!expiryDate && !serviceDueKm) {
+        setError(t("compliance.editModal.errorDateOrKmRequired"));
+        return;
+      }
+    } else if (!expiryDate) {
       setError(t("compliance.editModal.errorExpiryRequired"));
       return;
     }
+    const kmValue = serviceDueKm.trim() ? parseInt(serviceDueKm, 10) : null;
+    const warnDays = warnDaysOverride.trim() ? parseInt(warnDaysOverride, 10) : null;
+    const warnKm = warnKmOverride.trim() ? parseInt(warnKmOverride, 10) : null;
     try {
       setSaving(true);
       setError("");
-      await onSave(row.id, expiryDate, notes);
+      await onSave(row.id, expiryDate, notes, kmValue, warnDays, warnKm);
       onClose();
     } catch (err: any) {
       setError(err?.message || t("compliance.editModal.errorSaveFailed"));
@@ -110,7 +134,7 @@ export default function EditComplianceModal({
 
         <div>
           <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
-            {t("compliance.editModal.expiryDateLabel")}
+            {t("compliance.editModal.expiryDateLabel")}{isKmType ? "" : " *"}
           </label>
           <LocalizedDateInput
             className="input"
@@ -119,6 +143,23 @@ export default function EditComplianceModal({
             style={{ width: "100%" }}
           />
         </div>
+
+        {isKmType && (
+          <div>
+            <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+              {t("compliance.editModal.serviceDueKmLabel")}
+            </label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              value={serviceDueKm}
+              onChange={(e) => setServiceDueKm(e.target.value)}
+              placeholder="e.g. 45000"
+              style={{ width: "100%" }}
+            />
+          </div>
+        )}
 
         <div>
           <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
@@ -132,6 +173,38 @@ export default function EditComplianceModal({
             style={{ width: "100%", resize: "vertical" }}
           />
         </div>
+
+        <div>
+          <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+            {t("compliance.editModal.warningDaysOverrideLabel")}
+          </label>
+          <input
+            className="input"
+            type="number"
+            min="0"
+            value={warnDaysOverride}
+            onChange={(e) => setWarnDaysOverride(e.target.value)}
+            placeholder={String(row.compliance_types.warning_days_before)}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        {isKmType && (
+          <div>
+            <label style={{ fontSize: "12px", color: "rgb(var(--muted))", display: "block", marginBottom: 4 }}>
+              {t("compliance.editModal.warningKmOverrideLabel")}
+            </label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              value={warnKmOverride}
+              onChange={(e) => setWarnKmOverride(e.target.value)}
+              placeholder={row.compliance_types.warning_km_before != null ? String(row.compliance_types.warning_km_before) : ""}
+              style={{ width: "100%" }}
+            />
+          </div>
+        )}
 
         {error && (
           <div

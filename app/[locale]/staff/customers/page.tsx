@@ -15,8 +15,8 @@ interface Customer {
   phone: string | null;
   created_at: string | null;
 }
-
-const hasPhone = (c: Customer) => Boolean(c.phone && c.phone.trim().length > 0);
+const hasPhone = (c: Customer) =>
+  Boolean((c.email && c.email.trim()) || (c.phone && c.phone.trim()));
 
 function CustomerRow({
   customer,
@@ -103,12 +103,22 @@ export default function CustomersPage() {
         .maybeSingle();
 
       if (profile?.company_id) {
-        const { data } = await supabase
-          .from("customers")
-          .select("id, full_name, email, phone, created_at")
-          .eq("company_id", profile.company_id)
-          .order("created_at", { ascending: false });
-        setCustomers(data ?? []);
+        const [{ data: withContact }, { data: noContact }] = await Promise.all([
+          supabase
+            .from("customers")
+            .select("id, full_name, email, phone, created_at")
+            .eq("company_id", profile.company_id)
+            .or("email.not.is.null,phone.not.is.null")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("customers")
+            .select("id, full_name, email, phone, created_at")
+            .eq("company_id", profile.company_id)
+            .is("email", null)
+            .is("phone", null)
+            .order("created_at", { ascending: false }),
+        ]);
+        setCustomers([...(withContact ?? []), ...(noContact ?? [])]);
       }
       setLoading(false);
     }
@@ -160,7 +170,6 @@ export default function CustomersPage() {
     <PageContainer maxWidth="1400px">
       <style>{`
         @media (max-width: 767px) {
-          .customers-col-email,
           .customers-col-created { display: none; }
         }
       `}</style>
@@ -318,7 +327,7 @@ export default function CustomersPage() {
                   </p>
 
                   <table style={tableStyle}>
-                    {withPhone.length === 0 && tableHead}
+                    {tableHead}
                     <tbody>
                       {withoutPhone.map((customer) => (
                         <CustomerRow key={customer.id} customer={customer} locale={locale} />

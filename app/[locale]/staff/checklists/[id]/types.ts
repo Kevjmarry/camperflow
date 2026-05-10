@@ -31,6 +31,7 @@ export type ChecklistInstanceType = {
     booking_number: string;
     customer_name: string;
     status: string;
+    vehicle_id: string | null;
   } | null;
   vehicles: {
     id: string;
