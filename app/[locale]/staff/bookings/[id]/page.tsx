@@ -113,12 +113,14 @@ const normalizeStatus = (raw: string): BookingStatus => {
 
 function GuestAccessBlock({
   bookingNumber,
+  guestLocale,
   t,
 }: {
   bookingNumber: string;
+  guestLocale: string;
   t: (key: string) => string;
 }) {
-  const guestUrl = `https://app.camperflow.io/guest?code=${bookingNumber}`;
+  const guestUrl = `https://app.camperflow.io/${guestLocale}/guest?code=${bookingNumber}`;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -346,6 +348,7 @@ export default function BookingDetailPage() {
   const [revertReason, setRevertReason] = useState("");
   const [reverting, setReverting] = useState(false);
   const [revertError, setRevertError] = useState("");
+  const [guestLocale, setGuestLocale] = useState<string>('sk');
   const [reminderSaving, setReminderSaving] = useState<string | null>(null);
   const [opsSent, setOpsSent] = useState<{ balance_invoice_sent: boolean | null; prearrival_whatsapp_sent: boolean | null; return_whatsapp_sent: boolean | null }>({ balance_invoice_sent: null, prearrival_whatsapp_sent: null, return_whatsapp_sent: null });
   const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null });
@@ -507,6 +510,14 @@ export default function BookingDetailPage() {
         staffMetaPassthroughRef.current = passthrough;
 
         setInternalNotes(data.internal_notes || "");
+
+        const { data: companySettings } = await supabase
+          .from('company_settings')
+          .select('default_guest_language')
+          .eq('id', data.company_id)
+          .maybeSingle();
+        const lang = companySettings?.default_guest_language;
+        setGuestLocale(lang && ['en', 'de', 'sk'].includes(lang) ? lang : 'sk');
 
         if (data.customer_id) {
           const { data: custData } = await supabase
@@ -1299,6 +1310,7 @@ export default function BookingDetailPage() {
           {/* ── Guest Access ─────────────────────────────────────────────── */}
           <GuestAccessBlock
             bookingNumber={booking.booking_number}
+            guestLocale={guestLocale}
             t={t as (key: string) => string}
           />
 

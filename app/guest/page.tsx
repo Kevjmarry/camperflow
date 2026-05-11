@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-const VALID_LOCALES = ['en', 'de'] as const;
+const VALID_LOCALES = ['en', 'de', 'sk'] as const;
 type GuestLocale = (typeof VALID_LOCALES)[number];
-const GUEST_FALLBACK_LOCALE: GuestLocale = 'de';
+const GUEST_FALLBACK_LOCALE: GuestLocale = 'sk';
 
 interface BookingCompany {
   company_id: string | null;
