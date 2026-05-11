@@ -10,12 +10,13 @@ export async function GET() {
 
   const { data: profile, error: profileError } = await supabase
     .from('staff_profiles')
-    .select('can_manage, role')
+    .select('can_manage, role, company_id')
     .eq('auth_user_id', user.id)
     .single()
 
   const canManage: boolean = profileError ? true : (profile?.can_manage ?? false)
   const isAdmin: boolean = profileError ? false : profile?.role === 'admin'
+  const companyId: string | null = profile?.company_id ?? null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rawBookings: any[] = []
@@ -81,8 +82,27 @@ export async function GET() {
     checklists: checklistsByBooking[b.id] ?? [],
   }))
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let vehicleBlocks: any[] = []
+  if (companyId) {
+    const { data: blocks } = await supabase
+      .from('vehicle_blocks')
+      .select('id, vehicle_id, label, start_at, end_at')
+      .eq('company_id', companyId)
+      .gte('end_at', new Date().toISOString())
+      .order('start_at', { ascending: true })
+
+    vehicleBlocks = (blocks ?? []).map((bl) => ({
+      id: bl.id,
+      vehicleId: bl.vehicle_id,
+      label: bl.label ?? null,
+      startAt: bl.start_at,
+      endAt: bl.end_at,
+    }))
+  }
+
   return NextResponse.json(
-    { canManage, isAdmin, bookings },
+    { canManage, isAdmin, bookings, vehicleBlocks },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }

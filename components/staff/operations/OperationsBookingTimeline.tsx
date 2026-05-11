@@ -6,9 +6,18 @@ import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type { OpsTimelineVehicle, OpsTimelineBooking } from '@/lib/staff/operations/getOpsBookingTimeline'
 
+export interface TimelineVehicleBlock {
+  id: string
+  vehicleId: string
+  label: string | null
+  startAt: string
+  endAt: string
+}
+
 interface Props {
   vehicles: OpsTimelineVehicle[]
   bookings: OpsTimelineBooking[]
+  vehicleBlocks?: TimelineVehicleBlock[]
 }
 
 const DAYS_BACK = 30
@@ -31,9 +40,16 @@ const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; b
 }
 const FALLBACK_STYLE = STATUS_STYLE.draft
 
+const BLOCK_STYLE = {
+  bg: 'rgb(120 120 120 / 0.15)',
+  bgImage: 'repeating-linear-gradient(45deg, rgb(120 120 120 / 0.28) 0, rgb(120 120 120 / 0.28) 3px, transparent 3px, transparent 9px)',
+  border: 'rgb(120 120 120 / 0.55)',
+  text: 'rgb(var(--muted))',
+}
+
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
-export default function OperationsBookingTimeline({ vehicles, bookings }: Props) {
+export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [] }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
@@ -95,6 +111,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
     bookingsByVehicle.get(b.vehicleId)!.push(b)
   }
 
+  const blocksByVehicle = new Map<string, TimelineVehicleBlock[]>()
+  for (const bl of vehicleBlocks) {
+    if (!blocksByVehicle.has(bl.vehicleId)) blocksByVehicle.set(bl.vehicleId, [])
+    blocksByVehicle.get(bl.vehicleId)!.push(bl)
+  }
+
   if (vehicles.length === 0) {
     return (
       <div className="surface ops-tl-outer" style={{ padding: 'var(--space-6)' }}>
@@ -133,6 +155,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
               </span>
             )
           })}
+          {vehicleBlocks.length > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: BLOCK_STYLE.bg, backgroundImage: BLOCK_STYLE.bgImage, border: `1px solid ${BLOCK_STYLE.border}`, display: 'inline-block' }} />
+              {t('legend.vehicleBlock')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -227,6 +255,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
 
               {vehicles.map((v, i) => {
                 const vBookings = bookingsByVehicle.get(v.id) ?? []
+                const vBlocks = blocksByVehicle.get(v.id) ?? []
                 return (
                   <div
                     key={v.id}
@@ -240,6 +269,51 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
                     {weekendOffsets.map((leftPx) => (
                       <div key={leftPx} style={{ position: 'absolute', top: 0, bottom: 0, left: leftPx, width: PX_PER_DAY, background: '#f3f0ff', pointerEvents: 'none', zIndex: 0 }} />
                     ))}
+                    {vBlocks.map((bl) => {
+                      const startDay = dayOffset(new Date(bl.startAt))
+                      const endDay = dayOffset(new Date(bl.endAt))
+                      const cStart = Math.max(0, startDay)
+                      const cEnd = Math.min(TOTAL_DAYS, endDay)
+                      if (cStart >= cEnd) return null
+                      const leftPct = (cStart / TOTAL_DAYS) * 100
+                      const widthPct = ((cEnd - cStart) / TOTAL_DAYS) * 100
+                      return (
+                        <div
+                          key={bl.id}
+                          title={bl.label ?? t('legend.vehicleBlock')}
+                          style={{
+                            position: 'absolute',
+                            left: `${leftPct}%`,
+                            width: `${widthPct}%`,
+                            top: '5px',
+                            height: `${ROW_H - 10}px`,
+                            background: BLOCK_STYLE.bg,
+                            backgroundImage: BLOCK_STYLE.bgImage,
+                            border: `1px solid ${BLOCK_STYLE.border}`,
+                            borderRadius: '3px',
+                            overflow: 'hidden',
+                            zIndex: 1,
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: 'block',
+                              fontSize: '10px',
+                              fontWeight: 500,
+                              color: BLOCK_STYLE.text,
+                              paddingLeft: '4px',
+                              paddingTop: '2px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {bl.label}
+                          </span>
+                        </div>
+                      )
+                    })}
                     {vBookings.map((b) => {
                       const pickupDate = new Date(b.pickupAt)
                       const returnDate = new Date(b.returnAt)

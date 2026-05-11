@@ -1187,7 +1187,8 @@
           "onRent": "On Rent",
           "blocked": "Blocked",
           "pending": "Pending",
-          "completed": "Completed"
+          "completed": "Completed",
+          "vehicleBlock": "Blocked period"
         },
         "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
       }

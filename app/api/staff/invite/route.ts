@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const redirectTo = `${siteUrl}/${locale}/staff/reset`
+      const redirectTo = `${siteUrl || 'https://app.camperflow.io'}/${locale}/staff/reset`
 
       const { data: linkData, error: linkError } =
         await adminClient.auth.admin.generateLink({

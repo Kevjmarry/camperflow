@@ -9,6 +9,8 @@ import LocalizedDateInput from "@/components/LocalizedDateInput";
 import { getStatusChipStyle } from "@/lib/statusChip";
 import BackLink from "@/components/staff/BackLink";
 import { useTheme } from "@/contexts/ThemeContext";
+import OperationsBookingTimeline, { TimelineVehicleBlock } from "@/components/staff/operations/OperationsBookingTimeline";
+import type { OpsTimelineVehicle, OpsTimelineBooking } from "@/lib/staff/operations/getOpsBookingTimeline";
 
 interface ChecklistInstance {
   id: string;
@@ -45,6 +47,7 @@ export default function BookingsPage() {
   const t = useTranslations("bookings");
   const { company } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [vehicleBlocks, setVehicleBlocks] = useState<TimelineVehicleBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [canManage, setCanManage] = useState<boolean | null>(null);
@@ -76,10 +79,11 @@ const [dateFrom, setDateFrom] = useState<string>("");
         return;
       }
       if (!res.ok) throw new Error(t('error.loadFailed'));
-      const { canManage: cm, isAdmin: ia, bookings: data } = await res.json();
+      const { canManage: cm, isAdmin: ia, bookings: data, vehicleBlocks: blocks = [] } = await res.json();
       setCanManage(cm);
       setIsAdmin(ia);
       setBookings(data);
+      setVehicleBlocks(blocks);
     } catch (err: any) {
       setError(err.message || t('error.loadFailed'));
     } finally {
@@ -95,6 +99,35 @@ const [dateFrom, setDateFrom] = useState<string>("");
       if (name) seen.set(name, name);
     }
     return Array.from(seen.keys()).sort((a, b) => a.localeCompare(b));
+  }, [bookings, canManage]);
+
+  const timelineVehicles = useMemo<OpsTimelineVehicle[]>(() => {
+    const map = new Map<string, string>();
+    for (const b of bookings) {
+      const id = b.vehicle_id;
+      const name = canManage ? b.vehicles?.name : b.vehicle_name;
+      if (id && name) map.set(id, name);
+    }
+    for (const bl of vehicleBlocks) {
+      if (!map.has(bl.vehicleId)) map.set(bl.vehicleId, '');
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [bookings, vehicleBlocks, canManage]);
+
+  const timelineBookings = useMemo<OpsTimelineBooking[]>(() => {
+    return bookings
+      .filter(b => b.vehicle_id && b.pickup_at && b.return_at && b.status !== 'cancelled')
+      .map(b => ({
+        id: b.id,
+        bookingNumber: b.booking_number ?? '',
+        customerName: canManage ? (b.customer_name?.replace(/^(\[\?\]|\?)\s*/, '') ?? '') : '',
+        vehicleId: b.vehicle_id!,
+        pickupAt: b.pickup_at,
+        returnAt: b.return_at,
+        status: b.status,
+      }));
   }, [bookings, canManage]);
 
   // True when pickup_at has passed but return_at hasn't — regardless of DB status
@@ -480,6 +513,13 @@ setDateFrom('');
         <div>
           <BackLink href={`/${locale}/staff`}>{t("backToDashboardArrow")}</BackLink>
         </div>
+        {!loading && timelineVehicles.length > 0 && (
+          <OperationsBookingTimeline
+            vehicles={timelineVehicles}
+            bookings={timelineBookings}
+            vehicleBlocks={vehicleBlocks}
+          />
+        )}
       <div className="surface page-surface">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div style={{

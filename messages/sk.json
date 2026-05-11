@@ -1187,7 +1187,8 @@
           "onRent": "V prenájme",
           "blocked": "Blokovaná",
           "pending": "Čakajúca",
-          "completed": "Dokončená"
+          "completed": "Dokončená",
+          "vehicleBlock": "Blokované obdobie"
         },
         "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
       }

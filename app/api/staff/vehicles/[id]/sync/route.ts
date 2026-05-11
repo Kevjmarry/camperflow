@@ -177,7 +177,10 @@ export async function POST(
     }
 
     // ── step 3: cancel stale future iCal bookings ────────────────────────────
+    // Exclude skip rows (STATUS:CANCELLED events) so their UIDs are not in the
+    // live set — the stale-cancellation query will then correctly cancel them.
     const liveUids = rows
+      .filter((r) => r.actionType !== "skip")
       .map((r) => r.normalized?.sourceBookingId)
       .filter((uid): uid is string => !!uid);
 
@@ -232,6 +235,29 @@ export async function POST(
         csvRetired = csvRetiredRows?.length ?? 0;
       }
     }
+
+    // ── step 3c: remove stale iCal vehicle_blocks for this vehicle ───────────
+    // Compute live block UIDs from rows that were actually imported as blocks.
+    // When the list is empty (feed had no blocks at all) we still run the delete
+    // so any previously-imported blocks are removed — we do not skip cleanup.
+    const liveBlockUids = rows
+      .filter((r) => r.actionType === "block")
+      .map((r) => r.normalized?.sourceBookingId)
+      .filter((uid): uid is string => !!uid);
+
+    const staleBlockQuery = supabase
+      .from("vehicle_blocks")
+      .delete()
+      .eq("company_id", companyId)
+      .eq("vehicle_id", vehicleId)
+      .eq("source_type", "ical")
+      .gt("end_at", now);
+
+    await (
+      liveBlockUids.length > 0
+        ? staleBlockQuery.not("source_booking_id", "in", `(${liveBlockUids.join(",")})`)
+        : staleBlockQuery
+    );
 
     // ── step 4: persist success status ──────────────────────────────────────
     await supabase.from("vehicle_calendar_sources").upsert(
