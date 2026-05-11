@@ -34,7 +34,7 @@ interface StaffMeta {
   whatsapp_optin: boolean | null;
   marketing_optin: boolean | null;
   // ops fields
-  payment_plan: 'split' | 'full' | null;
+  payment_plan: 'split' | 'full' | 'custom' | null;
   invoice_reminder_dismissed_at: string | null;
 }
 
@@ -352,6 +352,8 @@ export default function BookingDetailPage() {
   const [reminderSaving, setReminderSaving] = useState<string | null>(null);
   const [opsSent, setOpsSent] = useState<{ balance_invoice_sent: boolean | null; prearrival_whatsapp_sent: boolean | null; return_whatsapp_sent: boolean | null }>({ balance_invoice_sent: null, prearrival_whatsapp_sent: null, return_whatsapp_sent: null });
   const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null });
+  const [finalPaymentDueDays, setFinalPaymentDueDays] = useState<number | null>(null);
+  const [customPaymentReminderDays, setCustomPaymentReminderDays] = useState<number>(1);
 
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
@@ -482,7 +484,7 @@ export default function BookingDetailPage() {
           extra_driver:     'extra_driver'     in sm ? Boolean(sm.extra_driver)    : null,
           whatsapp_optin:   'whatsapp_optin'   in sm ? Boolean(sm.whatsapp_optin)  : null,
           marketing_optin:  'marketing_optin'  in sm ? Boolean(sm.marketing_optin) : null,
-          payment_plan:     sm.payment_plan === 'split' || sm.payment_plan === 'full' ? sm.payment_plan : null,
+          payment_plan:     sm.payment_plan === 'split' || sm.payment_plan === 'full' || sm.payment_plan === 'custom' ? sm.payment_plan : null,
           invoice_reminder_dismissed_at: typeof sm.invoice_reminder_dismissed_at === 'string' ? sm.invoice_reminder_dismissed_at : null,
         });
         setOpsSent({
@@ -511,13 +513,30 @@ export default function BookingDetailPage() {
 
         setInternalNotes(data.internal_notes || "");
 
-        const { data: companySettings } = await supabase
+        const { data: langSettings } = await supabase
           .from('company_settings')
           .select('default_guest_language')
           .eq('id', data.company_id)
           .maybeSingle();
-        const lang = companySettings?.default_guest_language;
+        const lang = (langSettings as any)?.default_guest_language;
         setGuestLocale(lang && ['en', 'de', 'sk'].includes(lang) ? lang : 'sk');
+
+        let { data: reminderSettings, error: reminderError } = await supabase
+          .from('company_settings')
+          .select('final_payment_due_days, custom_payment_reminder_days')
+          .eq('id', data.company_id)
+          .maybeSingle();
+        if (reminderError) {
+          // custom_payment_reminder_days column may not exist yet — retry without it
+          ({ data: reminderSettings } = await supabase
+            .from('company_settings')
+            .select('final_payment_due_days')
+            .eq('id', data.company_id)
+            .maybeSingle());
+        }
+        const rawDueDays = (reminderSettings as any)?.final_payment_due_days;
+        setFinalPaymentDueDays(rawDueDays != null ? Number(rawDueDays) : null);
+        setCustomPaymentReminderDays(typeof (reminderSettings as any)?.custom_payment_reminder_days === 'number' ? (reminderSettings as any).custom_payment_reminder_days : 1);
 
         if (data.customer_id) {
           const { data: custData } = await supabase
@@ -834,6 +853,7 @@ export default function BookingDetailPage() {
           customer_email: formData.customer_email.trim() || null,
           notes: formData.notes.trim() || null,
           staff_metadata: staffMetaDb,
+          payment_type: (['split', 'full', 'custom'] as const).includes(staffMeta.payment_plan as never) ? staffMeta.payment_plan : null,
           internal_notes: internalNotes.trim() || null,
           balance_invoice_sent: opsSent.balance_invoice_sent,
           prearrival_whatsapp_sent: opsSent.prearrival_whatsapp_sent,
@@ -1631,12 +1651,13 @@ export default function BookingDetailPage() {
                     value={staffMeta.payment_plan ?? ''}
                     onChange={(e) => setStaffMeta(prev => ({
                       ...prev,
-                      payment_plan: e.target.value === 'split' || e.target.value === 'full' ? e.target.value : null,
+                      payment_plan: e.target.value === 'split' || e.target.value === 'full' || e.target.value === 'custom' ? e.target.value : null,
                     }))}
                   >
                     <option value="">{t("operations.paymentPlan.notSet")}</option>
                     <option value="split">{t("operations.paymentPlan.split")}</option>
                     <option value="full">{t("operations.paymentPlan.full")}</option>
+                    <option value="custom">{t("operations.paymentPlan.custom")}</option>
                   </select>
                   <p style={{ margin: 'var(--space-2) 0 0', fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {t("operations.invoiceSetupHint")}
@@ -1646,18 +1667,18 @@ export default function BookingDetailPage() {
                   <p style={{ margin: '0 0 var(--space-1)', fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {t("operations.tasksProgress", {
                       done: [
-                        ...(staffMeta.payment_plan === 'split' ? [opsSent.balance_invoice_sent] : []),
+                        ...((staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') ? [opsSent.balance_invoice_sent] : []),
                         opsSent.prearrival_whatsapp_sent,
                         opsSent.return_whatsapp_sent,
                       ].filter(Boolean).length,
-                      total: staffMeta.payment_plan === 'split' ? 3 : 2,
+                      total: (staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') ? 3 : 2,
                     })}
                   </p>
                   <p style={{ margin: '0 0 var(--space-2)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
                     {t("operations.tasksHint")}
                   </p>
                   {/* Task: Final payment checked — only for split payment */}
-                  {staffMeta.payment_plan === 'split' && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                  {(staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <button
                         type="button"
@@ -1669,31 +1690,47 @@ export default function BookingDetailPage() {
                         <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.balance_invoice_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.balanceInvoice")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.balance_invoice_sent === true ? 'rgb(var(--success))' : opsSent.balance_invoice_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.balance_invoice_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
-                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.balanceInvoiceReminder")}</div>
+                        {opsEnabled.balance_invoice_reminder_enabled === true && (
+                          <div style={{ fontSize: '12px', color: opsSent.balance_invoice_sent === true ? 'rgb(var(--success))' : opsSent.balance_invoice_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                            {opsSent.balance_invoice_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {opsSent.balance_invoice_sent === true ? (
-                      <button
-                        type="button"
-                        style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
-                        disabled={reminderSaving === 'balance_invoice_sent'}
-                        onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', false)}
-                      >
-                        ✓ {t("operations.task.sent")}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.balance_invoice_sent === null ? 0.55 : 1 }}
-                        disabled={reminderSaving === 'balance_invoice_sent'}
-                        onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', true)}
-                      >
-                        {t("operations.task.markChecked")}
-                      </button>
+                    {opsEnabled.balance_invoice_reminder_enabled === true && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+                        {staffMeta.payment_plan === 'split' && finalPaymentDueDays != null && (
+                          <span style={{ fontSize: '11px', color: 'rgb(var(--muted))', background: 'rgb(var(--border) / 0.5)', borderRadius: '9999px', padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                            {t("operations.task.balanceReminderTiming", { days: finalPaymentDueDays })}
+                          </span>
+                        )}
+                        {staffMeta.payment_plan === 'custom' && (
+                          <span style={{ fontSize: '11px', color: 'rgb(var(--muted))', background: 'rgb(var(--border) / 0.5)', borderRadius: '9999px', padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                            {t("operations.task.balanceReminderTimingCustom", { days: customPaymentReminderDays })}
+                          </span>
+                        )}
+                        {opsSent.balance_invoice_sent === true ? (
+                          <button
+                            type="button"
+                            style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
+                            disabled={reminderSaving === 'balance_invoice_sent'}
+                            onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', false)}
+                          >
+                            ✓ {t("operations.task.sent")}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.balance_invoice_sent === null ? 0.55 : 1 }}
+                            disabled={reminderSaving === 'balance_invoice_sent'}
+                            onClick={() => handleReminderToggle('balance_invoice_sent', 'balance_invoice', true)}
+                          >
+                            {t("operations.task.markChecked")}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>}
                   {/* Task: Pre-arrival WhatsApp message */}
@@ -1709,13 +1746,15 @@ export default function BookingDetailPage() {
                         <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.prearrival_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.preArrivalMessage")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.prearrival_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.prearrival_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.prearrival_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
-                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.preArrivalReminder")}</div>
+                        {opsEnabled.prearrival_reminder_enabled === true && (
+                          <div style={{ fontSize: '12px', color: opsSent.prearrival_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.prearrival_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                            {opsSent.prearrival_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {opsSent.prearrival_whatsapp_sent === true ? (
+                    {opsEnabled.prearrival_reminder_enabled === true && (opsSent.prearrival_whatsapp_sent === true ? (
                       <button
                         type="button"
                         style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
@@ -1734,7 +1773,7 @@ export default function BookingDetailPage() {
                       >
                         {t("operations.task.markSent")}
                       </button>
-                    )}
+                    ))}
                   </div>
                   {/* Task: Return-prep WhatsApp message */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
@@ -1749,13 +1788,15 @@ export default function BookingDetailPage() {
                         <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.return_prep_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
                       </button>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.returnPrepMessage")}</div>
-                        <div style={{ fontSize: '12px', color: opsSent.return_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.return_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
-                          {opsSent.return_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
-                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.returnPrepReminder")}</div>
+                        {opsEnabled.return_prep_reminder_enabled === true && (
+                          <div style={{ fontSize: '12px', color: opsSent.return_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.return_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                            {opsSent.return_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {opsSent.return_whatsapp_sent === true ? (
+                    {opsEnabled.return_prep_reminder_enabled === true && (opsSent.return_whatsapp_sent === true ? (
                       <button
                         type="button"
                         style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
@@ -1774,7 +1815,7 @@ export default function BookingDetailPage() {
                       >
                         {t("operations.task.markSent")}
                       </button>
-                    )}
+                    ))}
                   </div>
                 </div>
               </div>

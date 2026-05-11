@@ -30,6 +30,7 @@ export default function CompanySettingsPage() {
     dropoff_time: "",
     final_payment_due_days: "",
     final_payment_urgent_days: "",
+    custom_payment_reminder_days: "1",
     company_timezone: "Europe/Bratislava",
     // Company identity (for reports)
     address: "",
@@ -129,7 +130,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -149,6 +150,9 @@ export default function CompanySettingsPage() {
           final_payment_urgent_days: (data as any).final_payment_urgent_days != null
                                     ? String((data as any).final_payment_urgent_days)
                                     : "",
+          custom_payment_reminder_days: (data as any).custom_payment_reminder_days != null
+                                    ? String((data as any).custom_payment_reminder_days)
+                                    : "1",
           company_timezone: (data as any).company_timezone ?? "Europe/Bratislava",
         } : {}),
         ...(companyRow ? {
@@ -219,6 +223,9 @@ export default function CompanySettingsPage() {
       const parsedUrgentDays = formData.final_payment_urgent_days.trim()
         ? parseInt(formData.final_payment_urgent_days, 10)
         : null;
+      const parsedCustomReminderDays = formData.custom_payment_reminder_days.trim()
+        ? parseInt(formData.custom_payment_reminder_days, 10)
+        : 1;
 
       // Save branding + contact fields to companies
       const { data: companiesRows, error: saveErr } = await supabase
@@ -246,6 +253,7 @@ export default function CompanySettingsPage() {
           dropoff_time:                    formData.dropoff_time.trim() || null,
           final_payment_due_days:          parsedDueDays,
           final_payment_urgent_days:       parsedUrgentDays,
+          custom_payment_reminder_days:    parsedCustomReminderDays,
           final_payment_reminders_enabled: finalPaymentRemindersEnabled,
           pre_arrival_reminders_enabled:   preArrivalRemindersEnabled,
           return_prep_reminders_enabled:   returnPrepRemindersEnabled,
@@ -618,6 +626,19 @@ export default function CompanySettingsPage() {
                         <p className="helper-text" style={{ fontStyle: "italic" }}>
                           {t("reminders.balanceInvoice.exampleHint")}
                         </p>
+                        <div>
+                          <label htmlFor="custom_payment_reminder_days" className="label">{t("reminders.balanceInvoice.customWindowLabel")}</label>
+                          <input
+                            id="custom_payment_reminder_days" name="custom_payment_reminder_days" type="number"
+                            min="1" step="1" className="input"
+                            placeholder="e.g. 1"
+                            value={formData.custom_payment_reminder_days} onChange={handleChange}
+                            disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                          />
+                          <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                            {t("reminders.balanceInvoice.customWindowHelper")}
+                          </p>
+                        </div>
                       </div>
                     </>
                   )}

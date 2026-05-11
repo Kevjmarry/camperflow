@@ -1451,12 +1451,18 @@
       "paymentPlan": {
         "notSet": "Nenastavené",
         "split": "50 % teraz + 50 % neskôr",
-        "full": "100 % vopred"
+        "full": "100 % vopred",
+        "custom": "Vlastná platba"
       },
       "task": {
         "balanceInvoice": "Záverečná platba skontrolovaná",
+        "balanceInvoiceReminder": "Pripomenúť mi záverečnú platbu",
+        "balanceReminderTiming": "{days} dní pred prevzatím",
+        "balanceReminderTimingCustom": "{days} dní pred prevzatím",
         "preArrivalMessage": "WhatsApp správa pred príchodom",
+        "preArrivalReminder": "Pripomenúť mi odoslanie WhatsApp pred príchodom",
         "returnPrepMessage": "WhatsApp správa na prípravu vrátenia",
+        "returnPrepReminder": "Pripomenúť mi odoslanie WhatsApp pred vrátením",
         "statusLabel": "Stav:",
         "notSent": "Nevykonané",
         "sent": "Vykonané",
@@ -2093,20 +2099,22 @@
       "subtitle": "Určuje, ktoré pripomienky sa zobrazujú personálu v dashboarde Operácií.",
       "balanceInvoice": {
         "label": "Zapnúť pripomienky faktúry za zostatok",
-        "helper": "Pripomína personálu odoslanie faktúry za zostávajúcich 50 % pre rezervácie nastavené na <strong>50 % teraz + 50 % neskôr</strong>. Rezervácie nastavené na <strong>100 % vopred</strong> sú vždy vylúčené.",
+        "helper": "<strong>Rozdelené platby</strong> používajú hlavné okno pripomienky; <strong>vlastné platby</strong> používajú okno vlastnej pripomienky nižšie. Rezervácie s <strong>100 % vopred</strong> alebo bez splatnej platby sú vždy vylúčené.",
         "windowLabel": "Začiatok okna pripomienky (dní pred prevzatím)",
-        "windowHelper": "Pripomienka sa zobrazí toľko dní pred prevzatím.",
+        "windowHelper": "Platí len pre rozdelené platby.",
         "cutoffLabel": "Hranica 100 % vopred (dní pred prevzatím)",
-        "cutoffHelper": "Rezervácie s prevzatím v takom krátkom čase sú považované za <strong>100 % vopred</strong> — nezobrazí sa žiadna pripomienka zostatku, aj keď je rezervácia nastavená na 50 % teraz + 50 % neskôr.",
-        "exampleHint": "Príklad: pri 35 a 30 sa pripomienky zobrazujú pre rozdelené rezervácie 31–35 dní pred prevzatím."
+        "cutoffHelper": "Rezervácie s prevzatím v takom krátkom čase sú považované za <strong>100 % vopred</strong> — žiadna pripomienka zostatku sa nezobrazí.",
+        "exampleHint": "Napr.: 35 & 30 → pripomienky pre rozdelené platby sa zobrazujú 31–35 dní pred prevzatím.",
+        "customWindowLabel": "Okno pripomienky pre vlastnú platbu (dní pred prevzatím)",
+        "customWindowHelper": "Platí len pre vlastné platby (napr. platba pri prevzatí, barter, manuálna dohoda)."
       },
       "preArrival": {
         "label": "Zapnúť pripomienky WhatsApp pred príchodom",
-        "helper": "Pripomína personálu odoslanie WhatsApp správy zákazníkovi deň pred prevzatím."
+        "helper": "Odosiela sa deň pred prevzatím."
       },
       "returnPrep": {
         "label": "Zapnúť pripomienky WhatsApp na prípravu vrátenia",
-        "helper": "Pripomína personálu odoslanie WhatsApp správy zákazníkovi deň pred vrátením."
+        "helper": "Odosiela sa deň pred vrátením."
       }
     },
     "extrasCatalog": {

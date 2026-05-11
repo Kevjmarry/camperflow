@@ -1451,12 +1451,18 @@
       "paymentPlan": {
         "notSet": "Not set",
         "split": "50% now + 50% later",
-        "full": "100% upfront"
+        "full": "100% upfront",
+        "custom": "Custom payment"
       },
       "task": {
         "balanceInvoice": "Final payment checked",
+        "balanceInvoiceReminder": "Remind me about final payment",
+        "balanceReminderTiming": "{days} days before pickup",
+        "balanceReminderTimingCustom": "{days} days before pickup",
         "preArrivalMessage": "Pre-arrival WhatsApp message",
+        "preArrivalReminder": "Remind me to send pre-arrival WhatsApp",
         "returnPrepMessage": "Return-prep WhatsApp message",
+        "returnPrepReminder": "Remind me to send return-prep WhatsApp",
         "statusLabel": "Status:",
         "notSent": "Not done",
         "sent": "Done",
@@ -2093,20 +2099,22 @@
       "subtitle": "Controls which reminders appear for staff in the Operations dashboard.",
       "balanceInvoice": {
         "label": "Enable balance invoice reminders",
-        "helper": "Reminds staff to send the remaining 50% invoice for bookings set to <strong>50% now + 50% later</strong>. Bookings set to <strong>100% upfront</strong> are always excluded.",
+        "helper": "<strong>Split payments</strong> use the main reminder window; <strong>custom payments</strong> use the custom window below. <strong>100% upfront</strong> and no-payment bookings are always excluded.",
         "windowLabel": "Reminder window starts (days before pickup)",
-        "windowHelper": "The reminder appears this many days before pickup.",
+        "windowHelper": "Applies to split payments only.",
         "cutoffLabel": "100% upfront cutoff (days before pickup)",
-        "cutoffHelper": "Bookings with pickup this soon are treated as <strong>100% upfront</strong> — no remaining-balance reminder is shown, even if the booking is set to 50% now + 50% later.",
-        "exampleHint": "Example: with 35 and 30, reminders appear for split bookings 31–35 days before pickup."
+        "cutoffHelper": "Bookings with pickup this soon are treated as <strong>100% upfront</strong> — no balance reminder shown.",
+        "exampleHint": "E.g. 35 & 30 → split payment reminders appear 31–35 days before pickup.",
+        "customWindowLabel": "Custom payment reminder window (days before pickup)",
+        "customWindowHelper": "Applies to custom payments only (e.g. pay on pickup, barter, manual arrangement)."
       },
       "preArrival": {
         "label": "Enable pre-arrival WhatsApp reminders",
-        "helper": "Reminds staff to send a WhatsApp message to the customer the day before pickup."
+        "helper": "Sent the day before pickup."
       },
       "returnPrep": {
         "label": "Enable return-prep WhatsApp reminders",
-        "helper": "Reminds staff to send a WhatsApp message to the customer the day before return."
+        "helper": "Sent the day before return."
       }
     },
     "extrasCatalog": {

@@ -1451,12 +1451,18 @@
       "paymentPlan": {
         "notSet": "Nicht gesetzt",
         "split": "50% jetzt + 50% später",
-        "full": "100% im Voraus"
+        "full": "100% im Voraus",
+        "custom": "Benutzerdefinierte Zahlung"
       },
       "task": {
         "balanceInvoice": "Abschlusszahlung geprüft",
+        "balanceInvoiceReminder": "Erinnerung an Abschlusszahlung",
+        "balanceReminderTiming": "{days} Tage vor Abholung",
+        "balanceReminderTimingCustom": "{days} Tage vor Abholung",
         "preArrivalMessage": "WhatsApp-Nachricht vor Ankunft",
+        "preArrivalReminder": "Erinnere mich, WhatsApp vor Ankunft zu senden",
         "returnPrepMessage": "WhatsApp-Nachricht zur Rückgabevorbereitung",
+        "returnPrepReminder": "Erinnere mich, WhatsApp zur Rückgabe zu senden",
         "statusLabel": "Status:",
         "notSent": "Nicht erledigt",
         "sent": "Erledigt",
@@ -2093,20 +2099,22 @@
       "subtitle": "Steuert, welche Erinnerungen für Mitarbeiter im Betriebsdashboard erscheinen.",
       "balanceInvoice": {
         "label": "Restzahlungs-Erinnerungen aktivieren",
-        "helper": "Erinnert Mitarbeiter daran, die verbleibende 50%-Rechnung für Buchungen mit <strong>50% jetzt + 50% später</strong> zu senden. Buchungen mit <strong>100% im Voraus</strong> sind immer ausgeschlossen.",
+        "helper": "<strong>Geteilte Zahlungen</strong> nutzen das Haupt-Erinnerungsfenster; <strong>benutzerdefinierte Zahlungen</strong> nutzen das eigene Erinnerungsfenster unten. Buchungen mit <strong>100 % im Voraus</strong> oder ohne ausstehende Zahlung sind immer ausgeschlossen.",
         "windowLabel": "Erinnerungsfenster beginnt (Tage vor Abholung)",
-        "windowHelper": "Die Erinnerung erscheint so viele Tage vor der Abholung.",
+        "windowHelper": "Gilt nur für geteilte Zahlungen.",
         "cutoffLabel": "100%-Vorauszahlung-Grenzwert (Tage vor Abholung)",
-        "cutoffHelper": "Buchungen mit so kurz bevorstehender Abholung werden als <strong>100% im Voraus</strong> behandelt — keine Restzahlungs-Erinnerung wird angezeigt, auch wenn die Buchung auf 50% jetzt + 50% später eingestellt ist.",
-        "exampleHint": "Beispiel: Mit 35 und 30 erscheinen Erinnerungen für geteilte Buchungen 31–35 Tage vor der Abholung."
+        "cutoffHelper": "Buchungen mit so kurz bevorstehender Abholung werden als <strong>100 % im Voraus</strong> behandelt — keine Restzahlungs-Erinnerung wird angezeigt.",
+        "exampleHint": "Bsp.: 35 & 30 → geteilte Zahlungs-Erinnerungen erscheinen 31–35 Tage vor Abholung.",
+        "customWindowLabel": "Eigenes Zahlungs-Erinnerungsfenster (Tage vor Abholung)",
+        "customWindowHelper": "Gilt nur für benutzerdefinierte Zahlungen (z. B. Zahlung bei Abholung, Tausch, manuelle Vereinbarung)."
       },
       "preArrival": {
         "label": "Vorankunfts-WhatsApp-Erinnerungen aktivieren",
-        "helper": "Erinnert Mitarbeiter daran, dem Kunden am Tag vor der Abholung eine WhatsApp-Nachricht zu senden."
+        "helper": "Wird am Tag vor der Abholung gesendet."
       },
       "returnPrep": {
         "label": "Rückgabevorbereitung-WhatsApp-Erinnerungen aktivieren",
-        "helper": "Erinnert Mitarbeiter daran, dem Kunden am Tag vor der Rückgabe eine WhatsApp-Nachricht zu senden."
+        "helper": "Wird am Tag vor der Rückgabe gesendet."
       }
     },
     "extrasCatalog": {
