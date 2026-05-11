@@ -855,7 +855,8 @@ export default function BookingDetailPage() {
           staff_metadata: staffMetaDb,
           payment_type: (['split', 'full', 'custom'] as const).includes(staffMeta.payment_plan as never) ? staffMeta.payment_plan : null,
           internal_notes: internalNotes.trim() || null,
-          balance_invoice_sent: opsSent.balance_invoice_sent,
+          balance_invoice_sent: staffMeta.payment_plan === null ? null : opsSent.balance_invoice_sent,
+          balance_invoice_reminder_enabled: staffMeta.payment_plan === null ? false : opsEnabled.balance_invoice_reminder_enabled,
           prearrival_whatsapp_sent: opsSent.prearrival_whatsapp_sent,
           return_whatsapp_sent: opsSent.return_whatsapp_sent,
         })
