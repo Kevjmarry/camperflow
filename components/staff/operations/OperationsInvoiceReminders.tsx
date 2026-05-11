@@ -102,7 +102,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
           {visible.map((r, idx) => {
             const isLoading = handling.has(r.id)
             const isCheckable = r.type !== 'review_imported'
-            const bookingHref = `/${locale}/staff/bookings/${r.bookingId}`
+            const bookingHref = `/${locale}/staff/bookings/${r.bookingId}#reminders`
 
             const rowStyle: React.CSSProperties = {
               display: 'flex',

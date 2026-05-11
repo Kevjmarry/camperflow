@@ -773,6 +773,12 @@ export default function BookingDetailPage() {
     }
   }, [formData.vehicle_id, formData.pickup_at, formData.return_at]);
 
+  useEffect(() => {
+    if (!loading && window.location.hash === '#reminders') {
+      document.getElementById('reminders')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [loading]);
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -1636,7 +1642,7 @@ export default function BookingDetailPage() {
             </div>
 
             {/* ── Operations ───────────────────────────────────────────────── */}
-            <div style={{
+            <div id="reminders" style={{
               paddingTop: 'var(--space-2)',
               borderTop: '1px solid rgb(var(--border) / 0.4)',
             }}>
