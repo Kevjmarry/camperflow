@@ -155,7 +155,7 @@ export default async function EmergencyPage({ params, searchParams }: PageProps)
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
 
-  const t = await getTranslations("guestEmergency");
+  const t = await getTranslations({ locale, namespace: "guestEmergency" });
 
   if (!code) {
     return (

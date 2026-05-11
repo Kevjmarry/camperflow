@@ -242,6 +242,12 @@
         "expiring": "Expiring soon",
         "ok": "OK"
       },
+      "badge": {
+        "blocksReadiness": "Blocks readiness",
+        "operational": "Operational"
+      },
+      "motorwayVignette": "Motorway Vignette — {notes}",
+      "dueAtKm": "Due at {n} km",
       "editModal": {
         "title": "Edit {name}",
         "expiryDateLabel": "Expiry date",
@@ -902,7 +908,9 @@
     "evidenceReturn": "Return",
     "evidenceGroupGeneral": "General",
     "evidenceGroupDamage": "Damage",
-    "evidenceDownloadAll": "Download All Photos"
+    "evidenceDownloadAll": "Download All Photos",
+    "includedInBooking": "Included in your booking",
+    "videoTour": "Video Tour"
   },
   "guestBookings": {
     "redirecting": "Redirecting…",
@@ -923,7 +931,9 @@
     "itemsCount": "{completed} of {total} items",
     "noItemsAvailable": "No checklist items available.",
     "note": "Note",
-    "completedOn": "✓ Completed on {date}"
+    "completedOn": "✓ Completed on {date}",
+    "guideNotice": "This checklist is shown as a guide. Digital completion will be available soon.",
+    "required": "Required"
   },
   "staff": {
     "login": {
@@ -946,7 +956,9 @@
       "guestContent": "Guest Content",
       "team": "Staff Team",
       "customers": "Customers",
-      "company": "Company Settings"
+      "company": "Company Settings",
+      "language": "Language",
+      "more": "More"
     },
     "dashboard": {
       "title": "Staff dashboard",
@@ -1026,7 +1038,10 @@
         "noneReturn": "No upcoming returns",
         "prev": "Previous",
         "next": "Next",
-        "itemOf": "{current} of {total}"
+        "itemOf": "{current} of {total}",
+        "dueToday": "Due today",
+        "dueTomorrow": "Due tomorrow",
+        "dueInDays": "Due in {count} days"
       },
       "upcomingReturns": {
         "title": "Upcoming returns",
@@ -1078,7 +1093,9 @@
         "openVehicleIssue": "Open vehicle issue",
         "readyForPickup": "Ready for pickup",
         "urgentIssue": "Urgent issue",
-        "attentionIssue": "Attention issue"
+        "attentionIssue": "Attention issue",
+        "handoverComplete": "Handover complete",
+        "prepNeeded": "Prep needed"
       },
       "action": {
         "preparing": "Preparing",
@@ -1161,6 +1178,18 @@
         "not_started": "Not started",
         "draft": "Draft",
         "pending": "Pending"
+      },
+      "bookingTimeline": {
+        "title": "Vehicle Booking Timeline",
+        "empty": "No vehicles found.",
+        "legend": {
+          "confirmed": "Confirmed",
+          "onRent": "On Rent",
+          "blocked": "Blocked",
+          "pending": "Pending",
+          "completed": "Completed"
+        },
+        "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
       }
     },
     "checklistsPage": {
@@ -1190,7 +1219,8 @@
         "return": "Return",
         "guest_prereturn": "Guest Pre-Return",
         "vehicle_readiness": "Vehicle Readiness",
-        "maintenance": "Maintenance"
+        "maintenance": "Maintenance",
+        "mechanical": "Mechanical Checklist"
       },
       "severity": {
         "low": "Low",
@@ -1206,7 +1236,14 @@
         "dates": "Dates",
         "status": "Status",
         "issue": "Issue",
-        "severity": "Severity"
+        "severity": "Severity",
+        "pickup": "Pickup",
+        "pickupIn": "Pickup in",
+        "return": "Return",
+        "returnIn": "Return in",
+        "progress": "Progress",
+        "nextAction": "Next action",
+        "waitingForPrep": "Waiting for prep"
       },
       "sections": {
         "notStarted": "Not Started",
@@ -1716,7 +1753,8 @@
     "lengthPlaceholder": "e.g. 5.99",
     "widthPlaceholder": "e.g. 2.10",
     "heightPlaceholder": "e.g. 2.85",
-    "chooseFile": "Choose file"
+    "chooseFile": "Choose file",
+    "youtubeUrlLabel": "YouTube URL (optional)"
   },
   "staffTeamNew": {
     "checkingPermissions": "Checking permissions…",
@@ -1851,7 +1889,9 @@
     "actions": {
       "saveChanges": "Save changes",
       "saving": "Saving...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "removePlace": "Remove",
+      "addPlace": "+ Add place"
     },
     "errors": {
       "loadFailed": "Failed to load guest content. Please refresh the page.",
@@ -1867,7 +1907,9 @@
       "return": "Return",
       "guestGuide": "Guest Guide",
       "faq": "FAQ",
-      "returnChecklist": "Return Checklist"
+      "returnChecklist": "Return Checklist",
+      "bookingDetails": "Booking Details",
+      "helpHowTo": "Help & How-to"
     },
     "labels": {
       "contactPhone": "Contact phone",
@@ -1881,11 +1923,26 @@
       "beforeReturn": "Before return",
       "returnInfo": "Return information",
       "includedItems": "What's included",
-      "rulesAndTips": "Rules & tips"
+      "rulesAndTips": "Rules & tips",
+      "importantBeforePickup": "Important before pickup",
+      "nearbyPlaces": "Nearby places",
+      "nearbyPlacesDesc": "shown as tappable Maps links on the return page",
+      "returnNotes": "Return notes",
+      "returnNotesDesc": "optional, shown in a collapsible card",
+      "helpIntro": "Help intro",
+      "quickFixes": "Quick fixes",
+      "howToVideos": "How-to videos"
     },
     "helpers": {
       "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder.",
-      "textareaHelper": "Keep each point short and readable for guests."
+      "textareaHelper": "Keep each point short and readable for guests.",
+      "linesEndingHeadings": "Lines ending : = headings.",
+      "mapsLinkNavigate": "Maps link = Navigate card.",
+      "importantBeforePickupHint": "Shown in Important before pickup card.",
+      "nearbyPlacesEmpty": "No nearby places configured.",
+      "helpIntroHint": "Shown as intro text in the contact card.",
+      "quickFixesHint": "Lines ending : = accordion title. Following lines = numbered steps.",
+      "howToVideosHint": "Lines ending : = group title. YouTube/video links below = embedded players."
     },
     "placeholders": {
       "contactPhone": "+49 30 12345678",
@@ -1896,7 +1953,10 @@
       "beforeReturn": "What guests should do before returning the vehicle…",
       "returnInfo": "Where to drop keys, cleaning expectations…",
       "includedItems": "List items included with the rental…",
-      "rulesAndTips": "House rules, tips for the road…"
+      "rulesAndTips": "House rules, tips for the road…",
+      "nearbyPlaceLabel": "Label (e.g. Supermarket)",
+      "returnNotes": "Any additional return instructions…",
+      "helpIntro": "Short intro text shown at the top of the Help & How-to contact card…"
     },
     "faq": {
       "helper": "Frequently asked questions shown to guests in their rental portal.",
@@ -1934,6 +1994,15 @@
         "faq": "FAQ",
         "faqWhere": "FAQ page"
       }
+    },
+    "hints": {
+      "needsTranslation": "Needs translation"
+    },
+    "copyFrom": {
+      "button": "Copy from original language ({lang})",
+      "confirm": "Copy all content from {from} into {to}? This will overwrite any unsaved changes on the current tab.",
+      "warning": "Translate before saving or guests will see the wrong language.",
+      "langHint": "Slovak currently contains your existing content. English and German can be filled manually."
     }
   },
   "staffCompany": {
@@ -2411,6 +2480,7 @@
     "resolveFlag": "Resolve",
     "resolving": "Resolving…",
     "lockedBookingCompleted": "This checklist is locked because the linked booking has been completed.",
+    "completedAndLocked": "This checklist is completed and locked.",
     "quickMode": "Quick Mode",
     "dismiss": "Dismiss",
     "completing": "Completing…",
@@ -2522,6 +2592,8 @@
     "returnPhaseInspection": "Inspection",
     "returnPhaseCondition": "Condition & Evidence",
     "returnPhaseCloseOut": "Close-out",
+    "returnPhaseIntroText": "This return follows three phases: inspection, condition & evidence, and final close-out.",
+    "returnPhase1Label": "Inspection / Vehicle intake",
     "returnVehicleDataTitle": "Vehicle data",
     "returnVehicleDataDesc": "Record the return odometer and vehicle levels.",
     "returnEvidenceTitle": "Photo evidence",

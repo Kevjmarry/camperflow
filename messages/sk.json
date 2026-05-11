@@ -242,6 +242,12 @@
         "expiring": "Čoskoro expiruje",
         "ok": "OK"
       },
+      "badge": {
+        "blocksReadiness": "Blokuje pripravenosť",
+        "operational": "Prevádzkyschopný"
+      },
+      "motorwayVignette": "Diaľničná nálepka — {notes}",
+      "dueAtKm": "Splatné pri {n} km",
       "editModal": {
         "title": "Upraviť {name}",
         "expiryDateLabel": "Dátum platnosti",
@@ -902,7 +908,9 @@
     "evidenceReturn": "Vrátenie",
     "evidenceGroupGeneral": "Všeobecné",
     "evidenceGroupDamage": "Poškodenie",
-    "evidenceDownloadAll": "Stiahnuť všetky fotografie"
+    "evidenceDownloadAll": "Stiahnuť všetky fotografie",
+    "includedInBooking": "Súčasť vašej rezervácie",
+    "videoTour": "Video prehliadka"
   },
   "guestBookings": {
     "redirecting": "Presmerovanie…",
@@ -923,7 +931,9 @@
     "itemsCount": "{completed} z {total} položiek",
     "noItemsAvailable": "Žiadne položky kontrolného zoznamu nie sú k dispozícii.",
     "note": "Poznámka",
-    "completedOn": "✓ Dokončené {date}"
+    "completedOn": "✓ Dokončené {date}",
+    "guideNotice": "Tento kontrolný zoznam slúži ako prehľad. Digitálne vyplnenie bude čoskoro k dispozícii.",
+    "required": "Povinné"
   },
   "staff": {
     "login": {
@@ -946,7 +956,9 @@
       "guestContent": "Obsah pre hostí",
       "team": "Tím personálu",
       "customers": "Zákazníci",
-      "company": "Nastavenia spoločnosti"
+      "company": "Nastavenia spoločnosti",
+      "language": "Jazyk",
+      "more": "Viac"
     },
     "dashboard": {
       "title": "Dashboard personálu",
@@ -1026,7 +1038,10 @@
         "noneReturn": "Žiadne nadchádzajúce vrátenia",
         "prev": "Predchádzajúce",
         "next": "Ďalšie",
-        "itemOf": "{current} z {total}"
+        "itemOf": "{current} z {total}",
+        "dueToday": "Dnes splatné",
+        "dueTomorrow": "Zajtra splatné",
+        "dueInDays": "Splatné za {count} dní"
       },
       "upcomingReturns": {
         "title": "Nadchádzajúce vrátenia",
@@ -1078,7 +1093,9 @@
         "openVehicleIssue": "Otvorený problém vozidla",
         "readyForPickup": "Pripravené na výber",
         "urgentIssue": "Urgentný problém",
-        "attentionIssue": "Problém vyžadujúci pozornosť"
+        "attentionIssue": "Problém vyžadujúci pozornosť",
+        "handoverComplete": "Odovzdanie dokončené",
+        "prepNeeded": "Príprava potrebná"
       },
       "action": {
         "preparing": "Pripravuje sa",
@@ -1161,6 +1178,18 @@
         "not_started": "Nezačaté",
         "draft": "Návrh",
         "pending": "Čakajúce"
+      },
+      "bookingTimeline": {
+        "title": "Časová os rezervácií vozidiel",
+        "empty": "Žiadne vozidlá nenájdené.",
+        "legend": {
+          "confirmed": "Potvrdená",
+          "onRent": "V prenájme",
+          "blocked": "Blokovaná",
+          "pending": "Čakajúca",
+          "completed": "Dokončená"
+        },
+        "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
       }
     },
     "checklistsPage": {
@@ -1190,7 +1219,8 @@
         "return": "Vrátenie",
         "guest_prereturn": "Predbežné vrátenie hosťom",
         "vehicle_readiness": "Pripravenosť vozidla",
-        "maintenance": "Údržba"
+        "maintenance": "Údržba",
+        "mechanical": "Technický kontrolný zoznam"
       },
       "severity": {
         "low": "Nízka",
@@ -1206,7 +1236,14 @@
         "dates": "Dátumy",
         "status": "Stav",
         "issue": "Problém",
-        "severity": "Závažnosť"
+        "severity": "Závažnosť",
+        "pickup": "Výber",
+        "pickupIn": "Výber za",
+        "return": "Vrátenie",
+        "returnIn": "Vrátenie za",
+        "progress": "Pokrok",
+        "nextAction": "Ďalšia akcia",
+        "waitingForPrep": "Čaká na prípravu"
       },
       "sections": {
         "notStarted": "Nezačaté",
@@ -1716,7 +1753,8 @@
     "lengthPlaceholder": "napr. 5.99",
     "widthPlaceholder": "napr. 2.10",
     "heightPlaceholder": "napr. 2.85",
-    "chooseFile": "Vybrať súbor"
+    "chooseFile": "Vybrať súbor",
+    "youtubeUrlLabel": "YouTube URL (nepovinné)"
   },
   "staffTeamNew": {
     "checkingPermissions": "Kontrola oprávnení…",
@@ -1851,7 +1889,9 @@
     "actions": {
       "saveChanges": "Uložiť zmeny",
       "saving": "Ukladanie...",
-      "cancel": "Zrušiť"
+      "cancel": "Zrušiť",
+      "removePlace": "Odstrániť",
+      "addPlace": "+ Pridať miesto"
     },
     "errors": {
       "loadFailed": "Načítanie obsahu pre hostí zlyhalo. Obnovte prosím stránku.",
@@ -1867,7 +1907,9 @@
       "return": "Vrátenie",
       "guestGuide": "Sprievodca pre hostí",
       "faq": "Často kladené otázky",
-      "returnChecklist": "Kontrolný zoznam vrátenia"
+      "returnChecklist": "Kontrolný zoznam vrátenia",
+      "bookingDetails": "Detaily rezervácie",
+      "helpHowTo": "Pomoc & Návody"
     },
     "labels": {
       "contactPhone": "Kontaktný telefón",
@@ -1881,11 +1923,26 @@
       "beforeReturn": "Pred vrátením",
       "returnInfo": "Informácie o vrátení",
       "includedItems": "Čo je zahrnuté",
-      "rulesAndTips": "Pravidlá a tipy"
+      "rulesAndTips": "Pravidlá a tipy",
+      "importantBeforePickup": "Dôležité pred prevzatím",
+      "nearbyPlaces": "Okolité miesta",
+      "nearbyPlacesDesc": "zobrazené ako klikateľné Maps odkazy na stránke vrátenia",
+      "returnNotes": "Poznámky k vráteniu",
+      "returnNotesDesc": "volitelné, zobrazené v sklopnej karte",
+      "helpIntro": "Úvod pomoci",
+      "quickFixes": "Rýchle opravy",
+      "howToVideos": "Návody (videá)"
     },
     "helpers": {
       "emergencyPhoneUsage": "Tieto čísla sú zobrazené hosťom na stránke Núdzové situácie. Nechajte prázdne pre zobrazenie zástupného textu.",
-      "textareaHelper": "Udržujte každý bod krátky a čitateľný pre hostí."
+      "textareaHelper": "Udržujte každý bod krátky a čitateľný pre hostí.",
+      "linesEndingHeadings": "Riadky končiace na : = nadpisy.",
+      "mapsLinkNavigate": "Maps odkaz = navigáčná karta.",
+      "importantBeforePickupHint": "Zobrazené v karte „Dôležité pred prevzatím“.",
+      "nearbyPlacesEmpty": "Žiadne okolité miesta nie sú nakonfigurované.",
+      "helpIntroHint": "Zobrazené ako úvodný text v kontaktnej karte.",
+      "quickFixesHint": "Riadky s : = názov akordeónu. Nasledujúce riadky = číslové kroky.",
+      "howToVideosHint": "Riadky s : = názov skupiny. YouTube/video odkazy nižšie = vložené prehrávače."
     },
     "placeholders": {
       "contactPhone": "+49 30 12345678",
@@ -1896,7 +1953,10 @@
       "beforeReturn": "Čo by mali hostia urobiť pred vrátením vozidla…",
       "returnInfo": "Kde odovzdať kľúče, očakávania ohľadom upratovania…",
       "includedItems": "Zoznam položiek zahrnutých v prenájme…",
-      "rulesAndTips": "Prevádzkové pravidlá, tipy na cestu…"
+      "rulesAndTips": "Prevádzkové pravidlá, tipy na cestu…",
+      "nearbyPlaceLabel": "Označenie (napr. Supermarket)",
+      "returnNotes": "Ďalšie pokyny k vráteniu…",
+      "helpIntro": "Krátky úvodný text zobrazený na vrchu kontaktnej karty Pomoc & Návody…"
     },
     "faq": {
       "helper": "Často kladené otázky zobrazené hosťom v ich portáli prenájmu.",
@@ -1934,6 +1994,15 @@
         "faq": "Často kladené otázky",
         "faqWhere": "Stránka otázok"
       }
+    },
+    "hints": {
+      "needsTranslation": "Vyžaduje preklad"
+    },
+    "copyFrom": {
+      "button": "Kopírovať z pôvodného jazyka ({lang})",
+      "confirm": "Kopírovať všetok obsah z {from} do {to}? Toto prepíše všetky neuлоžené zmeny na aktuálnej karte.",
+      "warning": "Pred uložením preložte, inak hostía uvidí nesprávny jazyk.",
+      "langHint": "Slovenčina momentuálne obsahuje váš existujúci obsah. Angličtinu a nemčinu môžete vyplnť manuálne."
     }
   },
   "staffCompany": {
@@ -2411,6 +2480,7 @@
     "resolveFlag": "Vyriešiť",
     "resolving": "Riešenie…",
     "lockedBookingCompleted": "Tento kontrolný zoznam je uzamknutý, pretože priradená rezervácia bola dokončená.",
+    "completedAndLocked": "Tento kontrolný zoznam je dokončený a uzamknutý.",
     "quickMode": "Rýchly režim",
     "dismiss": "Zavrieť",
     "completing": "Dokončovanie…",
@@ -2522,6 +2592,8 @@
     "returnPhaseInspection": "Kontrola",
     "returnPhaseCondition": "Stav a dôkazy",
     "returnPhaseCloseOut": "Uzavretie",
+    "returnPhaseIntroText": "Toto vrátenie prebieha v troch fázach: kontrola, stav a dôkazy a záverečné uzavretie.",
+    "returnPhase1Label": "Kontrola / Príjem vozidla",
     "returnVehicleDataTitle": "Údaje vozidla",
     "returnVehicleDataDesc": "Zaznamenajte tachometer pri vrátení a hladiny vozidla.",
     "returnEvidenceTitle": "Fotografické dôkazy",

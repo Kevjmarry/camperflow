@@ -71,8 +71,8 @@ export default async function GuestHelpPage({ params, searchParams }: PageProps)
   const { locale } = await params;
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
-  const tBooking = await getTranslations("guestBooking");
-  const t = await getTranslations("guestHelp");
+  const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
+  const t = await getTranslations({ locale, namespace: "guestHelp" });
 
   if (!code) {
     return (

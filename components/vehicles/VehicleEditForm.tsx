@@ -396,7 +396,7 @@ export default function VehicleEditForm({
 
       {/* YouTube URL */}
       <div>
-        <label htmlFor="youtube_url" style={labelStyle}>YouTube URL (optional)</label>
+        <label htmlFor="youtube_url" style={labelStyle}>{t("youtubeUrlLabel")}</label>
         <input
           id="youtube_url" name="youtube_url" type="url"
           value={formData.youtube_url} onChange={onChange}

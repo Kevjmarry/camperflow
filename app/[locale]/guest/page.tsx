@@ -93,7 +93,7 @@ export default async function GuestPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
-  const t = await getTranslations("guestDashboard");
+  const t = await getTranslations({ locale, namespace: "guestDashboard" });
 
   if (!code) {
     return (

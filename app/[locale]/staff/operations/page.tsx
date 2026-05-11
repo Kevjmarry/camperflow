@@ -69,7 +69,7 @@ export default async function OperationsPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const t = await getTranslations('staff.operations')
+  const t = await getTranslations({ locale, namespace: 'staff.operations' })
   const loaders = [
     { name: 'getOpsPickupsToday',      fn: getOpsPickupsToday },
     { name: 'getOpsUpcomingPickups',   fn: getOpsUpcomingPickups },

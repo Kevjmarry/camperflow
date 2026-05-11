@@ -106,10 +106,10 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
-  const t = await getTranslations("guestPickup");
-  const tBooking = await getTranslations("guestBooking");
+  const t = await getTranslations({ locale, namespace: "guestPickup" });
+  const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
 
-  const dateLocale = locale === "de" ? "de-DE" : "en-GB";
+  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : "en-GB";
 
   if (!code) {
     return (
@@ -361,7 +361,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
             {guestInfo.contact_phone && (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <span style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))" }}>
-                  Phone
+                  {t("contactPhone")}
                 </span>
                 <a
                   href={toTelHref(guestInfo.contact_phone)}

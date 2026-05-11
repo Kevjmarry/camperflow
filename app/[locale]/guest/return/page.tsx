@@ -56,10 +56,10 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
-  const t = await getTranslations("guestReturn");
-  const tBooking = await getTranslations("guestBooking");
+  const t = await getTranslations({ locale, namespace: "guestReturn" });
+  const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
 
-  const dateLocale = locale === "de" ? "de-DE" : "en-GB";
+  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : "en-GB";
 
   if (!code) {
     return (

@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import type { OpsTimelineVehicle, OpsTimelineBooking } from '@/lib/staff/operations/getOpsBookingTimeline'
 
 interface Props {
@@ -30,19 +31,14 @@ const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; b
 }
 const FALLBACK_STYLE = STATUS_STYLE.draft
 
-const LEGEND = [
-  { status: 'confirmed', label: 'Confirmed' },
-  { status: 'on_rent',   label: 'On Rent' },
-  { status: 'blocked',   label: 'Blocked' },
-  { status: 'draft',     label: 'Pending' },
-  { status: 'completed', label: 'Completed' },
-] as const
+const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
 export default function OperationsBookingTimeline({ vehicles, bookings }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
   const locale = params.locale as string
+  const t = useTranslations('staff.operations.bookingTimeline')
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -103,9 +99,9 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
     return (
       <div className="surface ops-tl-outer" style={{ padding: 'var(--space-6)' }}>
         <h2 style={{ fontSize: '18px', margin: '0 0 var(--space-4)', color: 'rgb(var(--text))' }}>
-          Vehicle Booking Timeline
+          {t('title')}
         </h2>
-        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>No vehicles found.</p>
+        <p style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>{t('empty')}</p>
       </div>
     )
   }
@@ -124,15 +120,16 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
       {/* Header + legend */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <h2 style={{ fontSize: '18px', margin: 0, color: 'rgb(var(--text))' }}>
-          Vehicle Booking Timeline
+          {t('title')}
         </h2>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {LEGEND.map(({ status, label }) => {
+          {LEGEND_STATUSES.map((status) => {
             const s = STATUS_STYLE[status]
+            const labelKey = status === 'on_rent' ? 'onRent' : status === 'draft' ? 'pending' : status
             return (
               <span key={status} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
                 <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: s.bg, backgroundImage: s.bgImage, border: `1px solid ${s.border}`, display: 'inline-block' }} />
-                {label}
+                {t(`legend.${labelKey}`)}
               </span>
             )
           })}
@@ -304,7 +301,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings }: Props)
       </div>
 
       <p style={{ marginTop: 'var(--space-2)', fontSize: '11px', color: 'rgb(var(--muted))', margin: 'var(--space-2) 0 0' }}>
-        Highlighted column = today · Scroll to navigate · Cancelled bookings hidden
+        {t('footerHint')}
       </p>
     </div>
   )

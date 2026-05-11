@@ -1547,12 +1547,12 @@ export default function ChecklistDetailClient({
       ) : instance.checklist_type === 'return' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <PhaseSummaryStrip
-            introText="This return follows three phases: inspection, condition & evidence, and final close-out."
-            phaseLabels={['Inspection', 'Condition & Evidence', 'Close-out']}
+            introText={t('returnPhaseIntroText')}
+            phaseLabels={[t('returnPhaseInspection'), t('returnPhaseCondition'), t('returnPhaseCloseOut')]}
           />
 
           {/* Phase 1: Inspection */}
-          <PhaseCard phase={1} label="Inspection / Vehicle intake">
+          <PhaseCard phase={1} label={t('returnPhase1Label')}>
             <div style={{ padding: '16px' }}>
               <VehicleDataBlock
                 vehicleData={vehicleData}
@@ -1611,7 +1611,7 @@ export default function ChecklistDetailClient({
           </PhaseCard>
 
           {/* Phase 2: Condition & Evidence */}
-          <PhaseCard phase={2} label="Condition & Evidence">
+          <PhaseCard phase={2} label={t('returnPhaseCondition')}>
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
@@ -1774,7 +1774,7 @@ export default function ChecklistDetailClient({
           </PhaseCard>
 
           {/* Phase 3: Close-out */}
-          <PhaseCard phase={3} label="Close-out">
+          <PhaseCard phase={3} label={t('returnPhaseCloseOut')}>
             <ReturnOfficeSectionCard
               localInstance={localInstance}
               isChecklistLocked={isReadOnly}

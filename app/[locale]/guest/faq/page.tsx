@@ -25,8 +25,8 @@ export default async function GuestFaqPage({ params, searchParams }: PageProps) 
   const { code: codeRaw } = await searchParams;
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
-  const tBooking = await getTranslations("guestBooking");
-  const t = await getTranslations("guestFaq");
+  const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
+  const t = await getTranslations({ locale, namespace: "guestFaq" });
 
   if (!code) {
     return (

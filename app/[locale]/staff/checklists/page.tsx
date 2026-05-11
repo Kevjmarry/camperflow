@@ -309,7 +309,7 @@ export default function ChecklistsPage() {
         guest_prereturn:   t('checklistTypes.guest_prereturn'),
         vehicle_readiness: t('checklistTypes.vehicle_readiness'),
         maintenance:       t('checklistTypes.maintenance'),
-        mechanical:        'Mechanical Checklist',
+        mechanical:        t('checklistTypes.mechanical'),
       };
       return map[type] ?? type;
     },

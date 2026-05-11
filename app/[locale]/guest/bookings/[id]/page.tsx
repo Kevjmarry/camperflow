@@ -104,10 +104,10 @@ export default async function GuestBookingPage({ params }: PageProps) {
   const { locale, id: codeRaw } = await params;
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
-  const t = await getTranslations("guestBooking");
+  const t = await getTranslations({ locale, namespace: "guestBooking" });
 
   // Map locale to date locale string
-  const dateLocale = locale === "de" ? "de-DE" : "en-GB";
+  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : "en-GB";
 
   const { data: booking, error: bookingError } = await supabase
     .rpc("get_guest_booking_by_code", { p_code: code })
@@ -745,7 +745,7 @@ try{
               return (
                 <div className="surface gbooking-sp">
                   <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
-                    Included in your booking
+                    {t("includedInBooking")}
                   </div>
                   <div className="gbooking-included-grid">
                     <div>{renderGroup(group1)}</div>
@@ -759,7 +759,7 @@ try{
             {vehicle.youtube_url && getYouTubeEmbedId(vehicle.youtube_url) && (
               <div className="surface gbooking-sp">
                 <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
-                  Video Tour
+                  {t("videoTour")}
                 </div>
                 <div style={{ maxWidth: 854, margin: "0 auto", width: "100%" }}>
                   <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>

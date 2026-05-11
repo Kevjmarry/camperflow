@@ -108,12 +108,12 @@ export default function ChecklistBanners({
               : `⚠️ ${t('errorStatusSyncFailed')}`}
           </div>
           <div style={{ fontSize: '12px', lineHeight: '1.6', fontFamily: 'monospace' }}>
-            <div><strong>message:</strong> {syncError.message}</div>
-            {syncError.code && <div><strong>code:</strong> {syncError.code}</div>}
-            {syncError.details && <div><strong>details:</strong> {syncError.details}</div>}
-            {syncError.hint && <div><strong>hint:</strong> {syncError.hint}</div>}
+            <div><strong>{t('errorDetailMessage')}</strong> {syncError.message}</div>
+            {syncError.code && <div><strong>{t('errorDetailCode')}</strong> {syncError.code}</div>}
+            {syncError.details && <div><strong>{t('errorDetailDetails')}</strong> {syncError.details}</div>}
+            {syncError.hint && <div><strong>{t('errorDetailHint')}</strong> {syncError.hint}</div>}
             <details style={{ marginTop: '6px' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '11px' }}>Raw error JSON</summary>
+              <summary style={{ cursor: 'pointer', fontSize: '11px' }}>{t('rawErrorJson')}</summary>
               <pre
                 style={{
                   marginTop: '4px',
@@ -165,7 +165,7 @@ export default function ChecklistBanners({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ flexShrink: 0 }}>🔒</span>
-            <span>This checklist is completed and locked.</span>
+            <span>{t('completedAndLocked')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             {canReopen && (

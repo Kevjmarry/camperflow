@@ -135,11 +135,11 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
 
 // ─── NeedsTranslationHint ─────────────────────────────────────────────────────
 
-function NeedsTranslationHint({ value }: { value: string }) {
+function NeedsTranslationHint({ value, label }: { value: string; label: string }) {
   if (!value.startsWith("TODO_TRANSLATE:")) return null;
   return (
     <p style={{ fontSize: "11px", color: "#b45309", marginTop: "2px", marginBottom: 0, fontWeight: 500 }}>
-      Needs translation
+      {label}
     </p>
   );
 }
@@ -314,7 +314,7 @@ export default function GuestContentPage() {
 
   const handleCopyFrom = () => {
     if (!originalLang) return;
-    if (!window.confirm(`Copy all content from ${originalLang} into ${activeLang}? This will overwrite any unsaved changes on the current tab.`)) return;
+    if (!window.confirm(t("copyFrom.confirm", { from: originalLang, to: activeLang }))) return;
     setI18nByLang(prev => ({ ...prev, [activeLang]: { ...prev[originalLang] } }));
     setCopyWarning(true);
   };
@@ -439,18 +439,18 @@ export default function GuestContentPage() {
                         lineHeight: "1.4",
                       }}
                     >
-                      Copy from original language ({originalLang})
+                      {t("copyFrom.button", { lang: originalLang })}
                     </button>
                   </div>
                 )}
               </div>
               {copyWarning && (
                 <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
-                  Translate before saving or guests will see the wrong language.
+                  {t("copyFrom.warning")}
                 </p>
               )}
               <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
-                Slovak currently contains your existing content. English and German can be filled manually.
+                {t("copyFrom.langHint")}
               </p>
             </div>
           </div>
@@ -534,7 +534,7 @@ export default function GuestContentPage() {
                 <div>
                   <details>
                     <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
-                      Booking Details
+                      {t("sections.bookingDetails")}
                     </summary>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
                       <div>
@@ -547,7 +547,7 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.included_items)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.included_items} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.included_items} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                       </div>
                     </div>
@@ -571,9 +571,9 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.before_arrival_info)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.before_arrival_info} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.before_arrival_info} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = headings.</p>
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.linesEndingHeadings")}</p>
                       </div>
                       <div>
                         <label htmlFor="pickup_info" className="label">{t("labels.pickupInfo")}</label>
@@ -585,12 +585,12 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.pickup_info)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.pickup_info} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.pickup_info} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Maps link = Navigate card.</p>
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.mapsLinkNavigate")}</p>
                       </div>
                       <div>
-                        <label htmlFor="important_before_pickup" className="label">Important before pickup</label>
+                        <label htmlFor="important_before_pickup" className="label">{t("labels.importantBeforePickup")}</label>
                         <textarea
                           id="important_before_pickup" name="important_before_pickup" className="input"
                           placeholder=""
@@ -599,8 +599,8 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.important_before_pickup)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.important_before_pickup} />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown in Important before pickup card.</p>
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.important_before_pickup} />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.importantBeforePickupHint")}</p>
                       </div>
                     </div>
                   </details>
@@ -625,13 +625,13 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.before_return_info)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.before_return_info} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.before_return_info} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")} Lines ending : = headings. Shown as checklist on guest return page.</p>
                       </div>
 
                       {/* Nearby places — shared (URLs don't translate) */}
                       <div>
-                        <label className="label">Nearby places <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— shown as tappable Maps links on the return page</span></label>
+                        <label className="label">{t("labels.nearbyPlaces")} <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— {t("labels.nearbyPlacesDesc")}</span></label>
                         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
                           {(() => { console.log('[GuestContent] NearbyPlaces UI render, array:', returnNearbyPlaces); return null; })()}
                           {returnNearbyPlaces.map((place, i) => (
@@ -639,7 +639,7 @@ export default function GuestContentPage() {
                               <input
                                 type="text"
                                 className="input"
-                                placeholder="Label (e.g. Supermarket)"
+                                placeholder={t("placeholders.nearbyPlaceLabel")}
                                 value={place.title}
                                 disabled={!isAdmin}
                                 onChange={(e) => setReturnNearbyPlaces(returnNearbyPlaces.map((p, idx) => idx === i ? { ...p, title: e.target.value } : p))}
@@ -658,7 +658,7 @@ export default function GuestContentPage() {
                                   onClick={() => setReturnNearbyPlaces(returnNearbyPlaces.filter((_, idx) => idx !== i))}
                                   style={{ fontSize: "12px", color: "rgb(var(--error))", background: "none", border: "1px solid rgb(var(--error) / 0.4)", borderRadius: "var(--radius)", cursor: "pointer", padding: "0 var(--space-2)", height: "36px", whiteSpace: "nowrap" }}
                                 >
-                                  Remove
+                                  {t("actions.removePlace")}
                                 </button>
                               ) : <span />}
                             </div>
@@ -671,28 +671,28 @@ export default function GuestContentPage() {
                                 onClick={() => setReturnNearbyPlaces([...returnNearbyPlaces, { title: "", url: "" }])}
                                 style={{ fontSize: "13px", marginTop: "var(--space-1)" }}
                               >
-                                + Add place
+                                {t("actions.addPlace")}
                               </button>
                             </div>
                           )}
                           {returnNearbyPlaces.length === 0 && !isAdmin && (
-                            <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>No nearby places configured.</p>
+                            <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>{t("helpers.nearbyPlacesEmpty")}</p>
                           )}
                         </div>
                       </div>
 
                       {/* Return notes — per language */}
                       <div>
-                        <label htmlFor="return_info" className="label">Return notes <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— optional, shown in a collapsible card</span></label>
+                        <label htmlFor="return_info" className="label">{t("labels.returnNotes")} <span style={{ fontWeight: 400, color: "rgb(var(--muted))" }}>— {t("labels.returnNotesDesc")}</span></label>
                         <textarea
                           id="return_info" name="return_info" className="input"
-                          placeholder="Any additional return instructions…"
+                          placeholder={t("placeholders.returnNotes")}
                           value={currentI18n.return_info} onChange={handleI18nChange}
                           disabled={!isAdmin}
                           rows={countLines(currentI18n.return_info)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.return_info} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.return_info} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                       </div>
 
@@ -734,7 +734,7 @@ export default function GuestContentPage() {
                             onChange={(e) => setFaqItems(faqItems.map((f, idx) => idx === i ? { ...f, question: e.target.value } : f))}
                             style={{ width: "100%" }}
                           />
-                          <NeedsTranslationHint value={item.question} />
+                          <NeedsTranslationHint label={t("hints.needsTranslation")} value={item.question} />
                           <textarea
                             className="input"
                             placeholder={t("faq.answerPlaceholder")}
@@ -744,7 +744,7 @@ export default function GuestContentPage() {
                             rows={4}
                             style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                           />
-                          <NeedsTranslationHint value={item.answer} />
+                          <NeedsTranslationHint label={t("hints.needsTranslation")} value={item.answer} />
                         </div>
                       ))}
                       {isAdmin && (
@@ -768,24 +768,24 @@ export default function GuestContentPage() {
                 <div>
                   <details>
                     <summary style={{ cursor: "pointer", fontSize: "20px", color: "rgb(var(--text))", marginBottom: "var(--space-4)", userSelect: "none" }}>
-                      Help & How-to
+                      {t("sections.helpHowTo")}
                     </summary>
                     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", marginTop: "var(--space-4)" }}>
                       <div>
-                        <label htmlFor="help_intro" className="label">Help intro</label>
+                        <label htmlFor="help_intro" className="label">{t("labels.helpIntro")}</label>
                         <textarea
                           id="help_intro" name="help_intro" className="input"
-                          placeholder="Short intro text shown at the top of the Help & How-to contact card…"
+                          placeholder={t("placeholders.helpIntro")}
                           value={currentI18n.help_intro} onChange={handleI18nChange}
                           disabled={!isAdmin}
                           rows={countLines(currentI18n.help_intro)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.help_intro} />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Shown as intro text in the contact card.</p>
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.help_intro} />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.helpIntroHint")}</p>
                       </div>
                       <div>
-                        <label htmlFor="help_quick_fixes" className="label">Quick fixes</label>
+                        <label htmlFor="help_quick_fixes" className="label">{t("labels.quickFixes")}</label>
                         <textarea
                           id="help_quick_fixes" name="help_quick_fixes" className="input"
                           placeholder={"Water system:\nTurn tap clockwise to open\nCheck pump switch near sink\nElectricity:\nFlip the leisure battery switch\nConnect EHU cable if on hookup"}
@@ -794,11 +794,11 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.help_quick_fixes, 6)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.help_quick_fixes} />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = accordion title. Following lines = numbered steps.</p>
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.help_quick_fixes} />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.quickFixesHint")}</p>
                       </div>
                       <div>
-                        <label htmlFor="help_videos" className="label">How-to videos</label>
+                        <label htmlFor="help_videos" className="label">{t("labels.howToVideos")}</label>
                         <textarea
                           id="help_videos" name="help_videos" className="input"
                           placeholder={"Water system:\nhttps://youtube.com/watch?v=…\nElectricity:\nhttps://youtube.com/watch?v=…"}
@@ -807,8 +807,8 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.help_videos, 5)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.help_videos} />
-                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>Lines ending : = group title. YouTube/video links below = embedded players.</p>
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.help_videos} />
+                        <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.howToVideosHint")}</p>
                       </div>
                       <div>
                         <label htmlFor="rules_and_tips" className="label">{t("labels.rulesAndTips")}</label>
@@ -820,7 +820,7 @@ export default function GuestContentPage() {
                           rows={countLines(currentI18n.rules_and_tips)}
                           style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
                         />
-                        <NeedsTranslationHint value={currentI18n.rules_and_tips} />
+                        <NeedsTranslationHint label={t("hints.needsTranslation")} value={currentI18n.rules_and_tips} />
                         <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>{t("helpers.textareaHelper")}</p>
                       </div>
 

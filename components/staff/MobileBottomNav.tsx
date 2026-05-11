@@ -202,7 +202,7 @@ export default function MobileBottomNav() {
               marginBottom: 'var(--space-1)',
             }}
           >
-            <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>Language</span>
+            <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{t('language')}</span>
             <LocaleSwitcher />
           </div>
 
@@ -298,8 +298,7 @@ export default function MobileBottomNav() {
           aria-haspopup="menu"
         >
           <MoreIcon active={isMoreActive || moreOpen} />
-          {/* More — no translation key exists; hardcoded as a UI widget label */}
-          More
+          {t('more')}
         </button>
       </nav>
     </>

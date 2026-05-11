@@ -3,6 +3,7 @@
 import React, { useState, useMemo, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import type { ChecklistItem, IssueItem, ChecklistLabels } from './checklistListTypes';
 import {
   TABLE_STYLE, TH, TD, TD_MUTED, SECTION_HEADING, CARD_CONTAINER,
@@ -554,6 +555,7 @@ export function BookingGroupSection({
   getHref: (id: string) => string;
   emptyText: string;
 }) {
+  const t = useTranslations('staff.checklistsPage');
   const currentYear = new Date().getFullYear();
   const [expandedYears, setExpandedYears] = useState<Set<number>>(() => new Set([currentYear]));
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(() => new Set());
@@ -644,12 +646,12 @@ export function BookingGroupSection({
             <th style={TH}>{headers.booking}</th>
             <th style={TH}>{headers.customer}</th>
             <th style={TH}>{headers.vehicle}</th>
-            <th style={TH}>Pickup</th>
-            <th style={TH}>Pickup in</th>
-            <th style={TH}>Return</th>
-            <th style={TH}>Return in</th>
-            <th style={TH}>Progress</th>
-            <th style={TH}>Next action</th>
+            <th style={TH}>{t('table.pickup')}</th>
+            <th style={TH}>{t('table.pickupIn')}</th>
+            <th style={TH}>{t('table.return')}</th>
+            <th style={TH}>{t('table.returnIn')}</th>
+            <th style={TH}>{t('table.progress')}</th>
+            <th style={TH}>{t('table.nextAction')}</th>
           </tr>
         </thead>
         <tbody>
@@ -727,7 +729,7 @@ export function BookingGroupSection({
                           ) : status === 'completed' ? (
                             <span style={{ fontSize: '14px', color: 'rgb(var(--muted))' }}>—</span>
                           ) : (
-                            <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>Waiting for prep</span>
+                            <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t('table.waitingForPrep')}</span>
                           )}
                         </td>
                       </tr>

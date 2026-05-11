@@ -4,17 +4,6 @@ import { useTranslations } from "next-intl";
 import EditComplianceModal from "@/components/vehicles/EditComplianceModal";
 import AddComplianceModal from "@/components/vehicles/AddComplianceModal";
 
-// ─── TODO: move these into messages/en.json + messages/de.json once keys are
-//     agreed, then replace with tV("compliance.badge.blocksReadiness") etc.
-const COMPLIANCE_BADGE_BLOCKS: Record<string, string> = {
-  en: "Blocks readiness",
-  de: "Blockiert Bereitschaft",
-};
-const COMPLIANCE_BADGE_OK: Record<string, string> = {
-  en: "Operational",
-  de: "Betriebsbereit",
-};
-
 const VIGNETTE_SLUG = "motorway-vignette";
 
 const SYSTEM_SLUG_KEYS: Record<string, string> = {
@@ -177,8 +166,6 @@ export default function VehicleComplianceSection({
   const tV = useTranslations("vehicleDetail");
   const tSlug = useTranslations("vehicleDetail.compliance.systemTypes");
 
-  const lang = locale === "de" ? "de" : "en";
-
   const formatDate = (dateStr: string | null): string => {
     if (!dateStr) return "—";
     return new Date(dateStr).toLocaleDateString(locale, {
@@ -202,7 +189,7 @@ export default function VehicleComplianceSection({
 
   const resolveComplianceDisplayName = (row: ComplianceRow): string => {
     if (row.compliance_types.slug === VIGNETTE_SLUG && row.notes) {
-      return `Motorway Vignette — ${row.notes}`;
+      return tV("compliance.motorwayVignette", { notes: row.notes });
     }
     return resolveTypeName(row.compliance_types);
   };
@@ -367,8 +354,8 @@ export default function VehicleComplianceSection({
                         }}
                       >
                         {blocksReadiness
-                          ? COMPLIANCE_BADGE_BLOCKS[lang]
-                          : COMPLIANCE_BADGE_OK[lang]}
+                          ? tV("compliance.badge.blocksReadiness")
+                          : tV("compliance.badge.operational")}
                       </span>
                     </div>
                     {row.notes && row.compliance_types.slug !== VIGNETTE_SLUG && (
@@ -382,7 +369,7 @@ export default function VehicleComplianceSection({
                     <div>{formatDate(row.expiry_date)}</div>
                     {row.service_due_odometer_km != null && (
                       <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
-                        Due at {row.service_due_odometer_km.toLocaleString(locale)} km
+                        {tV("compliance.dueAtKm", { n: row.service_due_odometer_km.toLocaleString(locale) })}
                       </div>
                     )}
                   </div>

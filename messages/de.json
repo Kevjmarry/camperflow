@@ -242,6 +242,12 @@
         "expiring": "Läuft bald ab",
         "ok": "OK"
       },
+      "badge": {
+        "blocksReadiness": "Blockiert Bereitschaft",
+        "operational": "Betriebsbereit"
+      },
+      "motorwayVignette": "Autobahnvignette — {notes}",
+      "dueAtKm": "Fällig bei {n} km",
       "editModal": {
         "title": "{name} bearbeiten",
         "expiryDateLabel": "Ablaufdatum",
@@ -902,7 +908,9 @@
     "evidenceReturn": "Rückgabe",
     "evidenceGroupGeneral": "Allgemein",
     "evidenceGroupDamage": "Schäden",
-    "evidenceDownloadAll": "Alle Fotos herunterladen"
+    "evidenceDownloadAll": "Alle Fotos herunterladen",
+    "includedInBooking": "Im Buchungsumfang enthalten",
+    "videoTour": "Video-Tour"
   },
   "guestBookings": {
     "redirecting": "Weiterleitung…",
@@ -923,7 +931,9 @@
     "itemsCount": "{completed} von {total} Einträgen",
     "noItemsAvailable": "Keine Checklisteneinträge verfügbar.",
     "note": "Hinweis",
-    "completedOn": "✓ Abgeschlossen am {date}"
+    "completedOn": "✓ Abgeschlossen am {date}",
+    "guideNotice": "Diese Checkliste dient als Übersicht. Das digitale Ausfüllen wird in Kürze verfügbar sein.",
+    "required": "Pflicht"
   },
   "staff": {
     "login": {
@@ -946,7 +956,9 @@
       "guestContent": "Gastinhalt",
       "team": "Mitarbeiterteam",
       "customers": "Kunden",
-      "company": "Firmeneinstellungen"
+      "company": "Firmeneinstellungen",
+      "language": "Sprache",
+      "more": "Mehr"
     },
     "dashboard": {
       "title": "Mitarbeiter-Dashboard",
@@ -1026,7 +1038,10 @@
         "noneReturn": "Keine bevorstehenden Rückgaben",
         "prev": "Zurück",
         "next": "Weiter",
-        "itemOf": "{current} von {total}"
+        "itemOf": "{current} von {total}",
+        "dueToday": "Heute fällig",
+        "dueTomorrow": "Morgen fällig",
+        "dueInDays": "Fällig in {count} Tagen"
       },
       "upcomingReturns": {
         "title": "Bevorstehende Rückgaben",
@@ -1078,7 +1093,9 @@
         "openVehicleIssue": "Offenes Fahrzeugproblem",
         "readyForPickup": "Bereit zur Abholung",
         "urgentIssue": "Dringendes Problem",
-        "attentionIssue": "Aufmerksamkeit erforderlich"
+        "attentionIssue": "Aufmerksamkeit erforderlich",
+        "handoverComplete": "Übergabe abgeschlossen",
+        "prepNeeded": "Vorbereitung erforderlich"
       },
       "action": {
         "preparing": "In Vorbereitung",
@@ -1161,6 +1178,18 @@
         "not_started": "Nicht begonnen",
         "draft": "Entwurf",
         "pending": "Ausstehend"
+      },
+      "bookingTimeline": {
+        "title": "Fahrzeugbuchungs-Zeitstrahl",
+        "empty": "Keine Fahrzeuge gefunden.",
+        "legend": {
+          "confirmed": "Bestätigt",
+          "onRent": "Im Einsatz",
+          "blocked": "Gesperrt",
+          "pending": "Ausstehend",
+          "completed": "Abgeschlossen"
+        },
+        "footerHint": "Hervorgehobene Spalte = Heute · Scrollen zum Navigieren · Stornierte Buchungen ausgeblendet"
       }
     },
     "checklistsPage": {
@@ -1190,7 +1219,8 @@
         "return": "Rückgabe",
         "guest_prereturn": "Gast-Vorabnahme",
         "vehicle_readiness": "Fahrzeugbereitschaft",
-        "maintenance": "Wartung"
+        "maintenance": "Wartung",
+        "mechanical": "Technik-Checkliste"
       },
       "severity": {
         "low": "Niedrig",
@@ -1206,7 +1236,14 @@
         "dates": "Termine",
         "status": "Status",
         "issue": "Problem",
-        "severity": "Schwere"
+        "severity": "Schwere",
+        "pickup": "Abholung",
+        "pickupIn": "Abholung in",
+        "return": "Rückgabe",
+        "returnIn": "Rückgabe in",
+        "progress": "Fortschritt",
+        "nextAction": "Nächste Aktion",
+        "waitingForPrep": "Wartet auf Vorbereitung"
       },
       "sections": {
         "notStarted": "Nicht begonnen",
@@ -1716,7 +1753,8 @@
     "lengthPlaceholder": "z. B. 5,99",
     "widthPlaceholder": "z. B. 2,10",
     "heightPlaceholder": "z. B. 2,85",
-    "chooseFile": "Datei auswählen"
+    "chooseFile": "Datei auswählen",
+    "youtubeUrlLabel": "YouTube URL (optional)"
   },
   "staffTeamNew": {
     "checkingPermissions": "Berechtigungen werden geprüft…",
@@ -1851,7 +1889,9 @@
     "actions": {
       "saveChanges": "Änderungen speichern",
       "saving": "Speichern...",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "removePlace": "Entfernen",
+      "addPlace": "+ Ort hinzufügen"
     },
     "errors": {
       "loadFailed": "Gastinhalt konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
@@ -1867,7 +1907,9 @@
       "return": "Rückgabe",
       "guestGuide": "Gastratgeber",
       "faq": "FAQ",
-      "returnChecklist": "Rückgabe-Checkliste"
+      "returnChecklist": "Rückgabe-Checkliste",
+      "bookingDetails": "Buchungsdetails",
+      "helpHowTo": "Hilfe & Anleitungen"
     },
     "labels": {
       "contactPhone": "Kontakttelefon",
@@ -1881,11 +1923,26 @@
       "beforeReturn": "Vor der Rückgabe",
       "returnInfo": "Rückgabeinformationen",
       "includedItems": "Was ist inbegriffen",
-      "rulesAndTips": "Regeln & Tipps"
+      "rulesAndTips": "Regeln & Tipps",
+      "importantBeforePickup": "Wichtig vor der Abholung",
+      "nearbyPlaces": "Nahe gelegene Orte",
+      "nearbyPlacesDesc": "als tippbare Maps-Links auf der Rückgabeseite angezeigt",
+      "returnNotes": "Rückgabehinweise",
+      "returnNotesDesc": "optional, in einer klappbaren Karte angezeigt",
+      "helpIntro": "Hilfe-Intro",
+      "quickFixes": "Schnelle Lösungen",
+      "howToVideos": "Anleitungsvideos"
     },
     "helpers": {
       "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen.",
-      "textareaHelper": "Halte jeden Punkt kurz und gut lesbar für Gäste."
+      "textareaHelper": "Halte jeden Punkt kurz und gut lesbar für Gäste.",
+      "linesEndingHeadings": "Zeilen mit : am Ende = Überschriften.",
+      "mapsLinkNavigate": "Maps-Link = Navigations-Karte.",
+      "importantBeforePickupHint": "In der Karte „Wichtig vor der Abholung“ angezeigt.",
+      "nearbyPlacesEmpty": "Keine nahe gelegenen Orte konfiguriert.",
+      "helpIntroHint": "Als Einführungstext in der Kontaktkarte angezeigt.",
+      "quickFixesHint": "Zeilen mit : = Akkordeon-Titel. Folgende Zeilen = nummerierte Schritte.",
+      "howToVideosHint": "Zeilen mit : = Gruppentitel. YouTube-/Video-Links darunter = eingebettete Player."
     },
     "placeholders": {
       "contactPhone": "+49 30 12345678",
@@ -1896,7 +1953,10 @@
       "beforeReturn": "Was Gäste vor der Rückgabe des Fahrzeugs tun sollten…",
       "returnInfo": "Wo Schlüssel abzugeben sind, Reinigungserwartungen…",
       "includedItems": "Im Mietpreis enthaltene Gegenstände auflisten…",
-      "rulesAndTips": "Hausregeln, Reisetipps…"
+      "rulesAndTips": "Hausregeln, Reisetipps…",
+      "nearbyPlaceLabel": "Bezeichnung (z.B. Supermarkt)",
+      "returnNotes": "Weitere Rückgabeanweisungen…",
+      "helpIntro": "Kurzer Einführungstext am Anfang der Kontaktkarte „Hilfe & Anleitungen“…"
     },
     "faq": {
       "helper": "Häufig gestellte Fragen, die Gästen in ihrem Mietportal angezeigt werden.",
@@ -1934,6 +1994,15 @@
         "faq": "FAQ",
         "faqWhere": "FAQ-Seite"
       }
+    },
+    "hints": {
+      "needsTranslation": "Übersetzung erforderlich"
+    },
+    "copyFrom": {
+      "button": "Aus Originalsprache kopieren ({lang})",
+      "confirm": "Gesamten Inhalt von {from} nach {to} kopieren? Dies überschreibt alle nicht gespeicherten Änderungen im aktuellen Tab.",
+      "warning": "Vor dem Speichern übersetzen, sonst sehen Gäste die falsche Sprache.",
+      "langHint": "Slowakisch enthält derzeit Ihre vorhandenen Inhalte. Englisch und Deutsch können manuell ausgefüllt werden."
     }
   },
   "staffCompany": {
@@ -2411,6 +2480,7 @@
     "resolveFlag": "Abschließen",
     "resolving": "Wird abgeschlossen…",
     "lockedBookingCompleted": "Diese Checkliste ist gesperrt, da die verknüpfte Buchung abgeschlossen wurde.",
+    "completedAndLocked": "Diese Checkliste ist abgeschlossen und gesperrt.",
     "quickMode": "Schnellmodus",
     "dismiss": "Schließen",
     "completing": "Wird abgeschlossen…",
@@ -2522,6 +2592,8 @@
     "returnPhaseInspection": "Inspektion",
     "returnPhaseCondition": "Zustand & Nachweise",
     "returnPhaseCloseOut": "Abschluss",
+    "returnPhaseIntroText": "Diese Rückgabe folgt drei Phasen: Inspektion, Zustand & Nachweise und finaler Abschluss.",
+    "returnPhase1Label": "Inspektion / Fahrzeugübernahme",
     "returnVehicleDataTitle": "Fahrzeugdaten",
     "returnVehicleDataDesc": "Erfasse den Kilometerstand und die Fahrzeugstände bei der Rückgabe.",
     "returnEvidenceTitle": "Fotodokumentation",

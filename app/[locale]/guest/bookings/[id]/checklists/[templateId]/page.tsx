@@ -14,7 +14,8 @@ export default async function GuestChecklistPage({ params }: PageProps) {
   const { locale, id: codeRaw, templateId } = await params;
   const code = decodeURIComponent(codeRaw || "").trim();
   const supabase = await createClient();
-  const t = await getTranslations("guestBooking");
+  const t = await getTranslations({ locale, namespace: "guestBooking" });
+  const tc = await getTranslations({ locale, namespace: "guestChecklist" });
 
   if (!code) {
     return (
@@ -162,9 +163,7 @@ export default async function GuestChecklistPage({ params }: PageProps) {
       {/* Guide notice */}
       <div className="surface gcl-notice">
         <p style={{ fontSize: "14px", color: "rgb(var(--text-secondary))", margin: 0 }}>
-          {locale === "de"
-            ? "Diese Checkliste dient als Übersicht. Das digitale Ausfüllen wird in Kürze verfügbar sein."
-            : "This checklist is shown as a guide. Digital completion will be available soon."}
+          {tc("guideNotice")}
         </p>
       </div>
 
@@ -172,7 +171,7 @@ export default async function GuestChecklistPage({ params }: PageProps) {
       <div className="surface gcl-sp">
         {items.length === 0 ? (
           <p style={{ fontSize: "14px", color: "rgb(var(--muted))" }}>
-            {locale === "de" ? "Keine Einträge vorhanden." : "No checklist items available."}
+            {tc("noItemsAvailable")}
           </p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
@@ -238,7 +237,7 @@ export default async function GuestChecklistPage({ params }: PageProps) {
                               letterSpacing: "0.05em",
                             }}
                           >
-                            {locale === "de" ? "Pflicht" : "Required"}
+                            {tc("required")}
                           </span>
                         )}
                       </p>

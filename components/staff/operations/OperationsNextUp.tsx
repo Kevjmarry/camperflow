@@ -287,10 +287,10 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               {(pickup.customerName ?? '').replace(/^(\[\?\]|\?)\s*/, '')} · {pickup.bookingNumber}
             </span>
             {pickup.handoverDone
-              ? <span style={{ ...getStatusChipStyle('completed'), alignSelf: 'flex-start' }}>Handover complete</span>
+              ? <span style={{ ...getStatusChipStyle('completed'), alignSelf: 'flex-start' }}>{tOps('status.handoverComplete')}</span>
               : pickup.prepDone
-                ? <span style={{ ...getStatusChipStyle('ready'), alignSelf: 'flex-start' }}>Ready for pickup</span>
-                : <span style={{ ...getStatusChipStyle('preparing'), alignSelf: 'flex-start' }}>Prep needed</span>
+                ? <span style={{ ...getStatusChipStyle('ready'), alignSelf: 'flex-start' }}>{tOps('status.readyForPickup')}</span>
+                : <span style={{ ...getStatusChipStyle('preparing'), alignSelf: 'flex-start' }}>{tOps('status.prepNeeded')}</span>
             }
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
               {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale)}
@@ -352,7 +352,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
             </span>
             {(() => {
               const diff = countdownDays(ret.returnAt)
-              const label = diff === 0 ? 'Due today' : diff === 1 ? 'Due tomorrow' : `Due in ${diff} days`
+              const label = diff === 0 ? t('dueToday') : diff === 1 ? t('dueTomorrow') : t('dueInDays', { count: diff })
               return <span style={{ ...getStatusChipStyle('on_rent'), alignSelf: 'flex-start' }}>{label}</span>
             })()}
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
