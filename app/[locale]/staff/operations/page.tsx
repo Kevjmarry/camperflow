@@ -311,6 +311,7 @@ export default async function OperationsPage({
             <OperationsBookingTimeline
               vehicles={timelineData.vehicles}
               bookings={timelineData.bookings}
+              vehicleBlocks={timelineData.vehicleBlocks}
             />
 
             {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}

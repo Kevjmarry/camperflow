@@ -18,15 +18,24 @@ export interface OpsTimelineBooking {
   status: string
 }
 
+export interface OpsTimelineVehicleBlock {
+  id: string
+  vehicleId: string
+  label: string | null
+  startAt: string
+  endAt: string
+}
+
 export interface OpsTimelineData {
   vehicles: OpsTimelineVehicle[]
   bookings: OpsTimelineBooking[]
+  vehicleBlocks: OpsTimelineVehicleBlock[]
 }
 
 export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [] }
+  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [] }
 
   const { data: profile } = await supabase
     .from('staff_profiles')
@@ -34,7 +43,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
-  if (!isUUID(companyId)) return { vehicles: [], bookings: [] }
+  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [] }
 
   const now = new Date()
   const windowStart = new Date(now)
@@ -51,7 +60,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   if (vError) throw vError
 
   const vehicleIds = (vehicles ?? []).map((v) => v.id).filter(isUUID)
-  if (!vehicleIds.length) return { vehicles: [], bookings: [] }
+  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [] }
 
   // Bookings overlapping the window: return_at >= windowStart AND pickup_at <= windowEnd
   const { data: bookings, error: bError } = await supabase
@@ -66,6 +75,22 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .order('pickup_at', { ascending: true })
 
   if (bError) throw bError
+
+  const { data: blocks } = await supabase
+    .from('vehicle_blocks')
+    .select('id, vehicle_id, label, start_at, end_at')
+    .eq('company_id', companyId)
+    .gte('end_at', windowStart.toISOString())
+    .lte('start_at', windowEnd.toISOString())
+    .order('start_at', { ascending: true })
+
+  const vehicleBlocks: OpsTimelineVehicleBlock[] = (blocks ?? []).map((bl) => ({
+    id: bl.id,
+    vehicleId: bl.vehicle_id,
+    label: bl.label ?? null,
+    startAt: bl.start_at,
+    endAt: bl.end_at,
+  }))
 
   return {
     vehicles: (vehicles ?? [])
@@ -82,5 +107,6 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
         returnAt: b.return_at!,
         status: b.booking_status ?? 'draft',
       })),
+    vehicleBlocks,
   }
 }

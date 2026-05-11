@@ -40,12 +40,6 @@ const STATUS_STYLE: Record<string, { bg: string; border: string; text: string; b
 }
 const FALLBACK_STYLE = STATUS_STYLE.draft
 
-const BLOCK_STYLE = {
-  bg: 'rgb(120 120 120 / 0.15)',
-  bgImage: 'repeating-linear-gradient(45deg, rgb(120 120 120 / 0.28) 0, rgb(120 120 120 / 0.28) 3px, transparent 3px, transparent 9px)',
-  border: 'rgb(120 120 120 / 0.55)',
-  text: 'rgb(var(--muted))',
-}
 
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
@@ -155,12 +149,6 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
               </span>
             )
           })}
-          {vehicleBlocks.length > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: BLOCK_STYLE.bg, backgroundImage: BLOCK_STYLE.bgImage, border: `1px solid ${BLOCK_STYLE.border}`, display: 'inline-block' }} />
-              {t('legend.vehicleBlock')}
-            </span>
-          )}
         </div>
       </div>
 
@@ -287,9 +275,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                             width: `${widthPct}%`,
                             top: '5px',
                             height: `${ROW_H - 10}px`,
-                            background: BLOCK_STYLE.bg,
-                            backgroundImage: BLOCK_STYLE.bgImage,
-                            border: `1px solid ${BLOCK_STYLE.border}`,
+                            background: STATUS_STYLE.blocked.bg,
+                            border: `1px solid ${STATUS_STYLE.blocked.border}`,
                             borderRadius: '3px',
                             overflow: 'hidden',
                             zIndex: 1,
@@ -301,7 +288,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                               display: 'block',
                               fontSize: '10px',
                               fontWeight: 500,
-                              color: BLOCK_STYLE.text,
+                              color: STATUS_STYLE.blocked.text,
                               paddingLeft: '4px',
                               paddingTop: '2px',
                               whiteSpace: 'nowrap',
