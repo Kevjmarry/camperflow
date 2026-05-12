@@ -65,9 +65,6 @@ export default function StaffMemberPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState(false);
-  const [recoveryLink, setRecoveryLink] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
-
   const [formData, setFormData] = useState<StaffFormData>({
     first_name: "",
     last_name: "",
@@ -88,8 +85,6 @@ export default function StaffMemberPage() {
       try {
         setLoading(true);
         setError("");
-        setRecoveryLink(null);
-        setCopiedLink(false);
         setInviteSuccess(false);
         setInviteError("");
 
@@ -174,8 +169,6 @@ export default function StaffMemberPage() {
     setIsInviting(true);
     setInviteError("");
     setInviteSuccess(false);
-    setRecoveryLink(null);
-    setCopiedLink(false);
 
     try {
       const response = await fetch('/api/staff/invite', {
@@ -198,28 +191,13 @@ export default function StaffMemberPage() {
         throw new Error(json?.error || `Request failed (${response.status})`);
       }
 
-      if (json?.mode === 'recovery_link') {
-        setRecoveryLink(json.action_link);
-      } else {
-        setInviteSuccess(true);
-      }
+      setInviteSuccess(true);
 
       await refetchMember();
     } catch (err: any) {
       setInviteError(err?.message || 'Failed to send invite.');
     } finally {
       setIsInviting(false);
-    }
-  };
-
-  const handleCopyLink = async () => {
-    if (!recoveryLink) return;
-    try {
-      await navigator.clipboard.writeText(recoveryLink);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    } catch {
-      // clipboard API unavailable; user can copy manually
     }
   };
 
@@ -257,8 +235,6 @@ export default function StaffMemberPage() {
   const handleEdit = () => {
     setIsEditing(true);
     setSaveError("");
-    setRecoveryLink(null);
-    setCopiedLink(false);
     setInviteSuccess(false);
     setInviteError("");
   };
@@ -770,50 +746,6 @@ export default function StaffMemberPage() {
                               : t('loginAccess.enableLogin')}
                           </button>
                         </div>
-
-                        {recoveryLink && (
-                          <div style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "var(--space-2)",
-                            padding: "var(--space-3)",
-                            background: "rgb(var(--border) / 0.3)",
-                            borderRadius: "var(--radius)",
-                            border: "1px solid rgb(var(--border))",
-                          }}>
-                            <div style={{ fontSize: "13px", fontWeight: 500 }}>
-                              {t('loginAccess.recoveryLinkTitle')}
-                            </div>
-                            <code style={{
-                              fontSize: "12px",
-                              wordBreak: "break-all",
-                              color: "rgb(var(--text))",
-                              background: "rgb(var(--border) / 0.5)",
-                              padding: "var(--space-2)",
-                              borderRadius: "var(--radius)",
-                              display: "block",
-                            }}>
-                              {recoveryLink}
-                            </code>
-                            <button
-                              onClick={handleCopyLink}
-                              style={{
-                                alignSelf: "flex-start",
-                                padding: "6px 14px",
-                                background: copiedLink ? "rgb(var(--success) / 0.1)" : "rgb(var(--border))",
-                                color: copiedLink ? "rgb(var(--success))" : "rgb(var(--text))",
-                                border: copiedLink
-                                  ? "1px solid rgb(var(--success) / 0.3)"
-                                  : "1px solid rgb(var(--border))",
-                                borderRadius: "var(--radius)",
-                                cursor: "pointer",
-                                fontSize: "13px",
-                              }}
-                            >
-                              {copiedLink ? t('loginAccess.copied') : t('loginAccess.copyLink')}
-                            </button>
-                          </div>
-                        )}
 
                         {inviteError && (
                           <div style={{

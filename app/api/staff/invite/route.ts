@@ -103,27 +103,14 @@ export async function POST(request: NextRequest) {
 
       const redirectTo = `${siteUrl || 'https://app.camperflow.io'}/${locale}/staff/reset`
 
-      const { data: linkData, error: linkError } =
-        await adminClient.auth.admin.generateLink({
-          type: 'recovery',
-          email: authUserEmail,
-          options: { redirectTo },
-        })
+      const { error: recoveryError } =
+        await adminClient.auth.resetPasswordForEmail(authUserEmail, { redirectTo })
 
-      if (linkError) {
-        return NextResponse.json({ error: linkError.message }, { status: 500 })
+      if (recoveryError) {
+        return NextResponse.json({ error: recoveryError.message }, { status: 500 })
       }
 
-      const actionLink = linkData?.properties?.action_link
-
-      if (!actionLink) {
-        return NextResponse.json(
-          { error: 'Failed to generate recovery link' },
-          { status: 500 }
-        )
-      }
-
-      return NextResponse.json({ success: true, mode: 'recovery_link', action_link: actionLink })
+      return NextResponse.json({ success: true, mode: 'recovery_sent' })
     }
 
     // auth_user_id is null → send invite email
