@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     // Use the profile's stored email if available, otherwise fall back to request email
     const inviteEmail = profileEmail ?? email
 
-    const redirectTo = `${siteUrl}/${locale}/staff/invite/accept?profile_id=${profile_id}`
+    const redirectTo = `${siteUrl || 'https://app.camperflow.io'}/${locale}/staff/invite/accept?profile_id=${profile_id}`
 
     const { data: inviteData, error: inviteError } =
       await adminClient.auth.admin.inviteUserByEmail(inviteEmail, { redirectTo })
