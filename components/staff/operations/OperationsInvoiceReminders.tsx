@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -13,8 +13,11 @@ interface Props {
 export default function OperationsInvoiceReminders({ reminders }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.reminders')
+  const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState<OpsInvoiceReminder[]>(reminders)
   const [handling, setHandling] = useState<Set<string>>(new Set())
+
+  useEffect(() => { setMounted(true) }, [])
 
   const markHandled = async (r: OpsInvoiceReminder) => {
     setHandling((prev) => new Set(prev).add(r.id))
@@ -102,7 +105,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
           {visible.map((r, idx) => {
             const isLoading = handling.has(r.id)
             const isCheckable = r.type !== 'review_imported'
-            const bookingHref = `/${locale}/staff/bookings/${r.bookingId}#reminders`
+            const bookingHref = `/${locale}/staff/bookings/${r.bookingId}${mounted ? '#reminders' : ''}`
 
             const rowStyle: React.CSSProperties = {
               display: 'flex',
