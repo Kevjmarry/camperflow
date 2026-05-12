@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (settingsError) {
       await adminClient.auth.admin.deleteUser(user.id).catch(() => {})
-      await adminClient.from('companies').delete().eq('id', company_id).catch(() => {})
+      try { await adminClient.from('companies').delete().eq('id', company_id) } catch {}
       return NextResponse.json({ error: 'Failed to create company settings' }, { status: 500 })
     }
 
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       await adminClient.auth.admin.deleteUser(user.id).catch(() => {})
-      await adminClient.from('company_settings').delete().eq('id', company_id).catch(() => {})
-      await adminClient.from('companies').delete().eq('id', company_id).catch(() => {})
+      try { await adminClient.from('company_settings').delete().eq('id', company_id) } catch {}
+      try { await adminClient.from('companies').delete().eq('id', company_id) } catch {}
       return NextResponse.json({ error: 'Failed to create staff profile' }, { status: 500 })
     }
 
