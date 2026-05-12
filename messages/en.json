@@ -38,6 +38,43 @@
       "accessDenied": "Access denied. This account does not have staff privileges.",
       "unexpected": "An unexpected error occurred. Please try again.",
       "accessDeniedError": "Access denied. Your account is not allowed to use staff mode."
+    },
+    "backToSignIn": "Back to sign in",
+    "forgotPassword": "Forgot password?",
+    "passwordsNoMatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "passwordMinPlaceholder": "Min. 8 characters",
+    "resetRequest": {
+      "title": "Reset password",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "checkEmail": "Check your email for the reset link.",
+      "sendLink": "Send reset link",
+      "sending": "Sending…"
+    },
+    "reset": {
+      "title": "Set new password",
+      "subtitle": "Enter and confirm your new password below.",
+      "verifying": "Verifying your reset link…",
+      "sessionMissing": "Auth session missing!",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm new password",
+      "confirmPasswordPlaceholder": "Repeat your new password",
+      "updatePassword": "Update password",
+      "updating": "Updating…",
+      "success": "Password updated! Redirecting you to sign in…"
+    },
+    "invite": {
+      "title": "Set your password",
+      "subtitle": "Create a password to complete your account setup.",
+      "verifying": "Verifying your invite link…",
+      "invalidLink": "Invalid invite link.",
+      "passwordLabel": "Password",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "setPassword": "Set password",
+      "settingUp": "Setting up…",
+      "success": "Account set up! Redirecting you to sign in…",
+      "unexpected": "An unexpected error occurred."
     }
   },
   "pageContainer": {
@@ -1874,6 +1911,11 @@
     "comingSoon": "Coming soon",
     "noCodeTitle": "No booking code",
     "noCodeMessage": "Please use the link provided in your booking confirmation.",
+    "notFoundTitle": "Booking Not Found",
+    "notFoundMessage": "The booking code",
+    "notFoundMessageEnd": "does not exist.",
+    "notFoundHint": "Valid codes look like BK-20260327-BHUG — make sure to use uppercase letters only.",
+    "back": "Back",
     "cards": {
       "bookingDetails": "Booking details",
       "pickupInfo": "Pickup info",

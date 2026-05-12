@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import PageContainer from "@/components/PageContainer";
+import StaffAuthShell from "@/components/staff/StaffAuthShell";
 import { createClient } from "@/lib/supabase/client";
 
 export default function StaffResetPage() {
@@ -59,10 +59,10 @@ export default function StaffResetPage() {
           if (refreshedSession?.session) {
             setSessionReady(true);
           } else {
-            setError("Auth session missing!");
+            setError(t("reset.sessionMissing"));
           }
         } else {
-          setError("Auth session missing!");
+          setError(t("reset.sessionMissing"));
         }
       } catch {
         setError(t("error.unexpected"));
@@ -80,12 +80,12 @@ export default function StaffResetPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("passwordsNoMatch"));
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("passwordTooShort"));
       return;
     }
 
@@ -111,9 +111,18 @@ export default function StaffResetPage() {
     }
   };
 
+  const backLink = (
+    <Link
+      href={`/${locale}/staff/login`}
+      style={{ fontSize: "14px", color: "rgb(var(--brand))", textDecoration: "none" }}
+    >
+      ← {t("backToSignIn")}
+    </Link>
+  );
+
   return (
-    <PageContainer maxWidth="480px" showSignOut={false}>
-      <div className="surface" style={{ padding: "var(--space-8)" }}>
+    <StaffAuthShell backLink={backLink}>
+      <div className="surface staff-auth-card">
         <div
           style={{
             display: "flex",
@@ -121,34 +130,20 @@ export default function StaffResetPage() {
             gap: "var(--space-6)",
           }}
         >
-          {/* Back link */}
-          <div>
-            <Link
-              href={`/${locale}/staff/login`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-              }}
-            >
-              ← Back to sign in
-            </Link>
-          </div>
-
           {/* Heading */}
           <div style={{ textAlign: "center" }}>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-              Set new password
+              {t("reset.title")}
             </h1>
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
-              Enter and confirm your new password below.
+              {t("reset.subtitle")}
             </p>
           </div>
 
           {/* Session checking state */}
           {sessionChecking && (
             <p style={{ textAlign: "center", color: "rgb(var(--muted))", fontSize: "14px" }}>
-              Verifying your reset link…
+              {t("reset.verifying")}
             </p>
           )}
 
@@ -180,14 +175,14 @@ export default function StaffResetPage() {
             >
               <div>
                 <label htmlFor="password" className="label">
-                  New password
+                  {t("reset.newPasswordLabel")}
                 </label>
                 <input
                   id="password"
                   name="password"
                   type="password"
                   className="input"
-                  placeholder="Min. 8 characters"
+                  placeholder={t("passwordMinPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -198,14 +193,14 @@ export default function StaffResetPage() {
 
               <div>
                 <label htmlFor="confirm-password" className="label">
-                  Confirm new password
+                  {t("reset.confirmPasswordLabel")}
                 </label>
                 <input
                   id="confirm-password"
                   name="confirmPassword"
                   type="password"
                   className="input"
-                  placeholder="Repeat your new password"
+                  placeholder={t("reset.confirmPasswordPlaceholder")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -240,7 +235,7 @@ export default function StaffResetPage() {
                     fontSize: "14px",
                   }}
                 >
-                  Password updated! Redirecting you to sign in…
+                  {t("reset.success")}
                 </div>
               )}
 
@@ -257,13 +252,13 @@ export default function StaffResetPage() {
                     cursor: loading ? "not-allowed" : "pointer",
                   }}
                 >
-                  {loading ? "Updating…" : "Update password"}
+                  {loading ? t("reset.updating") : t("reset.updatePassword")}
                 </button>
               )}
             </form>
           )}
         </div>
       </div>
-    </PageContainer>
+    </StaffAuthShell>
   );
 }

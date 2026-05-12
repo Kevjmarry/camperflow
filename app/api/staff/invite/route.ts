@@ -103,27 +103,15 @@ export async function POST(request: NextRequest) {
 
       const redirectTo = `${siteUrl || 'https://app.camperflow.io'}/${locale}/staff/reset`
 
-      const { data: linkData, error: linkError } =
-        await adminClient.auth.admin.generateLink({
-          type: 'recovery',
-          email: authUserEmail,
-          options: { redirectTo },
-        })
+      const { error: recoveryError } =
+        await adminClient.auth.resetPasswordForEmail(authUserEmail, { redirectTo })
 
-      if (linkError) {
-        return NextResponse.json({ error: linkError.message }, { status: 500 })
+      if (recoveryError) {
+        console.error("Recovery email error:", recoveryError)
+        return NextResponse.json({ error: recoveryError.message }, { status: 500 })
       }
 
-      const actionLink = linkData?.properties?.action_link
-
-      if (!actionLink) {
-        return NextResponse.json(
-          { error: 'Failed to generate recovery link' },
-          { status: 500 }
-        )
-      }
-
-      return NextResponse.json({ success: true, mode: 'recovery_link', action_link: actionLink })
+      return NextResponse.json({ success: true, mode: 'recovery' })
     }
 
     // auth_user_id is null → send invite email
@@ -168,6 +156,10 @@ export async function POST(request: NextRequest) {
       .select('profile_id')
 
     if (updateError) {
+      // Rollback: delete the auth user we just created so it doesn't sit orphaned
+      await adminClient.auth.admin.deleteUser(invitedUserId).catch((cleanupErr) => {
+        console.error('[invite] failed to clean up orphaned auth user', invitedUserId, cleanupErr)
+      })
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 

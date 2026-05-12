@@ -38,6 +38,43 @@
       "accessDenied": "Prístup zamietnutý. Tento účet nemá oprávnenia personálu.",
       "unexpected": "Vyskytla sa neočakávaná chyba. Skúste to znova.",
       "accessDeniedError": "Prístup zamietnutý. Váš účet nemá povolenie na používanie režimu personálu."
+    },
+    "backToSignIn": "Späť na prihlásenie",
+    "forgotPassword": "Zabudli ste heslo?",
+    "passwordsNoMatch": "Heslá sa nezhodujú.",
+    "passwordTooShort": "Heslo musí mať aspoň 8 znakov.",
+    "passwordMinPlaceholder": "Min. 8 znakov",
+    "resetRequest": {
+      "title": "Obnoviť heslo",
+      "subtitle": "Zadajte e-mail a pošleme vám odkaz na obnovenie.",
+      "checkEmail": "Skontrolujte e-mail, odkaz na obnovenie bol odoslaný.",
+      "sendLink": "Odoslať odkaz na obnovenie",
+      "sending": "Odosiela sa…"
+    },
+    "reset": {
+      "title": "Nastaviť nové heslo",
+      "subtitle": "Zadajte a potvrďte nové heslo.",
+      "verifying": "Overovanie odkazu na obnovenie…",
+      "sessionMissing": "Relácia chýba!",
+      "newPasswordLabel": "Nové heslo",
+      "confirmPasswordLabel": "Potvrdiť nové heslo",
+      "confirmPasswordPlaceholder": "Zopakujte nové heslo",
+      "updatePassword": "Aktualizovať heslo",
+      "updating": "Aktualizuje sa…",
+      "success": "Heslo bolo aktualizované! Presmerujeme vás na prihlásenie…"
+    },
+    "invite": {
+      "title": "Nastaviť heslo",
+      "subtitle": "Vytvorte heslo na dokončenie nastavenia účtu.",
+      "verifying": "Overovanie pozývacieho odkazu…",
+      "invalidLink": "Neplatný pozývací odkaz.",
+      "passwordLabel": "Heslo",
+      "confirmPasswordLabel": "Potvrdiť heslo",
+      "confirmPasswordPlaceholder": "Zopakujte heslo",
+      "setPassword": "Nastaviť heslo",
+      "settingUp": "Nastavuje sa…",
+      "success": "Účet bol nastavený! Presmerujeme vás na prihlásenie…",
+      "unexpected": "Vyskytla sa neočakávaná chyba."
     }
   },
   "pageContainer": {
@@ -1874,6 +1911,11 @@
     "comingSoon": "Čoskoro",
     "noCodeTitle": "Žiadny kód rezervácie",
     "noCodeMessage": "Použite prosím odkaz uvedený v potvrdení rezervácie.",
+    "notFoundTitle": "Rezervácia nenájdená",
+    "notFoundMessage": "Kód rezervácie",
+    "notFoundMessageEnd": "neexistuje.",
+    "notFoundHint": "Platné kódy vyzerajú napríklad takto: BK-20260327-BHUG – používajte len veľké písmená.",
+    "back": "Späť",
     "cards": {
       "bookingDetails": "Detaily rezervácie",
       "pickupInfo": "Informácie o prevzatí",

@@ -439,15 +439,12 @@ export default function StaffMemberPage() {
     setDeleteError("");
 
     try {
-      const supabase = createClient();
+      const res = await fetch(`/api/staff/profiles/${staffId}`, { method: "DELETE" });
+      const json = await res.json();
 
-      const { error } = await supabase
-        .from("staff_profiles")
-        .delete()
-        .eq("profile_id", staffId)
-        .eq("company_id", companyId);
-
-      if (error) throw error;
+      if (!res.ok) {
+        throw new Error(json?.error || t('deleteFailed'));
+      }
 
       router.push(`/${locale}/staff/team`);
     } catch (err: any) {

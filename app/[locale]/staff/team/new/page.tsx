@@ -163,7 +163,7 @@ export default function NewTeamMemberPage() {
       if (formData.enableLogin && normalizedEmail) {
         const { data: existing, error: lookupError } = await supabase
           .from("staff_profiles")
-          .select("profile_id")
+          .select("profile_id, auth_user_id")
           .eq("company_id", staffProfile.company_id)
           .eq("email", normalizedEmail)
           .maybeSingle();
@@ -173,8 +173,13 @@ export default function NewTeamMemberPage() {
         }
 
         if (existing) {
-          setSubmitError(t("errors.duplicateEmail"));
-          setSubmitting(false);
+          if (existing.auth_user_id !== null) {
+            setSubmitError(t("errors.duplicateEmail"));
+            setSubmitting(false);
+            return;
+          }
+          // Profile exists but invite never completed — go to that profile to retry
+          router.push(`/${locale}/staff/team/${existing.profile_id}`);
           return;
         }
       }
@@ -263,6 +268,14 @@ export default function NewTeamMemberPage() {
 
         if (!inviteRes.ok) {
           const errorData = await inviteRes.json();
+          // Roll back the profile we just created so this email is free to retry
+          const { error: deleteErr } = await supabase
+            .from("staff_profiles")
+            .delete()
+            .eq("profile_id", newMember.profile_id);
+          if (deleteErr) {
+            console.error("Profile rollback after failed invite:", deleteErr);
+          }
           throw new Error(errorData.error || t("errors.inviteFailed"));
         }
       }
@@ -271,7 +284,16 @@ export default function NewTeamMemberPage() {
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       console.error("Error creating team member:", errorMessage, err);
-      setSubmitError(errorMessage);
+      if (
+        errorMessage.toLowerCase().includes("already been registered") ||
+        errorMessage.toLowerCase().includes("already registered")
+      ) {
+        setSubmitError(
+          "This email address is already registered. Check Supabase Auth users, or use the existing team member instead of creating a new one."
+        );
+      } else {
+        setSubmitError(errorMessage);
+      }
       setSubmitting(false);
     }
   };

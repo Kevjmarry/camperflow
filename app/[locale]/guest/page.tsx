@@ -112,6 +112,43 @@ export default async function GuestPage({ params, searchParams }: PageProps) {
     .rpc("get_guest_booking_by_code", { p_code: code })
     .maybeSingle<GuestBooking>();
 
+  if (!booking) {
+    return (
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{ marginBottom: "var(--space-4)" }}>
+          <Link
+            href={`/${locale}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "rgb(var(--text-secondary))",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("back")}
+          </Link>
+        </div>
+        <div className="surface" style={{ padding: "var(--space-8)" }}>
+          <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+          <p style={{ color: "rgb(var(--muted))" }}>
+            {t("notFoundMessage")}{" "}
+            <span style={{ fontFamily: "monospace", fontWeight: "600", color: "rgb(var(--text))" }}>{code}</span>{" "}
+            {t("notFoundMessageEnd")}
+          </p>
+          <p style={{ marginTop: "var(--space-4)", fontSize: "13px", color: "rgb(var(--muted))" }}>
+            {t("notFoundHint")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const hasTheme =
     !!booking?.company_id &&
     !!booking?.company_name &&

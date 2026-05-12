@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import StaffAuthShell from "@/components/staff/StaffAuthShell";
 
 const REMEMBER_EMAIL_KEY = "staff_remembered_email";
 
@@ -134,22 +135,35 @@ export default function StaffLoginPage() {
     }
   };
 
+  const backLink =
+    mode === "login" ? (
+      <Link
+        href={`/${locale}`}
+        style={{ fontSize: "14px", color: "rgb(var(--brand))", textDecoration: "none" }}
+      >
+        ← {t("backToHome")}
+      </Link>
+    ) : (
+      <button
+        type="button"
+        onClick={() => switchMode("login")}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          fontSize: "14px",
+          color: "rgb(var(--brand))",
+          cursor: "pointer",
+          textDecoration: "underline",
+        }}
+      >
+        ← {t("backToSignIn")}
+      </button>
+    );
+
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        background: "rgb(var(--app-bg))",
-        color: "rgb(var(--text))",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "var(--space-8) var(--space-4)",
-      }}
-    >
+    <StaffAuthShell backLink={backLink}>
       <style>{`
-        .staff-login-card {
-          padding: var(--space-6);
-        }
         .staff-login-content {
           gap: var(--space-6);
         }
@@ -157,9 +171,6 @@ export default function StaffLoginPage() {
           gap: var(--space-4);
         }
         @media (min-width: 540px) {
-          .staff-login-card {
-            padding: var(--space-8) var(--space-10);
-          }
           .staff-login-content {
             gap: var(--space-8);
           }
@@ -168,33 +179,18 @@ export default function StaffLoginPage() {
           }
         }
       `}</style>
-      <div style={{ width: "100%", maxWidth: "440px" }}>
-        <div className="surface staff-login-card">
-          <div
-            className="staff-login-content"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {/* Back link */}
-            <div>
-              <Link
-                href={`/${locale}`}
-                style={{
-                  fontSize: "15px",
-                  color: "rgb(var(--brand))",
-                  textDecoration: "none",
-                }}
-              >
-                ← {t("backToHome")}
-              </Link>
-            </div>
-
+      <div className="surface staff-auth-card">
+        <div
+          className="staff-login-content"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
             {/* Heading */}
             <div style={{ textAlign: "center" }}>
               <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>
-                {mode === "login" ? t("title") : "Reset password"}
+                {mode === "login" ? t("title") : t("resetRequest.title")}
               </h1>
               <p
                 style={{
@@ -205,7 +201,7 @@ export default function StaffLoginPage() {
               >
                 {mode === "login"
                   ? t("subtitle")
-                  : "Enter your email and we'll send you a reset link."}
+                  : t("resetRequest.subtitle")}
               </p>
             </div>
 
@@ -267,7 +263,7 @@ export default function StaffLoginPage() {
                         textDecoration: "underline",
                       }}
                     >
-                      Forgot password?
+                      {t("forgotPassword")}
                     </button>
                   </div>
                 </div>
@@ -378,7 +374,7 @@ export default function StaffLoginPage() {
                       fontSize: "15px",
                     }}
                   >
-                    Check your email for the reset link.
+                    {t("resetRequest.checkEmail")}
                   </div>
                 )}
 
@@ -395,27 +391,10 @@ export default function StaffLoginPage() {
                       cursor: loading ? "not-allowed" : "pointer",
                     }}
                   >
-                    {loading ? "Sending…" : "Send reset link"}
+                    {loading ? t("resetRequest.sending") : t("resetRequest.sendLink")}
                   </button>
                 )}
 
-                <div style={{ textAlign: "center" }}>
-                  <button
-                    type="button"
-                    onClick={() => switchMode("login")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: "6px 2px",
-                      fontSize: "14px",
-                      color: "rgb(var(--brand))",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                    }}
-                  >
-                    ← Back to sign in
-                  </button>
-                </div>
               </form>
             )}
 
@@ -432,9 +411,8 @@ export default function StaffLoginPage() {
                 {t("inviteOnly")}
               </p>
             )}
-          </div>
         </div>
       </div>
-    </div>
+    </StaffAuthShell>
   );
 }
