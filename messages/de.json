@@ -18,6 +18,10 @@
       "login": "Mitarbeiter-Login",
       "offlineError": "Internetverbindung erforderlich"
     },
+    "signup": {
+      "cta": "Neu bei CamperFlow?",
+      "link": "Kostenloses Konto erstellen"
+    },
     "footer": {
       "legal": "Mit dem Fortfahren stimmen Sie den Mietbedingungen und der Datenschutzerklärung zu"
     }
@@ -75,6 +79,29 @@
       "settingUp": "Wird eingerichtet…",
       "success": "Konto eingerichtet! Du wirst zur Anmeldung weitergeleitet…",
       "unexpected": "Ein unerwarteter Fehler ist aufgetreten."
+    }
+  },
+  "signup": {
+    "title": "Konto erstellen",
+    "subtitle": "Verwalte deine Camper-Flotte mit CamperFlow",
+    "nameLabel": "Vollständiger Name",
+    "namePlaceholder": "Dein vollständiger Name",
+    "companyNameLabel": "Firmenname",
+    "companyNamePlaceholder": "Name deines Vermietungsunternehmens",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "deine@email.com",
+    "passwordLabel": "Passwort",
+    "passwordPlaceholder": "Mind. 8 Zeichen",
+    "submit": "Konto erstellen",
+    "submitting": "Wird erstellt…",
+    "success": "Konto erstellt! Bestätige deine E-Mail und melde dich dann an.",
+    "backToHome": "Zurück zur Startseite",
+    "alreadyHaveAccount": "Hast du bereits ein Konto?",
+    "signIn": "Anmelden",
+    "error": {
+      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+      "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+      "emailTaken": "Diese E-Mail ist bereits registriert. Melde dich stattdessen an."
     }
   },
   "pageContainer": {

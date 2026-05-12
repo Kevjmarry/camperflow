@@ -188,6 +188,15 @@ export default function AppEntryPage() {
                     {t("staff.offlineError")}
                   </p>
                 )}
+                <p style={{ textAlign: "center", fontSize: "14px", color: "rgb(var(--muted))", margin: 0 }}>
+                  {t("signup.cta")}{" "}
+                  <a
+                    href={`/${locale}/signup`}
+                    style={{ color: "rgb(var(--brand))", textDecoration: "underline" }}
+                  >
+                    {t("signup.link")}
+                  </a>
+                </p>
               </div>
             </div>
           </div>

@@ -18,6 +18,10 @@
       "login": "Prihlásenie personálu",
       "offlineError": "Vyžaduje sa internetové pripojenie"
     },
+    "signup": {
+      "cta": "Nový v CamperFlow?",
+      "link": "Vytvoriť bezplatný účet"
+    },
     "footer": {
       "legal": "Pokračovaním súhlasíte s pravidlami prenájmu a zásadami ochrany súkromia"
     }
@@ -75,6 +79,29 @@
       "settingUp": "Nastavuje sa…",
       "success": "Účet bol nastavený! Presmerujeme vás na prihlásenie…",
       "unexpected": "Vyskytla sa neočakávaná chyba."
+    }
+  },
+  "signup": {
+    "title": "Vytvoriť účet",
+    "subtitle": "Spravujte svoju flotilu karavanov s CamperFlow",
+    "nameLabel": "Celé meno",
+    "namePlaceholder": "Vaše celé meno",
+    "companyNameLabel": "Názov spoločnosti",
+    "companyNamePlaceholder": "Názov vašej požičovne",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vas@email.com",
+    "passwordLabel": "Heslo",
+    "passwordPlaceholder": "Min. 8 znakov",
+    "submit": "Vytvoriť účet",
+    "submitting": "Vytvára sa…",
+    "success": "Účet bol vytvorený! Potvrďte e-mail a potom sa prihláste.",
+    "backToHome": "Späť na úvodnú stránku",
+    "alreadyHaveAccount": "Už máte účet?",
+    "signIn": "Prihlásiť sa",
+    "error": {
+      "unexpected": "Vyskytla sa neočakávaná chyba. Skúste to znova.",
+      "passwordTooShort": "Heslo musí mať aspoň 8 znakov.",
+      "emailTaken": "Tento e-mail je už zaregistrovaný. Prihláste sa namiesto toho."
     }
   },
   "pageContainer": {

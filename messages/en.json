@@ -18,6 +18,10 @@
       "login": "Staff login",
       "offlineError": "Internet connection required"
     },
+    "signup": {
+      "cta": "New to CamperFlow?",
+      "link": "Create a free account"
+    },
     "footer": {
       "legal": "By continuing you agree to the rental rules and privacy policy"
     }
@@ -75,6 +79,29 @@
       "settingUp": "Setting up…",
       "success": "Account set up! Redirecting you to sign in…",
       "unexpected": "An unexpected error occurred."
+    }
+  },
+  "signup": {
+    "title": "Create your account",
+    "subtitle": "Start managing your camper fleet with CamperFlow",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Your full name",
+    "companyNameLabel": "Company name",
+    "companyNamePlaceholder": "Your rental company name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Min. 8 characters",
+    "submit": "Create account",
+    "submitting": "Creating…",
+    "success": "Account created! Check your email to confirm, then sign in.",
+    "backToHome": "Back to home",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "error": {
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "emailTaken": "This email is already registered. Sign in instead."
     }
   },
   "pageContainer": {
