@@ -832,7 +832,8 @@ export default function ChecklistDetailClient({
     });
 
   // ── Upload a single evidence photo to Supabase Storage ────────────────────────
-  // Path shape: {company_id}/{booking_number}_{customer_surname}/{checklist_type}/{group}/{timestamp}_{random}.jpg
+  // Path shape: {company_id}/{booking_id}_{customer_surname}/{checklist_type}/{group}/{timestamp}_{random}.jpg
+  // booking_id (UUID) is used here so that any photos.rental_id trigger always receives the real bookings.id.
   const uploadEvidencePhoto = async (
     file: File,
     group: 'general' | 'damage' | 'id',
@@ -842,13 +843,12 @@ export default function ChecklistDetailClient({
     const bookingId = instance.booking_id;
     if (!companyId) throw new Error('uploadEvidencePhoto: company_id is missing from booking');
     if (!bookingId) throw new Error('uploadEvidencePhoto: booking_id is missing from checklist instance');
-    const bookingCode = instance.bookings?.booking_number ?? '';
     const customerSurname = instance.bookings?.customer_name
       ? (instance.bookings.customer_name.trim().split(/\s+/).pop() ?? '')
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
       : '';
     const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const path = `${companyId}/${bookingCode}_${customerSurname}/${instance.checklist_type}/${group}/${unique}.jpg`;
+    const path = `${companyId}/${bookingId}_${customerSurname}/${instance.checklist_type}/${group}/${unique}.jpg`;
     const { error } = await supabase.storage
       .from('checklist-evidence')
       .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
