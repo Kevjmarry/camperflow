@@ -159,6 +159,22 @@ self.addEventListener('fetch', (event) => {
         })
       )
     );
+    // Proactively warm the ops page cache for new companies that have never visited it.
+    // Fires at most once per locale (guarded by the existing-entry check).
+    const locale = url.pathname.split('/')[1];
+    const opsKey = url.origin + '/' + locale + '/staff/operations';
+    if (htmlKey !== opsKey) {
+      event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) =>
+          cache.match(opsKey, { ignoreVary: true }).then((existing) => {
+            if (existing) return;
+            return fetch(opsKey, { headers: { 'x-sw-bypass': '1' } })
+              .then((r) => { if (r.ok && !r.redirected) return cache.put(opsKey, r); })
+              .catch(() => {});
+          })
+        )
+      );
+    }
     // Don't call event.respondWith — browser handles the RSC/data fetch normally.
     return;
   }
@@ -178,6 +194,21 @@ self.addEventListener('fetch', (event) => {
             const navKey = url.origin + url.pathname;
             console.log('[SW][NAV] caching navigate response, key:', navKey, '| cache:', CACHE_NAME);
             caches.open(CACHE_NAME).then((cache) => cache.put(navKey, clone));
+            // Proactively warm the ops page cache when hard-navigating any other staff page.
+            if (STAFF_RE.test(url.pathname)) {
+              const locale = url.pathname.split('/')[1];
+              const opsKey = url.origin + '/' + locale + '/staff/operations';
+              if (navKey !== opsKey) {
+                caches.open(CACHE_NAME).then((cache) =>
+                  cache.match(opsKey, { ignoreVary: true }).then((existing) => {
+                    if (existing) return;
+                    return fetch(opsKey, { headers: { 'x-sw-bypass': '1' } })
+                      .then((r) => { if (r.ok && !r.redirected) return cache.put(opsKey, r); })
+                      .catch(() => {});
+                  })
+                );
+              }
+            }
           }
           return res;
         })
