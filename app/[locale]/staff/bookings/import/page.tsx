@@ -54,7 +54,7 @@ async function applyVehicleMatching(
     const { data: staffProfile } = await supabase
       .from("staff_profiles")
       .select("company_id")
-      .eq("user_id", user.id)
+      .eq("auth_user_id", user.id)
       .single();
     companyId = staffProfile?.company_id ?? undefined;
   }
@@ -149,7 +149,7 @@ async function applyExistingBookingMatching(
     const { data: staffProfile } = await supabase
       .from("staff_profiles")
       .select("company_id")
-      .eq("user_id", user.id)
+      .eq("auth_user_id", user.id)
       .single();
     companyId = staffProfile?.company_id ?? undefined;
   }
@@ -396,7 +396,7 @@ export default function BookingImportPage() {
         const { data: p } = await supabase
           .from("staff_profiles")
           .select("company_id")
-          .eq("user_id", user.id)
+          .eq("auth_user_id", user.id)
           .single();
         companyId = p?.company_id ?? undefined;
       }

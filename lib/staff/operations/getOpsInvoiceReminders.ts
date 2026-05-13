@@ -73,6 +73,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     `)
     .eq('company_id', companyId)
     .in('status', ['confirmed', 'on_rent'])
+    .gte('return_at', new Date().toISOString())
     .order('pickup_at', { ascending: true })
 
   if (error) throw error

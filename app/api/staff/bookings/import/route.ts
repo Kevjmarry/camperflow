@@ -402,6 +402,51 @@ interface ExistingBookingData {
   staff_metadata: Record<string, unknown> | null;
 }
 
+async function postImportNormalize(allIds: string[], nowIso: string): Promise<void> {
+  if (!allIds.length) return;
+  const svc = createServiceClient();
+  const nowMs = new Date(nowIso).getTime();
+
+  const { data: bookings } = await svc
+    .from('bookings')
+    .select('id, pickup_at, return_at, status')
+    .in('id', allIds);
+  if (!bookings?.length) return;
+
+  const pastIds: string[] = [];
+  const activeIds: string[] = [];
+  for (const b of bookings) {
+    if (b.status === 'cancelled') continue;
+    if (!b.return_at) continue;
+    const returnMs = new Date(b.return_at).getTime();
+    if (returnMs < nowMs) {
+      pastIds.push(b.id);
+    } else if (b.pickup_at && new Date(b.pickup_at).getTime() <= nowMs) {
+      activeIds.push(b.id);
+    }
+  }
+
+  if (pastIds.length) {
+    await svc.from('bookings').update({ status: 'completed' }).in('id', pastIds);
+  }
+
+  if (activeIds.length) {
+    await svc.from('bookings').update({ status: 'on_rent' }).in('id', activeIds);
+    const { data: handoverInstances } = await svc
+      .from('checklist_instances')
+      .select('id')
+      .in('booking_id', activeIds)
+      .eq('checklist_type', 'handover')
+      .neq('status', 'completed');
+    if (handoverInstances?.length) {
+      await svc
+        .from('checklist_instances')
+        .update({ status: 'completed' })
+        .in('id', handoverInstances.map((i) => i.id));
+    }
+  }
+}
+
 // ── route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
@@ -576,6 +621,7 @@ export async function POST(request: NextRequest) {
     let blocked = 0;
     const errors: { rowNumber: number; message: string }[] = [];
     const newBookingIds: string[] = [];
+    const updatedBookingIds: string[] = [];
 
     // ── process booking rows ──────────────────────────────────────────────────
     for (const row of bookingRows) {
@@ -684,6 +730,7 @@ export async function POST(request: NextRequest) {
             if (customerId?.isNew) await deleteCustomerIfUnreferenced(supabase, customerId.id);
           } else {
             updated++;
+            updatedBookingIds.push(existingId);
           }
         } else {
           // Standard update: preserve existing non-empty operational fields;
@@ -746,6 +793,7 @@ export async function POST(request: NextRequest) {
             if (customerId?.isNew) await deleteCustomerIfUnreferenced(supabase, customerId.id);
           } else {
             updated++;
+            updatedBookingIds.push(existingId);
           }
         }
       } else {
@@ -877,6 +925,11 @@ export async function POST(request: NextRequest) {
           console.error('[import] provisionBookingChecklists failed for booking', id, err)
         )
       )
+    );
+
+    // Normalize imported booking states: past → completed, active → on_rent with handover done.
+    await postImportNormalize([...newBookingIds, ...updatedBookingIds], now).catch((err) =>
+      console.error('[import] postImportNormalize failed', err)
     );
 
     return NextResponse.json({ created, updated, blocked, cancelled, errors });

@@ -1,26 +1,22 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
-import { FormEvent, useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { use, FormEvent, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { InstallBanner } from "@/components/InstallBanner";
 
 type Locale = "en" | "de" | "sk";
 
-export default function AppEntryPage() {
+export default function AppEntryPage({ params }: { params: Promise<{ locale: string }> }) {
   const router = useRouter();
-  const params = useParams<{ locale?: string }>();
+  const { locale: rawLocale } = use(params);
+  const locale: Locale = rawLocale === "de" ? "de" : rawLocale === "sk" ? "sk" : "en";
   const [bookingCode, setBookingCode] = useState("");
   const [staffOffline, setStaffOffline] = useState(false);
   const t = useTranslations("entry");
 
   const supabase = createClient();
-
-  const locale = useMemo<Locale>(() => {
-    const raw = params?.locale;
-    return raw === "de" ? "de" : raw === "sk" ? "sk" : "en";
-  }, [params]);
 
   useEffect(() => {
     const hash = window.location.hash;
