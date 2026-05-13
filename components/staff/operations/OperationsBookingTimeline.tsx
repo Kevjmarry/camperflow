@@ -90,12 +90,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   const todayPct = ((DAYS_BACK + 0.5) / TOTAL_DAYS) * 100
 
   // Day markers — one per day, centered in each column
-  const dayMarkers: { label: string; leftPx: number }[] = []
+  const dayMarkers: { label: string; leftPx: number; isToday: boolean }[] = []
   const weekendOffsets: number[] = []
   for (let d = 0; d < TOTAL_DAYS; d += 1) {
     const date = new Date(windowStart)
     date.setDate(date.getDate() + d)
-    dayMarkers.push({ label: String(date.getDate()), leftPx: (d + 0.5) * PX_PER_DAY })
+    dayMarkers.push({ label: String(date.getDate()), leftPx: (d + 0.5) * PX_PER_DAY, isToday: d === DAYS_BACK })
     if (date.getDay() === 0) weekendOffsets.push(d * PX_PER_DAY)
   }
 
@@ -182,15 +182,16 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
           <div className="ops-tl-day-row" style={{ display: 'flex', marginBottom: '2px' }}>
             <div className="ops-tl-label-col" style={{ width: LEFT_COL_PX, flexShrink: 0, position: 'sticky', left: 0, zIndex: 4, background: 'rgb(var(--surface))' }} />
             <div style={{ flex: 1, position: 'relative', height: '16px' }}>
-              {dayMarkers.map(({ label, leftPx }) => (
+              {dayMarkers.map(({ label, leftPx, isToday }) => (
                 <div
                   key={leftPx}
                   style={{
                     position: 'absolute',
                     left: `${leftPx}px`,
                     transform: 'translateX(-50%)',
-                    fontSize: '9px',
-                    color: 'rgb(var(--muted) / 0.65)',
+                    fontSize: isToday ? '10px' : '9px',
+                    fontWeight: isToday ? 700 : undefined,
+                    color: isToday ? 'rgb(var(--brand))' : 'rgb(var(--muted) / 0.65)',
                     userSelect: 'none',
                   }}
                 >
@@ -239,7 +240,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
             <div style={{ flex: 1, position: 'relative', zIndex: 0 }}>
 
               {/* Today column highlight — separate overlay so it never breaks row background layers */}
-              <div style={{ position: 'absolute', top: 0, bottom: 0, left: TODAY_L, width: PX_PER_DAY, background: 'rgb(var(--brand) / 0.10)', pointerEvents: 'none', zIndex: 0 }} />
+              <div style={{ position: 'absolute', top: 0, bottom: 0, left: TODAY_L, width: PX_PER_DAY, background: 'rgb(var(--brand) / 0.18)', pointerEvents: 'none', zIndex: 0 }} />
 
               {vehicles.map((v, i) => {
                 const vBookings = bookingsByVehicle.get(v.id) ?? []
