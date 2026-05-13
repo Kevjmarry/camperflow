@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 async function ensureStaffCompanyId() {
   try {
     const cookieStore = await cookies();
-    
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,31 +20,17 @@ async function ensureStaffCompanyId() {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user || user.is_anonymous) return;
-    if (user.user_metadata?.company_id) return;
+    if (user.app_metadata?.company_id) return;
 
     const { data: staffProfile } = await supabase
       .from("staff_profiles")
-      .select("id")
-      .eq("id", user.id)
+      .select("company_id")
+      .eq("auth_user_id", user.id)
       .single();
 
-    if (!staffProfile) return;
-
-    let companyId: string | null = null;
-
-    try {
-    } catch {
-      const { data: company } = await supabase
-        .from("companies")
-        .select("id")
-        .limit(1)
-        .single();
-      companyId = company?.id || null;
-    }
-
-    if (!companyId) return;
+    if (!staffProfile?.company_id) return;
 
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -57,15 +43,14 @@ async function ensureStaffCompanyId() {
       }
     );
 
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        ...user.user_metadata,
-        company_id: companyId,
-      },
+    const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      app_metadata: { company_id: staffProfile.company_id },
     });
 
-    console.warn(`Auto-assigned company_id ${companyId} to staff user ${user.id}`);
-  } catch (error) {
+    if (metaError) {
+      console.error('[layout] failed to set app_metadata.company_id user=%s error=%s', user.id, metaError.message);
+    }
+  } catch {
     // Silent fail to not break app load
   }
 }

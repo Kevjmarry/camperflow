@@ -170,6 +170,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { error: metaError } = await adminClient.auth.admin.updateUserById(invitedUserId, {
+      app_metadata: { company_id: targetProfile.company_id },
+    })
+    if (metaError) {
+      console.error('[invite] failed to set app_metadata.company_id user=%s error=%s', invitedUserId, metaError.message)
+    }
+
     return NextResponse.json({ success: true, mode: 'invite', user_id: invitedUserId })
   } catch (error) {
     console.error('Invite route error:', error)

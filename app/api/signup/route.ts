@@ -95,6 +95,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create staff profile' }, { status: 500 })
     }
 
+    const { error: metaError } = await adminClient.auth.admin.updateUserById(user.id, {
+      app_metadata: { company_id },
+    })
+    if (metaError) {
+      console.error('[signup] failed to set app_metadata.company_id user=%s error=%s', user.id, metaError.message)
+    }
+
     const { error: tplError } = await adminClient.rpc(
       'provision_default_checklist_templates',
       { p_company_id: company_id },
