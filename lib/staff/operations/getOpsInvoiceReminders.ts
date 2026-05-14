@@ -7,6 +7,7 @@ const IMPORT_SOURCE_TYPES = ['ical', 'bookingmood_csv', 'bookingmood_json'] as c
 
 const TZ = 'Europe/Bratislava'
 const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
+
 function isTodayOrTomorrow(isoString: string): boolean {
   const now = new Date()
   const todayStr    = dateFmt.format(now)
@@ -15,8 +16,16 @@ function isTodayOrTomorrow(isoString: string): boolean {
   return eventStr === todayStr || eventStr === tomorrowStr
 }
 
+function isYesterdayOrToday(isoString: string): boolean {
+  const now = new Date()
+  const todayStr     = dateFmt.format(now)
+  const yesterdayStr = dateFmt.format(new Date(now.getTime() - 86_400_000))
+  const eventStr     = dateFmt.format(new Date(isoString))
+  return eventStr === todayStr || eventStr === yesterdayStr
+}
+
 export interface OpsInvoiceReminder {
-  type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_imported'
+  type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_request' | 'review_imported'
   key?: string
   id: string
   bookingId: string
@@ -25,9 +34,10 @@ export interface OpsInvoiceReminder {
   vehicleName: string
   pickupAt: string
   daysUntilPickup: number
-  // return_prep only:
+  // return_prep / review_request only:
   returnAt?: string
   daysUntilReturn?: number
+  returnIsToday?: boolean
   // balance_invoice only:
   dueAt?: string
   daysUntilDue?: number
@@ -48,40 +58,60 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const { data: settings } = await supabase
     .from('company_settings')
-    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled')
+    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled')
     .eq('id', companyId)
     .maybeSingle()
 
-  const { data, error } = await supabase
-    .from('bookings')
-    .select(`
-      id,
-      booking_number,
-      customer_name,
-      pickup_at,
-      return_at,
-      status,
-      source_type,
-      payment_type,
-      balance_invoice_sent,
-      prearrival_whatsapp_sent,
-      return_whatsapp_sent,
-      balance_invoice_reminder_enabled,
-      prearrival_reminder_enabled,
-      return_prep_reminder_enabled,
-      vehicles ( name )
-    `)
-    .eq('company_id', companyId)
-    .in('status', ['confirmed', 'on_rent'])
-    .gte('return_at', new Date().toISOString())
-    .order('pickup_at', { ascending: true })
-
-  if (error) throw error
-
   const now = Date.now()
+
+  const [activeResult, completedResult] = await Promise.all([
+    supabase
+      .from('bookings')
+      .select(`
+        id,
+        booking_number,
+        customer_name,
+        pickup_at,
+        return_at,
+        status,
+        source_type,
+        payment_type,
+        balance_invoice_sent,
+        prearrival_whatsapp_sent,
+        return_whatsapp_sent,
+        balance_invoice_reminder_enabled,
+        prearrival_reminder_enabled,
+        return_prep_reminder_enabled,
+        vehicles ( name )
+      `)
+      .eq('company_id', companyId)
+      .in('status', ['confirmed', 'on_rent'])
+      .gte('return_at', new Date(now).toISOString())
+      .order('pickup_at', { ascending: true }),
+    supabase
+      .from('bookings')
+      .select(`
+        id,
+        booking_number,
+        customer_name,
+        pickup_at,
+        return_at,
+        review_request_reminder_enabled,
+        review_request_whatsapp_sent,
+        vehicles ( name )
+      `)
+      .eq('company_id', companyId)
+      .eq('status', 'completed')
+      .gte('return_at', new Date(now - 48 * 3600 * 1000).toISOString())
+      .lte('return_at', new Date(now + 24 * 3600 * 1000).toISOString())
+      .order('return_at', { ascending: false }),
+  ])
+
+  if (activeResult.error) throw activeResult.error
+
   const results: OpsInvoiceReminder[] = []
 
-  for (const b of data ?? []) {
+  for (const b of activeResult.data ?? []) {
     if (!b.pickup_at) continue
     const vehicle = b.vehicles
       ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
@@ -167,10 +197,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       b.return_at &&
       new Date(b.return_at).getTime() >= now
 
-    if (
-      isImportedCandidate &&
-      needsReview
-    ) {
+    if (isImportedCandidate && needsReview) {
       results.push({
         type: 'review_imported',
         key: 'ops.review_imported_booking',
@@ -181,6 +208,37 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at,
         daysUntilPickup,
+      })
+    }
+  }
+
+  // Review-request WhatsApp: completed bookings with return_at yesterday or today (Bratislava)
+  if (settings?.review_request_reminders_enabled ?? true) {
+    const todayStr = dateFmt.format(new Date(now))
+    for (const b of completedResult.data ?? []) {
+      if (!b.return_at || !isYesterdayOrToday(b.return_at)) continue
+      if (b.review_request_reminder_enabled !== true) continue
+      if (b.review_request_whatsapp_sent === true) continue
+      const vehicle = b.vehicles
+        ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
+        : null
+      const pickupMs = b.pickup_at ? new Date(b.pickup_at).getTime() : now
+      const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
+      const returnMs = new Date(b.return_at).getTime()
+      const daysUntilReturn = Math.round((returnMs - now) / 86400000)
+      const returnIsToday = dateFmt.format(new Date(b.return_at)) === todayStr
+      results.push({
+        type: 'review_request',
+        id: `${b.id}-review-request`,
+        bookingId: b.id,
+        bookingNumber: b.booking_number ?? '',
+        customerName: b.customer_name ?? '',
+        vehicleName: vehicle?.name ?? '',
+        pickupAt: b.pickup_at ?? '',
+        daysUntilPickup,
+        returnAt: b.return_at,
+        daysUntilReturn,
+        returnIsToday,
       })
     }
   }

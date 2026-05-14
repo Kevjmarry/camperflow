@@ -1221,14 +1221,19 @@
           "balance_invoice": "Restrechnung (50%) senden",
           "pre_arrival": "WhatsApp vor Ankunft senden",
           "return_prep": "WhatsApp zur Rückgabevorbereitung senden",
-          "review_imported": "Erinnerungen prüfen"
+          "review_imported": "Erinnerungen prüfen",
+          "review_request": "WhatsApp-Bewertungsanfrage senden"
         },
         "timing": {
+          "returnYesterday": "Rückgabe gestern",
+          "returnToday": "Rückgabe heute",
           "returnTomorrow": "Rückgabe morgen",
           "pickupTomorrow": "Abholung morgen",
           "pickupToday": "Abholung heute",
           "pickupInDays": "Abholung in {count} Tagen"
-        }
+        },
+        "copyWhatsApp": "WhatsApp-Nachricht kopieren",
+        "copied": "Kopiert!"
       },
       "vehicleStatus": {
         "ready": "Bereit",
@@ -2108,7 +2113,8 @@
       "address": "Unternehmensadresse",
       "companyEmail": "Unternehmens-E-Mail",
       "registrationId": "Firmenbuchnummer / Unternehmens-ID",
-      "vatId": "USt-ID"
+      "vatId": "USt-ID",
+      "mapLink": "Kartenlink"
     },
     "placeholders": {
       "companyName": "Ihr Unternehmensname",
@@ -2117,14 +2123,16 @@
       "address": "Straße, Stadt, Postleitzahl, Land",
       "companyEmail": "info@ihrunternehmen.com",
       "registrationId": "z.B. FN 123456a",
-      "vatId": "z.B. ATU12345678"
+      "vatId": "z.B. ATU12345678",
+      "mapLink": "https://maps.app.goo.gl/..."
     },
     "helpers": {
       "logoRequirements": "PNG, JPG oder SVG. Max. 2MB. Empfohlen: 200x80px",
       "primaryColorUsage": "Wird für Schaltflächen und Links verwendet",
       "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet",
       "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen.",
-      "addressUsage": "Wird auf Beweisberichten und PDF-Dokumenten gedruckt."
+      "addressUsage": "Wird auf Beweisberichten und PDF-Dokumenten gedruckt.",
+      "mapLinkUsage": "Wird in WhatsApp-Nachrichtenvorlagen als '{map_link}' verwendet."
     },
     "actions": {
       "uploadLogo": "Logo hochladen",
@@ -2179,11 +2187,24 @@
       },
       "preArrival": {
         "label": "Vorankunfts-WhatsApp-Erinnerungen aktivieren",
-        "helper": "Wird am Tag vor der Abholung gesendet."
+        "helper": "Wird am Tag vor der Abholung gesendet.",
+        "templateLabel": "Nachrichtenvorlage",
+        "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Hallo '{customer_name}', Ihre Abholung für '{vehicle_name}' ist morgen…"
       },
       "returnPrep": {
         "label": "Rückgabevorbereitung-WhatsApp-Erinnerungen aktivieren",
-        "helper": "Wird am Tag vor der Rückgabe gesendet."
+        "helper": "Wird am Tag vor der Rückgabe gesendet.",
+        "templateLabel": "Nachrichtenvorlage",
+        "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Hallo '{customer_name}', Ihre Rückgabe für '{vehicle_name}' ist morgen…"
+      },
+      "reviewRequest": {
+        "label": "Bewertungsanfrage-WhatsApp-Erinnerungen aktivieren",
+        "helper": "Wird am Rückgabetag oder am Tag danach gesendet.",
+        "templateLabel": "Nachrichtenvorlage",
+        "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
+        "templatePlaceholder": "Hallo '{customer_name}', wir hoffen, Sie haben Ihren '{vehicle_name}'-Urlaub genossen…"
       }
     },
     "extrasCatalog": {

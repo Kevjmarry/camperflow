@@ -21,14 +21,20 @@ export async function POST(
   const body = await request.json().catch(() => ({}))
   const type = body?.type
 
-  if (type !== 'balance_invoice' && type !== 'pre_arrival' && type !== 'return_prep') {
+  if (
+    type !== 'balance_invoice' &&
+    type !== 'pre_arrival' &&
+    type !== 'return_prep' &&
+    type !== 'review_request'
+  ) {
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
   }
 
   const field =
-    type === 'balance_invoice' ? 'balance_invoice_sent' :
-    type === 'return_prep'     ? 'return_whatsapp_sent' :
-                                 'prearrival_whatsapp_sent'
+    type === 'balance_invoice'  ? 'balance_invoice_sent' :
+    type === 'return_prep'      ? 'return_whatsapp_sent' :
+    type === 'review_request'   ? 'review_request_whatsapp_sent' :
+                                  'prearrival_whatsapp_sent'
 
   const { error: updateErr } = await supabase
     .from('bookings')

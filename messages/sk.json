@@ -1221,14 +1221,19 @@
           "balance_invoice": "Odoslať faktúru za zvyšných 50 %",
           "pre_arrival": "Odoslať WhatsApp pred príchodom",
           "return_prep": "Odoslať WhatsApp pred vrátením",
-          "review_imported": "Skontrolovať pripomienky"
+          "review_imported": "Skontrolovať pripomienky",
+          "review_request": "Odoslať WhatsApp žiadosť o hodnotenie"
         },
         "timing": {
+          "returnYesterday": "Vrátenie včera",
+          "returnToday": "Vrátenie dnes",
           "returnTomorrow": "Vrátenie zajtra",
           "pickupTomorrow": "Výber zajtra",
           "pickupToday": "Výber dnes",
           "pickupInDays": "Výber za {count}d"
-        }
+        },
+        "copyWhatsApp": "Kopírovať správu WhatsApp",
+        "copied": "Skopírované!"
       },
       "vehicleStatus": {
         "ready": "Pripravené",
@@ -2108,7 +2113,8 @@
       "address": "Adresa spoločnosti",
       "companyEmail": "E-mail spoločnosti",
       "registrationId": "IČO / Registračné číslo",
-      "vatId": "IČ DPH"
+      "vatId": "IČ DPH",
+      "mapLink": "Odkaz na mapu"
     },
     "placeholders": {
       "companyName": "Názov vašej spoločnosti",
@@ -2117,14 +2123,16 @@
       "address": "Ulica, Mesto, PSČ, Krajina",
       "companyEmail": "info@vasaspolocnost.sk",
       "registrationId": "napr. 12345678",
-      "vatId": "napr. SK2021234567"
+      "vatId": "napr. SK2021234567",
+      "mapLink": "https://maps.app.goo.gl/..."
     },
     "helpers": {
       "logoRequirements": "PNG, JPG alebo SVG. Max 2 MB. Odporúčané: 200×80 px",
       "primaryColorUsage": "Používa sa pre tlačidlá a odkazy",
       "secondaryColorUsage": "Používa sa pre akcenty a zvýraznenia",
       "emergencyPhoneUsage": "Tieto čísla sú zobrazené hosťom na stránke Núdzové situácie. Nechajte prázdne pre zobrazenie zástupného textu.",
-      "addressUsage": "Vytlačí sa na správach o dôkazoch a PDF dokumentoch."
+      "addressUsage": "Vytlačí sa na správach o dôkazoch a PDF dokumentoch.",
+      "mapLinkUsage": "Používa sa v šablónach WhatsApp správ ako '{map_link}'."
     },
     "actions": {
       "uploadLogo": "Nahrať logo",
@@ -2179,11 +2187,24 @@
       },
       "preArrival": {
         "label": "Zapnúť pripomienky WhatsApp pred príchodom",
-        "helper": "Odosiela sa deň pred prevzatím."
+        "helper": "Odosiela sa deň pred prevzatím.",
+        "templateLabel": "Šablóna správy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Ahoj '{customer_name}', prevzatie vozidla '{vehicle_name}' je zajtra…"
       },
       "returnPrep": {
         "label": "Zapnúť pripomienky WhatsApp na prípravu vrátenia",
-        "helper": "Odosiela sa deň pred vrátením."
+        "helper": "Odosiela sa deň pred vrátením.",
+        "templateLabel": "Šablóna správy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Ahoj '{customer_name}', vrátenie vozidla '{vehicle_name}' je zajtra…"
+      },
+      "reviewRequest": {
+        "label": "Povoliť WhatsApp pripomienky žiadosti o hodnotenie",
+        "helper": "Odoslaná v deň vrátenia alebo na druhý deň.",
+        "templateLabel": "Šablóna správy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
+        "templatePlaceholder": "Ahoj '{customer_name}', dúfame, že ste si prenájom vozidla '{vehicle_name}' užili…"
       }
     },
     "extrasCatalog": {

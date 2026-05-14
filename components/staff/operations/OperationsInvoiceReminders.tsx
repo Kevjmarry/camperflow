@@ -5,17 +5,29 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import type { OpsInvoiceReminder } from '@/lib/staff/operations/getOpsInvoiceReminders'
+import type { OpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
+import { replaceTemplatePlaceholders } from '@/lib/whatsapp/replaceTemplatePlaceholders'
 
 interface Props {
   reminders: OpsInvoiceReminder[]
+  whatsappTemplates: OpsWhatsAppTemplates
 }
 
-export default function OperationsInvoiceReminders({ reminders }: Props) {
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+export default function OperationsInvoiceReminders({ reminders, whatsappTemplates }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.reminders')
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState<OpsInvoiceReminder[]>(reminders)
   const [handling, setHandling] = useState<Set<string>>(new Set())
+  const [copiedIds, setCopiedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -37,6 +49,48 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
         return next
       })
     }
+  }
+
+  const copyMessage = async (id: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopiedIds((prev) => new Set(prev).add(id))
+      setTimeout(() => {
+        setCopiedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }, 2000)
+    } catch {
+      // clipboard unavailable — silently ignore
+    }
+  }
+
+  const FALLBACK_TEMPLATES = {
+    pre_arrival:    'Hi {customer_name}, just a reminder that your {vehicle_name} pickup is tomorrow. We look forward to seeing you!',
+    return_prep:    'Hi {customer_name}, just a reminder that your {vehicle_name} return is due tomorrow. Safe travels!',
+    review_request: 'Hi {customer_name}, thank you for renting the {vehicle_name}! We hope you enjoyed your trip. We\'d love if you could share your experience with a quick review.',
+  }
+
+  const buildMessage = (r: OpsInvoiceReminder): string | null => {
+    if (r.type !== 'pre_arrival' && r.type !== 'return_prep' && r.type !== 'review_request') return null
+    const template =
+      r.type === 'pre_arrival'
+        ? (whatsappTemplates.pre_arrival ?? FALLBACK_TEMPLATES.pre_arrival)
+        : r.type === 'review_request'
+          ? (whatsappTemplates.review_request ?? FALLBACK_TEMPLATES.review_request)
+          : (whatsappTemplates.return_prep ?? FALLBACK_TEMPLATES.return_prep)
+    return replaceTemplatePlaceholders(template, {
+      customer_name: r.customerName,
+      vehicle_name: r.vehicleName,
+      pickup_date: r.pickupAt ? formatDate(r.pickupAt, locale) : '',
+      return_date: r.returnAt ? formatDate(r.returnAt, locale) : '',
+      guest_link: `https://app.camperflow.io/${locale}/guest?code=${r.bookingNumber}`,
+      booking_code: r.bookingNumber,
+      company_phone: whatsappTemplates.company_phone,
+      map_link: whatsappTemplates.map_link,
+    })
   }
 
   return (
@@ -106,25 +160,19 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
             const isLoading = handling.has(r.id)
             const isCheckable = r.type !== 'review_imported'
             const bookingHref = `/${locale}/staff/bookings/${r.bookingId}${mounted ? '#reminders' : ''}`
-
-            const rowStyle: React.CSSProperties = {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-3)',
-              padding: 'var(--space-3) var(--space-4)',
-              borderTop: idx > 0 ? '1px solid rgb(var(--border))' : undefined,
-              opacity: isLoading ? 0.5 : 1,
-              transition: 'opacity 0.15s',
-            }
+            const generatedMessage = buildMessage(r)
+            const isCopied = copiedIds.has(r.id)
 
             const timingLabel =
               r.type === 'return_prep' ? t('timing.returnTomorrow')
               : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
+              : r.type === 'review_request'
+                ? (r.returnIsToday ? t('timing.returnToday') : t('timing.returnYesterday'))
               : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
               : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
               : t('timing.pickupInDays', { count: r.daysUntilPickup })
 
-            const inner = (
+            const mainRowContent = (
               <>
                 <input
                   type="checkbox"
@@ -156,6 +204,27 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>
                     {r.customerName} · {r.bookingNumber}
                   </span>
+                  {generatedMessage && (
+                    <button
+                      type="button"
+                      onClick={() => copyMessage(r.id, generatedMessage)}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        borderRadius: 'var(--radius)',
+                        border: '1px solid rgb(var(--border))',
+                        background: isCopied ? 'rgb(var(--success) / 0.12)' : 'none',
+                        color: isCopied ? 'rgb(var(--success))' : 'rgb(var(--muted))',
+                        cursor: 'pointer',
+                        transition: 'color 0.15s, background 0.15s',
+                        flexShrink: 0,
+                        lineHeight: '1.4',
+                      }}
+                    >
+                      {isCopied ? t('copied') : t('copyWhatsApp')}
+                    </button>
+                  )}
                   {/* Timing shown here only on mobile */}
                   <span className="ops-reminder-timing-mobile" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                     {timingLabel}
@@ -177,9 +246,19 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
               </>
             )
 
+            const rowStyle: React.CSSProperties = {
+              padding: 'var(--space-3) var(--space-4)',
+              borderTop: idx > 0 ? '1px solid rgb(var(--border))' : undefined,
+              opacity: isLoading ? 0.5 : 1,
+              transition: 'opacity 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-3)',
+            }
+
             return isCheckable ? (
               <div key={r.id} className="ops-reminder-row" style={rowStyle}>
-                {inner}
+                {mainRowContent}
               </div>
             ) : (
               <Link
@@ -188,7 +267,7 @@ export default function OperationsInvoiceReminders({ reminders }: Props) {
                 className="ops-reminder-row ops-reminder-row-link"
                 style={rowStyle}
               >
-                {inner}
+                {mainRowContent}
               </Link>
             )
           })}

@@ -37,10 +37,15 @@ export default function CompanySettingsPage() {
     email: "",
     registration_id: "",
     vat_id: "",
+    map_link: "",
   });
   const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
   const [preArrivalRemindersEnabled, setPreArrivalRemindersEnabled] = useState(true);
   const [returnPrepRemindersEnabled, setReturnPrepRemindersEnabled] = useState(true);
+  const [reviewRequestRemindersEnabled, setReviewRequestRemindersEnabled] = useState(true);
+  const [preArrivalTemplate, setPreArrivalTemplate] = useState('');
+  const [returnPrepTemplate, setReturnPrepTemplate] = useState('');
+  const [reviewRequestTemplate, setReviewRequestTemplate] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +135,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -154,6 +159,7 @@ export default function CompanySettingsPage() {
                                     ? String((data as any).custom_payment_reminder_days)
                                     : "1",
           company_timezone: (data as any).company_timezone ?? "Europe/Bratislava",
+          map_link: (data as any).map_link ?? "",
         } : {}),
         ...(companyRow ? {
           address:         (companyRow as any).address         ?? "",
@@ -166,7 +172,11 @@ export default function CompanySettingsPage() {
         setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
         setPreArrivalRemindersEnabled((data as any).pre_arrival_reminders_enabled ?? true);
         setReturnPrepRemindersEnabled((data as any).return_prep_reminders_enabled ?? true);
+        setReviewRequestRemindersEnabled((data as any).review_request_reminders_enabled ?? true);
         setExtrasCatalog((data as any).extras_catalog ?? []);
+        setPreArrivalTemplate((data as any).pre_arrival_whatsapp_template ?? '');
+        setReturnPrepTemplate((data as any).return_prep_whatsapp_template ?? '');
+        setReviewRequestTemplate((data as any).review_request_whatsapp_template ?? '');
       }
     };
     load();
@@ -255,10 +265,15 @@ export default function CompanySettingsPage() {
           final_payment_urgent_days:       parsedUrgentDays,
           custom_payment_reminder_days:    parsedCustomReminderDays,
           final_payment_reminders_enabled: finalPaymentRemindersEnabled,
-          pre_arrival_reminders_enabled:   preArrivalRemindersEnabled,
-          return_prep_reminders_enabled:   returnPrepRemindersEnabled,
-          extras_catalog:                  extrasCatalog.length > 0 ? extrasCatalog : null,
-          company_timezone:                formData.company_timezone,
+          pre_arrival_reminders_enabled:    preArrivalRemindersEnabled,
+          return_prep_reminders_enabled:    returnPrepRemindersEnabled,
+          review_request_reminders_enabled: reviewRequestRemindersEnabled,
+          extras_catalog:                   extrasCatalog.length > 0 ? extrasCatalog : null,
+          company_timezone:                 formData.company_timezone,
+          pre_arrival_whatsapp_template:    preArrivalTemplate.trim() || null,
+          return_prep_whatsapp_template:    returnPrepTemplate.trim() || null,
+          review_request_whatsapp_template: reviewRequestTemplate.trim() || null,
+          map_link:                         formData.map_link.trim() || null,
         })
         .eq("id", company?.id)
         .select("id");
@@ -423,6 +438,16 @@ export default function CompanySettingsPage() {
                       disabled={!isAdmin} style={{ width: "100%" }}
                     />
                   </div>
+                </div>
+                <div>
+                  <label htmlFor="map_link" className="label">{t("labels.mapLink")}</label>
+                  <input
+                    id="map_link" name="map_link" type="url" className="input"
+                    placeholder={t("placeholders.mapLink")}
+                    value={formData.map_link} onChange={handleChange}
+                    disabled={!isAdmin} style={{ width: "100%", maxWidth: "500px" }}
+                  />
+                  <p className="helper-text">{t("helpers.mapLinkUsage")}</p>
                 </div>
               </div>
             </div>
@@ -645,39 +670,117 @@ export default function CompanySettingsPage() {
                 </div>
 
                 {/* Pre-arrival WhatsApp reminder */}
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
-                    <input
-                      type="checkbox"
-                      checked={preArrivalRemindersEnabled}
-                      onChange={(e) => setPreArrivalRemindersEnabled(e.target.checked)}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                      <input
+                        type="checkbox"
+                        checked={preArrivalRemindersEnabled}
+                        onChange={(e) => setPreArrivalRemindersEnabled(e.target.checked)}
+                        disabled={!isAdmin}
+                      />
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                        {t("reminders.preArrival.label")}
+                      </span>
+                    </label>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      {t("reminders.preArrival.helper")}
+                    </p>
+                  </div>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <label htmlFor="pre_arrival_template" className="label">
+                      {t("reminders.preArrival.templateLabel")}
+                    </label>
+                    <textarea
+                      id="pre_arrival_template"
+                      className="input"
+                      rows={4}
+                      placeholder={t("reminders.preArrival.templatePlaceholder")}
+                      value={preArrivalTemplate}
+                      onChange={(e) => setPreArrivalTemplate(e.target.value)}
                       disabled={!isAdmin}
+                      style={{ width: "100%", maxWidth: "560px", resize: "vertical", fontFamily: "inherit" }}
                     />
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      {t("reminders.preArrival.label")}
-                    </span>
-                  </label>
-                  <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                    {t("reminders.preArrival.helper")}
-                  </p>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                      {t("reminders.preArrival.templateHelper")}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Return-prep WhatsApp reminder */}
-                <div>
-                  <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
-                    <input
-                      type="checkbox"
-                      checked={returnPrepRemindersEnabled}
-                      onChange={(e) => setReturnPrepRemindersEnabled(e.target.checked)}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                      <input
+                        type="checkbox"
+                        checked={returnPrepRemindersEnabled}
+                        onChange={(e) => setReturnPrepRemindersEnabled(e.target.checked)}
+                        disabled={!isAdmin}
+                      />
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                        {t("reminders.returnPrep.label")}
+                      </span>
+                    </label>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      {t("reminders.returnPrep.helper")}
+                    </p>
+                  </div>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <label htmlFor="return_prep_template" className="label">
+                      {t("reminders.returnPrep.templateLabel")}
+                    </label>
+                    <textarea
+                      id="return_prep_template"
+                      className="input"
+                      rows={4}
+                      placeholder={t("reminders.returnPrep.templatePlaceholder")}
+                      value={returnPrepTemplate}
+                      onChange={(e) => setReturnPrepTemplate(e.target.value)}
                       disabled={!isAdmin}
+                      style={{ width: "100%", maxWidth: "560px", resize: "vertical", fontFamily: "inherit" }}
                     />
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                      {t("reminders.returnPrep.label")}
-                    </span>
-                  </label>
-                  <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                    {t("reminders.returnPrep.helper")}
-                  </p>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                      {t("reminders.returnPrep.templateHelper")}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Review request WhatsApp reminder */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                      <input
+                        type="checkbox"
+                        checked={reviewRequestRemindersEnabled}
+                        onChange={(e) => setReviewRequestRemindersEnabled(e.target.checked)}
+                        disabled={!isAdmin}
+                      />
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                        {t("reminders.reviewRequest.label")}
+                      </span>
+                    </label>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      {t("reminders.reviewRequest.helper")}
+                    </p>
+                  </div>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <label htmlFor="review_request_template" className="label">
+                      {t("reminders.reviewRequest.templateLabel")}
+                    </label>
+                    <textarea
+                      id="review_request_template"
+                      className="input"
+                      rows={4}
+                      placeholder={t("reminders.reviewRequest.templatePlaceholder")}
+                      value={reviewRequestTemplate}
+                      onChange={(e) => setReviewRequestTemplate(e.target.value)}
+                      disabled={!isAdmin}
+                      style={{ width: "100%", maxWidth: "560px", resize: "vertical", fontFamily: "inherit" }}
+                    />
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                      {t("reminders.reviewRequest.templateHelper")}
+                    </p>
+                  </div>
                 </div>
 
               </div>

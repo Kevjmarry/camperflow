@@ -1221,14 +1221,19 @@
           "balance_invoice": "Send remaining 50% invoice",
           "pre_arrival": "Send pre-arrival WhatsApp",
           "return_prep": "Send return-prep WhatsApp",
-          "review_imported": "Review reminders"
+          "review_imported": "Review reminders",
+          "review_request": "Send review request WhatsApp"
         },
         "timing": {
+          "returnYesterday": "Return yesterday",
+          "returnToday": "Return today",
           "returnTomorrow": "Return tomorrow",
           "pickupTomorrow": "Pickup tomorrow",
           "pickupToday": "Pickup today",
           "pickupInDays": "Pickup in {count}d"
-        }
+        },
+        "copyWhatsApp": "Copy WhatsApp message",
+        "copied": "Copied!"
       },
       "vehicleStatus": {
         "ready": "Ready",
@@ -2108,7 +2113,8 @@
       "address": "Company address",
       "companyEmail": "Company email",
       "registrationId": "Company registration / ID",
-      "vatId": "VAT ID"
+      "vatId": "VAT ID",
+      "mapLink": "Map link"
     },
     "placeholders": {
       "companyName": "Your company name",
@@ -2117,14 +2123,16 @@
       "address": "Street, City, Postcode, Country",
       "companyEmail": "info@yourcompany.com",
       "registrationId": "e.g. FN 123456a",
-      "vatId": "e.g. ATU12345678"
+      "vatId": "e.g. ATU12345678",
+      "mapLink": "https://maps.app.goo.gl/..."
     },
     "helpers": {
       "logoRequirements": "PNG, JPG, or SVG. Max 2MB. Recommended: 200x80px",
       "primaryColorUsage": "Used for buttons and links",
       "secondaryColorUsage": "Used for accents and highlights",
       "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder.",
-      "addressUsage": "Printed on evidence reports and PDF documents."
+      "addressUsage": "Printed on evidence reports and PDF documents.",
+      "mapLinkUsage": "Used in WhatsApp message templates as '{map_link}'."
     },
     "actions": {
       "uploadLogo": "Upload logo",
@@ -2179,11 +2187,24 @@
       },
       "preArrival": {
         "label": "Enable pre-arrival WhatsApp reminders",
-        "helper": "Sent the day before pickup."
+        "helper": "Sent the day before pickup.",
+        "templateLabel": "Message template",
+        "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Hi '{customer_name}', your '{vehicle_name}' pickup is tomorrow…"
       },
       "returnPrep": {
         "label": "Enable return-prep WhatsApp reminders",
-        "helper": "Sent the day before return."
+        "helper": "Sent the day before return.",
+        "templateLabel": "Message template",
+        "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Hi '{customer_name}', your '{vehicle_name}' return is tomorrow…"
+      },
+      "reviewRequest": {
+        "label": "Enable review request WhatsApp reminders",
+        "helper": "Sent on the day of or day after return.",
+        "templateLabel": "Message template",
+        "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
+        "templatePlaceholder": "Hi '{customer_name}', we hope you enjoyed your '{vehicle_name}' rental…"
       }
     },
     "extrasCatalog": {

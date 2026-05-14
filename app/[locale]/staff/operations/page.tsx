@@ -17,6 +17,8 @@ import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehic
 import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
 import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimeline'
 import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
+import { getOpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
+import type { OpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,7 +82,10 @@ export default async function OperationsPage({
     { name: 'getOpsOnRentNow',         fn: getOpsOnRentNow },
     { name: 'getOpsBookingTimeline',   fn: getOpsBookingTimeline },
   ] as const
-  const settled = await Promise.allSettled(loaders.map((l) => l.fn()))
+  const [settled, whatsappTemplates] = await Promise.all([
+    Promise.allSettled(loaders.map((l) => l.fn())),
+    getOpsWhatsAppTemplates().catch((): OpsWhatsAppTemplates => ({ pre_arrival: null, return_prep: null, review_request: null, company_phone: '', map_link: '' })),
+  ])
   settled.forEach((result, i) => {
     if (result.status === 'rejected') {
       console.error(`[ops-debug] FAILED: ${loaders[i].name}`, result.reason)
@@ -370,7 +375,7 @@ export default async function OperationsPage({
                   </div>
                 )}
 
-                <OperationsInvoiceReminders reminders={invoiceReminders} />
+                <OperationsInvoiceReminders reminders={invoiceReminders} whatsappTemplates={whatsappTemplates} />
                 <OperationsUpcomingPickups pickups={upcomingPickups} />
                 <OperationsUpcomingReturns returns={upcomingReturns} />
                 <OperationsCompletedBookings bookings={completed} />
