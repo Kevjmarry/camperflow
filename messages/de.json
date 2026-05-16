@@ -1532,6 +1532,7 @@
         "preArrivalReminder": "Erinnere mich, WhatsApp vor Ankunft zu senden",
         "returnPrepMessage": "WhatsApp-Nachricht zur Rückgabevorbereitung",
         "returnPrepReminder": "Erinnere mich, WhatsApp zur Rückgabe zu senden",
+        "reviewRequestReminder": "Erinnere mich, WhatsApp für Bewertungsanfrage zu senden",
         "statusLabel": "Status:",
         "notSent": "Nicht erledigt",
         "sent": "Erledigt",

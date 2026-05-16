@@ -78,9 +78,11 @@ interface Booking {
   balance_invoice_sent: boolean | null;
   prearrival_whatsapp_sent: boolean | null;
   return_whatsapp_sent: boolean | null;
+  review_request_whatsapp_sent: boolean | null;
   balance_invoice_reminder_enabled: boolean | null;
   prearrival_reminder_enabled: boolean | null;
   return_prep_reminder_enabled: boolean | null;
+  review_request_reminder_enabled: boolean | null;
 }
 
 interface LinkedCustomer {
@@ -350,8 +352,8 @@ export default function BookingDetailPage() {
   const [revertError, setRevertError] = useState("");
   const [guestLocale, setGuestLocale] = useState<string>('sk');
   const [reminderSaving, setReminderSaving] = useState<string | null>(null);
-  const [opsSent, setOpsSent] = useState<{ balance_invoice_sent: boolean | null; prearrival_whatsapp_sent: boolean | null; return_whatsapp_sent: boolean | null }>({ balance_invoice_sent: null, prearrival_whatsapp_sent: null, return_whatsapp_sent: null });
-  const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null });
+  const [opsSent, setOpsSent] = useState<{ balance_invoice_sent: boolean | null; prearrival_whatsapp_sent: boolean | null; return_whatsapp_sent: boolean | null; review_request_whatsapp_sent: boolean | null }>({ balance_invoice_sent: null, prearrival_whatsapp_sent: null, return_whatsapp_sent: null, review_request_whatsapp_sent: null });
+  const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null; review_request_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null, review_request_reminder_enabled: null });
   const [finalPaymentDueDays, setFinalPaymentDueDays] = useState<number | null>(null);
   const [customPaymentReminderDays, setCustomPaymentReminderDays] = useState<number>(1);
 
@@ -488,14 +490,16 @@ export default function BookingDetailPage() {
           invoice_reminder_dismissed_at: typeof sm.invoice_reminder_dismissed_at === 'string' ? sm.invoice_reminder_dismissed_at : null,
         });
         setOpsSent({
-          balance_invoice_sent:     data.balance_invoice_sent ?? null,
-          prearrival_whatsapp_sent: data.prearrival_whatsapp_sent ?? null,
-          return_whatsapp_sent:     data.return_whatsapp_sent ?? null,
+          balance_invoice_sent:          data.balance_invoice_sent ?? null,
+          prearrival_whatsapp_sent:      data.prearrival_whatsapp_sent ?? null,
+          return_whatsapp_sent:          data.return_whatsapp_sent ?? null,
+          review_request_whatsapp_sent:  data.review_request_whatsapp_sent ?? null,
         });
         setOpsEnabled({
-          balance_invoice_reminder_enabled: data.balance_invoice_reminder_enabled === true ? true : data.balance_invoice_reminder_enabled === false ? false : null,
-          prearrival_reminder_enabled:      data.prearrival_reminder_enabled === true ? true : data.prearrival_reminder_enabled === false ? false : null,
-          return_prep_reminder_enabled:     data.return_prep_reminder_enabled === true ? true : data.return_prep_reminder_enabled === false ? false : null,
+          balance_invoice_reminder_enabled:  data.balance_invoice_reminder_enabled === true ? true : data.balance_invoice_reminder_enabled === false ? false : null,
+          prearrival_reminder_enabled:       data.prearrival_reminder_enabled === true ? true : data.prearrival_reminder_enabled === false ? false : null,
+          return_prep_reminder_enabled:      data.return_prep_reminder_enabled === true ? true : data.return_prep_reminder_enabled === false ? false : null,
+          review_request_reminder_enabled:   data.review_request_reminder_enabled === false ? false : true,
         });
 
         // Capture every key the booking form doesn't manage so we can round-trip
@@ -865,6 +869,7 @@ export default function BookingDetailPage() {
           balance_invoice_reminder_enabled: staffMeta.payment_plan === null ? false : opsEnabled.balance_invoice_reminder_enabled,
           prearrival_whatsapp_sent: opsSent.prearrival_whatsapp_sent,
           return_whatsapp_sent: opsSent.return_whatsapp_sent,
+          review_request_whatsapp_sent: opsSent.review_request_whatsapp_sent,
         })
         .eq('id', id)
         .select('id')
@@ -956,8 +961,8 @@ export default function BookingDetailPage() {
   };
 
   const handleReminderToggle = async (
-    field: 'balance_invoice_sent' | 'prearrival_whatsapp_sent' | 'return_whatsapp_sent',
-    type: 'balance_invoice' | 'pre_arrival' | 'return_prep',
+    field: 'balance_invoice_sent' | 'prearrival_whatsapp_sent' | 'return_whatsapp_sent' | 'review_request_whatsapp_sent',
+    type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_request',
     checked: boolean,
   ) => {
     if (!checked) {
@@ -983,7 +988,7 @@ export default function BookingDetailPage() {
   };
 
   const handleReminderEnabledToggle = async (
-    field: 'balance_invoice_reminder_enabled' | 'prearrival_reminder_enabled' | 'return_prep_reminder_enabled',
+    field: 'balance_invoice_reminder_enabled' | 'prearrival_reminder_enabled' | 'return_prep_reminder_enabled' | 'review_request_reminder_enabled',
     enabled: boolean,
   ) => {
     setReminderSaving(field);
@@ -1677,8 +1682,9 @@ export default function BookingDetailPage() {
                         ...((staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') ? [opsSent.balance_invoice_sent] : []),
                         opsSent.prearrival_whatsapp_sent,
                         opsSent.return_whatsapp_sent,
+                        opsSent.review_request_whatsapp_sent,
                       ].filter(Boolean).length,
-                      total: (staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') ? 3 : 2,
+                      total: (staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') ? 4 : 3,
                     })}
                   </p>
                   <p style={{ margin: '0 0 var(--space-2)', fontSize: '12px', color: 'rgb(var(--muted))' }}>
@@ -1819,6 +1825,48 @@ export default function BookingDetailPage() {
                         style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.return_whatsapp_sent === null ? 0.55 : 1 }}
                         disabled={reminderSaving === 'return_whatsapp_sent'}
                         onClick={() => handleReminderToggle('return_whatsapp_sent', 'return_prep', true)}
+                      >
+                        {t("operations.task.markSent")}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Task: Review request WhatsApp message */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <button
+                        type="button"
+                        aria-label={opsEnabled.review_request_reminder_enabled ? "Disable reminder" : "Enable reminder"}
+                        disabled={reminderSaving === 'review_request_reminder_enabled'}
+                        onClick={() => handleReminderEnabledToggle('review_request_reminder_enabled', !opsEnabled.review_request_reminder_enabled)}
+                        style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.review_request_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.review_request_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
+                      >
+                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', display: 'block', transform: opsEnabled.review_request_reminder_enabled === true ? 'translateX(16px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+                      </button>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))' }}>{t("operations.task.reviewRequestReminder")}</div>
+                        {opsEnabled.review_request_reminder_enabled === true && (
+                          <div style={{ fontSize: '12px', color: opsSent.review_request_whatsapp_sent === true ? 'rgb(var(--success))' : opsSent.review_request_whatsapp_sent === null ? 'rgb(var(--border))' : 'rgb(var(--muted))', marginTop: '2px' }}>
+                            {opsSent.review_request_whatsapp_sent === true ? t("operations.task.sent") : t("operations.task.notSent")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {opsEnabled.review_request_reminder_enabled === true && (opsSent.review_request_whatsapp_sent === true ? (
+                      <button
+                        type="button"
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', padding: '5px 12px', background: 'rgb(var(--success) / 0.12)', border: '1px solid rgb(var(--success) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--success))', cursor: 'pointer', fontWeight: 500 }}
+                        disabled={reminderSaving === 'review_request_whatsapp_sent'}
+                        onClick={() => handleReminderToggle('review_request_whatsapp_sent', 'review_request', false)}
+                      >
+                        ✓ {t("operations.task.sent")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ fontSize: '13px', whiteSpace: 'nowrap', opacity: opsSent.review_request_whatsapp_sent === null ? 0.55 : 1 }}
+                        disabled={reminderSaving === 'review_request_whatsapp_sent'}
+                        onClick={() => handleReminderToggle('review_request_whatsapp_sent', 'review_request', true)}
                       >
                         {t("operations.task.markSent")}
                       </button>

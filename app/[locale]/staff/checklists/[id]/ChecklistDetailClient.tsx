@@ -75,7 +75,7 @@ export default function ChecklistDetailClient({
       const rvd = (instance.bookings as any)?.staff_metadata?.return_vehicle_data;
       return { km: rvd?.km ?? '', fuel: rvd?.fuel ?? '', adblue: rvd?.adblue ?? '' };
     }
-    if (instance.checklist_type === 'handover') {
+    if (instance.checklist_type === 'handover' || instance.checklist_type === 'pickup') {
       const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
       return { km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' };
     }
@@ -206,12 +206,6 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type !== 'return' && instance.checklist_type !== 'handover' && instance.checklist_type !== 'pickup') return;
     staffMetaRef.current = (instance.bookings as any)?.staff_metadata ?? {};
 
-    if (instance.checklist_type === 'pickup') {
-      const handedOverIds: string[] = (instance.bookings as any)?.staff_metadata?.handed_over_extras ?? [];
-      setPickupExtrasChecked(Object.fromEntries(handedOverIds.map((id: string) => [id, true])));
-      return;
-    }
-
     // Accept both legacy plain-string paths and new { path, rotation } objects.
     type EvidenceEntry = string | { path: string; rotation?: number };
     const pathToStored = (entry: EvidenceEntry): EvidencePhoto => {
@@ -220,6 +214,20 @@ export default function ChecklistDetailClient({
       const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(p);
       return { kind: 'stored', path: p, url: data.publicUrl, rotation };
     };
+
+    if (instance.checklist_type === 'pickup') {
+      const handedOverIds: string[] = (instance.bookings as any)?.staff_metadata?.handed_over_extras ?? [];
+      setPickupExtrasChecked(Object.fromEntries(handedOverIds.map((id: string) => [id, true])));
+      const hvd = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data;
+      setVehicleData({ km: hvd?.km ?? '', fuel: hvd?.fuel ?? '', adblue: hvd?.adblue ?? '' });
+      const hep = (instance.bookings as any)?.staff_metadata?.handover_evidence_photos as { general?: EvidenceEntry[]; damage?: EvidenceEntry[]; id?: EvidenceEntry[] } | undefined;
+      setEvidencePhotos({
+        general: (hep?.general ?? []).map(pathToStored),
+        damage: (hep?.damage ?? []).map(pathToStored),
+        id: (hep?.id ?? []).map(pathToStored),
+      });
+      return;
+    }
 
     if (instance.checklist_type === 'return') {
       const rvd = (instance.bookings as any)?.staff_metadata?.return_vehicle_data;
@@ -768,7 +776,7 @@ export default function ChecklistDetailClient({
 
   // ── Handover: save vehicle data into bookings.staff_metadata.handover_vehicle_data ──
   const saveHandoverVehicleField = async (field: 'km' | 'fuel' | 'adblue', value: string) => {
-    if (instance.checklist_type !== 'handover') return;
+    if (instance.checklist_type !== 'handover' && instance.checklist_type !== 'pickup') return;
     if (!instance.booking_id) return;
     const currentHvd = (staffMetaRef.current as any)?.handover_vehicle_data ?? {};
     const newHvd = { ...currentHvd, [field]: value || null };
@@ -1534,8 +1542,8 @@ export default function ChecklistDetailClient({
             />
           </PhaseCard>
 
-          {/* Handover complete button — handover type only */}
-          {instance.checklist_type === 'handover' &&
+          {/* Handover complete button — handover and pickup types */}
+          {(instance.checklist_type === 'handover' || instance.checklist_type === 'pickup') &&
             !isReadOnly && (
               <HandoverFooter
                 completing={handoverCompleting || handoverValidating}
