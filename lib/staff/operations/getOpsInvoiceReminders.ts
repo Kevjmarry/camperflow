@@ -8,22 +8,6 @@ const IMPORT_SOURCE_TYPES = ['ical', 'bookingmood_csv', 'bookingmood_json'] as c
 const TZ = 'Europe/Bratislava'
 const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
 
-function isTodayOrTomorrow(isoString: string): boolean {
-  const now = new Date()
-  const todayStr    = dateFmt.format(now)
-  const tomorrowStr = dateFmt.format(new Date(now.getTime() + 86_400_000))
-  const eventStr    = dateFmt.format(new Date(isoString))
-  return eventStr === todayStr || eventStr === tomorrowStr
-}
-
-function isYesterdayOrToday(isoString: string): boolean {
-  const now = new Date()
-  const todayStr     = dateFmt.format(now)
-  const yesterdayStr = dateFmt.format(new Date(now.getTime() - 86_400_000))
-  const eventStr     = dateFmt.format(new Date(isoString))
-  return eventStr === todayStr || eventStr === yesterdayStr
-}
-
 export interface OpsInvoiceReminder {
   type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_request' | 'review_imported'
   key?: string
@@ -102,8 +86,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       `)
       .eq('company_id', companyId)
       .eq('status', 'completed')
-      .gte('return_at', new Date(now - 48 * 3600 * 1000).toISOString())
-      .lte('return_at', new Date(now + 24 * 3600 * 1000).toISOString())
+      .not('review_request_whatsapp_sent', 'is', true)
       .order('return_at', { ascending: false }),
   ])
 
@@ -119,15 +102,13 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     const pickupMs = new Date(b.pickup_at).getTime()
     const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
 
-    // Final payment check: split payment, not yet sent, pickup within 10 days
+    // Final payment check: split or custom payment, not yet sent
     if (
       b.status === 'confirmed' &&
       settings?.final_payment_reminders_enabled &&
-      b.balance_invoice_reminder_enabled === true &&
-      b.payment_type === 'split' &&
-      b.balance_invoice_sent !== true &&
-      daysUntilPickup >= 0 &&
-      daysUntilPickup <= 10
+      b.balance_invoice_reminder_enabled !== false &&
+      (b.payment_type === 'split' || b.payment_type === 'custom') &&
+      b.balance_invoice_sent !== true
     ) {
       results.push({
         type: 'balance_invoice',
@@ -141,13 +122,12 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       })
     }
 
-    // Pre-arrival WhatsApp: confirmed, not yet sent, pickup today or tomorrow (Bratislava)
+    // Pre-arrival WhatsApp: confirmed, not yet sent
     if (
       b.status === 'confirmed' &&
       (settings?.pre_arrival_reminders_enabled ?? true) &&
-      b.prearrival_reminder_enabled === true &&
-      b.prearrival_whatsapp_sent !== true &&
-      isTodayOrTomorrow(b.pickup_at)
+      b.prearrival_reminder_enabled !== false &&
+      b.prearrival_whatsapp_sent !== true
     ) {
       results.push({
         type: 'pre_arrival',
@@ -161,24 +141,27 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       })
     }
 
-    // Return-prep WhatsApp: confirmed/on_rent, not yet sent, return today or tomorrow (Bratislava)
-    if ((settings?.return_prep_reminders_enabled ?? true) && b.return_prep_reminder_enabled === true && b.return_at && isTodayOrTomorrow(b.return_at)) {
+    // Return-prep WhatsApp: confirmed/on_rent, not yet sent
+    if (
+      (settings?.return_prep_reminders_enabled ?? true) &&
+      b.return_prep_reminder_enabled !== false &&
+      b.return_at &&
+      b.return_whatsapp_sent !== true
+    ) {
       const returnMs = new Date(b.return_at).getTime()
       const daysUntilReturn = Math.round((returnMs - now) / 86400000)
-      if (b.return_whatsapp_sent !== true) {
-        results.push({
-          type: 'return_prep',
-          id: `${b.id}-return-prep`,
-          bookingId: b.id,
-          bookingNumber: b.booking_number ?? '',
-          customerName: b.customer_name ?? '',
-          vehicleName: vehicle?.name ?? '',
-          pickupAt: b.pickup_at,
-          daysUntilPickup,
-          returnAt: b.return_at,
-          daysUntilReturn,
-        })
-      }
+      results.push({
+        type: 'return_prep',
+        id: `${b.id}-return-prep`,
+        bookingId: b.id,
+        bookingNumber: b.booking_number ?? '',
+        customerName: b.customer_name ?? '',
+        vehicleName: vehicle?.name ?? '',
+        pickupAt: b.pickup_at,
+        daysUntilPickup,
+        returnAt: b.return_at,
+        daysUntilReturn,
+      })
     }
 
     // Review imported: booking was imported from an external source,
@@ -212,12 +195,12 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     }
   }
 
-  // Review-request WhatsApp: completed bookings with return_at yesterday or today (Bratislava)
+  // Review-request WhatsApp: completed bookings, not yet sent
   if (settings?.review_request_reminders_enabled ?? true) {
     const todayStr = dateFmt.format(new Date(now))
     for (const b of completedResult.data ?? []) {
-      if (!b.return_at || !isYesterdayOrToday(b.return_at)) continue
-      if (b.review_request_reminder_enabled !== true) continue
+      if (!b.return_at) continue
+      if (b.review_request_reminder_enabled === false) continue
       if (b.review_request_whatsapp_sent === true) continue
       const vehicle = b.vehicles
         ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
