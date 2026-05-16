@@ -3,8 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
 
-const IMPORT_SOURCE_TYPES = ['ical', 'bookingmood_csv', 'bookingmood_json'] as const
-
 const TZ = 'Europe/Bratislava'
 const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
 
@@ -42,7 +40,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const { data: settings } = await supabase
     .from('company_settings')
-    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled')
+    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, final_payment_due_days')
     .eq('id', companyId)
     .maybeSingle()
 
@@ -58,7 +56,6 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         pickup_at,
         return_at,
         status,
-        source_type,
         payment_type,
         balance_invoice_sent,
         prearrival_whatsapp_sent,
@@ -87,6 +84,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       .eq('company_id', companyId)
       .eq('status', 'completed')
       .not('review_request_whatsapp_sent', 'is', true)
+      .gte('return_at', new Date(now - 14 * 86400 * 1000).toISOString())
       .order('return_at', { ascending: false }),
   ])
 
@@ -105,6 +103,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     // Final payment check: split or custom payment, not yet sent
     if (
       b.status === 'confirmed' &&
+      daysUntilPickup <= ((settings as any)?.final_payment_due_days ?? 30) &&
       settings?.final_payment_reminders_enabled &&
       b.balance_invoice_reminder_enabled !== false &&
       (b.payment_type === 'split' || b.payment_type === 'custom') &&
@@ -125,6 +124,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     // Pre-arrival WhatsApp: confirmed, not yet sent
     if (
       b.status === 'confirmed' &&
+      daysUntilPickup <= 3 &&
       (settings?.pre_arrival_reminders_enabled ?? true) &&
       b.prearrival_reminder_enabled !== false &&
       b.prearrival_whatsapp_sent !== true
@@ -150,7 +150,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     ) {
       const returnMs = new Date(b.return_at).getTime()
       const daysUntilReturn = Math.round((returnMs - now) / 86400000)
-      results.push({
+      if (daysUntilReturn <= 3) results.push({
         type: 'return_prep',
         id: `${b.id}-return-prep`,
         bookingId: b.id,
@@ -161,36 +161,6 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         daysUntilPickup,
         returnAt: b.return_at,
         daysUntilReturn,
-      })
-    }
-
-    // Review imported: booking was imported from an external source,
-    // is still active, the return date has not yet passed,
-    // and at least one per-booking reminder field has not yet been reviewed (still null).
-    const needsReview =
-      b.balance_invoice_reminder_enabled === null ||
-      b.prearrival_reminder_enabled === null ||
-      b.return_prep_reminder_enabled === null
-
-    const isImportedCandidate =
-      b.source_type &&
-      (IMPORT_SOURCE_TYPES as readonly string[]).includes(b.source_type) &&
-      b.status !== 'completed' &&
-      b.status !== 'cancelled' &&
-      b.return_at &&
-      new Date(b.return_at).getTime() >= now
-
-    if (isImportedCandidate && needsReview) {
-      results.push({
-        type: 'review_imported',
-        key: 'ops.review_imported_booking',
-        id: `${b.id}-review-imported`,
-        bookingId: b.id,
-        bookingNumber: b.booking_number ?? '',
-        customerName: b.customer_name ?? '',
-        vehicleName: vehicle?.name ?? '',
-        pickupAt: b.pickup_at,
-        daysUntilPickup,
       })
     }
   }

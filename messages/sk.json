@@ -1955,7 +1955,8 @@
       "returnInfo": "Informácie o vrátení",
       "faq": "FAQ",
       "help": "Pomoc a návody",
-      "emergency": "Núdzové situácie a pomoc"
+      "emergency": "Núdzové situácie a pomoc",
+      "feedback": "Spätná väzba k ceste"
     }
   },
   "staffGuestContent": {
@@ -2205,7 +2206,10 @@
         "helper": "Odoslaná v deň vrátenia alebo na druhý deň.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
-        "templatePlaceholder": "Ahoj '{customer_name}', dúfame, že ste si prenájom vozidla '{vehicle_name}' užili…"
+        "templatePlaceholder": "Ahoj '{customer_name}', dúfame, že ste si prenájom vozidla '{vehicle_name}' užili…",
+        "googleReviewUrlLabel": "Odkaz na Google hodnotenie",
+        "googleReviewUrlHelper": "Vložte URL vašej Google Maps recenzie. Hostia, ktorí ohodnotia svoju cestu pozitívne, budú presmerovaní sem.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
       }
     },
     "extrasCatalog": {
@@ -2866,6 +2870,25 @@
       "completed": "Dokončená",
       "cancelled": "Zrušená"
     }
+  },
+  "guestFeedback": {
+    "title": "Ako sa Vám páčila cesta?",
+    "subtitle": "Radi by sme počuli o Vašich skúsenostiach.",
+    "positive": "Všetko prebehlo v poriadku",
+    "negative": "Niečo mohlo byť lepšie",
+    "positiveHeading": "To nás veľmi teší!",
+    "positiveBody": "Ak sa chcete podeliť o svoje skúsenosti, krátka recenzia by nám veľmi pomohla.",
+    "reviewCta": "Zanechať recenziu",
+    "negativeHeading": "Ďakujeme, že nám dávate vedieť",
+    "negativeBody": "Povedzte nám, čo sa stalo. Vaša správa ide priamo nášmu tímu.",
+    "placeholder": "Popíšte, čo mohlo byť lepšie…",
+    "submit": "Odoslať",
+    "submitting": "Odosiela sa…",
+    "doneHeading": "Spätná väzba prijatá",
+    "doneBody": "Ďakujeme. Budeme sa tým zaoberať.",
+    "noCode": "Kód rezervácie nebol nájdený. Použite prosím odkaz z Vašej potvrdzujúcej správy.",
+    "notFound": "Rezervácia nebola nájdená.",
+    "back": "Späť"
   },
   "installBanner": {
     "title": "Nainštalovať CamperFlow",

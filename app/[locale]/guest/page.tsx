@@ -87,6 +87,13 @@ const icons: Record<string, ReactNode> = {
       </svg>
     </div>
   ),
+  feedback: (
+    <div style={iconWrap}>
+      <svg width="24" height="24" stroke="currentColor" fill="none">
+        <path strokeWidth="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      </svg>
+    </div>
+  ),
 };
 
 export default async function GuestPage({ params, searchParams }: PageProps) {
@@ -201,6 +208,7 @@ try{
     { key: "faq",            functional: true, href: `/${locale}/guest/faq?code=${code}` },
     { key: "help",           functional: true, href: `/${locale}/guest/help?code=${code}` },
     { key: "emergency",      functional: true, href: `/${locale}/guest/emergency?code=${code}` },
+    { key: "feedback",       functional: true, href: `/${locale}/guest/feedback?code=${code}` },
   ];
 
   return (

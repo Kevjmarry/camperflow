@@ -144,7 +144,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
             const labelKey = status === 'on_rent' ? 'onRent' : status === 'draft' ? 'pending' : status
             return (
               <span key={status} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, background: s.bg, backgroundImage: s.bgImage, border: `1px solid ${s.border}`, display: 'inline-block' }} />
+                <span style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0, backgroundColor: s.bg, backgroundImage: s.bgImage, border: `1px solid ${s.border}`, display: 'inline-block' }} />
                 {t(`legend.${labelKey}`)}
               </span>
             )
@@ -264,16 +264,14 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                       const cStart = Math.max(0, startDay)
                       const cEnd = Math.min(TOTAL_DAYS, endDay)
                       if (cStart >= cEnd) return null
-                      const leftPct = (cStart / TOTAL_DAYS) * 100
-                      const widthPct = ((cEnd - cStart) / TOTAL_DAYS) * 100
                       return (
                         <div
                           key={bl.id}
                           title={bl.label ?? t('legend.vehicleBlock')}
                           style={{
                             position: 'absolute',
-                            left: `${leftPct}%`,
-                            width: `${widthPct}%`,
+                            left: `${cStart * PX_PER_DAY}px`,
+                            width: `${(cEnd - cStart) * PX_PER_DAY}px`,
                             top: '5px',
                             height: `${ROW_H - 10}px`,
                             background: STATUS_STYLE.blocked.bg,
@@ -310,8 +308,6 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                       const cStart = Math.max(0, startDay)
                       const cEnd = Math.min(TOTAL_DAYS, endDay)
                       if (cStart >= cEnd) return null
-                      const leftPct = (cStart / TOTAL_DAYS) * 100
-                      const widthPct = ((cEnd - cStart) / TOTAL_DAYS) * 100
                       const s = STATUS_STYLE[b.status] ?? FALLBACK_STYLE
                       const label = (b.customerName || b.bookingNumber || '').replace(/^(\[\?\]|\?)\s*/, '')
                       return (
@@ -321,11 +317,11 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                           title={`${label}\n${b.status}`}
                           style={{
                             position: 'absolute',
-                            left: `${leftPct}%`,
-                            width: `${widthPct}%`,
+                            left: `${cStart * PX_PER_DAY}px`,
+                            width: `${(cEnd - cStart) * PX_PER_DAY}px`,
                             top: '5px',
                             height: `${ROW_H - 10}px`,
-                            background: s.bg,
+                            backgroundColor: s.bg,
                             backgroundImage: s.bgImage,
                             border: `1px solid ${s.border}`,
                             borderRadius: '3px',

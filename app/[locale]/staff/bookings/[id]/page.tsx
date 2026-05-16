@@ -1691,8 +1691,8 @@ export default function BookingDetailPage() {
                     {t("operations.tasksHint")}
                   </p>
                   {/* Task: Final payment checked — only for split payment */}
-                  {(staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  {(staffMeta.payment_plan === 'split' || staffMeta.payment_plan === 'custom') && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
                         aria-label={opsEnabled.balance_invoice_reminder_enabled ? "Disable reminder" : "Enable reminder"}
@@ -1747,8 +1747,8 @@ export default function BookingDetailPage() {
                     )}
                   </div>}
                   {/* Task: Pre-arrival WhatsApp message */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
                         aria-label={opsEnabled.prearrival_reminder_enabled ? "Disable reminder" : "Enable reminder"}
@@ -1789,8 +1789,8 @@ export default function BookingDetailPage() {
                     ))}
                   </div>
                   {/* Task: Return-prep WhatsApp message */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
                         aria-label={opsEnabled.return_prep_reminder_enabled ? "Disable reminder" : "Enable reminder"}
@@ -1831,8 +1831,8 @@ export default function BookingDetailPage() {
                     ))}
                   </div>
                   {/* Task: Review request WhatsApp message */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3)', background: 'rgb(var(--surface) / 0.6)', borderRadius: 'var(--radius)', border: '1px solid rgb(var(--border) / 0.4)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
                         aria-label={opsEnabled.review_request_reminder_enabled ? "Disable reminder" : "Enable reminder"}

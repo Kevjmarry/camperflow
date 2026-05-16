@@ -1955,7 +1955,8 @@
       "returnInfo": "Rückgabeinformationen",
       "faq": "FAQ",
       "help": "Hilfe & Anleitungen",
-      "emergency": "Notfall & Pannenhilfe"
+      "emergency": "Notfall & Pannenhilfe",
+      "feedback": "Reise-Feedback"
     }
   },
   "staffGuestContent": {
@@ -2205,7 +2206,10 @@
         "helper": "Wird am Rückgabetag oder am Tag danach gesendet.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
-        "templatePlaceholder": "Hallo '{customer_name}', wir hoffen, Sie haben Ihren '{vehicle_name}'-Urlaub genossen…"
+        "templatePlaceholder": "Hallo '{customer_name}', wir hoffen, Sie haben Ihren '{vehicle_name}'-Urlaub genossen…",
+        "googleReviewUrlLabel": "Google-Bewertungslink",
+        "googleReviewUrlHelper": "Fügen Sie Ihre Google Maps-Bewertungs-URL ein. Gäste, die ihre Reise positiv bewerten, werden hierher weitergeleitet.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
       }
     },
     "extrasCatalog": {
@@ -2866,6 +2870,25 @@
       "completed": "Abgeschlossen",
       "cancelled": "Storniert"
     }
+  },
+  "guestFeedback": {
+    "title": "Wie war Ihre Reise?",
+    "subtitle": "Wir würden gerne von Ihren Erfahrungen hören.",
+    "positive": "Alles hat gut geklappt",
+    "negative": "Etwas hätte besser sein können",
+    "positiveHeading": "Das freut uns sehr!",
+    "positiveBody": "Wenn Sie Ihre Erfahrung teilen möchten, würde uns eine kurze Bewertung sehr freuen.",
+    "reviewCta": "Bewertung abgeben",
+    "negativeHeading": "Danke, dass Sie uns informieren",
+    "negativeBody": "Bitte schildern Sie uns, was passiert ist. Ihre Nachricht geht direkt an unser Team.",
+    "placeholder": "Beschreiben Sie, was besser hätte sein können…",
+    "submit": "Senden",
+    "submitting": "Wird gesendet…",
+    "doneHeading": "Feedback erhalten",
+    "doneBody": "Vielen Dank. Wir werden uns darum kümmern.",
+    "noCode": "Kein Buchungscode gefunden. Bitte verwenden Sie den Link aus Ihrer Bestätigungsnachricht.",
+    "notFound": "Buchung nicht gefunden.",
+    "back": "Zurück"
   },
   "installBanner": {
     "title": "CamperFlow installieren",

@@ -390,6 +390,7 @@ function mergeStaffMeta(
 interface ExistingBookingData {
   id: string;
   source_type: string;
+  status: string;
   customer_name: string | null;
   customer_phone: string | null;
   customer_email: string | null;
@@ -582,7 +583,7 @@ export async function POST(request: NextRequest) {
       const { data: existing } = await supabase
         .from('bookings')
         .select(
-          'id, source_type, source_booking_id, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at, vehicle_id, customer_id, staff_metadata',
+          'id, source_type, source_booking_id, status, customer_name, customer_phone, customer_email, notes, source_reference, pickup_at, return_at, vehicle_id, customer_id, staff_metadata',
         )
         .eq('company_id', companyId)
         .in('source_type', [...querySourceTypes])
@@ -599,6 +600,7 @@ export async function POST(request: NextRequest) {
           existingDataMap[key] = {
             id: e.id,
             source_type: e.source_type,
+            status: e.status,
             customer_name: e.customer_name ?? null,
             customer_phone: e.customer_phone ?? null,
             customer_email: e.customer_email ?? null,
@@ -708,7 +710,7 @@ export async function POST(request: NextRequest) {
           const { error } = await supabase
             .from('bookings')
             .update({
-              status: mapExternalStatus(n.externalStatus),
+              ...(existing!.status !== 'completed' ? { status: mapExternalStatus(n.externalStatus) } : {}),
               vehicle_id: row.matchedVehicleId,
               customer_name: mergedName,
               customer_phone: mergedPhone,
@@ -765,7 +767,7 @@ export async function POST(request: NextRequest) {
             .from('bookings')
             .update({
               company_id: companyId,
-              status: mapExternalStatus(n.externalStatus),
+              ...(existing?.status !== 'completed' ? { status: mapExternalStatus(n.externalStatus) } : {}),
               pickup_at: resolvedPickupAt,
               return_at: resolvedReturnAt,
               vehicle_id: mergedVehicleId,

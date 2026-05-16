@@ -100,27 +100,124 @@ export function parseDtToIso(value: string, tzid?: string): string {
   return isNaN(d.getTime()) ? value : d.toISOString();
 }
 
-// ── blocked-period detection ──────────────────────────────────────────────────
+// ── event classification ──────────────────────────────────────────────────────
 
 /**
- * Common SUMMARY values that platforms use to mark host-blocked / unavailable
- * periods rather than real guest bookings.
+ * SUMMARY values that platforms use to mark host-blocked / unavailable periods.
+ * Kept as the primary signal; expanded with common hold/personal patterns.
  */
-const BLOCKED_PATTERNS: RegExp[] = [
+const BLOCKED_SUMMARY_PATTERNS: RegExp[] = [
   /\bblocked?\b/i,
-  /\bblocked\s+period\b/i, // Bookingmood explicit
+  /\bblocked\s+period\b/i,
   /\bnot[\s-]?available\b/i,
   /\bunavailable\b/i,
   /\bunavailability\b/i,
   /\bowner[\s-]?block\b/i,
   /\bowner[\s-]?hold\b/i,
+  /\bowner[\s-]?stay\b/i,
+  /\bowner[\s-]?use\b/i,
   /\bmaintenance\b/i,
   /\bclosed\b/i,
+  /\bhold\b/i,
+  /\bpersonal\b/i,
+  /\bclosure\b/i,
   /airbnb \(not available\)/i,
 ];
 
-function isBlockedSummary(summary: string): boolean {
-  return BLOCKED_PATTERNS.some((re) => re.test(summary));
+/**
+ * X-property name fragments that confirm a real guest reservation.
+ * Matched case-insensitively against property names (not values).
+ */
+const BOOKING_XPROP_FRAGMENTS = [
+  "CONFIRMATION-CODE",
+  "CONFIRMATION_CODE",
+  "RESERVATION-ID",
+  "RESERVATION_ID",
+  "BOOKING-ID",
+  "BOOKING_ID",
+];
+
+/**
+ * X-property name fragments that confirm a host-blocked / hold period.
+ */
+const BLOCKED_XPROP_FRAGMENTS = [
+  "BLOCKED",
+  "UNAVAIL",
+  "OWNER-BLOCK",
+  "OWNER_BLOCK",
+  "HOLD",
+];
+
+/**
+ * Classify a raw VEVENT as "booking" or "blocked_period".
+ *
+ * Signal priority (first match wins):
+ *   0. Provider URL path (Bookingmood proven signals, highest confidence)
+ *   1. Definitive block X-property or CATEGORIES → blocked_period
+ *   2. Definitive booking X-property             → booking
+ *   3. Block SUMMARY pattern                     → blocked_period
+ *   4. Guest ATTENDEE with MAILTO                → booking
+ *   5. Ambiguous tiebreaker                      → blocked_period
+ *      (safer default: a false block is recoverable; a false booking risks
+ *       accepting a double-booking from an OTA)
+ */
+function classifyICalEvent(
+  event: ICalRawEvent,
+  attendeeName: string | undefined,
+  customerEmail: string | undefined
+): "booking" | "blocked_period" {
+  const summary = getProp(event, "SUMMARY")?.value?.trim() ?? "";
+  const uid = getProp(event, "UID")?.value ?? "";
+
+  // 0. URL path — provider-confirmed event type (highest confidence, checked first).
+  //    Bookingmood proven signals from actual VEVENT data:
+  //      /bookings/       → real guest reservation
+  //      /calendar-events/ → host-created block / hold
+  //    Other providers that include reservation-detail URLs benefit too.
+  const urlPath = getProp(event, "URL")?.value ?? "";
+  if (urlPath.includes("/bookings/")) return "booking";
+  if (urlPath.includes("/calendar-events/")) return "blocked_period";
+
+  // 1a. Definitive block X-property
+  for (const key of Object.keys(event.properties)) {
+    if (!key.startsWith("X-")) continue;
+    const upper = key.toUpperCase();
+    if (BLOCKED_XPROP_FRAGMENTS.some((f) => upper.includes(f))) {
+      return "blocked_period";
+    }
+  }
+
+  // 1b. CATEGORIES contains block keyword
+  const categories = getProp(event, "CATEGORIES")?.value?.toUpperCase() ?? "";
+  if (
+    categories.includes("BLOCKED") ||
+    categories.includes("UNAVAILABLE") ||
+    categories.includes("HOLD")
+  ) {
+    return "blocked_period";
+  }
+
+  // 2. Definitive booking X-property
+  for (const key of Object.keys(event.properties)) {
+    if (!key.startsWith("X-")) continue;
+    const upper = key.toUpperCase();
+    if (BOOKING_XPROP_FRAGMENTS.some((f) => upper.includes(f))) {
+      return "booking";
+    }
+  }
+
+  // 3. Block SUMMARY pattern
+  if (BLOCKED_SUMMARY_PATTERNS.some((re) => re.test(summary))) {
+    return "blocked_period";
+  }
+
+  // 4. Guest ATTENDEE with MAILTO (real guest in the event)
+  if (customerEmail) return "booking";
+  // Attendee name without email is also strong guest evidence when a UID exists
+  if (attendeeName && uid) return "booking";
+
+  // 5. Ambiguous — default to blocked_period
+  return "blocked_period";
 }
 
 // ── customer info extraction ──────────────────────────────────────────────────
@@ -218,21 +315,18 @@ export function normalizeICalEvent(
     ),
   };
 
-  // ── customer info (needed for blocked detection below) ───────────────────
+  // ── customer info (needed for classification below) ──────────────────────
   const attendeeName = extractAttendeeName(event);
   const customerEmail = extractAttendeeEmail(event);
 
-  // ── blocked period ────────────────────────────────────────────────────────
-  // Catch summary-based blocks (e.g. "Blocked period" from Bookingmood) and
-  // events with no customer info and no booking UID (generic unavailability).
-  const isBlocked =
-    isBlockedSummary(summary) || (!attendeeName && !customerEmail && !uid);
+  // ── classify ──────────────────────────────────────────────────────────────
+  const bookingType = classifyICalEvent(event, attendeeName, customerEmail);
 
-  if (isBlocked) {
+  if (bookingType === "blocked_period") {
     return {
       sourceType: "ical",
       sourceBookingId: uid,
-      bookingType: "blocked_period",
+      bookingType,
       label: summary || undefined,
       vehicleReference: effectiveVehicleReference,
       pickupAt,
@@ -249,7 +343,7 @@ export function normalizeICalEvent(
   return {
     sourceType: "ical",
     sourceBookingId: uid,
-    bookingType: "booking",
+    bookingType,
     externalStatus: status,
     vehicleReference: effectiveVehicleReference,
     pickupAt,

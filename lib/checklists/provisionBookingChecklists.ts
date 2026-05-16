@@ -9,13 +9,15 @@ export async function provisionBookingChecklists(bookingId: string): Promise<Pro
 
   const { data: booking, error: bErr } = await supabase
     .from('bookings')
-    .select('company_id')
+    .select('company_id, status')
     .eq('id', bookingId)
     .single()
   if (bErr || !booking) {
     console.error('[provisionBookingChecklists] step=fetchBooking bookingId=%s code=%s message=%s details=%s hint=%s', bookingId, bErr?.code, bErr?.message, bErr?.details, bErr?.hint)
     throw bErr ?? new Error('Booking not found')
   }
+
+  if (booking.status === 'completed' || booking.status === 'cancelled') return { created: 0 }
 
   const { company_id } = booking
 

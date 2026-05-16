@@ -46,6 +46,7 @@ export default function CompanySettingsPage() {
   const [preArrivalTemplate, setPreArrivalTemplate] = useState('');
   const [returnPrepTemplate, setReturnPrepTemplate] = useState('');
   const [reviewRequestTemplate, setReviewRequestTemplate] = useState('');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +136,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link, google_review_url")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -177,6 +178,7 @@ export default function CompanySettingsPage() {
         setPreArrivalTemplate((data as any).pre_arrival_whatsapp_template ?? '');
         setReturnPrepTemplate((data as any).return_prep_whatsapp_template ?? '');
         setReviewRequestTemplate((data as any).review_request_whatsapp_template ?? '');
+        setGoogleReviewUrl((data as any).google_review_url ?? '');
       }
     };
     load();
@@ -273,6 +275,7 @@ export default function CompanySettingsPage() {
           pre_arrival_whatsapp_template:    preArrivalTemplate.trim() || null,
           return_prep_whatsapp_template:    returnPrepTemplate.trim() || null,
           review_request_whatsapp_template: reviewRequestTemplate.trim() || null,
+          google_review_url:                googleReviewUrl.trim() || null,
           map_link:                         formData.map_link.trim() || null,
         })
         .eq("id", company?.id)
@@ -779,6 +782,24 @@ export default function CompanySettingsPage() {
                     />
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.reviewRequest.templateHelper")}
+                    </p>
+                  </div>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <label htmlFor="google_review_url" className="label">
+                      {t("reminders.reviewRequest.googleReviewUrlLabel")}
+                    </label>
+                    <input
+                      id="google_review_url"
+                      type="url"
+                      className="input"
+                      placeholder={t("reminders.reviewRequest.googleReviewUrlPlaceholder")}
+                      value={googleReviewUrl}
+                      onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                      disabled={!isAdmin}
+                      style={{ width: "100%", maxWidth: "560px" }}
+                    />
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                      {t("reminders.reviewRequest.googleReviewUrlHelper")}
                     </p>
                   </div>
                 </div>

@@ -1955,7 +1955,8 @@
       "returnInfo": "Return info",
       "faq": "FAQ",
       "help": "Help & How-to",
-      "emergency": "Emergency & assistance"
+      "emergency": "Emergency & assistance",
+      "feedback": "Trip feedback"
     }
   },
   "staffGuestContent": {
@@ -2205,7 +2206,10 @@
         "helper": "Sent on the day of or day after return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
-        "templatePlaceholder": "Hi '{customer_name}', we hope you enjoyed your '{vehicle_name}' rental…"
+        "templatePlaceholder": "Hi '{customer_name}', we hope you enjoyed your '{vehicle_name}' rental…",
+        "googleReviewUrlLabel": "Google review link",
+        "googleReviewUrlHelper": "Paste your Google Maps review URL. Guests who rate their trip positively will be directed here.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
       }
     },
     "extrasCatalog": {
@@ -2866,6 +2870,25 @@
       "completed": "Completed",
       "cancelled": "Cancelled"
     }
+  },
+  "guestFeedback": {
+    "title": "How was your trip?",
+    "subtitle": "We'd love to hear about your experience.",
+    "positive": "Everything went well",
+    "negative": "Something could have been better",
+    "positiveHeading": "Great to hear!",
+    "positiveBody": "If you'd like to share your experience, a quick review would mean a lot to us.",
+    "reviewCta": "Leave a review",
+    "negativeHeading": "Thank you for letting us know",
+    "negativeBody": "Please tell us what happened. Your message goes directly to our team.",
+    "placeholder": "Describe what could have been better…",
+    "submit": "Send",
+    "submitting": "Sending…",
+    "doneHeading": "Feedback received",
+    "doneBody": "Thank you. We'll look into this.",
+    "noCode": "No booking code found. Please use the link from your confirmation message.",
+    "notFound": "Booking not found.",
+    "back": "Back"
   },
   "installBanner": {
     "title": "Install CamperFlow",
