@@ -85,6 +85,8 @@ export default function CompanySettingsPage() {
     completed: number; cancelled: number; skipped: number; instances: number;
   } | null>(null);
 
+  const [previewBookingCode, setPreviewBookingCode] = useState<string | null>(null);
+
   // ── Auth / profile load ────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export default function CompanySettingsPage() {
   useEffect(() => {
     if (!company?.id) return;
     const load = async () => {
-      const [{ data }, { data: companyRow }] = await Promise.all([
+      const [{ data }, { data: companyRow }, { data: sampleBooking }] = await Promise.all([
         supabase
           .from("company_settings")
           .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link, google_review_url")
@@ -144,7 +146,15 @@ export default function CompanySettingsPage() {
           .select("address, email, registration_id, vat_id")
           .eq("id", company.id)
           .maybeSingle(),
+        supabase
+          .from("bookings")
+          .select("booking_code")
+          .eq("company_id", company.id)
+          .not("booking_code", "is", null)
+          .limit(1)
+          .maybeSingle(),
       ]);
+      setPreviewBookingCode((sampleBooking as any)?.booking_code ?? null);
       setFormData((prev) => ({
         ...prev,
         ...(data ? {
@@ -801,6 +811,48 @@ export default function CompanySettingsPage() {
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.reviewRequest.googleReviewUrlHelper")}
                     </p>
+                    {!googleReviewUrl.trim() && (
+                      <p style={{
+                        marginTop: "var(--space-2)",
+                        fontSize: "13px",
+                        color: "rgb(161 98 7)",
+                        background: "rgb(254 243 199)",
+                        border: "1px solid rgb(253 230 138)",
+                        borderRadius: "var(--radius)",
+                        padding: "var(--space-2) var(--space-3)",
+                        lineHeight: 1.5,
+                      }}>
+                        {t("reminders.reviewRequest.noReviewUrlWarning")}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))", marginTop: "var(--space-1)" }}>
+                    <a
+                      href={
+                        previewBookingCode
+                          ? `/${locale}/guest/feedback?code=${encodeURIComponent(previewBookingCode)}`
+                          : `/${locale}/guest/feedback?preview=1`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "var(--space-2)",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        background: "rgb(var(--brand-light))",
+                        color: "rgb(var(--brand))",
+                        border: "1px solid rgb(var(--brand) / 0.35)",
+                        padding: "var(--space-2) var(--space-4)",
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                        <path d="M5.5 2.5H2a1 1 0 0 0-1 1V12a1 1 0 0 0 1 1h8.5a1 1 0 0 0 1-1V8.5M8.5 1H13m0 0v4.5M13 1 6.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {t("reminders.reviewRequest.previewFeedbackPage")}
+                    </a>
                   </div>
                 </div>
 

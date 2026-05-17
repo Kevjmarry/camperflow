@@ -1233,7 +1233,8 @@
           "pickupInDays": "Pickup in {count}d"
         },
         "copyWhatsApp": "Copy WhatsApp message",
-        "copied": "Copied!"
+        "copied": "Copied!",
+        "noReviewLink": "No review link set"
       },
       "vehicleStatus": {
         "ready": "Ready",
@@ -2192,24 +2193,27 @@
         "helper": "Sent the day before pickup.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
-        "templatePlaceholder": "Hi '{customer_name}', your '{vehicle_name}' pickup is tomorrow…"
+        "templatePlaceholder": "Hello again, your '{vehicle_name}' pickup is tomorrow…"
       },
       "returnPrep": {
         "label": "Enable return-prep WhatsApp reminders",
         "helper": "Sent the day before return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
-        "templatePlaceholder": "Hi '{customer_name}', your '{vehicle_name}' return is tomorrow…"
+        "templatePlaceholder": "Hello again, your '{vehicle_name}' return is tomorrow…"
       },
       "reviewRequest": {
-        "label": "Enable review request WhatsApp reminders",
+        "label": "Enable reviews & feedback WhatsApp reminders",
         "helper": "Sent on the day of or day after return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
-        "templatePlaceholder": "Hi '{customer_name}', we hope you enjoyed your '{vehicle_name}' rental…",
-        "googleReviewUrlLabel": "Google review link",
-        "googleReviewUrlHelper": "Paste your Google Maps review URL. Guests who rate their trip positively will be directed here.",
-        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
+        "templatePlaceholder": "Hello again, we hope you enjoyed your '{vehicle_name}' rental…",
+        "googleReviewUrlLabel": "Public review link",
+        "googleReviewUrlHelper": "Paste a public review page URL (e.g. Google Maps). Guests who rate their trip positively will be directed here.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review",
+        "noReviewUrlWarning": "No public review link added yet. Guests who give positive feedback won't see a review button until this is filled in.",
+        "previewFeedbackPage": "Preview guest feedback flow",
+        "previewFeedbackNoBooking": "No bookings found — add a booking to preview."
       }
     },
     "extrasCatalog": {
@@ -2876,9 +2880,12 @@
     "subtitle": "We'd love to hear about your experience.",
     "positive": "Everything went well",
     "negative": "Something could have been better",
+    "positiveSubtext": "We always love hearing when things go well",
+    "negativeSubtext": "Help us understand what could be better",
     "positiveHeading": "Great to hear!",
-    "positiveBody": "If you'd like to share your experience, a quick review would mean a lot to us.",
+    "positiveBody": "We know writing reviews isn't everyone's favourite thing, but if you really enjoyed your trip and would happily recommend this company to friends or family, your review genuinely means a lot.",
     "reviewCta": "Leave a review",
+    "positiveNoReviewUrl": "Thank you for your kind words! We truly appreciate hearing about your experience.",
     "negativeHeading": "Thank you for letting us know",
     "negativeBody": "Please tell us what happened. Your message goes directly to our team.",
     "placeholder": "Describe what could have been better…",
@@ -2888,7 +2895,8 @@
     "doneBody": "Thank you. We'll look into this.",
     "noCode": "No booking code found. Please use the link from your confirmation message.",
     "notFound": "Booking not found.",
-    "back": "Back"
+    "back": "Back",
+    "previewBadge": "Preview"
   },
   "installBanner": {
     "title": "Install CamperFlow",

@@ -795,7 +795,13 @@ export default function BookingDetailPage() {
     setSaving(true);
 
     const normalizedStatus = normalizeStatus(formData.status);
-    const noCustomer = normalizedStatus === 'blocked' || normalizedStatus === 'cancelled';
+    // on_rent and completed are owned by automated transitions; manual saves must not override them.
+    const savedStatus: BookingStatus = booking && ['on_rent', 'completed'].includes(booking.status)
+      ? booking.status as BookingStatus
+      : normalizedStatus === 'completed'
+        ? (booking?.status as BookingStatus ?? 'confirmed')
+        : normalizedStatus;
+    const noCustomer = savedStatus === 'blocked' || savedStatus === 'cancelled';
 
     if (!noCustomer && !formData.customer_name.trim()) {
       setError(t("error.customerNameRequired"));
@@ -854,7 +860,7 @@ export default function BookingDetailPage() {
       const { data: updateData, error: updateError } = await supabase
         .from('bookings')
         .update({
-          status: normalizedStatus,
+          status: savedStatus,
           pickup_at: toISOString(formData.pickup_at),
           return_at: toISOString(formData.return_at),
           vehicle_id: formData.vehicle_id || null,
@@ -1432,12 +1438,15 @@ export default function BookingDetailPage() {
                     value={formData.status}
                     onChange={handleChange}
                     style={{ width: '100%' }}
+                    disabled={formData.status === 'completed'}
                   >
                     <option value="draft">{t("status.pending")}</option>
                     <option value="confirmed">{t("status.confirmed")}</option>
                     <option value="blocked">{t("status.blocked")}</option>
                     <option value="on_rent">{t("status.onRent")}</option>
-                    <option value="completed">{t("status.completed")}</option>
+                    {formData.status === 'completed' && (
+                      <option value="completed">{t("status.completed")}</option>
+                    )}
                     <option value="cancelled">{t("status.cancelled")}</option>
                   </select>
                 </div>

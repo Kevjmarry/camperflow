@@ -1,6 +1,42 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+async function resolveProfile(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { data: profile, error: profileError } = await supabase
+    .from('staff_profiles')
+    .select('can_manage, role, company_id')
+    .eq('auth_user_id', userId)
+    .single()
+  return {
+    canManage: profileError ? true : (profile?.can_manage ?? false),
+    isAdmin: profileError ? false : profile?.role === 'admin',
+    companyId: profile?.company_id ?? null,
+  }
+}
+
+export async function POST() {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { canManage, companyId } = await resolveProfile(supabase, user.id)
+
+  if (canManage && companyId) {
+    const now = new Date().toISOString()
+    await supabase
+      .from('bookings')
+      .update({ status: 'on_rent' })
+      .eq('status', 'confirmed')
+      .eq('company_id', companyId)
+      .lte('pickup_at', now)
+      .gte('return_at', now)
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -8,28 +44,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('staff_profiles')
-    .select('can_manage, role, company_id')
-    .eq('auth_user_id', user.id)
-    .single()
-
-  const canManage: boolean = profileError ? true : (profile?.can_manage ?? false)
-  const isAdmin: boolean = profileError ? false : profile?.role === 'admin'
-  const companyId: string | null = profile?.company_id ?? null
+  const { canManage, isAdmin, companyId } = await resolveProfile(supabase, user.id)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rawBookings: any[] = []
 
   if (canManage) {
-    const now = new Date().toISOString()
-    await supabase
-      .from('bookings')
-      .update({ status: 'on_rent' })
-      .eq('status', 'confirmed')
-      .lte('pickup_at', now)
-      .gte('return_at', now)
-
     const { data, error } = await supabase
       .from('bookings')
       .select('*, vehicles(id, name, status)')

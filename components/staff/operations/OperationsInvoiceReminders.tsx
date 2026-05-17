@@ -68,9 +68,9 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
   }
 
   const FALLBACK_TEMPLATES = {
-    pre_arrival:    'Hi {customer_name}, just a reminder that your {vehicle_name} pickup is tomorrow. We look forward to seeing you!',
-    return_prep:    'Hi {customer_name}, just a reminder that your {vehicle_name} return is due tomorrow. Safe travels!',
-    review_request: 'Hi {customer_name}, thank you for renting the {vehicle_name}! We hope you enjoyed your trip. We\'d love if you could share your experience with a quick review.',
+    pre_arrival:    'Hello again, just a reminder that your {vehicle_name} pickup is tomorrow. We look forward to seeing you!',
+    return_prep:    'Hello again, just a reminder that your {vehicle_name} return is due tomorrow. Safe travels!',
+    review_request: 'Hello again, thank you for renting the {vehicle_name}! We hope you enjoyed your trip. We\'d love if you could share your experience with a quick review.',
   }
 
   const buildMessage = (r: OpsInvoiceReminder): string | null => {
@@ -86,7 +86,9 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
       vehicle_name: r.vehicleName,
       pickup_date: r.pickupAt ? formatDate(r.pickupAt, locale) : '',
       return_date: r.returnAt ? formatDate(r.returnAt, locale) : '',
-      guest_link: `https://app.camperflow.io/${locale}/guest?code=${r.bookingNumber}`,
+      guest_link: r.type === 'review_request'
+        ? `https://app.camperflow.io/${locale}/guest/feedback?code=${r.bookingNumber}`
+        : `https://app.camperflow.io/${locale}/guest?code=${r.bookingNumber}`,
       booking_code: r.bookingNumber,
       company_phone: whatsappTemplates.company_phone,
       map_link: whatsappTemplates.map_link,
@@ -224,6 +226,11 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
                     >
                       {isCopied ? t('copied') : t('copyWhatsApp')}
                     </button>
+                  )}
+                  {r.type === 'review_request' && !whatsappTemplates.google_review_url && (
+                    <span style={{ fontSize: '11px', color: 'rgb(var(--warning, 161 98 7))', flexShrink: 0 }}>
+                      {t('noReviewLink')}
+                    </span>
                   )}
                   {/* Timing shown here only on mobile */}
                   <span className="ops-reminder-timing-mobile" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>

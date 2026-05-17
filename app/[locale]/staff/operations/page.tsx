@@ -84,7 +84,7 @@ export default async function OperationsPage({
   ] as const
   const [settled, whatsappTemplates] = await Promise.all([
     Promise.allSettled(loaders.map((l) => l.fn())),
-    getOpsWhatsAppTemplates().catch((): OpsWhatsAppTemplates => ({ pre_arrival: null, return_prep: null, review_request: null, company_phone: '', map_link: '' })),
+    getOpsWhatsAppTemplates().catch((): OpsWhatsAppTemplates => ({ pre_arrival: null, return_prep: null, review_request: null, company_phone: '', map_link: '', google_review_url: null })),
   ])
   settled.forEach((result, i) => {
     if (result.status === 'rejected') {

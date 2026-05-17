@@ -1233,7 +1233,8 @@
           "pickupInDays": "Abholung in {count} Tagen"
         },
         "copyWhatsApp": "WhatsApp-Nachricht kopieren",
-        "copied": "Kopiert!"
+        "copied": "Kopiert!",
+        "noReviewLink": "Kein Bewertungslink hinterlegt"
       },
       "vehicleStatus": {
         "ready": "Bereit",
@@ -2202,14 +2203,17 @@
         "templatePlaceholder": "Hallo '{customer_name}', Ihre Rückgabe für '{vehicle_name}' ist morgen…"
       },
       "reviewRequest": {
-        "label": "Bewertungsanfrage-WhatsApp-Erinnerungen aktivieren",
+        "label": "Bewertungen & Feedback WhatsApp-Erinnerungen aktivieren",
         "helper": "Wird am Rückgabetag oder am Tag danach gesendet.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
         "templatePlaceholder": "Hallo '{customer_name}', wir hoffen, Sie haben Ihren '{vehicle_name}'-Urlaub genossen…",
-        "googleReviewUrlLabel": "Google-Bewertungslink",
-        "googleReviewUrlHelper": "Fügen Sie Ihre Google Maps-Bewertungs-URL ein. Gäste, die ihre Reise positiv bewerten, werden hierher weitergeleitet.",
-        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
+        "googleReviewUrlLabel": "Öffentlicher Bewertungslink",
+        "googleReviewUrlHelper": "Fügen Sie eine öffentliche Bewertungsseiten-URL ein (z. B. Google Maps). Gäste, die ihre Reise positiv bewerten, werden hierher weitergeleitet.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review",
+        "noReviewUrlWarning": "Noch kein öffentlicher Bewertungslink hinterlegt. Gäste mit positivem Feedback sehen keinen Bewertungsbutton, bis dieser ausgefüllt ist.",
+        "previewFeedbackPage": "Gäste-Feedback-Flow vorschau",
+        "previewFeedbackNoBooking": "Keine Buchungen gefunden – fügen Sie eine Buchung hinzu, um eine Vorschau anzuzeigen."
       }
     },
     "extrasCatalog": {
@@ -2876,9 +2880,12 @@
     "subtitle": "Wir würden gerne von Ihren Erfahrungen hören.",
     "positive": "Alles hat gut geklappt",
     "negative": "Etwas hätte besser sein können",
+    "positiveSubtext": "Es freut uns immer zu hören, wenn alles gut gelaufen ist",
+    "negativeSubtext": "Helfen Sie uns zu verstehen, was besser sein könnte",
     "positiveHeading": "Das freut uns sehr!",
-    "positiveBody": "Wenn Sie Ihre Erfahrung teilen möchten, würde uns eine kurze Bewertung sehr freuen.",
+    "positiveBody": "Wir wissen, dass das Schreiben von Bewertungen nicht jedermanns Sache ist – aber wenn Sie Ihre Reise wirklich genossen haben und dieses Unternehmen Freunden oder der Familie guten Gewissens empfehlen würden, bedeutet uns Ihre Bewertung wirklich sehr viel.",
     "reviewCta": "Bewertung abgeben",
+    "positiveNoReviewUrl": "Vielen Dank für Ihre freundlichen Worte! Wir freuen uns sehr, von Ihren Erfahrungen zu hören.",
     "negativeHeading": "Danke, dass Sie uns informieren",
     "negativeBody": "Bitte schildern Sie uns, was passiert ist. Ihre Nachricht geht direkt an unser Team.",
     "placeholder": "Beschreiben Sie, was besser hätte sein können…",
@@ -2888,7 +2895,8 @@
     "doneBody": "Vielen Dank. Wir werden uns darum kümmern.",
     "noCode": "Kein Buchungscode gefunden. Bitte verwenden Sie den Link aus Ihrer Bestätigungsnachricht.",
     "notFound": "Buchung nicht gefunden.",
-    "back": "Zurück"
+    "back": "Zurück",
+    "previewBadge": "Vorschau"
   },
   "installBanner": {
     "title": "CamperFlow installieren",

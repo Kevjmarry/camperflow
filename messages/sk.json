@@ -1233,7 +1233,8 @@
           "pickupInDays": "Výber za {count}d"
         },
         "copyWhatsApp": "Kopírovať správu WhatsApp",
-        "copied": "Skopírované!"
+        "copied": "Skopírované!",
+        "noReviewLink": "Odkaz na hodnotenie chýba"
       },
       "vehicleStatus": {
         "ready": "Pripravené",
@@ -2202,14 +2203,17 @@
         "templatePlaceholder": "Ahoj '{customer_name}', vrátenie vozidla '{vehicle_name}' je zajtra…"
       },
       "reviewRequest": {
-        "label": "Povoliť WhatsApp pripomienky žiadosti o hodnotenie",
+        "label": "Povoliť WhatsApp pripomienky hodnotení a spätnej väzby",
         "helper": "Odoslaná v deň vrátenia alebo na druhý deň.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
         "templatePlaceholder": "Ahoj '{customer_name}', dúfame, že ste si prenájom vozidla '{vehicle_name}' užili…",
-        "googleReviewUrlLabel": "Odkaz na Google hodnotenie",
-        "googleReviewUrlHelper": "Vložte URL vašej Google Maps recenzie. Hostia, ktorí ohodnotia svoju cestu pozitívne, budú presmerovaní sem.",
-        "googleReviewUrlPlaceholder": "https://g.page/r/…/review"
+        "googleReviewUrlLabel": "Odkaz na verejné hodnotenie",
+        "googleReviewUrlHelper": "Vložte URL verejnej stránky s hodnoteniami (napr. Google Maps). Hostia, ktorí hodnotia svoju cestu pozitívne, budú presmerovaní sem.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review",
+        "noReviewUrlWarning": "Zatiaľ nebol pridaný žiadny odkaz na verejné hodnotenie. Hostia s pozitívnou spätnou väzbou neuvidia tlačidlo hodnotenia, kým nebude toto pole vyplnené.",
+        "previewFeedbackPage": "Náhľad toku spätnej väzby hostí",
+        "previewFeedbackNoBooking": "Žiadne rezervácie – pridajte rezerváciu, aby ste mohli zobraziť náhľad."
       }
     },
     "extrasCatalog": {
@@ -2876,9 +2880,12 @@
     "subtitle": "Radi by sme počuli o Vašich skúsenostiach.",
     "positive": "Všetko prebehlo v poriadku",
     "negative": "Niečo mohlo byť lepšie",
+    "positiveSubtext": "Vždy nás teší počuť, keď všetko prebehlo dobre",
+    "negativeSubtext": "Pomôžte nám pochopiť, čo mohlo byť lepšie",
     "positiveHeading": "To nás veľmi teší!",
-    "positiveBody": "Ak sa chcete podeliť o svoje skúsenosti, krátka recenzia by nám veľmi pomohla.",
+    "positiveBody": "Vieme, že písanie recenzií nie je pre každého – ale ak ste si cestu naozaj užili a túto spoločnosť by ste s radosťou odporučili priateľom alebo rodine, vaša recenzia pre nás skutočne veľa znamená.",
     "reviewCta": "Zanechať recenziu",
+    "positiveNoReviewUrl": "Ďakujeme za Vaše milé slová! Veľmi si ceníme, že ste sa podelili o svoje skúsenosti.",
     "negativeHeading": "Ďakujeme, že nám dávate vedieť",
     "negativeBody": "Povedzte nám, čo sa stalo. Vaša správa ide priamo nášmu tímu.",
     "placeholder": "Popíšte, čo mohlo byť lepšie…",
@@ -2888,7 +2895,8 @@
     "doneBody": "Ďakujeme. Budeme sa tým zaoberať.",
     "noCode": "Kód rezervácie nebol nájdený. Použite prosím odkaz z Vašej potvrdzujúcej správy.",
     "notFound": "Rezervácia nebola nájdená.",
-    "back": "Späť"
+    "back": "Späť",
+    "previewBadge": "Náhľad"
   },
   "installBanner": {
     "title": "Nainštalovať CamperFlow",

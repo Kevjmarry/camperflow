@@ -73,6 +73,7 @@ const [dateFrom, setDateFrom] = useState<string>("");
     try {
       setLoading(true);
       setError('');
+      await fetch('/api/staff/bookings-snapshot', { method: 'POST' });
       const res = await fetch('/api/staff/bookings-snapshot');
       if (res.status === 401) {
         setError(t('error.notAuthenticated'));

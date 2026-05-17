@@ -8,6 +8,7 @@ export interface OpsWhatsAppTemplates {
   review_request: string | null
   company_phone: string
   map_link: string
+  google_review_url: string | null
 }
 
 const EMPTY: OpsWhatsAppTemplates = {
@@ -16,6 +17,7 @@ const EMPTY: OpsWhatsAppTemplates = {
   review_request: null,
   company_phone: '',
   map_link: '',
+  google_review_url: null,
 }
 
 export async function getOpsWhatsAppTemplates(): Promise<OpsWhatsAppTemplates> {
@@ -34,7 +36,7 @@ export async function getOpsWhatsAppTemplates(): Promise<OpsWhatsAppTemplates> {
 
   const { data } = await supabase
     .from('company_settings')
-    .select('pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, contact_phone, map_link')
+    .select('pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, contact_phone, map_link, google_review_url')
     .eq('id', companyId)
     .maybeSingle()
 
@@ -44,5 +46,6 @@ export async function getOpsWhatsAppTemplates(): Promise<OpsWhatsAppTemplates> {
     review_request: (data as any)?.review_request_whatsapp_template ?? null,
     company_phone: (data as any)?.contact_phone ?? '',
     map_link: (data as any)?.map_link ?? '',
+    google_review_url: (data as any)?.google_review_url ?? null,
   }
 }
