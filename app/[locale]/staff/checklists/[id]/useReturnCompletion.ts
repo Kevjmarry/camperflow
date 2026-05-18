@@ -79,11 +79,6 @@ export function useReturnCompletion({
       return;
     }
 
-    const vehicleId = instance.vehicle_id ?? localInstance.vehicle_id;
-    if (vehicleId) {
-      await supabase.from('vehicles').update({ status: 'preparing' }).eq('id', vehicleId);
-    }
-
     if (instance.checklist_type === 'return' && instance.booking_id) {
       await supabase
         .from('bookings')

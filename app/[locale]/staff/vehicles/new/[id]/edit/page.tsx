@@ -29,7 +29,6 @@ export default function EditVehiclePage() {
   const [formData, setFormData] = useState({
     name: "",
     registration_plate: "",
-    status: "ready" as "ready" | "preparing" | "on_rent",
     make: "",
     model: "",
     year: "",
@@ -115,7 +114,6 @@ export default function EditVehiclePage() {
         setFormData({
           name: data.name || "",
           registration_plate: data.registration_plate || "",
-          status: data.status || "ready",
           make: data.make || "",
           model: data.model || "",
           year: data.year ? String(data.year) : "",
@@ -166,7 +164,6 @@ export default function EditVehiclePage() {
       const updateData: any = {
         name: formData.name.trim(),
         registration_plate: formData.registration_plate.trim().toUpperCase(),
-        status: formData.status,
       };
 
       if (formData.make) updateData.make = formData.make.trim();
@@ -292,25 +289,6 @@ export default function EditVehiclePage() {
                 style={{ width: "100%" }}
               />
               <p className="helper-text">Vehicle registration number or license plate</p>
-            </div>
-
-            <div>
-              <label htmlFor="status" className="label">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                className="input"
-                value={formData.status}
-                onChange={handleChange}
-                style={{ width: "100%" }}
-              >
-                <option value="ready">Ready</option>
-                <option value="preparing">Preparing</option>
-                <option value="on_rent">On rent</option>
-              </select>
-              <p className="helper-text">Current status of the vehicle</p>
             </div>
 
             <div>
