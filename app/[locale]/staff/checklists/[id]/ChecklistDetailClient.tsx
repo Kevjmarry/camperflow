@@ -847,7 +847,7 @@ export default function ChecklistDetailClient({
       .from('checklist-evidence')
       .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
     if (error) {
-      console.error('uploadEvidencePhoto: storage upload failed', { group, error: { code: error?.code, message: error?.message } });
+      console.error('uploadEvidencePhoto: storage upload failed', { group, error: { message: error?.message } });
       setSyncError(parseSyncError(error, 'item_update_failed'));
       throw error;
     }
