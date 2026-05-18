@@ -1206,6 +1206,7 @@
       "attentionNeeded": "Vyžaduje pozornosť",
       "attentionChip": {
         "blocked": "Blokované",
+        "operationalHold": "Prevádzkové pozastavenie",
         "checklistIssue": "Problém kontrolného zoznamu",
         "expiredCompliance": "Vypršaná zhoda",
         "warningCompliance": "Zhoda čoskoro vyprší",

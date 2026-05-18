@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 export interface OpsBlockedVehicle {
   id: string
   name: string
+  hasOperationalHold: boolean
   hasExpiredCompliance: boolean
   hasWarningCompliance: boolean
   hasOpenVehicleIssue: boolean
@@ -49,7 +50,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   const { data: vehicles, error: vError } = await supabase
     .from('vehicles')
-    .select('id, name')
+    .select('id, name, operational_hold')
     .eq('company_id', companyId as string)
 
   if (vError) throw vError
@@ -160,6 +161,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   return (vehicles ?? [])
     .filter((v) => isUUID(v.id) && (
+      v.operational_hold === true ||
       vehiclesWithExpiredCompliance.has(v.id) ||
       vehiclesWithWarningCompliance.has(v.id) ||
       vehiclesWithOpenIssues.has(v.id)
@@ -167,6 +169,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     .map((v) => ({
       id: v.id as string,
       name: v.name ?? '',
+      hasOperationalHold: v.operational_hold === true,
       hasExpiredCompliance: vehiclesWithExpiredCompliance.has(v.id),
       hasWarningCompliance: vehiclesWithWarningCompliance.has(v.id),
       hasOpenVehicleIssue: vehiclesWithOpenIssues.has(v.id),

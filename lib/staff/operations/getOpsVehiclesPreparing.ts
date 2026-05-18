@@ -59,19 +59,24 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
 
   const todayStr = now.toISOString().slice(0, 10)
 
-  const { data: expiredCompliance, error: complianceError } = vehicleIds.length
+  const { data: complianceRecords, error: complianceError } = vehicleIds.length
     ? await supabase
         .from('vehicle_compliance')
-        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .select('vehicle_id, expiry_date, service_due_odometer_km, compliance_types!inner(blocks_readiness), vehicles(latest_odometer)')
         .in('vehicle_id', vehicleIds)
-        .not('expiry_date', 'is', null)
-        .lt('expiry_date', todayStr)
         .eq('compliance_types.blocks_readiness', true)
     : { data: [], error: null }
 
   if (complianceError) throw complianceError
 
-  const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
+  const vehiclesWithExpiredCompliance = new Set<string>()
+  for (const c of complianceRecords ?? []) {
+    if (!c.vehicle_id) continue
+    const dateExpired = c.expiry_date != null && c.expiry_date < todayStr
+    const veh = Array.isArray(c.vehicles) ? c.vehicles[0] : c.vehicles as { latest_odometer: number | null } | null
+    const kmOverdue = c.service_due_odometer_km != null && veh?.latest_odometer != null && veh.latest_odometer >= c.service_due_odometer_km
+    if (dateExpired || kmOverdue) vehiclesWithExpiredCompliance.add(c.vehicle_id)
+  }
 
   return (data ?? [])
     .map((v) => {

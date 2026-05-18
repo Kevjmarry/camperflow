@@ -1206,6 +1206,7 @@
       "attentionNeeded": "Attention needed",
       "attentionChip": {
         "blocked": "Blocked",
+        "operationalHold": "Operational hold",
         "checklistIssue": "Checklist issue",
         "expiredCompliance": "Expired compliance",
         "warningCompliance": "Compliance due soon",

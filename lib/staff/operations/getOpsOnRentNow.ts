@@ -32,47 +32,23 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
   const companyId = profile?.company_id
   if (!isUUID(companyId)) return []
 
-  const now = new Date()
-
-  // Candidate bookings: active (not cancelled/completed/draft), pickup already started
-  const { data: candidates, error: candidatesError } = await supabase
+  const { data: onRent, error: onRentError } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, vehicle_name, vehicle_id, return_at')
+    .select('id, booking_number, customer_name, vehicle_name, vehicle_id, return_at, is_overdue')
     .eq('company_id', companyId)
-    .not('booking_status', 'in', '(cancelled,completed,draft)')
-    .lte('pickup_at', now.toISOString())
+    .eq('booking_status', 'on_rent')
     .order('return_at', { ascending: true })
 
-  if (candidatesError) throw candidatesError
-  if (!candidates || candidates.length === 0) return []
-
-  const candidateIds = candidates.map((b) => b.id)
-
-  // Completed handover and return checklists for these bookings
-  const { data: instances } = await supabase
-    .from('checklist_instances')
-    .select('booking_id, checklist_type')
-    .in('booking_id', candidateIds)
-    .in('checklist_type', ['handover', 'return'])
-    .eq('status', 'completed')
-
-  const handoverDone = new Set<string>()
-  const returnDone = new Set<string>()
-  for (const ci of instances ?? []) {
-    if (ci.checklist_type === 'handover') handoverDone.add(ci.booking_id)
-    if (ci.checklist_type === 'return') returnDone.add(ci.booking_id)
-  }
-
-  // On rent now = handover complete AND return NOT complete
-  const onRent = candidates.filter((b) => handoverDone.has(b.id) && !returnDone.has(b.id))
-  if (onRent.length === 0) return []
+  if (onRentError) throw onRentError
+  if (!onRent || onRent.length === 0) return []
 
   const vehicleIds = onRent.map((b) => b.vehicle_id).filter(isUUID)
 
-  // Earliest return_at across all on-rent bookings — query all upcoming bookings from there
-  const minReturnAt = onRent.reduce<string>((min, b) => (b.return_at < min ? b.return_at : min), onRent[0].return_at)
+  const minReturnAt = onRent.reduce<string>(
+    (min, b) => (b.return_at < min ? b.return_at : min),
+    onRent[0].return_at,
+  )
 
-  // Fetch the next upcoming confirmed/blocked booking for each vehicle
   const { data: upcoming } = vehicleIds.length
     ? await supabase
         .from('ops_bookings')
@@ -84,8 +60,6 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
         .order('pickup_at', { ascending: true })
     : { data: [] }
 
-  // Group upcoming by vehicle_id — we only need the earliest per vehicle, but we need to pick
-  // the one AFTER the specific on-rent booking's return_at.  Store all and filter per row.
   const upcomingByVehicle = new Map<string, Array<{ id: string; pickupAt: string }>>()
   for (const u of upcoming ?? []) {
     if (!isUUID(u.vehicle_id)) continue
@@ -93,21 +67,18 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
     upcomingByVehicle.get(u.vehicle_id)!.push({ id: u.id, pickupAt: u.pickup_at })
   }
 
-  const MS_PER_HOUR = 1000 * 60 * 60
-  const MS_PER_DAY = MS_PER_HOUR * 24
+  const MS_PER_DAY = 1000 * 60 * 60 * 24
 
-  const rows: OpsOnRentRow[] = onRent.map((b) => {
+  return onRent.map((b) => {
     const returnMs = new Date(b.return_at).getTime()
-    const isOverdue = returnMs < now.getTime()
 
     let prepWindowMs: number | null = null
     let nextBookingPickupAt: string | null = null
     let nextBookingId: string | null = null
 
     if (isUUID(b.vehicle_id)) {
-      const upcoming = upcomingByVehicle.get(b.vehicle_id) ?? []
-      // First candidate whose pickupAt >= return_at
-      const next = upcoming.find((u) => u.pickupAt >= b.return_at)
+      const candidates = upcomingByVehicle.get(b.vehicle_id) ?? []
+      const next = candidates.find((u) => u.pickupAt >= b.return_at)
       if (next) {
         nextBookingPickupAt = next.pickupAt
         nextBookingId = next.id
@@ -132,13 +103,8 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
       prepWindowMs,
       nextBookingPickupAt,
       nextBookingId,
-      isOverdue,
+      isOverdue: b.is_overdue ?? false,
       prepSeverity,
     }
   })
-
-  // Sort: soonest return first
-  rows.sort((a, b) => a.returnAt.localeCompare(b.returnAt))
-
-  return rows
 }

@@ -1206,6 +1206,7 @@
       "attentionNeeded": "Handlungsbedarf",
       "attentionChip": {
         "blocked": "Gesperrt",
+        "operationalHold": "Betriebssperre",
         "checklistIssue": "Checklisten-Problem",
         "expiredCompliance": "Abgelaufene Prüfung",
         "warningCompliance": "Prüfung bald fällig",

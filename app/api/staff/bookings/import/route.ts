@@ -438,11 +438,11 @@ async function postImportNormalize(allIds: string[], nowIso: string): Promise<vo
       .select('id')
       .in('booking_id', activeIds)
       .eq('checklist_type', 'handover')
-      .neq('status', 'completed');
+      .eq('status', 'pending');
     if (handoverInstances?.length) {
       await svc
         .from('checklist_instances')
-        .update({ status: 'completed' })
+        .update({ status: 'completed', completed_at: nowIso })
         .in('id', handoverInstances.map((i) => i.id));
     }
   }

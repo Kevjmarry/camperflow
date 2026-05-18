@@ -21,19 +21,6 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { canManage, companyId } = await resolveProfile(supabase, user.id)
-
-  if (canManage && companyId) {
-    const now = new Date().toISOString()
-    await supabase
-      .from('bookings')
-      .update({ status: 'on_rent' })
-      .eq('status', 'confirmed')
-      .eq('company_id', companyId)
-      .lte('pickup_at', now)
-      .gte('return_at', now)
-  }
-
   return NextResponse.json({ ok: true })
 }
 
