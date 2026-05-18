@@ -7,7 +7,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    console.log('🔥 REVERT ROUTE HIT');
     const { id: bookingId } = await params;
     const supabase = await createClient();
 

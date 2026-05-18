@@ -30,12 +30,13 @@ export interface OpsTimelineData {
   vehicles: OpsTimelineVehicle[]
   bookings: OpsTimelineBooking[]
   vehicleBlocks: OpsTimelineVehicleBlock[]
+  companyTimezone: string
 }
 
 export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [] }
+  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC' }
 
   const { data: profile } = await supabase
     .from('staff_profiles')
@@ -43,7 +44,14 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
-  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [] }
+  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC' }
+
+  const { data: companySettings } = await supabase
+    .from('company_settings')
+    .select('company_timezone')
+    .eq('id', companyId)
+    .maybeSingle()
+  const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
 
   const now = new Date()
   const windowStart = new Date(now)
@@ -60,7 +68,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   if (vError) throw vError
 
   const vehicleIds = (vehicles ?? []).map((v) => v.id).filter(isUUID)
-  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [] }
+  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone }
 
   // Bookings overlapping the window: return_at >= windowStart AND pickup_at <= windowEnd
   const { data: bookings, error: bError } = await supabase
@@ -108,5 +116,6 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
         status: b.booking_status ?? 'draft',
       })),
     vehicleBlocks,
+    companyTimezone,
   }
 }

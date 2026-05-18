@@ -10,7 +10,7 @@ import OperationsOnRentNow from '@/components/staff/operations/OperationsOnRentN
 import { getOpsPickupsToday } from '@/lib/staff/operations/getOpsPickupsToday'
 import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPickups'
 import type { OpsUpcomingPickup } from '@/lib/staff/operations/getOpsUpcomingPickups'
-import { getOpsUpcomingReturns } from '@/lib/staff/operations/getOpsUpcomingReturns'
+import { getOpsUpcomingReturns, type OpsUpcomingReturn } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
 import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
@@ -86,13 +86,6 @@ export default async function OperationsPage({
     Promise.allSettled(loaders.map((l) => l.fn())),
     getOpsWhatsAppTemplates().catch((): OpsWhatsAppTemplates => ({ pre_arrival: null, return_prep: null, review_request: null, company_phone: '', map_link: '', google_review_url: null })),
   ])
-  settled.forEach((result, i) => {
-    if (result.status === 'rejected') {
-      console.error(`[ops-debug] FAILED: ${loaders[i].name}`, result.reason)
-    } else {
-      console.log(`[ops-debug] OK: ${loaders[i].name} (${(result.value as unknown[]).length} rows)`)
-    }
-  })
   // Re-throw if any loader failed so the page still errors visibly
   const firstFailure = settled.find((r) => r.status === 'rejected')
   if (firstFailure) throw (firstFailure as PromiseRejectedResult).reason
@@ -100,7 +93,7 @@ export default async function OperationsPage({
   const [
     pickups,
     upcomingPickups,
-    upcomingReturns,
+    upcomingReturnsResult,
     invoiceReminders,
     completed,
     blockedVehicles,
@@ -116,6 +109,8 @@ export default async function OperationsPage({
     Awaited<ReturnType<typeof getOpsOnRentNow>>,
     Awaited<ReturnType<typeof getOpsBookingTimeline>>,
   ]
+  const upcomingReturns: OpsUpcomingReturn[] = upcomingReturnsResult.rows
+  const returnsTimezone: string = upcomingReturnsResult.companyTimezone
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
@@ -169,8 +164,6 @@ export default async function OperationsPage({
   fiveDaysCutoff.setDate(fiveDaysCutoff.getDate() + 5)
   fiveDaysCutoff.setHours(23, 59, 59, 999)
   for (const p of upcomingPickups) {
-    const passesGuard = !!(p.vehicleBlocked || p.hasUrgentIssue || p.hasAttentionIssue || p.hasBlockingIssue || p.hasExpiredCompliance || p.hasOpenVehicleIssue)
-    console.log('[attention-debug] upcoming pickup', { id: p.id, vehicle: p.vehicleName, hasUrgentIssue: p.hasUrgentIssue, hasAttentionIssue: p.hasAttentionIssue, hasBlockingIssue: p.hasBlockingIssue, passesGuard })
     if (!p.vehicleBlocked && !p.hasUrgentIssue && !p.hasAttentionIssue && !p.hasBlockingIssue && !p.hasExpiredCompliance && !p.hasOpenVehicleIssue) continue
     if (new Date(p.pickupAt) > fiveDaysCutoff) continue
     const chips: Chip[] = []
@@ -235,8 +228,6 @@ export default async function OperationsPage({
     }, `vehicle-${v.id}`)
   }
 
-  console.log('[attention-debug] attentionItems count', attentionItems.length)
-  console.log('[attention-debug] attentionItems', attentionItems.map((i) => ({ line1: i.line1, chips: i.chips.map((c) => c.label) })))
   const urgentItems = attentionItems.slice(0, 5)
 
   // Build the Next pickup tile feed: today's active pickups first, then upcoming.
@@ -322,6 +313,7 @@ export default async function OperationsPage({
               vehicles={timelineData.vehicles}
               bookings={timelineData.bookings}
               vehicleBlocks={timelineData.vehicleBlocks}
+              companyTimezone={timelineData.companyTimezone}
             />
 
             {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}
@@ -382,7 +374,7 @@ export default async function OperationsPage({
 
                 <OperationsInvoiceReminders reminders={invoiceReminders} whatsappTemplates={whatsappTemplates} />
                 <OperationsUpcomingPickups pickups={upcomingPickups} />
-                <OperationsUpcomingReturns returns={upcomingReturns} />
+                <OperationsUpcomingReturns returns={upcomingReturns} companyTimezone={returnsTimezone} />
                 <OperationsCompletedBookings bookings={completed} />
               </div>
             </div>

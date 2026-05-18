@@ -8,20 +8,22 @@ import type { OpsUpcomingReturn } from '@/lib/staff/operations/getOpsUpcomingRet
 
 interface Props {
   returns: OpsUpcomingReturn[]
+  companyTimezone: string
 }
 
 const LIMIT = 5
 
-function formatDate(iso: string, locale: string) {
+function formatDate(iso: string, locale: string, timeZone: string) {
   return new Date(iso).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone,
   })
 }
 
-function formatTime(iso: string, locale: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string, timeZone: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone })
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -164,7 +166,7 @@ function MetaBadges({
   )
 }
 
-export default function OperationsUpcomingReturns({ returns }: Props) {
+export default function OperationsUpcomingReturns({ returns, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations')
   const tSection = useTranslations('staff.operations.upcomingReturns')
@@ -287,14 +289,14 @@ export default function OperationsUpcomingReturns({ returns }: Props) {
                   <div className="ops-upcoming-time" style={{ textAlign: 'right' }}>
                     {/* On desktop: stacked time / date / countdown. On mobile: inline via CSS. */}
                     <div className="ops-upcoming-time-main" style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {formatTime(r.returnAt, locale)}
+                      {formatTime(r.returnAt, locale, companyTimezone)}
                       {/* Mobile-only: date and countdown inline */}
                       <span className="ops-upcoming-time-countdown">
-                        {formatDate(r.returnAt, locale)} · {r.daysUntil <= 0 ? t('countdown.today') : tSection('inDays', { count: r.daysUntil })}
+                        {formatDate(r.returnAt, locale, companyTimezone)} · {r.daysUntil <= 0 ? t('countdown.today') : tSection('inDays', { count: r.daysUntil })}
                       </span>
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                      {formatDate(r.returnAt, locale)}
+                      {formatDate(r.returnAt, locale, companyTimezone)}
                     </div>
                     <div className="ops-upcoming-time-sub" style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
                       {r.daysUntil <= 0 ? t('countdown.today') : tSection('inDays', { count: r.daysUntil })}

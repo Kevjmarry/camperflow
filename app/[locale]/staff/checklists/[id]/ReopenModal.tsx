@@ -74,7 +74,7 @@ export default function ReopenModal({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             type="button"
-            onClick={() => { console.log('CONFIRM CLICKED'); onConfirm(); }}
+            onClick={onConfirm}
             disabled={reopening}
             className="btn btn-primary"
             style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600, opacity: reopening ? 0.6 : 1 }}

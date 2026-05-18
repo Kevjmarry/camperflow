@@ -154,12 +154,6 @@ export default function ChecklistDetailClient({
 
   // Persist a read cache for offline use — fire-and-forget, never blocks the UI
   useEffect(() => {
-    // DEBUG: prove what labels reach saveChecklistSnapshot on every render cycle
-    console.log('[saveChecklistSnapshot] called with', {
-      instanceId: instance.id,
-      itemCount: initialItems.length,
-      labels: initialItems.map((it) => ({ id: it.id, templateItemId: it.template_item_id, label: it.template.label })),
-    });
     saveChecklistSnapshot(instance, initialItems);
   }, [instance, initialItems]);
 
@@ -733,20 +727,12 @@ export default function ChecklistDetailClient({
     staffMetaRef.current = newMeta;
     await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
     const returnVehicleId = localInstance.vehicle_id ?? instance.vehicle_id ?? instance.bookings?.vehicle_id;
-    console.log('[saveReturnVehicleField] debug', {
-      field,
-      value,
-      'localInstance.vehicle_id': localInstance.vehicle_id,
-      'instance.vehicle_id': instance.vehicle_id,
-      'instance.bookings': instance.bookings,
-      returnVehicleId,
-    });
+    console.log('[saveReturnVehicleField] debug', { field, returnVehicleId });
     if (field === 'km' && value && returnVehicleId) {
       const kmNum = parseInt(value, 10);
       if (!isNaN(kmNum)) {
-        console.log('[saveReturnVehicleField] calling vehicles.update', { returnVehicleId, kmNum });
         const { error: odometerError } = await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', returnVehicleId);
-        if (odometerError) console.error('saveReturnVehicleField: odometer update failed', odometerError);
+        if (odometerError) console.error('saveReturnVehicleField: odometer update failed', { code: odometerError?.code, message: odometerError?.message });
       }
     }
   };
@@ -788,7 +774,7 @@ export default function ChecklistDetailClient({
       const kmNum = parseInt(value, 10);
       if (!isNaN(kmNum)) {
         const { error: odometerError } = await supabase.from('vehicles').update({ latest_odometer: kmNum }).eq('id', handoverVehicleId);
-        if (odometerError) console.error('saveHandoverVehicleField: odometer update failed', odometerError);
+        if (odometerError) console.error('saveHandoverVehicleField: odometer update failed', { code: odometerError?.code, message: odometerError?.message });
       }
     }
   };
@@ -861,7 +847,7 @@ export default function ChecklistDetailClient({
       .from('checklist-evidence')
       .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
     if (error) {
-      console.error('uploadEvidencePhoto: storage upload failed', { path, group, error });
+      console.error('uploadEvidencePhoto: storage upload failed', { group, error: { code: error?.code, message: error?.message } });
       setSyncError(parseSyncError(error, 'item_update_failed'));
       throw error;
     }

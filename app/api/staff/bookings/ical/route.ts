@@ -26,7 +26,7 @@
  *   }
  */
 
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { parseICalEvents } from "@/lib/bookings/import/parseICalEvents";
 import { normalizeICalEvent } from "@/lib/bookings/import/normalizeICalEvent";
@@ -112,8 +112,8 @@ async function fetchICalFeed(url: URL): Promise<string> {
 export async function POST(request: NextRequest) {
   try {
     // ── auth ──────────────────────────────────────────────────────────────────
-    const cronSecret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get("authorization") ?? "";
+    const cronSecret = process.env.CRON_SECRET?.trim();
+    const authHeader = (request.headers.get("authorization") ?? "").trim();
     const isInternalCronCall =
       cronSecret && cronSecret.length > 0 && authHeader === `Bearer ${cronSecret}`;
 

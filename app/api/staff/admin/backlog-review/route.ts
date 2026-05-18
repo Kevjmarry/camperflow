@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ─── Shared auth + company scope helper ──────────────────────────────────────
@@ -22,15 +21,7 @@ async function resolveAdmin() {
     return { error: 'Insufficient permissions', status: 403 as const };
   }
 
-  return { user, companyId: staffProfile.company_id as string };
-}
-
-function makeServiceClient() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  );
+  return { user, companyId: staffProfile.company_id as string, supabase };
 }
 
 // ─── GET — List stale bookings for review ─────────────────────────────────────
@@ -41,8 +32,7 @@ export async function GET(_request: NextRequest) {
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { companyId } = auth;
-    const serviceClient = makeServiceClient();
+    const { companyId, supabase: serviceClient } = auth;
 
     const now = new Date();
     const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString();
@@ -114,7 +104,7 @@ export async function POST(request: NextRequest) {
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { user, companyId } = auth;
+    const { user, companyId, supabase: serviceClient } = auth;
 
     const body = await request.json().catch(() => ({}));
     const reason: string = (body?.reason ?? '').trim();
@@ -133,8 +123,6 @@ export async function POST(request: NextRequest) {
         instances_closed: 0,
       });
     }
-
-    const serviceClient = makeServiceClient();
     const nowDate = new Date();
     const now = nowDate.toISOString();
     const yearStart = new Date(Date.UTC(nowDate.getUTCFullYear(), 0, 1)).toISOString();

@@ -3,15 +3,13 @@ import { createClient } from '@/lib/supabase/server'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
 
-const TZ = 'Europe/Bratislava'
-const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
-
 export interface OpsInvoiceReminder {
   type: 'balance_invoice' | 'pre_arrival' | 'return_prep' | 'review_request' | 'review_imported'
   key?: string
   id: string
   bookingId: string
   bookingNumber: string
+  guestAccessToken: string
   customerName: string
   vehicleName: string
   pickupAt: string
@@ -40,9 +38,12 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const { data: settings } = await supabase
     .from('company_settings')
-    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, final_payment_due_days')
+    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, final_payment_due_days, company_timezone')
     .eq('id', companyId)
     .maybeSingle()
+
+  const companyTimezone: string = (settings as any)?.company_timezone ?? 'UTC'
+  const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
 
   const now = Date.now()
 
@@ -52,6 +53,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       .select(`
         id,
         booking_number,
+        guest_access_token,
         customer_name,
         pickup_at,
         return_at,
@@ -74,6 +76,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       .select(`
         id,
         booking_number,
+        guest_access_token,
         customer_name,
         pickup_at,
         return_at,
@@ -114,6 +117,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         id: b.id,
         bookingId: b.id,
         bookingNumber: b.booking_number ?? '',
+        guestAccessToken: b.guest_access_token ?? '',
         customerName: b.customer_name ?? '',
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at,
@@ -134,6 +138,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         id: `${b.id}-pre`,
         bookingId: b.id,
         bookingNumber: b.booking_number ?? '',
+        guestAccessToken: b.guest_access_token ?? '',
         customerName: b.customer_name ?? '',
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at,
@@ -155,6 +160,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         id: `${b.id}-return-prep`,
         bookingId: b.id,
         bookingNumber: b.booking_number ?? '',
+        guestAccessToken: b.guest_access_token ?? '',
         customerName: b.customer_name ?? '',
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at,
@@ -185,6 +191,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
         id: `${b.id}-review-request`,
         bookingId: b.id,
         bookingNumber: b.booking_number ?? '',
+        guestAccessToken: b.guest_access_token ?? '',
         customerName: b.customer_name ?? '',
         vehicleName: vehicle?.name ?? '',
         pickupAt: b.pickup_at ?? '',

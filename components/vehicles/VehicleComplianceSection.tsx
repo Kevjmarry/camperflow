@@ -71,8 +71,8 @@ function getComplianceStatus(
   if (expiryDate) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const expiry = new Date(expiryDate);
-    expiry.setHours(0, 0, 0, 0);
+    const [ey, em, ed] = expiryDate.split('-').map(Number)
+    const expiry = new Date(ey, em - 1, ed);
     const diffDays = Math.floor(
       (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -172,6 +172,7 @@ export default function VehicleComplianceSection({
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 

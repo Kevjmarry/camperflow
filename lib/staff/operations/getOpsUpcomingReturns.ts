@@ -76,10 +76,15 @@ function resolveExtras(
   }
 }
 
-export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
+export interface OpsUpcomingReturnsResult {
+  rows: OpsUpcomingReturn[]
+  companyTimezone: string
+}
+
+export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.id || !isUUID(user.id)) return []
+  if (!user?.id || !isUUID(user.id)) return { rows: [], companyTimezone: 'UTC' }
   const { data: profile } = await supabase
     .from('staff_profiles')
     .select('company_id')
@@ -87,7 +92,14 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
     .maybeSingle()
   const companyId = profile?.company_id
 
-  if (!isUUID(companyId)) return []
+  if (!isUUID(companyId)) return { rows: [], companyTimezone: 'UTC' }
+
+  const { data: companySettings } = await supabase
+    .from('company_settings')
+    .select('company_timezone')
+    .eq('id', companyId)
+    .maybeSingle()
+  const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
 
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
@@ -200,7 +212,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  return (data ?? []).filter((b) => !bookingsWithCompletedReturn.has(b.id)).map((b) => {
+  const rows = (data ?? []).filter((b) => !bookingsWithCompletedReturn.has(b.id)).map((b) => {
     const returnDate = new Date(b.return_at)
     returnDate.setHours(0, 0, 0, 0)
     const daysUntil = Math.round(
@@ -234,4 +246,5 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturn[]> {
       ...extras,
     }
   })
+  return { rows, companyTimezone }
 }

@@ -20,7 +20,7 @@ const COLOR_ACCENT  = rgb(0.13, 0.13, 0.47);
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Parse a Unix-ms timestamp from a storage filename like `1713456789000_abc.jpg`. */
-function parsePhotoTimestamp(storagePath: string): string | null {
+function parsePhotoTimestamp(storagePath: string, timeZone: string): string | null {
   try {
     const filename = storagePath.split('/').pop() ?? '';
     const ts = parseInt(filename.split('_')[0], 10);
@@ -28,6 +28,7 @@ function parsePhotoTimestamp(storagePath: string): string | null {
     return new Date(ts).toLocaleString('en-GB', {
       day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
+      timeZone,
     });
   } catch {
     return null;
@@ -61,11 +62,12 @@ function sortEntriesByTimestamp(entries: PhotoEntry[]): PhotoEntry[] {
 }
 
 /** Format an ISO timestamp for display. */
-function formatDate(iso: string): string {
+function formatDate(iso: string, timeZone: string): string {
   try {
     return new Date(iso).toLocaleString('en-GB', {
       day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
+      timeZone,
     });
   } catch {
     return iso;
@@ -364,6 +366,7 @@ async function drawEvidenceSection(
   photos: PhotoPaths,
   publicBaseUrl: string,
   evidenceType: string,
+  tz: string,
 ): Promise<DrawCtx> {
   const groups = (['general', 'damage'] as const).filter(
     (g) => (photos[g] ?? []).length > 0,
@@ -391,7 +394,7 @@ async function drawEvidenceSection(
       const storagePath = entryPath(entry);
       const rotation    = entryRotation(entry);
       const photoUrl    = `${publicBaseUrl}/${storagePath}`;
-      const ts          = parsePhotoTimestamp(storagePath);
+      const ts          = parsePhotoTimestamp(storagePath, tz);
       const caption     = [
         `Photo ${i + 1} of ${entries.length}`,
         ts ? ts : null,
@@ -513,13 +516,15 @@ export async function GET(
         .maybeSingle(),
       supabase
         .from('company_settings')
-        .select('contact_phone')
+        .select('contact_phone, company_timezone')
         .eq('id', profile.company_id)
         .maybeSingle(),
     ]);
 
     const logoUrl    = (companyRow as any)?.logo_url as string | null | undefined;
     const logoBuffer = logoUrl ? await fetchImageBuffer(logoUrl) : null;
+
+    const tz = (companySettings as any)?.company_timezone ?? 'UTC';
 
     const companyInfo: CompanyInfo = {
       name:           (companyRow as any)?.name           || null,
@@ -567,8 +572,8 @@ export async function GET(
     ctx = drawKeyValue(ctx, 'Customer name',     booking.customer_name  || '—');
     ctx = drawKeyValue(ctx, 'Vehicle',           vehicleLabel);
     ctx = drawKeyValue(ctx, 'Registration',      registrationLabel);
-    ctx = drawKeyValue(ctx, 'Pickup',            formatDate(booking.pickup_at));
-    ctx = drawKeyValue(ctx, 'Return',            formatDate(booking.return_at));
+    ctx = drawKeyValue(ctx, 'Pickup',            formatDate(booking.pickup_at, tz));
+    ctx = drawKeyValue(ctx, 'Return',            formatDate(booking.return_at, tz));
 
     // ── Checklist confirmation metadata ────────────────────────────────────
     const hasChecklistMeta =
@@ -579,7 +584,7 @@ export async function GET(
       ctx = drawSectionHeading(ctx, 'Checklist Completion');
 
       if (handoverInstance?.completed_at) {
-        ctx = drawKeyValue(ctx, 'Handover completed', formatDate(handoverInstance.completed_at));
+        ctx = drawKeyValue(ctx, 'Handover completed', formatDate(handoverInstance.completed_at, tz));
         const staffName = handoverInstance.completed_by
           ? (staffEmails[handoverInstance.completed_by] ?? handoverInstance.completed_by)
           : null;
@@ -587,7 +592,7 @@ export async function GET(
       }
 
       if (returnInstance?.completed_at) {
-        ctx = drawKeyValue(ctx, 'Return completed', formatDate(returnInstance.completed_at));
+        ctx = drawKeyValue(ctx, 'Return completed', formatDate(returnInstance.completed_at, tz));
         const staffName = returnInstance.completed_by
           ? (staffEmails[returnInstance.completed_by] ?? returnInstance.completed_by)
           : null;
@@ -618,12 +623,12 @@ export async function GET(
     ctx = drawRule(ctx, 14, 14);
 
     // ── Handover evidence ───────────────────────────────────────────────────
-    ctx = await drawEvidenceSection(ctx, 'Handover Evidence', handoverPhotos, publicBaseUrl, 'Handover');
+    ctx = await drawEvidenceSection(ctx, 'Handover Evidence', handoverPhotos, publicBaseUrl, 'Handover', tz);
 
     ctx = { ...ctx, y: ctx.y - 10 };
 
     // ── Return evidence ─────────────────────────────────────────────────────
-    ctx = await drawEvidenceSection(ctx, 'Return Evidence', returnPhotos, publicBaseUrl, 'Return');
+    ctx = await drawEvidenceSection(ctx, 'Return Evidence', returnPhotos, publicBaseUrl, 'Return', tz);
 
     // ── Footer on every page ────────────────────────────────────────────────
     const pages = doc.getPages();
@@ -631,6 +636,7 @@ export async function GET(
     const generated = new Date().toLocaleString('en-GB', {
       day: '2-digit', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
+      timeZone: tz,
     });
 
     for (let i = 0; i < totalPages; i++) {

@@ -73,6 +73,8 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
     review_request: 'Hello again, thank you for renting the {vehicle_name}! We hope you enjoyed your trip. We\'d love if you could share your experience with a quick review.',
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.camperflow.io'
+
   const buildMessage = (r: OpsInvoiceReminder): string | null => {
     if (r.type !== 'pre_arrival' && r.type !== 'return_prep' && r.type !== 'review_request') return null
     const template =
@@ -87,8 +89,8 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
       pickup_date: r.pickupAt ? formatDate(r.pickupAt, locale) : '',
       return_date: r.returnAt ? formatDate(r.returnAt, locale) : '',
       guest_link: r.type === 'review_request'
-        ? `https://app.camperflow.io/${locale}/guest/feedback?code=${r.bookingNumber}`
-        : `https://app.camperflow.io/${locale}/guest?code=${r.bookingNumber}`,
+        ? `${appUrl}/${locale}/guest/feedback?code=${r.bookingNumber}&token=${r.guestAccessToken}`
+        : `${appUrl}/${locale}/guest?code=${r.bookingNumber}&token=${r.guestAccessToken}`,
       booking_code: r.bookingNumber,
       company_phone: whatsappTemplates.company_phone,
       map_link: whatsappTemplates.map_link,

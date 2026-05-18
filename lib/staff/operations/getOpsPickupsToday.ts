@@ -51,7 +51,6 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   if (error) throw error
 
   const bookingIds = (data ?? []).map((b) => b.id)
-  console.log('[uuid-debug] bookingIds invalid:', bookingIds.filter(id => !id || typeof id !== 'string' || !UUID_RE.test(id)))
 
   const { data: instances, error: ciError } = bookingIds.length
     ? await supabase

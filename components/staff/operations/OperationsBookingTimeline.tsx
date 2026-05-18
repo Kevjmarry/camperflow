@@ -18,6 +18,7 @@ interface Props {
   vehicles: OpsTimelineVehicle[]
   bookings: OpsTimelineBooking[]
   vehicleBlocks?: TimelineVehicleBlock[]
+  companyTimezone?: string
 }
 
 const DAYS_BACK = 30
@@ -43,7 +44,7 @@ const FALLBACK_STYLE = STATUS_STYLE.draft
 
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
-export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [] }: Props) {
+export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC' }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
@@ -63,9 +64,20 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   if (!mounted) return null
 
   const now = new Date()
-  const windowStart = new Date(now)
-  windowStart.setDate(windowStart.getDate() - DAYS_BACK)
-  windowStart.setHours(0, 0, 0, 0)
+
+  // Compute company-local midnight for today by subtracting elapsed time since
+  // midnight in the company timezone (no library needed — Intl gives us hh/mm/ss).
+  const tzTimeParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: companyTimezone,
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(now)
+  const tzH = +(tzTimeParts.find(p => p.type === 'hour')!.value)
+  const tzM = +(tzTimeParts.find(p => p.type === 'minute')!.value)
+  const tzS = +(tzTimeParts.find(p => p.type === 'second')!.value)
+  const todayMidnight = new Date(now.getTime() - (tzH * 3600 + tzM * 60 + tzS) * 1000)
+
+  const windowStart = new Date(todayMidnight)
+  windowStart.setTime(windowStart.getTime() - DAYS_BACK * 86_400_000)
 
   function dayOffset(date: Date): number {
     return (date.getTime() - windowStart.getTime()) / 86_400_000
@@ -80,7 +92,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
     const off = dayOffset(cur)
     if (off >= 0) {
       monthMarkers.push({
-        label: cur.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }),
+        label: cur.toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: companyTimezone }),
         leftPct: (off / TOTAL_DAYS) * 100,
       })
     }
@@ -92,11 +104,12 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   // Day markers — one per day, centered in each column
   const dayMarkers: { label: string; leftPx: number; isToday: boolean }[] = []
   const weekendOffsets: number[] = []
+  const weekdayFmt = new Intl.DateTimeFormat('en-US', { timeZone: companyTimezone, weekday: 'short' })
   for (let d = 0; d < TOTAL_DAYS; d += 1) {
-    const date = new Date(windowStart)
-    date.setDate(date.getDate() + d)
-    dayMarkers.push({ label: String(date.getDate()), leftPx: (d + 0.5) * PX_PER_DAY, isToday: d === DAYS_BACK })
-    if (date.getDay() === 0) weekendOffsets.push(d * PX_PER_DAY)
+    const date = new Date(windowStart.getTime() + d * 86_400_000)
+    const dayNum = date.toLocaleDateString('en-CA', { timeZone: companyTimezone, day: 'numeric' })
+    dayMarkers.push({ label: dayNum, leftPx: (d + 0.5) * PX_PER_DAY, isToday: d === DAYS_BACK })
+    if (weekdayFmt.format(date) === 'Sun') weekendOffsets.push(d * PX_PER_DAY)
   }
 
   const bookingsByVehicle = new Map<string, OpsTimelineBooking[]>()

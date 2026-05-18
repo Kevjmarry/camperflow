@@ -83,6 +83,7 @@ interface Booking {
   prearrival_reminder_enabled: boolean | null;
   return_prep_reminder_enabled: boolean | null;
   review_request_reminder_enabled: boolean | null;
+  guest_access_token: string;
 }
 
 interface LinkedCustomer {
@@ -115,14 +116,16 @@ const normalizeStatus = (raw: string): BookingStatus => {
 
 function GuestAccessBlock({
   bookingNumber,
+  guestAccessToken,
   guestLocale,
   t,
 }: {
   bookingNumber: string;
+  guestAccessToken: string;
   guestLocale: string;
   t: (key: string) => string;
 }) {
-  const guestUrl = `https://app.camperflow.io/${guestLocale}/guest?code=${bookingNumber}`;
+  const guestUrl = `https://app.camperflow.io/${guestLocale}/guest?code=${bookingNumber}&token=${guestAccessToken}`;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -376,12 +379,9 @@ export default function BookingDetailPage() {
   }, [id, canManage]);
 
   const checkUserCapabilities = async () => {
-    console.log('[CUC] checkUserCapabilities called');
     try {
       const user = await getEffectiveUser(supabase);
-      console.log('[CUC] getEffectiveUser returned:', user ? `user:${user.id}` : 'null');
       if (!user) {
-        console.log('[CUC] BRANCH: setError notAuthenticated');
         setError(t("error.notAuthenticated"));
         setLoading(false);
         return;
@@ -470,10 +470,7 @@ export default function BookingDetailPage() {
           customer_name: data.customer_name || "",
           customer_phone: data.customer_phone || "",
           customer_email: data.customer_email || "",
-          // Do not pre-populate with machine-imported notes (iCal DESCRIPTION,
-          // Bookingmood CSV notes, etc.). Imported bookings have a source_type;
-          // manually created bookings do not.
-          notes: data.source_type ? "" : (data.notes || ""),
+          notes: data.notes ?? formData.notes,
         });
 
         // Load staff_metadata — only keys present in the DB object become overrides.
@@ -557,7 +554,7 @@ export default function BookingDetailPage() {
         await fetchChecklistInstances();
       }
     } catch (err: any) {
-      console.error('Fetch booking error:', err);
+      console.error('Fetch booking error:', err?.message);
       setError(err.message || t("error.loadFailed"));
     } finally {
       setLoading(false);
@@ -587,7 +584,7 @@ export default function BookingDetailPage() {
 
       fetchChecklistInstances();
     } catch (err: any) {
-      console.error('Fetch redacted booking error:', err);
+      console.error('Fetch redacted booking error:', err?.message);
       setError(err.message || t("error.loadFailed"));
     } finally {
       setLoading(false);
@@ -603,7 +600,7 @@ export default function BookingDetailPage() {
       if (error) throw error;
       setVehicles((data || []) as Vehicle[]);
     } catch (err: any) {
-      console.error('Failed to fetch vehicles:', err);
+      console.error('Failed to fetch vehicles:', err?.message);
     }
   };
 
@@ -701,7 +698,7 @@ export default function BookingDetailPage() {
       setChecklistInstances(instances);
       return instances;
     } catch (err: any) {
-      console.error('Failed to fetch checklist instances:', err);
+      console.error('Failed to fetch checklist instances:', err?.message);
       return checklistInstances;
     }
   };
@@ -766,7 +763,7 @@ export default function BookingDetailPage() {
       setSameDayConflictWarning("");
       return { type: 'none' };
     } catch (err: any) {
-      console.error('Error checking availability:', err);
+      console.error('Error checking availability:', err?.message);
       return { type: 'none' };
     }
   };
@@ -882,7 +879,7 @@ export default function BookingDetailPage() {
         .single();
 
       if (updateError) {
-        console.error('Update booking error:', 'message:', updateError.message, 'code:', updateError.code, 'details:', updateError.details, 'hint:', updateError.hint, 'JSON:', JSON.stringify(updateError));
+        console.error('Update booking error:', 'message:', updateError.message, 'code:', updateError.code, 'details:', updateError.details, 'hint:', updateError.hint);
         const detail = [
           updateError.code && `code: ${updateError.code}`,
           updateError.message,
@@ -904,7 +901,7 @@ export default function BookingDetailPage() {
       await fetchBooking();
       alert(t("success.bookingUpdated"));
     } catch (err: any) {
-      console.error('Update booking error (catch):', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+      console.error('Update booking error (catch):', err?.message);
       setError(err?.message || err?.toString() || t("error.updateFailed"));
     } finally {
       setSaving(false);
@@ -922,7 +919,7 @@ export default function BookingDetailPage() {
         .select('id');
 
       if (deleteError) {
-        console.error('Delete booking error:', deleteError);
+        console.error('Delete booking error:', deleteError.message);
         setError(deleteError.message || t("error.deleteFailed"));
         setSaving(false);
         return;
@@ -1348,6 +1345,7 @@ export default function BookingDetailPage() {
           {/* ── Guest Access ─────────────────────────────────────────────── */}
           <GuestAccessBlock
             bookingNumber={booking.booking_number}
+            guestAccessToken={booking.guest_access_token}
             guestLocale={guestLocale}
             t={t as (key: string) => string}
           />

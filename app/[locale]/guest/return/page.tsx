@@ -30,6 +30,7 @@ interface CompanyReturnInfo {
   contact_whatsapp: string | null;
   before_return_info: string | null;
   return_nearby_places: NearbyPlace[] | null;
+  company_timezone: string | null;
 }
 
 const inlineHeaderStyle: React.CSSProperties = {
@@ -99,11 +100,12 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
     contact_whatsapp: null,
     before_return_info: null,
     return_nearby_places: null,
+    company_timezone: null,
   };
   if (booking.company_id) {
     const { data } = await supabase
       .from("company_settings")
-      .select("return_info, contact_phone, contact_whatsapp, before_return_info, return_nearby_places, guest_content_i18n")
+      .select("return_info, contact_phone, contact_whatsapp, before_return_info, return_nearby_places, guest_content_i18n, company_timezone")
       .eq("id", booking.company_id)
       .maybeSingle();
     if (data) {
@@ -117,6 +119,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
         return_nearby_places: raw.return_nearby_places ?? null,
         return_info:          i18n.return_info       || (isSk ? raw.return_info       : null),
         before_return_info:   i18n.before_return_info || (isSk ? raw.before_return_info : null),
+        company_timezone:     raw.company_timezone ?? null,
       };
     }
   }
@@ -130,6 +133,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: returnInfo.company_timezone ?? "UTC",
     });
   };
 

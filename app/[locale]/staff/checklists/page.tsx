@@ -79,7 +79,7 @@ export default function ChecklistsPage() {
         .single();
 
       if (profileError || !profile?.company_id) {
-        console.error('Error fetching profile:', profileError);
+        console.error('Error fetching profile:', { code: profileError?.code, message: profileError?.message });
         router.push(`/${locale}/staff/login`);
         return;
       }
@@ -104,7 +104,7 @@ export default function ChecklistsPage() {
           .not('booking_id', 'is', null);
 
         if (ciError) {
-          console.error('Error fetching booking checklists:', ciError);
+          console.error('Error fetching booking checklists:', { code: ciError?.code, message: ciError?.message });
           if (!cancelled) setBookingChecklists([]);
         } else {
           const bookingIds = Array.from(
@@ -122,7 +122,7 @@ export default function ChecklistsPage() {
               .in('id', bookingIds);
 
             if (bookingError) {
-              console.error('Error fetching bookings for checklists:', bookingError);
+              console.error('Error fetching bookings for checklists:', { code: bookingError?.code, message: bookingError?.message });
             } else {
               for (const b of bookingRows || []) bookingsById.set(b.id, b);
 
@@ -138,7 +138,7 @@ export default function ChecklistsPage() {
                   .in('id', vehicleIds);
 
                 if (vehicleError) {
-                  console.error('Error fetching vehicles for checklists:', vehicleError);
+                  console.error('Error fetching vehicles for checklists:', { code: vehicleError?.code, message: vehicleError?.message });
                 } else {
                   for (const v of vehicleRows || []) vehiclesById.set(v.id, v);
                 }
@@ -187,7 +187,7 @@ export default function ChecklistsPage() {
           if (!cancelled) setBookingChecklists(formatted);
         }
       } catch (e) {
-        console.error('Unexpected error fetching booking checklists:', e);
+        console.error('Unexpected error fetching booking checklists:', e instanceof Error ? e.message : 'unknown error');
         if (!cancelled) setBookingChecklists([]);
       }
 
@@ -201,7 +201,7 @@ export default function ChecklistsPage() {
           .order('created_at', { ascending: false });
 
         if (issueError) {
-          console.error('Error fetching open issues:', issueError);
+          console.error('Error fetching open issues:', { code: issueError?.code, message: issueError?.message });
           if (!cancelled) setOpenIssues([]);
         } else {
           const issueInstanceIds = Array.from(
@@ -220,7 +220,7 @@ export default function ChecklistsPage() {
               .in('id', issueInstanceIds);
 
             if (instanceError) {
-              console.error('Error fetching checklist instances for issues:', instanceError);
+              console.error('Error fetching checklist instances for issues:', { code: instanceError?.code, message: instanceError?.message });
             } else {
               for (const ci of instanceRows || []) instancesById.set(ci.id, ci);
 
@@ -236,7 +236,7 @@ export default function ChecklistsPage() {
                   .in('id', bookingIds);
 
                 if (bookingError) {
-                  console.error('Error fetching bookings for issues:', bookingError);
+                  console.error('Error fetching bookings for issues:', { code: bookingError?.code, message: bookingError?.message });
                 } else {
                   for (const b of bookingRows || []) bookingsById.set(b.id, b);
 
@@ -252,7 +252,7 @@ export default function ChecklistsPage() {
                       .in('id', vehicleIds);
 
                     if (vehicleError) {
-                      console.error('Error fetching vehicles for issues:', vehicleError);
+                      console.error('Error fetching vehicles for issues:', { code: vehicleError?.code, message: vehicleError?.message });
                     } else {
                       for (const v of vehicleRows || []) vehiclesById.set(v.id, v);
                     }
@@ -286,7 +286,7 @@ export default function ChecklistsPage() {
           if (!cancelled) setOpenIssues(formattedIssues);
         }
       } catch (e) {
-        console.error('Unexpected error fetching open issues:', e);
+        console.error('Unexpected error fetching open issues:', e instanceof Error ? e.message : 'unknown error');
         if (!cancelled) setOpenIssues([]);
       }
 

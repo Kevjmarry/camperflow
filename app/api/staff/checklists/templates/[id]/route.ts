@@ -6,10 +6,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-  const url = new URL(request.url);
-  const pathId = url.pathname.split('/').filter(Boolean).pop();
-  const templateId = String(id ?? pathId ?? '').trim();
+  const { id: templateId } = await params;
 
   if (!templateId) {
     return NextResponse.json({ error: 'Missing template id' }, { status: 400 });
@@ -66,7 +63,8 @@ export async function DELETE(
   const { data: instances } = await serviceClient
     .from('checklist_instances')
     .select('id')
-    .eq('template_id', templateId);
+    .eq('template_id', templateId)
+    .eq('company_id', profile.company_id);
 
   if (instances && instances.length > 0) {
     const instanceIds = instances.map((i: { id: string }) => i.id);
@@ -83,7 +81,8 @@ export async function DELETE(
   const { error: ciError } = await serviceClient
     .from('checklist_instances')
     .delete()
-    .eq('template_id', templateId);
+    .eq('template_id', templateId)
+    .eq('company_id', profile.company_id);
   if (ciError) {
     return NextResponse.json({ error: ciError.message }, { status: 500 });
   }
