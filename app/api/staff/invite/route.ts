@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
         ? (process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || 'http://localhost:3000')
         : (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || '')
 
+    if (process.env.NODE_ENV !== 'development' && !siteUrl) {
+      return NextResponse.json(
+        { error: 'Server configuration error: site URL not configured' },
+        { status: 500 }
+      )
+    }
+
     const supabase = await createServerClient()
 
     // Verify the calling user is authenticated
@@ -175,6 +182,21 @@ export async function POST(request: NextRequest) {
     })
     if (metaError) {
       console.error('[invite] failed to set app_metadata.company_id user=%s error=%s', invitedUserId, metaError.message)
+      const { error: unlinkErr } = await adminClient
+        .from('staff_profiles')
+        .update({ auth_user_id: null })
+        .eq('profile_id', profile_id)
+        .eq('auth_user_id', invitedUserId)
+      if (unlinkErr) {
+        console.error('[invite] failed to unlink profile during metadata rollback', unlinkErr)
+      }
+      await adminClient.auth.admin.deleteUser(invitedUserId).catch((cleanupErr) => {
+        console.error('[invite] failed to delete auth user during metadata rollback', cleanupErr)
+      })
+      return NextResponse.json(
+        { error: 'Failed to configure account permissions; invite has been rolled back' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ success: true, mode: 'invite', user_id: invitedUserId })
