@@ -68,6 +68,9 @@ export default function ChecklistDetailClient({
   const [localInstance, setLocalInstance] = useState(instance);
   const [openNotesById, setOpenNotesById] = useState<Record<string, boolean>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [isOffline, setIsOffline] = useState(() =>
+    typeof navigator !== 'undefined' && !navigator.onLine
+  );
 
   // ── Vehicle / evidence state ─────────────────────────────────────────────────
   const [vehicleData, setVehicleData] = useState(() => {
@@ -168,6 +171,16 @@ export default function ChecklistDetailClient({
     });
   }, [instance.id]);
 
+  useEffect(() => {
+    const sync = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+
   // ── Focus a specific item from the focusItem / itemId query param ────────────
   useEffect(() => {
     if (!focusItemId || hasFocusedRef.current || localItems.length === 0) return;
@@ -256,7 +269,7 @@ export default function ChecklistDetailClient({
     !!instance.booking_id &&
     (instance.checklist_type === 'handover' || instance.checklist_type === 'return') &&
     instance.bookings?.status === 'completed';
-  const isReadOnly = isChecklistLocked || localInstance.status === 'completed';
+  const isReadOnly = isChecklistLocked || localInstance.status === 'completed' || isOffline;
 
   const isPickupOrHandover =
     instance.checklist_type === 'pickup' || instance.checklist_type === 'handover';
@@ -1327,6 +1340,7 @@ export default function ChecklistDetailClient({
         hasBooking={!!instance.booking_id}
         onReopen={() => setReopenModal(true)}
         onGoToBooking={handleGoToBooking}
+        isOffline={isOffline}
       />
 
       {isPickupOrHandover ? (

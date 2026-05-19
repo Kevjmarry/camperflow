@@ -14,6 +14,7 @@ type ChecklistBannersProps = {
   hasBooking: boolean;
   onReopen: () => void;
   onGoToBooking: () => void;
+  isOffline?: boolean;
 };
 
 export default function ChecklistBanners({
@@ -27,11 +28,33 @@ export default function ChecklistBanners({
   hasBooking,
   onReopen,
   onGoToBooking,
+  isOffline,
 }: ChecklistBannersProps) {
   const t = useTranslations('checklistDetail');
 
   return (
     <>
+      {/* Offline read-only banner */}
+      {isOffline && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            border: '1px solid rgb(var(--warning) / 0.4)',
+            backgroundColor: 'rgb(var(--warning) / 0.08)',
+            color: 'rgb(var(--warning))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+          }}
+        >
+          <span style={{ flexShrink: 0 }}>⚠</span>
+          <span>You&apos;re offline — this checklist is read-only. Reconnect to make changes.</span>
+        </div>
+      )}
+
       {/* Booking-completed lock banner */}
       {isChecklistLocked && (
         <div
