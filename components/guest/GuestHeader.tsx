@@ -14,44 +14,68 @@ export default function GuestHeader() {
         borderBottom: '1px solid rgb(var(--border))',
         display: 'flex',
         alignItems: 'stretch',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         minHeight: '44px',
       }}
     >
-      {/* Company identity */}
-      {company && (
-        <div
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            padding: '0 var(--space-3)',
-            borderLeft: '1px solid rgb(var(--border))',
-            gap: '1px',
-          }}
-        >
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgb(var(--foreground))', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-            {company.name}
-          </span>
-          <span style={{ fontSize: '10px', color: 'rgb(var(--muted))', lineHeight: 1.2, fontFamily: 'monospace', letterSpacing: '0.04em' }}>
-            {company.id.slice(0, 6)}
-          </span>
-        </div>
-      )}
+      <style>{`
+        .gh-powered { display: flex; }
+        @media (max-width: 479px) { .gh-powered { display: none; } }
+      `}</style>
 
-      {/* Locale switcher */}
+      {/* Company identity (left) — shrinks and truncates on narrow screens */}
       <div
         style={{
-          flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 var(--space-3)',
-          borderLeft: '1px solid rgb(var(--border))',
+          gap: 'var(--space-3)',
+          padding: '0 var(--space-4)',
+          minWidth: 0,
+          flexShrink: 1,
+          overflow: 'hidden',
         }}
       >
-        <LocaleSwitcher />
+        {company?.logo_url && (
+          <img
+            src={company.logo_url}
+            alt={company.name}
+            style={{ height: '28px', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
+          />
+        )}
+        {company && (
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--foreground))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {company.name}
+          </span>
+        )}
+      </div>
+
+      {/* Right side — never shrinks */}
+      <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0 }}>
+        {/* Powered by CamperFlow — hidden below 480px */}
+        <div
+          className="gh-powered"
+          style={{
+            alignItems: 'center',
+            padding: '0 var(--space-3)',
+            borderLeft: '1px solid rgb(var(--border))',
+          }}
+        >
+          <span style={{ fontSize: '10px', color: 'rgb(var(--muted))', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>
+            Powered by CamperFlow
+          </span>
+        </div>
+
+        {/* Locale switcher */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 var(--space-3)',
+            borderLeft: '1px solid rgb(var(--border))',
+          }}
+        >
+          <LocaleSwitcher />
+        </div>
       </div>
     </nav>
   )

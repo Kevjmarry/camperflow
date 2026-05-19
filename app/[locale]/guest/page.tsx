@@ -208,7 +208,6 @@ try{
     { key: "faq",            functional: true, href: `/${locale}/guest/faq?code=${code}` },
     { key: "help",           functional: true, href: `/${locale}/guest/help?code=${code}` },
     { key: "emergency",      functional: true, href: `/${locale}/guest/emergency?code=${code}` },
-    { key: "feedback",       functional: true, href: `/${locale}/guest/feedback?code=${code}` },
   ];
 
   return (
