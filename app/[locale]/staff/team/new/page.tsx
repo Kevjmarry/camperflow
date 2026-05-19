@@ -267,7 +267,12 @@ export default function NewTeamMemberPage() {
         });
 
         if (!inviteRes.ok) {
-          const errorData = await inviteRes.json();
+          let errorData: { error?: string } = {};
+          try {
+            errorData = await inviteRes.json();
+          } catch {
+            // non-JSON response body (502, gateway timeout, etc.)
+          }
           // Roll back the profile we just created so this email is free to retry
           const { error: deleteErr } = await supabase
             .from("staff_profiles")
