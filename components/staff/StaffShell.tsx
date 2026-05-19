@@ -11,10 +11,10 @@ export default function StaffShell({ children }: { children: React.ReactNode }) 
   const isAuthPage = AUTH_PATHS.some((p) => pathname?.endsWith(p));
 
   return (
-    <>
+    <div data-zone="staff" style={{ display: "contents" }}>
       {!isAuthPage && <StaffNav />}
       {children}
       {!isAuthPage && <MobileBottomNav />}
-    </>
+    </div>
   );
 }

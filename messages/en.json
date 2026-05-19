@@ -1582,11 +1582,11 @@
         "completed": "Completed"
       },
       "systemTypes": {
-        "handover": "Pickup Checklist",
+        "handover": "Handover Checklist",
         "return": "Return Checklist",
         "cleaning": "Cleaning Checklist",
         "mechanical": "Mechanical Checklist",
-        "pickup": "Pickup checklist"
+        "pickup": "Pickup Preparation Checklist"
       }
     },
     "action": {
@@ -2170,8 +2170,8 @@
       "title": "Booking defaults",
       "pickupTimeLabel": "Default pick-up time",
       "pickupTimeHelper": "Applied to new bookings as the default pick-up time.",
-      "dropoffTimeLabel": "Default drop-off time",
-      "dropoffTimeHelper": "Applied to new bookings as the default drop-off time.",
+      "dropoffTimeLabel": "Default return time",
+      "dropoffTimeHelper": "Applied to new bookings as the default return time.",
       "timezoneLabel": "Company timezone",
       "timezoneHelper": "Used for booking imports and date display."
     },

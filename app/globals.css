@@ -59,6 +59,15 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
+/* Staff zone: CamperFlow brand always fixed, tenant theme cannot bleed in */
+[data-zone="staff"] {
+  --brand: 59 130 246;        /* #3b82f6 */
+  --brand-hover: 39 110 226;  /* adjustBrightness(primary, -20) */
+  --brand-light: 219 234 254; /* blue-100 #dbeafe */
+  --brand-2: 139 92 246;      /* #8b5cf6 */
+  --accent: 16 185 129;       /* #10b981 */
+}
+
 /* Example: Epic Vans tenant override (not applied by default) */
 [data-tenant="epic-vans"] {
   --brand: 54 143 139; /* #368F8B */

@@ -4,6 +4,7 @@ import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
+import BackLink from "@/components/staff/BackLink";
 import { createClient } from "@/lib/supabase/client";
 
 interface Vehicle {
@@ -233,18 +234,7 @@ export default function EditVehiclePage() {
       <div className="surface page-surface">
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
           <div>
-            <Link
-              href={`/${locale}/staff/vehicles`}
-              style={{
-                fontSize: "14px",
-                color: "rgb(var(--brand))",
-                textDecoration: "none",
-                marginBottom: "var(--space-2)",
-                display: "inline-block",
-              }}
-            >
-              ← Back to vehicles
-            </Link>
+            <BackLink href={`/${locale}/staff/vehicles`}>Back to vehicles</BackLink>
             <h1 style={{ fontSize: "28px", color: "rgb(var(--text))" }}>Edit vehicle</h1>
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
               Update vehicle information

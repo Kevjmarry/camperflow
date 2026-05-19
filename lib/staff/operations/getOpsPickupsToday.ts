@@ -57,6 +57,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
         .from('checklist_instances')
         .select('id, booking_id, status, checklist_type')
         .in('booking_id', bookingIds)
+        // 'handover' is the checklist type for vehicle transfer to the guest — the staff-side action that happens during the guest's pickup.
         .eq('checklist_type', 'handover')
     : { data: [], error: null }
 
