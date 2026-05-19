@@ -19,9 +19,30 @@ export default async function GuestChecklistPage({ params }: PageProps) {
 
   if (!code) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
-        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <div>
+          <Link
+            href={`/${locale}/`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "rgb(var(--text-secondary))",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("back")}
+          </Link>
+        </div>
+        <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px" }}>
+          <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+          <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+        </div>
       </div>
     );
   }
@@ -32,18 +53,60 @@ export default async function GuestChecklistPage({ params }: PageProps) {
 
   if (bookingError || !booking) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
-        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <div>
+          <Link
+            href={`/${locale}/guest/bookings/${encodeURIComponent(code)}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "rgb(var(--text-secondary))",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("back")}
+          </Link>
+        </div>
+        <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px" }}>
+          <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+          <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+        </div>
       </div>
     );
   }
 
   if (!booking.company_id) {
     return (
-      <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px", margin: "0 auto" }}>
-        <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
-        <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+        <div>
+          <Link
+            href={`/${locale}/guest/bookings/${encodeURIComponent(code)}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "rgb(var(--text-secondary))",
+              textDecoration: "none",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("back")}
+          </Link>
+        </div>
+        <div className="surface" style={{ padding: "var(--space-8)", maxWidth: "600px" }}>
+          <h1 style={{ marginBottom: "var(--space-4)" }}>{t("notFoundTitle")}</h1>
+          <p style={{ color: "rgb(var(--muted))" }}>{t("contactUs")}</p>
+        </div>
       </div>
     );
   }

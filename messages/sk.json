@@ -1582,7 +1582,7 @@
         "completed": "Dokončené"
       },
       "systemTypes": {
-        "handover": "Kontrolný zoznam prevzatia",
+        "handover": "Kontrolný zoznam odovzdania",
         "return": "Kontrolný zoznam vrátenia",
         "cleaning": "Kontrolný zoznam upratovania",
         "mechanical": "Technický kontrolný zoznam",

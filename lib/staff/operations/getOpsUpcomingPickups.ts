@@ -163,6 +163,7 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   )
   const bookingsWithUrgentIssue = bookingsWithBlockingIssue
 
+  // 'handover' = vehicle transfer to guest (staff action at guest pickup); 'pickup' = vehicle preparation before guest arrival.
   const handoverDoneSet = new Set(
     (instances ?? [])
       .filter((ci) => ci.checklist_type === 'handover' && ci.status === 'completed')
