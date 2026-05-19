@@ -9,7 +9,7 @@ export default function GuestPageContainer({ children }: { children: React.React
   const isDashboard = /^\/[^/]+\/guest\/?$/.test(pathname)
   const isEmergency = /^\/[^/]+\/guest\/emergency/.test(pathname)
   return (
-    <PageContainer maxWidth={isDashboard ? '900px' : undefined} showSignOut={!isEmergency && !isDashboard}>
+    <PageContainer maxWidth={isDashboard ? '900px' : undefined} showSignOut={!isEmergency}>
       {children}
     </PageContainer>
   )
