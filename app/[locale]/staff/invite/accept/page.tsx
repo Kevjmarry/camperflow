@@ -29,24 +29,26 @@ export default function StaffInviteAcceptPage() {
         const pid = params.get("profile_id");
         setProfileId(pid);
 
-        const { data: existing } = await supabase.auth.getSession();
-        if (existing?.session) {
+        if (code) {
+          // Invite link: discard any existing session before exchanging so the resulting
+          // session always belongs to the invitee, never to a previously logged-in user.
+          await supabase.auth.signOut();
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            setError(exchangeError.message);
+            return;
+          }
           setSessionReady(true);
-          return;
+        } else {
+          // No code in URL — page was reloaded after a successful exchange.
+          // The invitee's session is already stored in cookies; use it.
+          const { data: existing } = await supabase.auth.getSession();
+          if (existing?.session) {
+            setSessionReady(true);
+          } else {
+            setError(t("invite.invalidLink"));
+          }
         }
-
-        if (!code) {
-          setError(t("invite.invalidLink"));
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          setError(exchangeError.message);
-          return;
-        }
-
-        setSessionReady(true);
       } catch {
         setError(t("invite.unexpected"));
       } finally {
