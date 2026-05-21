@@ -91,7 +91,8 @@ export async function proxy(request: NextRequest) {
   const isStaffRoute =
   (basePath === "/staff" || basePath.startsWith("/staff/")) &&
   basePath !== "/staff/login" &&
-  basePath !== "/staff/reset";
+  basePath !== "/staff/reset" &&
+  basePath !== "/staff/signup";
   if (isStaffRoute) {
     if (!user || !isStaff) {
       return NextResponse.redirect(new URL(`/${activeLocale}/`, request.url));
