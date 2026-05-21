@@ -2,6 +2,30 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient as createServerClient, createServiceClient } from '@/lib/supabase/server'
 
+interface PlanConfig {
+  plan: string
+  included_vehicles: number
+  included_staff: number
+  max_extra_vehicles: number
+  max_extra_staff: number
+}
+
+// max_extra_* uses 9999 as a sentinel for "unlimited" on Pro because the
+// column is NOT NULL. A future migration can make it nullable.
+const PRICE_PLAN_MAP: Record<string, PlanConfig> = {
+  price_1TZXTPIhm4YI8m30XpwGR05g: { plan: 'starter', included_vehicles: 3,  included_staff: 3,  max_extra_vehicles: 3,    max_extra_staff: 3    },
+  price_1TZSbMIT6IGiVqTFkAdZ6AE4: { plan: 'core',    included_vehicles: 5,  included_staff: 5,  max_extra_vehicles: 5,    max_extra_staff: 5    },
+  price_1TZSf6IT6IGiVqTFpLV72a27: { plan: 'growth',  included_vehicles: 15, included_staff: 15, max_extra_vehicles: 10,   max_extra_staff: 10   },
+  price_1TZSjCIT6IGiVqTFzoyKtcJ0: { plan: 'pro',     included_vehicles: 30, included_staff: 30, max_extra_vehicles: 9999, max_extra_staff: 9999 },
+}
+
+const FALLBACK_LIMITS: Omit<PlanConfig, 'plan'> = {
+  included_vehicles: 0,
+  included_staff: 0,
+  max_extra_vehicles: 0,
+  max_extra_staff: 0,
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -30,7 +54,7 @@ export async function POST(request: NextRequest) {
     let session: Stripe.Checkout.Session
     try {
       session = await stripe.checkout.sessions.retrieve(session_id, {
-        expand: ['subscription'],
+        expand: ['subscription', 'subscription.items.data.price'],
       })
     } catch {
       return NextResponse.json({ error: 'Invalid or expired Stripe session' }, { status: 400 })
@@ -59,10 +83,18 @@ export async function POST(request: NextRequest) {
         ? session.subscription
         : (session.subscription as Stripe.Subscription | null)?.id ?? null
 
-    const plan = session.metadata?.plan ?? null
+    const expandedSub =
+      session.subscription !== null && typeof session.subscription === 'object'
+        ? (session.subscription as Stripe.Subscription)
+        : null
+
+    const priceId = expandedSub?.items?.data?.[0]?.price?.id ?? null
+    const planConfig = priceId ? (PRICE_PLAN_MAP[priceId] ?? null) : null
+    const plan = planConfig?.plan ?? null
+    const planLimits = planConfig ?? FALLBACK_LIMITS
 
     // [TEMP LOG] prove Stripe IDs were extracted
-    console.log('[stripe-signup] stripe customer_id=%s subscription_id=%s plan=%s', customerId ?? 'NULL', subscriptionId ?? 'NULL', plan ?? 'null')
+    console.log('[stripe-signup] stripe customer_id=%s subscription_id=%s price_id=%s plan=%s', customerId ?? 'NULL', subscriptionId ?? 'NULL', priceId ?? 'null', plan ?? 'null')
 
     if (!customerId) {
       console.error('[stripe-signup] Stripe session missing customer ID session_id=%s', session_id)
@@ -106,7 +138,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createServiceClient()
 
     // [TEMP LOG] exact companies insert payload
-    console.log('[stripe-signup] companies insert payload', JSON.stringify({ id: company_id, name: company_name, stripe_customer_id: customerId, stripe_subscription_id: subscriptionId, subscription_status: 'active', subscription_plan: plan }))
+    console.log('[stripe-signup] companies insert payload', JSON.stringify({ id: company_id, name: company_name, stripe_customer_id: customerId, stripe_subscription_id: subscriptionId, subscription_status: 'active', subscription_plan: plan, ...planLimits }))
 
     const { error: companyError } = await adminClient
       .from('companies')
@@ -117,6 +149,10 @@ export async function POST(request: NextRequest) {
         stripe_subscription_id: subscriptionId,
         subscription_status: 'active',
         subscription_plan: plan,
+        included_vehicles: planLimits.included_vehicles,
+        included_staff: planLimits.included_staff,
+        max_extra_vehicles: planLimits.max_extra_vehicles,
+        max_extra_staff: planLimits.max_extra_staff,
       })
 
     if (companyError) {

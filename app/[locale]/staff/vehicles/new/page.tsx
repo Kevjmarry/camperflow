@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
 import BackLink from '@/components/staff/BackLink';
 import { createClient } from '@/lib/supabase/client';
@@ -28,6 +29,7 @@ export default function NewVehiclePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,8 +107,30 @@ export default function NewVehiclePage() {
 
     setSubmitting(true);
     setError(null);
+    setLimitReached(false);
 
     try {
+      const { data: limitData } = await supabase
+        .from('companies')
+        .select('included_vehicles, purchased_extra_vehicles')
+        .eq('id', companyId)
+        .single();
+
+      if (limitData) {
+        const { count: vehicleCount } = await supabase
+          .from('vehicles')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId);
+
+        const vehicleLimit = (limitData.included_vehicles ?? 0) + (limitData.purchased_extra_vehicles ?? 0);
+        if (vehicleLimit > 0 && (vehicleCount ?? 0) >= vehicleLimit) {
+          setError(t('error.vehicleLimitReached'));
+          setLimitReached(true);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const { data: vehicleData, error: insertError } = await supabase
         .from('vehicles')
         .insert({
@@ -228,6 +252,9 @@ export default function NewVehiclePage() {
           {error && (
             <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--error) / 0.1)', border: '1px solid rgb(var(--error) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--error))', fontSize: '14px' }}>
               {error}
+              {limitReached && (
+                <> <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', textDecoration: 'underline' }}>{t('error.upgradePlan')}</Link></>
+              )}
             </div>
           )}
 

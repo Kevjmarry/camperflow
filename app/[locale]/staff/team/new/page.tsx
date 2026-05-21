@@ -63,6 +63,7 @@ export default function NewTeamMemberPage() {
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,6 +158,7 @@ export default function NewTeamMemberPage() {
     const normalizedEmail = formData.email.trim().toLowerCase();
 
     setSubmitting(true);
+    setLimitReached(false);
 
     try {
       // Duplicate email check — inside try so Supabase errors surface properly
@@ -180,6 +182,28 @@ export default function NewTeamMemberPage() {
           }
           // Profile exists but invite never completed — go to that profile to retry
           router.push(`/${locale}/staff/team/${existing.profile_id}`);
+          return;
+        }
+      }
+
+      const { data: limitData } = await supabase
+        .from("companies")
+        .select("included_staff, purchased_extra_staff")
+        .eq("id", staffProfile!.company_id)
+        .single();
+
+      if (limitData) {
+        const { count: staffCount } = await supabase
+          .from("staff_profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", staffProfile!.company_id)
+          .eq("active", true);
+
+        const staffLimit = (limitData.included_staff ?? 0) + (limitData.purchased_extra_staff ?? 0);
+        if (staffLimit > 0 && (staffCount ?? 0) >= staffLimit) {
+          setLimitReached(true);
+          setSubmitError(t("errors.staffLimitReached"));
+          setSubmitting(false);
           return;
         }
       }
@@ -416,6 +440,9 @@ export default function NewTeamMemberPage() {
                   }}
                 >
                   {submitError}
+                  {limitReached && (
+                    <> <Link href={`/${locale}/staff/settings/billing`} style={{ color: "inherit", textDecoration: "underline" }}>{t("errors.upgradePlan")}</Link></>
+                  )}
                 </div>
               )}
 

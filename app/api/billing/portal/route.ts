@@ -4,6 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const returnPath = searchParams.get('returnPath') ?? '/en/staff/settings/billing'
+    const safeReturnPath = /^\/[a-z]{2}\/staff\//.test(returnPath)
+      ? returnPath
+      : '/en/staff/settings/billing'
+
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -44,11 +50,13 @@ export async function GET(request: NextRequest) {
     }
 
     const stripe = new Stripe(stripeKey)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.camperflow.io'
+    const siteUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'https://app.camperflow.io')
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: company.stripe_customer_id,
-      return_url: `${siteUrl}/en/staff/company`,
+      return_url: `${siteUrl}${safeReturnPath}`,
     })
 
     return NextResponse.redirect(portalSession.url)

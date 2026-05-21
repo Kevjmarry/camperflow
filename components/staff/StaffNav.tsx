@@ -25,6 +25,7 @@ export default function StaffNav() {
     { key: 'team',       href: `/${locale}/staff/team` },
     { key: 'customers',  href: `/${locale}/staff/customers` },
     { key: 'company',    href: `/${locale}/staff/company` },
+    { key: 'billing',    href: `/${locale}/staff/settings/billing` },
   ]
 
   function updateFades() {

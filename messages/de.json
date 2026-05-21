@@ -1021,6 +1021,7 @@
       "team": "Mitarbeiterteam",
       "customers": "Kunden",
       "company": "Firmeneinstellungen",
+      "billing": "Abrechnung",
       "language": "Sprache",
       "more": "Mehr"
     },
@@ -1433,7 +1434,9 @@
           "cannotSubmitMissingCompanyId": "Senden nicht möglich: company_id fehlt",
           "yearInvalid": "Das Baujahr muss eine 4-stellige Zahl sein",
           "insertFailedPrefix": "Einfügen fehlgeschlagen: ",
-          "unexpectedPrefix": "Unerwarteter Fehler: "
+          "unexpectedPrefix": "Unerwarteter Fehler: ",
+          "vehicleLimitReached": "Fahrzeuglimit erreicht.",
+          "upgradePlan": "Plan upgraden"
         }
       }
     }
@@ -1858,7 +1861,9 @@
       "emailRequiredForLogin": "E-Mail ist erforderlich, wenn der Login aktiviert ist",
       "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
       "inviteFailed": "Einladung konnte nicht gesendet werden",
-      "duplicateEmail": "Ein Teammitglied mit dieser E-Mail-Adresse existiert bereits."
+      "duplicateEmail": "Ein Teammitglied mit dieser E-Mail-Adresse existiert bereits.",
+      "staffLimitReached": "Mitarbeiterlimit erreicht.",
+      "upgradePlan": "Plan upgraden"
     },
     "form": {
       "firstName": "Vorname",
@@ -2907,6 +2912,57 @@
     "iosBefore": "Tippe auf",
     "iosAfter": "dann auf",
     "iosAction": "Zum Home-Bildschirm",
-    "fallbackHint": "Öffne das Browsermenü und wähle „Installieren“ oder „Zum Startbildschirm hinzufügen“"
+    "fallbackHint": "Öffne das Browsermenü und wähle „Installieren” oder „Zum Startbildschirm hinzufügen”"
+  },
+  "staffBilling": {
+    "title": "Abrechnung & Abonnement",
+    "backToCompany": "Zurück zu Firmeneinstellungen",
+    "loading": "Abrechnungsdaten werden geladen…",
+    "sections": {
+      "currentPlan": "Aktueller Plan",
+      "usageLimits": "Nutzung",
+      "billingActions": "Abrechnungsaktionen",
+      "billingHistory": "Abrechnungsverlauf"
+    },
+    "plan": {
+      "name": "Plan",
+      "status": "Status",
+      "price": "Preis",
+      "renewal": "Nächste Zahlung",
+      "expiry": "Läuft ab am",
+      "per_month": "Monat",
+      "per_year": "Jahr",
+      "unknown": "Unbekannter Plan",
+      "notSyncedWarning": "Plan ist noch nicht synchronisiert."
+    },
+    "status": {
+      "active": "Aktiv",
+      "trialing": "Testphase",
+      "past_due": "Überfällig",
+      "cancelled": "Gekündigt",
+      "none": "Kein Abonnement"
+    },
+    "usage": {
+      "vehicles": "Fahrzeuge",
+      "staff": "Personal",
+      "used": "{used} / {limit}",
+      "extraPurchased": "{purchased} / {max} Extras"
+    },
+    "actions": {
+      "manageBilling": "Abrechnung verwalten",
+      "upgradePlan": "Plan upgraden",
+      "addVehicleSlot": "Fahrzeugplatz hinzufügen",
+      "addStaffSlot": "Personalplatz hinzufügen",
+      "comingSoon": "Demnächst verfügbar",
+      "opening": "Wird geöffnet…"
+    },
+    "history": {
+      "emptyTitle": "Kein Rechnungsverlauf",
+      "emptyDescription": "Rechnungen anzeigen und herunterladen im Abrechnungsportal.",
+      "openPortal": "Abrechnungsportal öffnen"
+    },
+    "errors": {
+      "loadFailed": "Abrechnungsdaten konnten nicht geladen werden. Bitte aktualisiere die Seite."
+    }
   }
 }

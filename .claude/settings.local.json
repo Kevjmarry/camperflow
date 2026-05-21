@@ -13,7 +13,13 @@
       "Bash(Select-Object Name)",
       "Bash(xargs grep -l \"stripe\")",
       "Bash(npx tsc *)",
-      "Bash(xargs grep -l \"getServerSession\\\\|getUser\\\\|getSession\")"
+      "Bash(xargs grep -l \"getServerSession\\\\|getUser\\\\|getSession\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" | Where-Object { $_.PSIsContainer } | Select-Object Name)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\\\\app\\\\api\" -Recurse -Filter \"*webhook*\" -Name)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\\\\app\\\\api\" -Recurse -Filter \"*stripe*\" -Name)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Recurse -Filter \"*.tsx\" -Name)",
+      "Bash(xargs grep -l \"stripe\\\\.\")",
+      "Bash(xargs grep -l \"CREATE FUNCTION\\\\|CREATE PROCEDURE\")"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\staff"

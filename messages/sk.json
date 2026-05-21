@@ -1021,6 +1021,7 @@
       "team": "Tím personálu",
       "customers": "Zákazníci",
       "company": "Nastavenia spoločnosti",
+      "billing": "Fakturácia",
       "language": "Jazyk",
       "more": "Viac"
     },
@@ -1433,7 +1434,9 @@
           "cannotSubmitMissingCompanyId": "Nie je možné odoslať: chýba company_id",
           "yearInvalid": "Rok musí byť 4-ciferné číslo",
           "insertFailedPrefix": "Vloženie zlyhalo: ",
-          "unexpectedPrefix": "Neočakávaná chyba: "
+          "unexpectedPrefix": "Neočakávaná chyba: ",
+          "vehicleLimitReached": "Limit vozidiel bol dosiahnutý.",
+          "upgradePlan": "Aktualizujte váš plán"
         }
       }
     }
@@ -1858,7 +1861,9 @@
       "emailRequiredForLogin": "E-mail je povinný, ak je povolené prihlásenie",
       "invalidEmail": "Zadajte platnú e-mailovú adresu",
       "inviteFailed": "Odoslanie pozvánky na prihlásenie zlyhalo",
-      "duplicateEmail": "Člen tímu s týmto e-mailom už existuje."
+      "duplicateEmail": "Člen tímu s týmto e-mailom už existuje.",
+      "staffLimitReached": "Limit personálu bol dosiahnutý.",
+      "upgradePlan": "Aktualizujte váš plán"
     },
     "form": {
       "firstName": "Meno",
@@ -2908,5 +2913,56 @@
     "iosAfter": "a potom na",
     "iosAction": "Pridať na domovskú obrazovku",
     "fallbackHint": "Otvorte ponuku prehliadača a vyberte „Nainštalovať\" alebo „Pridať na domovskú obrazovku\""
+  },
+  "staffBilling": {
+    "title": "Fakturácia a predplatné",
+    "backToCompany": "Späť na nastavenia spoločnosti",
+    "loading": "Načítavajú sa fakturačné informácie…",
+    "sections": {
+      "currentPlan": "Aktuálny plán",
+      "usageLimits": "Využitie",
+      "billingActions": "Fakturačné akcie",
+      "billingHistory": "História faktúr"
+    },
+    "plan": {
+      "name": "Plán",
+      "status": "Stav",
+      "price": "Cena",
+      "renewal": "Ďalšia platba",
+      "expiry": "Platnosť do",
+      "per_month": "mesiac",
+      "per_year": "rok",
+      "unknown": "Neznámy plán",
+      "notSyncedWarning": "Plán ešte nie je synchronizovaný."
+    },
+    "status": {
+      "active": "Aktívny",
+      "trialing": "Skúšobná verzia",
+      "past_due": "Po splatnosti",
+      "cancelled": "Zrušený",
+      "none": "Žiadne predplatné"
+    },
+    "usage": {
+      "vehicles": "Vozidlá",
+      "staff": "Personál",
+      "used": "{used} / {limit}",
+      "extraPurchased": "{purchased} / {max} extras"
+    },
+    "actions": {
+      "manageBilling": "Spravovať fakturáciu",
+      "upgradePlan": "Upgradovať plán",
+      "addVehicleSlot": "Pridať slot vozidla",
+      "addStaffSlot": "Pridať slot personálu",
+      "comingSoon": "Čoskoro dostupné",
+      "opening": "Otvára sa…"
+    },
+    "history": {
+      "emptyTitle": "Žiadna história faktúr",
+      "emptyDescription": "Zobrazte a stiahnite faktúry vo fakturačnom portáli.",
+      "openPortal": "Otvoriť fakturačný portál"
+    },
+    "errors": {
+      "loadFailed": "Fakturačné informácie sa nepodarilo načítať. Obnovte stránku."
+    }
   }
 }
