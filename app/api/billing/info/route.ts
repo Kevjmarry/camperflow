@@ -76,7 +76,7 @@ export async function GET(_request: NextRequest) {
           const sub = await stripe.subscriptions.retrieve(
             company.stripe_subscription_id,
             { expand: ['items.data.price'] },
-          )
+          ) as Stripe.Subscription
           const price = sub.items.data[0]?.price as Stripe.Price | undefined
           stripeData = {
             current_period_end: sub.current_period_end,
