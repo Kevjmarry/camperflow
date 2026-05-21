@@ -8,7 +8,12 @@
       "Bash(npm install *)",
       "Bash(mkdir -p \"c:\\\\CamperFlow\\\\camperflow\\\\app\\\\[locale]\\\\staff\\\\signup\")",
       "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Name \"middleware*\" -Recurse -Exclude \"node_modules\")",
-      "Bash(Select-Object -First 20)"
+      "Bash(Select-Object -First 20)",
+      "Bash(Get-ChildItem -Path \"c:\\\\CamperFlow\\\\camperflow\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(xargs grep -l \"stripe\")",
+      "Bash(npx tsc *)",
+      "Bash(xargs grep -l \"getServerSession\\\\|getUser\\\\|getSession\")"
     ],
     "additionalDirectories": [
       "c:\\CamperFlow\\camperflow\\app\\[locale]\\staff"
