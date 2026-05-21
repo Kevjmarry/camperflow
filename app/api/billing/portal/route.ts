@@ -1,25 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
-import { getEffectiveUser } from '@/lib/supabase/getEffectiveUser'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const user = await getEffectiveUser(supabase)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: profile } = await supabase
       .from('staff_profiles')
-      .select('company_id')
+      .select('company_id, role, can_manage')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
     if (!profile) {
       return NextResponse.json({ error: 'Staff profile not found' }, { status: 403 })
+    }
+
+    if (profile.role !== 'admin' && !profile.can_manage) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
     const { data: company } = await supabase

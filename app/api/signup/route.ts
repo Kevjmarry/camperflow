@@ -11,6 +11,9 @@ export async function POST(request: NextRequest) {
     const company_name = typeof rawCompany === 'string' ? rawCompany.trim() : ''
     const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : ''
 
+    // [TEMP LOG] prove which route received the submit — this route has NO Stripe billing fields
+    console.log('[signup] POST received route=/api/signup (FREE path, no Stripe) company_name=%s email=%s', company_name || '(empty)', email || '(empty)')
+
     if (!full_name || !company_name || !email || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }

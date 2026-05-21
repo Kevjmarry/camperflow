@@ -10,6 +10,9 @@ export async function POST(request: NextRequest) {
     const full_name = typeof rawName === 'string' ? rawName.trim() : ''
     const company_name = typeof rawCompany === 'string' ? rawCompany.trim() : ''
 
+    // [TEMP LOG] prove which route received the submit
+    console.log('[stripe-signup] POST received route=/api/staff/stripe-signup session_id=%s full_name=%s company_name=%s', session_id ? 'present' : 'MISSING', full_name || '(empty)', company_name || '(empty)')
+
     if (!session_id || !full_name || !company_name || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }
@@ -58,6 +61,19 @@ export async function POST(request: NextRequest) {
 
     const plan = session.metadata?.plan ?? null
 
+    // [TEMP LOG] prove Stripe IDs were extracted
+    console.log('[stripe-signup] stripe customer_id=%s subscription_id=%s plan=%s', customerId ?? 'NULL', subscriptionId ?? 'NULL', plan ?? 'null')
+
+    if (!customerId) {
+      console.error('[stripe-signup] Stripe session missing customer ID session_id=%s', session_id)
+      return NextResponse.json({ error: 'Stripe session is missing a customer ID. Please contact support.' }, { status: 400 })
+    }
+
+    if (!subscriptionId) {
+      console.error('[stripe-signup] Stripe session missing subscription ID session_id=%s', session_id)
+      return NextResponse.json({ error: 'Stripe session is missing a subscription ID. Please contact support.' }, { status: 400 })
+    }
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.camperflow.io'
     const supabase = await createServerClient()
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -88,6 +104,9 @@ export async function POST(request: NextRequest) {
 
     const company_id = crypto.randomUUID()
     const adminClient = createServiceClient()
+
+    // [TEMP LOG] exact companies insert payload
+    console.log('[stripe-signup] companies insert payload', JSON.stringify({ id: company_id, name: company_name, stripe_customer_id: customerId, stripe_subscription_id: subscriptionId, subscription_status: 'active', subscription_plan: plan }))
 
     const { error: companyError } = await adminClient
       .from('companies')
