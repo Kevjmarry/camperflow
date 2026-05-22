@@ -308,13 +308,15 @@ export default function BillingPage() {
                 >
                   {portalLoading ? t('actions.opening') : t('actions.manageBilling')}
                 </button>
-                <a
-                  href={`https://www.camperflow.io/${locale}/pricing`}
+                <button
+                  type="button"
                   className="btn btn-secondary"
-                  style={{ textDecoration: 'none' }}
+                  disabled={portalLoading}
+                  onClick={openPortal}
+                  style={{ opacity: portalLoading ? 0.6 : 1, cursor: portalLoading ? 'not-allowed' : 'pointer' }}
                 >
                   {t('actions.upgradePlan')}
-                </a>
+                </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
