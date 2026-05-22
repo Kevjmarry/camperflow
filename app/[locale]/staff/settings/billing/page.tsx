@@ -339,7 +339,7 @@ export default function BillingPage() {
                   type="button"
                   className="btn btn-primary"
                   disabled={portalLoading}
-                  onClick={openPortal}
+                  onClick={() => openPortal()}
                   style={{ opacity: portalLoading ? 0.6 : 1, cursor: portalLoading ? 'not-allowed' : 'pointer' }}
                 >
                   {portalLoading ? t('actions.opening') : t('actions.manageBilling')}
@@ -365,7 +365,7 @@ export default function BillingPage() {
                 type="button"
                 className="btn btn-secondary"
                 disabled={portalLoading}
-                onClick={openPortal}
+                onClick={() => openPortal()}
                 style={{ fontSize: '14px' }}
               >
                 {portalLoading ? t('actions.opening') : t('history.openPortal')}
