@@ -168,7 +168,10 @@
     "capabilityJoiner": " + ",
     "sectionActive": "Aktívni",
     "sectionInactive": "Neaktívni",
-    "addMember": "Pridať člena tímu"
+    "addMember": "Pridať člena tímu",
+    "overLimitBanner": "Niektorí členovia tímu prekračujú zahrnutý limit plánu.",
+    "overLimitBannerLink": "Upgradovať plán",
+    "overLimitChip": "Nad limitom plánu"
   },
   "staffMember": {
     "backToStaffTeam": "Späť na tím personálu",
@@ -1783,7 +1786,10 @@
     "holdStatus": {
       "outOfService": "Mimo prevádzky",
       "outOfServiceWithReason": "Mimo prevádzky: {reason}"
-    }
+    },
+    "overLimitBanner": "Niektoré vozidlá prekračujú zahrnutý limit plánu.",
+    "overLimitBannerLink": "Upgradovať plán",
+    "overLimitChip": "Nad limitom plánu"
   },
   "staffVehicleEdit": {
     "title": "Upraviť vozidlo",
@@ -2952,10 +2958,7 @@
     },
     "actions": {
       "manageBilling": "Spravovať fakturáciu",
-      "upgradePlan": "Upgradovať plán",
-      "addVehicleSlot": "Pridať slot vozidla",
-      "addStaffSlot": "Pridať slot personálu",
-      "comingSoon": "Čoskoro dostupné",
+      "changePlan": "Zmeniť plán",
       "opening": "Otvára sa…"
     },
     "history": {

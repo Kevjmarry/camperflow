@@ -168,7 +168,10 @@
     "capabilityJoiner": " + ",
     "sectionActive": "Aktiv",
     "sectionInactive": "Inaktiv",
-    "addMember": "Teammitglied hinzufügen"
+    "addMember": "Teammitglied hinzufügen",
+    "overLimitBanner": "Einige Teammitglieder überschreiten das im Plan enthaltene Limit.",
+    "overLimitBannerLink": "Plan upgraden",
+    "overLimitChip": "Über Planlimit"
   },
   "staffMember": {
     "backToStaffTeam": "Zurück zum Mitarbeiterteam",
@@ -1783,7 +1786,10 @@
     "holdStatus": {
       "outOfService": "Außer Betrieb",
       "outOfServiceWithReason": "Außer Betrieb: {reason}"
-    }
+    },
+    "overLimitBanner": "Einige Fahrzeuge überschreiten das im Plan enthaltene Limit.",
+    "overLimitBannerLink": "Plan upgraden",
+    "overLimitChip": "Über Planlimit"
   },
   "staffVehicleEdit": {
     "title": "Fahrzeug bearbeiten",
@@ -2952,10 +2958,7 @@
     },
     "actions": {
       "manageBilling": "Abrechnung verwalten",
-      "upgradePlan": "Plan upgraden",
-      "addVehicleSlot": "Fahrzeugplatz hinzufügen",
-      "addStaffSlot": "Personalplatz hinzufügen",
-      "comingSoon": "Demnächst verfügbar",
+      "changePlan": "Plan wechseln",
       "opening": "Wird geöffnet…"
     },
     "history": {

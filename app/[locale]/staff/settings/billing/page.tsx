@@ -350,23 +350,7 @@ export default function BillingPage() {
                   onClick={openPortal}
                   style={{ opacity: portalLoading ? 0.6 : 1, cursor: portalLoading ? 'not-allowed' : 'pointer' }}
                 >
-                  {t('actions.upgradePlan')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled
-                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                >
-                  {t('actions.addVehicleSlot')} — {t('actions.comingSoon')}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled
-                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                >
-                  {t('actions.addStaffSlot')} — {t('actions.comingSoon')}
+                  {t('actions.changePlan')}
                 </button>
               </div>
             </section>

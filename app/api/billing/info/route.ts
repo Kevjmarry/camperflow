@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
+import { PRICE_PLAN_MAP } from '@/lib/billing/plans'
 
 export async function GET(_request: NextRequest) {
   try {
@@ -68,6 +69,8 @@ export async function GET(_request: NextRequest) {
       interval: string | null
     } = { current_period_end: null, amount: null, currency: null, interval: null }
 
+    let livePlanConfig: typeof PRICE_PLAN_MAP[string] | null = null
+
     if (company.stripe_subscription_id) {
       const stripeKey = process.env.STRIPE_SECRET_KEY
       if (stripeKey) {
@@ -91,25 +94,34 @@ export async function GET(_request: NextRequest) {
             currency: price?.currency ?? null,
             interval: price?.recurring?.interval ?? null,
           }
+          if (price?.id) {
+            livePlanConfig = PRICE_PLAN_MAP[price.id] ?? null
+            if (!livePlanConfig) {
+              console.warn('[billing/info] unknown Stripe price ID %s for subscription %s — falling back to DB plan', price.id, company.stripe_subscription_id)
+            }
+          }
         } catch (e) {
           console.error('[billing/info] Stripe fetch failed:', e)
         }
       }
     }
 
-    const includedVehicles = company.included_vehicles ?? 0
-    const includedStaff = company.included_staff ?? 0
+    const resolvedPlan        = livePlanConfig?.plan            ?? company.subscription_plan
+    const includedVehicles    = livePlanConfig?.included_vehicles  ?? company.included_vehicles ?? 0
+    const includedStaff       = livePlanConfig?.included_staff     ?? company.included_staff    ?? 0
+    const maxExtraVehicles    = livePlanConfig?.max_extra_vehicles ?? company.max_extra_vehicles
+    const maxExtraStaff       = livePlanConfig?.max_extra_staff    ?? company.max_extra_staff
     const over_limit =
       (includedVehicles > 0 && vehicleCount > includedVehicles) ||
       (includedStaff > 0 && staffCount > includedStaff)
 
     return NextResponse.json({
       subscription_status: company.subscription_status,
-      subscription_plan: company.subscription_plan,
+      subscription_plan: resolvedPlan,
       included_vehicles: includedVehicles,
       included_staff: includedStaff,
-      max_extra_vehicles: company.max_extra_vehicles,
-      max_extra_staff: company.max_extra_staff,
+      max_extra_vehicles: maxExtraVehicles,
+      max_extra_staff: maxExtraStaff,
       purchased_extra_vehicles: company.purchased_extra_vehicles,
       purchased_extra_staff: company.purchased_extra_staff,
       vehicle_count: vehicleCount,

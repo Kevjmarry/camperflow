@@ -168,7 +168,10 @@
     "capabilityJoiner": " + ",
     "sectionActive": "Active",
     "sectionInactive": "Inactive",
-    "addMember": "Add team member"
+    "addMember": "Add team member",
+    "overLimitBanner": "Some team members exceed your plan's included limit.",
+    "overLimitBannerLink": "Upgrade plan",
+    "overLimitChip": "Over plan limit"
   },
   "staffMember": {
     "backToStaffTeam": "Back to staff team",
@@ -1783,7 +1786,10 @@
     "holdStatus": {
       "outOfService": "Out of service",
       "outOfServiceWithReason": "Out of service: {reason}"
-    }
+    },
+    "overLimitBanner": "Some vehicles exceed your plan's included limit.",
+    "overLimitBannerLink": "Upgrade plan",
+    "overLimitChip": "Over plan limit"
   },
   "staffVehicleEdit": {
     "title": "Edit vehicle",
@@ -2952,10 +2958,7 @@
     },
     "actions": {
       "manageBilling": "Manage billing",
-      "upgradePlan": "Upgrade plan",
-      "addVehicleSlot": "Add vehicle slot",
-      "addStaffSlot": "Add staff slot",
-      "comingSoon": "Coming soon",
+      "changePlan": "Change plan",
       "opening": "Opening…"
     },
     "history": {

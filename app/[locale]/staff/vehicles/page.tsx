@@ -1,7 +1,7 @@
 // app/[locale]/staff/vehicles/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -21,6 +21,7 @@ interface Vehicle {
   created_at: string;
   updated_at: string;
   blockingReason?: string;
+  isExcess?: boolean;
 }
 
 export default function VehiclesPage() {
@@ -31,6 +32,8 @@ export default function VehiclesPage() {
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showOverLimitBanner, setShowOverLimitBanner] = useState(false);
+  const companyIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     checkUserCapabilities();
@@ -53,10 +56,11 @@ export default function VehiclesPage() {
 
       const { data: profile } = await supabase
         .from('staff_profiles')
-        .select('role, can_manage')
+        .select('role, can_manage, company_id')
         .eq('auth_user_id', user.id)
         .maybeSingle();
 
+      companyIdRef.current = profile?.company_id ?? null;
       setCanManage(profile ? (profile.role === 'admin' || profile.can_manage === true) : false);
     } catch (err: any) {
       setError(err.message || t("errors.failedCheckPermissions"));
@@ -77,13 +81,39 @@ export default function VehiclesPage() {
       if (error) throw error;
 
       const vehicleList: Vehicle[] = data || [];
+
+      // Fetch plan limits from billing API (Stripe-derived source of truth)
+      let billingLimit = 0;
+      try {
+        const billingRes = await fetch('/api/billing/info');
+        if (billingRes.ok) {
+          const billingData = await billingRes.json();
+          billingLimit = billingData.included_vehicles ?? 0;
+        }
+      } catch {}
+
+      const markExcess = (list: Vehicle[]): Vehicle[] => {
+        if (billingLimit === 0) return list;
+        const excessCount = Math.max(0, list.length - billingLimit);
+        if (excessCount === 0) return list;
+        const sorted = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const newest = sorted.slice(0, excessCount).map(v => v.id);
+        const excessSet = new Set(newest);
+        return list.map(v => excessSet.has(v.id) ? { ...v, isExcess: true } : v);
+      };
+
+      setShowOverLimitBanner(
+        billingLimit > 0 &&
+        vehicleList.length > billingLimit
+      );
+
       // Enrich both preparing and ready vehicles with warning signals.
       // on_rent vehicles are skipped — their status is authoritative and
       // there's nothing actionable to surface here.
       const enrichIds = vehicleList.filter(v => v.status === 'preparing' || v.status === 'ready').map(v => v.id);
 
       if (enrichIds.length === 0) {
-        setVehicles(vehicleList);
+        setVehicles(markExcess(vehicleList));
         return;
       }
 
@@ -185,7 +215,7 @@ export default function VehiclesPage() {
         return blockingReason ? { ...v, blockingReason } : v;
       });
 
-      setVehicles(withReasons);
+      setVehicles(markExcess(withReasons));
     } catch (err: any) {
       setError(err.message || t("errors.failedLoadVehicles"));
     } finally {
@@ -235,6 +265,27 @@ export default function VehiclesPage() {
               </Link>
             )}
           </div>
+
+          {/* Over-limit banner */}
+          {showOverLimitBanner && (
+            <div style={{
+              padding: 'var(--space-3) var(--space-4)',
+              background: 'rgb(var(--warning) / 0.1)',
+              border: '1px solid rgb(var(--warning) / 0.3)',
+              borderRadius: 'var(--radius)',
+              color: 'rgb(var(--warning))',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              flexWrap: 'wrap',
+            }}>
+              {t("overLimitBanner")}{' '}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline' }}>
+                {t("overLimitBannerLink")}
+              </Link>
+            </div>
+          )}
 
           {/* Error State */}
           {error && (
@@ -425,7 +476,25 @@ export default function VehiclesPage() {
                         {vehicle.blockingReason}
                       </span>
                     )}
-                    
+
+                    {vehicle.isExcess && (
+                      <Link href={`/${locale}/staff/settings/billing`} style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: 9999,
+                        background: 'rgb(var(--warning) / 0.12)',
+                        border: '1px solid rgb(var(--warning) / 0.35)',
+                        color: 'rgb(var(--warning))',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {t("overLimitChip")}
+                      </Link>
+                    )}
+
                     <Link
                       href={`/${locale}/staff/vehicles/${vehicle.id}`}
                       className="btn btn-secondary"

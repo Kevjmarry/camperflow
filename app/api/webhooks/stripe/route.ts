@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/server'
-
-const PRICE_PLAN_MAP: Record<string, {
-  plan: string
-  included_vehicles: number
-  included_staff: number
-  max_extra_vehicles: number
-  max_extra_staff: number
-}> = {
-  price_1TZXTPIhm4YI8m30XpwGR05g: { plan: 'starter', included_vehicles: 3,  included_staff: 3,  max_extra_vehicles: 0, max_extra_staff: 0 },
-  price_1TZXVCIhm4YI8m306ZWJWBfu: { plan: 'core',    included_vehicles: 5,  included_staff: 5,  max_extra_vehicles: 0, max_extra_staff: 0 },
-  price_1TZXXpIhm4YI8m308GZATyhu: { plan: 'growth',  included_vehicles: 15, included_staff: 15, max_extra_vehicles: 0, max_extra_staff: 0 },
-  price_1TZXZRIhm4YI8m308YOwthl4: { plan: 'pro',     included_vehicles: 30, included_staff: 30, max_extra_vehicles: 0, max_extra_staff: 0 },
-}
+import { PRICE_PLAN_MAP } from '@/lib/billing/plans'
 
 export async function POST(request: NextRequest) {
   const stripeKey = process.env.STRIPE_SECRET_KEY
@@ -48,6 +36,9 @@ export async function POST(request: NextRequest) {
     const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
     const priceId = sub.items.data[0]?.price?.id ?? null
     const planConfig = priceId ? (PRICE_PLAN_MAP[priceId] ?? null) : null
+    if (priceId && !planConfig) {
+      console.warn('[webhooks/stripe] unknown price ID %s — plan/limits not updated for customer %s', priceId, customerId)
+    }
 
     const update: Record<string, unknown> = { subscription_status: sub.status }
     if (planConfig) {
