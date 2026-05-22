@@ -30,6 +30,7 @@ export default function NewVehiclePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [overLimit, setOverLimit] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +77,14 @@ export default function NewVehiclePage() {
         }
 
         setCompanyId(staffData.company_id);
+
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('over_limit')
+          .eq('id', staffData.company_id)
+          .single();
+        if (companyData?.over_limit) setOverLimit(true);
+
         setLoading(false);
       } catch (err) {
         setError(`${t('error.unexpectedPrefix')}${err instanceof Error ? err.message : String(err)}`);
@@ -102,6 +111,11 @@ export default function NewVehiclePage() {
     const yearNum = parseInt(formData.year, 10);
     if (isNaN(yearNum) || formData.year.length !== 4) {
       setError(t('error.yearInvalid'));
+      return;
+    }
+
+    if (overLimit) {
+      setError(t('error.overLimit'));
       return;
     }
 
@@ -248,6 +262,13 @@ export default function NewVehiclePage() {
             <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>{t('title')}</h1>
             <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>{t('subtitle')}</p>
           </div>
+
+          {overLimit && (
+            <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--warning) / 0.1)', border: '1px solid rgb(var(--warning) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--warning))', fontSize: '14px' }}>
+              {t('error.overLimit')}{' '}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', textDecoration: 'underline' }}>{t('error.upgradePlan')}</Link>
+            </div>
+          )}
 
           {error && (
             <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--error) / 0.1)', border: '1px solid rgb(var(--error) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--error))', fontSize: '14px' }}>
@@ -434,7 +455,7 @@ export default function NewVehiclePage() {
             {/* ── End operational hold ────────────────────────────────────── */}
 
             <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
-              <button type="submit" disabled={submitting || !companyId} className="btn btn-primary">
+              <button type="submit" disabled={submitting || !companyId || overLimit} className="btn btn-primary">
                 {submitting ? t('action.creating') : t('action.create')}
               </button>
               <button

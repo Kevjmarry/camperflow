@@ -1436,6 +1436,7 @@
           "insertFailedPrefix": "Insert failed: ",
           "unexpectedPrefix": "Unexpected error: ",
           "vehicleLimitReached": "Vehicle limit reached.",
+          "overLimit": "Your account is over its plan limit. New vehicles cannot be added until you upgrade or remove excess resources.",
           "upgradePlan": "Upgrade your plan"
         }
       }
@@ -1863,6 +1864,7 @@
       "inviteFailed": "Failed to send login invitation",
       "duplicateEmail": "A team member with this email already exists.",
       "staffLimitReached": "Staff limit reached.",
+      "overLimit": "Your account is over its plan limit. New staff cannot be added until you upgrade or remove excess resources.",
       "upgradePlan": "Upgrade your plan"
     },
     "form": {

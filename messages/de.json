@@ -1436,6 +1436,7 @@
           "insertFailedPrefix": "Einfügen fehlgeschlagen: ",
           "unexpectedPrefix": "Unerwarteter Fehler: ",
           "vehicleLimitReached": "Fahrzeuglimit erreicht.",
+          "overLimit": "Ihr Konto überschreitet das Planlimit. Neue Fahrzeuge können erst hinzugefügt werden, wenn Sie upgraden oder überschüssige Ressourcen entfernen.",
           "upgradePlan": "Plan upgraden"
         }
       }
@@ -1863,6 +1864,7 @@
       "inviteFailed": "Einladung konnte nicht gesendet werden",
       "duplicateEmail": "Ein Teammitglied mit dieser E-Mail-Adresse existiert bereits.",
       "staffLimitReached": "Mitarbeiterlimit erreicht.",
+      "overLimit": "Ihr Konto überschreitet das Planlimit. Neue Mitarbeiter können erst hinzugefügt werden, wenn Sie upgraden oder überschüssige Ressourcen entfernen.",
       "upgradePlan": "Plan upgraden"
     },
     "form": {

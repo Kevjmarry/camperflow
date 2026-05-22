@@ -64,6 +64,7 @@ export default function NewTeamMemberPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [overLimit, setOverLimit] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +93,14 @@ export default function NewTeamMemberPage() {
         }
 
         setStaffProfile(profile);
+
+        const { data: companyData } = await supabase
+          .from("companies")
+          .select("over_limit")
+          .eq("id", profile.company_id)
+          .single();
+        if (companyData?.over_limit) setOverLimit(true);
+
         setLoading(false);
       } catch (err) {
         console.error("Permission check error:", err);
@@ -151,6 +160,11 @@ export default function NewTeamMemberPage() {
 
     if (!staffProfile?.company_id) {
       setSubmitError(t("errors.noCompany"));
+      return;
+    }
+
+    if (overLimit) {
+      setSubmitError(t("errors.overLimit"));
       return;
     }
 
@@ -419,6 +433,22 @@ export default function NewTeamMemberPage() {
               {t("subtitle")}
             </p>
           </div>
+
+          {overLimit && (
+            <div
+              style={{
+                padding: "var(--space-3) var(--space-4)",
+                background: "rgb(var(--warning) / 0.1)",
+                border: "1px solid rgb(var(--warning) / 0.3)",
+                borderRadius: "var(--radius)",
+                color: "rgb(var(--warning))",
+                fontSize: "14px",
+              }}
+            >
+              {t("errors.overLimit")}{" "}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: "inherit", textDecoration: "underline" }}>{t("errors.upgradePlan")}</Link>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div
@@ -826,7 +856,7 @@ export default function NewTeamMemberPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={submitting}
+                  disabled={submitting || overLimit}
                 >
                   {submitting ? t("form.saving") : t("form.save")}
                 </button>
