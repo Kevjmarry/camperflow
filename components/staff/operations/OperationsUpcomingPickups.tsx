@@ -8,6 +8,7 @@ import type { OpsUpcomingPickup } from '@/lib/staff/operations/getOpsUpcomingPic
 
 interface Props {
   pickups: OpsUpcomingPickup[]
+  companyTimezone?: string
 }
 
 const LIMIT = 5
@@ -35,8 +36,8 @@ function formatDate(iso: string, locale: string) {
   })
 }
 
-function formatTime(iso: string, locale: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string, timeZone?: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
 }
 
 // ── Inline SVG icons ─────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ function MetaBadges({
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function OperationsUpcomingPickups({ pickups }: Props) {
+export default function OperationsUpcomingPickups({ pickups, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations')
   const [expanded, setExpanded] = useState(false)
@@ -322,7 +323,7 @@ export default function OperationsUpcomingPickups({ pickups }: Props) {
                   <div className="ops-upcoming-time" style={{ textAlign: 'right' }}>
                     {/* On desktop: stacked time / date / countdown. On mobile: inline via CSS. */}
                     <div className="ops-upcoming-time-main" style={{ fontSize: '15px', fontWeight: 600, color: 'rgb(var(--text))' }}>
-                      {formatTime(p.pickupAt, locale)}
+                      {formatTime(p.pickupAt, locale, companyTimezone)}
                       {/* Mobile-only: date and countdown inline */}
                       <span className="ops-upcoming-time-countdown">
                         {formatDate(p.pickupAt, locale)} · {formatHoursToPickup(p.hoursToPickup, countdownLabels) || t('upcomingPickups.inDays', { count: p.daysUntil })}

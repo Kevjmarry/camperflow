@@ -1263,7 +1263,8 @@
           "blocked": "Blokovaná",
           "pending": "Čakajúca",
           "completed": "Dokončená",
-          "vehicleBlock": "Blokované obdobie"
+          "vehicleBlock": "Blokované obdobie",
+          "staleBlock": "Zastaraná blokácia (existuje rezervácia): {label}"
         },
         "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
       }

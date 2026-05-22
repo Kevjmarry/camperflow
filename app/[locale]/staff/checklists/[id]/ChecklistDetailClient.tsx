@@ -68,9 +68,7 @@ export default function ChecklistDetailClient({
   const [localInstance, setLocalInstance] = useState(instance);
   const [openNotesById, setOpenNotesById] = useState<Record<string, boolean>>({});
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const [isOffline, setIsOffline] = useState(() =>
-    typeof navigator !== 'undefined' && !navigator.onLine
-  );
+  const [isOffline, setIsOffline] = useState(false);
 
   // ── Vehicle / evidence state ─────────────────────────────────────────────────
   const [vehicleData, setVehicleData] = useState(() => {
@@ -172,6 +170,7 @@ export default function ChecklistDetailClient({
   }, [instance.id]);
 
   useEffect(() => {
+    setIsOffline(!navigator.onLine);
     const sync = () => setIsOffline(!navigator.onLine);
     window.addEventListener('online', sync);
     window.addEventListener('offline', sync);
@@ -487,6 +486,7 @@ export default function ChecklistDetailClient({
       ? (((instance.bookings as any)?.staff_metadata?.handed_over_extras ?? []) as string[])
       : [],
     extrasChecked,
+    staffMetaRef,
     t,
   });
 

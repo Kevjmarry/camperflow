@@ -1,6 +1,9 @@
+import fontkit from '@pdf-lib/fontkit';
+import { readFile } from 'fs/promises';
+import path from 'path';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
+import { PDFDocument, PDFFont, rgb, degrees } from 'pdf-lib';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -270,6 +273,30 @@ async function drawPhoto(
   return { ...updated, y: updated.y - visualH - 10 };
 }
 
+/** Simulate pdf-lib word-wrap and return the number of visual lines produced. */
+function countLines(font: PDFFont, text: string, size: number, maxWidth: number): number {
+  let total = 0;
+  for (const para of text.split('\n')) {
+    const spaceW = font.widthOfTextAtSize(' ', size);
+    let lineW = 0;
+    let paraLines = 1;
+    for (const word of para.split(' ')) {
+      if (!word) continue;
+      const wordW = font.widthOfTextAtSize(word, size);
+      if (lineW === 0) {
+        lineW = wordW;
+      } else if (lineW + spaceW + wordW > maxWidth) {
+        paraLines++;
+        lineW = wordW;
+      } else {
+        lineW += spaceW + wordW;
+      }
+    }
+    total += paraLines;
+  }
+  return Math.max(1, total);
+}
+
 // ── Company header ────────────────────────────────────────────────────────────
 
 async function drawCompanyHeader(ctx: DrawCtx, info: CompanyInfo): Promise<DrawCtx> {
@@ -315,12 +342,13 @@ async function drawCompanyHeader(ctx: DrawCtx, info: CompanyInfo): Promise<DrawC
 
   // Address / registration as secondary identity line
   if (info.address) {
+    const addrLines = countLines(ctx.fontRegular, info.address, 9, maxTextW);
     ctx.page.drawText(info.address, {
       x: TEXT_X, y: lineY,
       size: 9, font: ctx.fontRegular, color: COLOR_MUTED,
       maxWidth: maxTextW,
     });
-    lineY -= 13;
+    lineY -= 13 * addrLines;
   } else if (info.registrationId) {
     ctx.page.drawText(`Reg: ${info.registrationId}`, {
       x: TEXT_X, y: lineY,
@@ -538,8 +566,15 @@ export async function GET(
     // ── Build PDF ───────────────────────────────────────────────────────────
 
     const doc = await PDFDocument.create();
-    const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
-    const fontBold    = await doc.embedFont(StandardFonts.HelveticaBold);
+    doc.registerFontkit(fontkit);
+
+    const fontsDir = path.join(process.cwd(), 'public', 'fonts');
+    const [regularBytes, boldBytes] = await Promise.all([
+      readFile(path.join(fontsDir, 'NotoSans-Regular.ttf')),
+      readFile(path.join(fontsDir, 'NotoSans-Bold.ttf')),
+    ]);
+    const fontRegular = await doc.embedFont(regularBytes);
+    const fontBold    = await doc.embedFont(boldBytes);
 
     let ctx: DrawCtx = {
       doc,

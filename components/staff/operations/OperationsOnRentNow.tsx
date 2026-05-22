@@ -8,6 +8,7 @@ import type { OpsOnRentRow } from '@/lib/staff/operations/getOpsOnRentNow'
 
 interface Props {
   rows: OpsOnRentRow[]
+  companyTimezone?: string
 }
 
 // ── Severity chip ─────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function SeverityChip({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function OperationsOnRentNow({ rows }: Props) {
+export default function OperationsOnRentNow({ rows, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.onRentNow')
   const tOps = useTranslations('staff.operations')
@@ -77,7 +78,7 @@ export default function OperationsOnRentNow({ rows }: Props) {
   }
 
   function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(companyTimezone && { timeZone: companyTimezone }) })
   }
 
   function absReturnText(returnAt: string): string {

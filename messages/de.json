@@ -1263,7 +1263,8 @@
           "blocked": "Gesperrt",
           "pending": "Ausstehend",
           "completed": "Abgeschlossen",
-          "vehicleBlock": "Gesperrter Zeitraum"
+          "vehicleBlock": "Gesperrter Zeitraum",
+          "staleBlock": "Veraltete Sperre (Buchung vorhanden): {label}"
         },
         "footerHint": "Hervorgehobene Spalte = Heute · Scrollen zum Navigieren · Stornierte Buchungen ausgeblendet"
       }

@@ -74,7 +74,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   const tzH = +(tzTimeParts.find(p => p.type === 'hour')!.value)
   const tzM = +(tzTimeParts.find(p => p.type === 'minute')!.value)
   const tzS = +(tzTimeParts.find(p => p.type === 'second')!.value)
-  const todayMidnight = new Date(now.getTime() - (tzH * 3600 + tzM * 60 + tzS) * 1000)
+  const todayMidnight = new Date(now.getTime() - (tzH * 3600 + tzM * 60 + tzS) * 1000 - now.getMilliseconds())
 
   const windowStart = new Date(todayMidnight)
   windowStart.setTime(windowStart.getTime() - DAYS_BACK * 86_400_000)
@@ -83,20 +83,41 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
     return (date.getTime() - windowStart.getTime()) / 86_400_000
   }
 
-  // Month boundary markers
+  // Month boundary markers — use company-timezone year/month/day via Intl; no browser-local
+  // Date mutators (setDate/setMonth/getMonth operate in browser tz, not companyTimezone).
+  // For each month boundary, midnight of the 1st is computed with the same
+  // "noon UTC minus elapsed-since-midnight-in-tz" trick used for todayMidnight.
   const monthMarkers: { label: string; leftPct: number }[] = []
-  const cur = new Date(windowStart)
-  cur.setDate(1)
-  if (cur < windowStart) cur.setMonth(cur.getMonth() + 1)
-  while (dayOffset(cur) < TOTAL_DAYS) {
-    const off = dayOffset(cur)
-    if (off >= 0) {
-      monthMarkers.push({
-        label: cur.toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: companyTimezone }),
-        leftPct: (off / TOTAL_DAYS) * 100,
-      })
+  {
+    const wsParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(windowStart)
+    let mYear  = +(wsParts.find(p => p.type === 'year')!.value)
+    let mMonth = +(wsParts.find(p => p.type === 'month')!.value) // 1-based
+    const mDay = +(wsParts.find(p => p.type === 'day')!.value)
+    // If windowStart is not already the 1st, start from the next month
+    if (mDay > 1) { if (++mMonth > 12) { mMonth = 1; mYear++ } }
+    while (true) {
+      // Noon UTC on the 1st is always the same calendar day in any timezone (offsets ≤ ±11 h),
+      // so "noon minus elapsed hours/minutes/seconds in company tz" reliably gives that day's midnight.
+      const noon = Date.UTC(mYear, mMonth - 1, 1, 12, 0, 0, 0)
+      const np = new Intl.DateTimeFormat('en-GB', {
+        timeZone: companyTimezone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }).formatToParts(new Date(noon))
+      const nh = +(np.find(p => p.type === 'hour')!.value)
+      const nm = +(np.find(p => p.type === 'minute')!.value)
+      const ns = +(np.find(p => p.type === 'second')!.value)
+      const firstMs = noon - (nh * 3600 + nm * 60 + ns) * 1000
+      const off = (firstMs - windowStart.getTime()) / 86_400_000
+      if (off >= TOTAL_DAYS) break
+      if (off >= 0) {
+        monthMarkers.push({
+          label: new Date(firstMs).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: companyTimezone }),
+          leftPct: (off / TOTAL_DAYS) * 100,
+        })
+      }
+      if (++mMonth > 12) { mMonth = 1; mYear++ }
     }
-    cur.setMonth(cur.getMonth() + 1)
   }
 
   const todayPct = ((DAYS_BACK + 0.5) / TOTAL_DAYS) * 100
@@ -277,10 +298,15 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                       const cStart = Math.max(0, startDay)
                       const cEnd = Math.min(TOTAL_DAYS, endDay)
                       if (cStart >= cEnd) return null
+                      const blS = new Date(bl.startAt).getTime()
+                      const blE = new Date(bl.endAt).getTime()
+                      const hasBookingOverlap = vBookings.some(
+                        b => new Date(b.pickupAt).getTime() < blE && new Date(b.returnAt).getTime() > blS
+                      )
                       return (
                         <div
                           key={bl.id}
-                          title={bl.label ?? t('legend.vehicleBlock')}
+                          title={hasBookingOverlap ? t('legend.staleBlock', { label: bl.label ?? '' }) : (bl.label ?? t('legend.vehicleBlock'))}
                           style={{
                             position: 'absolute',
                             left: `${cStart * PX_PER_DAY}px`,
@@ -293,6 +319,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                             overflow: 'hidden',
                             zIndex: 1,
                             pointerEvents: 'none',
+                            opacity: hasBookingOverlap ? 0.35 : 1,
                           }}
                         >
                           <span

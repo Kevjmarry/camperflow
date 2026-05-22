@@ -139,8 +139,7 @@ BEGIN
     ('Bathroom cleaned',                              30, 3, NULL,       'checklist_actions', 'checkbox', FALSE, NULL),
     ('Waste emptied (bins, toilet, water if needed)', 40, 4, NULL,       'checklist_actions', 'checkbox', FALSE, NULL),
     ('Linen handled (removed / replaced)',            50, 5, NULL,       'checklist_actions', 'checkbox', FALSE, NULL),
-    ('Final visual check complete',                   60, 6, NULL,       'checklist_actions', 'checkbox', FALSE, NULL),
-    ('New item',                                      70, 7, NULL,       'checklist_actions', 'checkbox', FALSE, NULL)
+    ('Final visual check complete',                   60, 6, NULL,       'checklist_actions', 'checkbox', FALSE, NULL)
   ) AS v(label, sort_order, position, section, ui_section, input_type, required, options)
   WHERE NOT EXISTS (
     SELECT 1 FROM public.checklist_template_items i

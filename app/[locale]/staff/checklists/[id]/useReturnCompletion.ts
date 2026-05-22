@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChecklistInstanceType, ChecklistItemType, SyncError } from './types';
 import { parseSyncError, isLockError, getReturnAuditDisplayLabel } from './helpers';
@@ -20,6 +20,8 @@ interface UseReturnCompletionProps {
   navigateAfterCompletion: () => void;
   returnExtrasIds: string[];
   extrasChecked: Record<string, boolean>;
+  /** Ref to the latest bookings.staff_metadata merge base — used to flush extras_returned before completion. */
+  staffMetaRef: MutableRefObject<Record<string, unknown>>;
   t: (key: string, ...args: any[]) => string;
 }
 
@@ -37,6 +39,7 @@ export function useReturnCompletion({
   navigateAfterCompletion,
   returnExtrasIds,
   extrasChecked,
+  staffMetaRef,
   t,
 }: UseReturnCompletionProps) {
   const [returnCompleting, setReturnCompleting] = useState(false);
@@ -49,6 +52,18 @@ export function useReturnCompletion({
   const doReturnButtonComplete = async (uid: string) => {
     setReturnCompleting(true);
     setReturnBlockedError(null);
+
+    // Flush extras_returned to bookings.staff_metadata before completing.
+    // The onChange handler saves this fire-and-forget; if the user completes
+    // quickly the in-flight write may not have landed yet. Awaiting here
+    // guarantees the data is in the DB before navigation happens.
+    if (instance.booking_id) {
+      const returnedIds = Object.entries(extrasChecked).filter(([, v]) => v).map(([k]) => k);
+      const newMeta = { ...staffMetaRef.current, extras_returned: returnedIds };
+      staffMetaRef.current = newMeta;
+      // Best-effort — don't abort completion if this write fails (extras are supplementary)
+      await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+    }
 
     const now = new Date().toISOString();
     const completionUpdate = {

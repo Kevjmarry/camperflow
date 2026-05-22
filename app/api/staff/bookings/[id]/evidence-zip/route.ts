@@ -20,9 +20,9 @@ function photoSortKey(storagePath: string): number {
   }
 }
 
-/** Return a new array of paths sorted chronologically by filename timestamp. */
-function sortPathsByTimestamp(paths: string[]): string[] {
-  return [...paths].sort((a, b) => photoSortKey(a) - photoSortKey(b));
+/** Return a new array of entries sorted chronologically by filename timestamp. */
+function sortEntriesByTimestamp(entries: PhotoEntry[]): PhotoEntry[] {
+  return [...entries].sort((a, b) => photoSortKey(entryPath(a)) - photoSortKey(entryPath(b)));
 }
 
 /** Fetch an image URL and return its Uint8Array, or null on failure. */
@@ -39,10 +39,16 @@ async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+type PhotoEntry = string | { path: string; rotation?: number };
+
+function entryPath(e: PhotoEntry): string {
+  return typeof e === 'string' ? e : e.path;
+}
+
 interface PhotoPaths {
-  general?: string[];
-  damage?:  string[];
-  id?:      string[];
+  general?: PhotoEntry[];
+  damage?:  PhotoEntry[];
+  id?:      PhotoEntry[];
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -108,11 +114,12 @@ export async function GET(
 
     for (const { prefix, photos } of sections) {
       for (const group of groups) {
-        const paths = sortPathsByTimestamp(photos[group] ?? []);
-        for (const storagePath of paths) {
-          const filename = storagePath.split('/').pop() ?? storagePath;
-          const zipPath  = `${zipRoot}/${prefix}/${group}/${filename}`;
-          const url      = `${publicBaseUrl}/${storagePath}`;
+        const entries = sortEntriesByTimestamp(photos[group] ?? []);
+        for (const entry of entries) {
+          const storagePath = entryPath(entry);
+          const filename    = storagePath.split('/').pop() ?? storagePath;
+          const zipPath     = `${zipRoot}/${prefix}/${group}/${filename}`;
+          const url         = `${publicBaseUrl}/${storagePath}`;
           tasks.push({ zipPath, url, filename });
         }
       }

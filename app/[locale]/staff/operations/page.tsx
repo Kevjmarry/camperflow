@@ -319,10 +319,11 @@ export default async function OperationsPage({
             {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}
             <div className="surface page-surface ops-inner-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <OperationsOnRentNow rows={onRentNow} />
+                <OperationsOnRentNow rows={onRentNow} companyTimezone={timelineData.companyTimezone} />
                 <OperationsNextUp
                   pickups={nextPickups}
                   returns={upcomingReturns.slice(0, 3)}
+                  companyTimezone={timelineData.companyTimezone}
                 />
 
                 {/* Attention needed strip */}
@@ -373,7 +374,7 @@ export default async function OperationsPage({
                 )}
 
                 <OperationsInvoiceReminders reminders={invoiceReminders} whatsappTemplates={whatsappTemplates} />
-                <OperationsUpcomingPickups pickups={upcomingPickups} />
+                <OperationsUpcomingPickups pickups={upcomingPickups} companyTimezone={timelineData.companyTimezone} />
                 <OperationsUpcomingReturns returns={upcomingReturns} companyTimezone={returnsTimezone} />
                 <OperationsCompletedBookings bookings={completed} />
               </div>

@@ -40,6 +40,13 @@ export function uiToDbSeverity(ui: IssueSeverity): DbIssueSeverity {
 /**
  * Computes the next instance status from checked-item counts.
  * Works for all checklist types: cleaning, mechanical, pickup, handover, return, etc.
+ *
+ * Return checklists are a special case: they contain phantom item rows for
+ * vehicle_data, return_close_out, and deposit_status sections whose .checked
+ * field is never written by the UI (those sections are backed by
+ * checklist_instances columns and bookings.staff_metadata instead).
+ * Only checklist_actions items count toward return progress, and completion
+ * is always triggered by the explicit button — never by item-toggle auto-complete.
  */
 export function computeInstanceUpdate(
   items: ChecklistItemType[],
@@ -47,11 +54,22 @@ export function computeInstanceUpdate(
   userId: string,
   now: string
 ): InstanceUpdate {
-  const checkedCount = items.filter((it) => it.checked).length;
-  const totalCount = items.length;
-  const allChecked = checkedCount === totalCount;
+  const isReturn = snapshot.checklist_type === 'return';
+
+  // For return checklists only count the audit (checklist_actions) items.
+  // Phantom items (vehicle_data / return_close_out / deposit_status) are excluded.
+  const countableItems = isReturn
+    ? items.filter((it) => it.template.ui_section === 'checklist_actions')
+    : items;
+
+  const checkedCount = countableItems.filter((it) => it.checked).length;
+  const totalCount = countableItems.length;
   const noneChecked = checkedCount === 0;
   const isPending = snapshot.status === 'pending' || snapshot.status === 'not_started';
+
+  // Return checklists are completed only via the explicit button (handleReturnCompleteButton)
+  // which runs its own close-out + extras validation. Never auto-complete here.
+  const allChecked = !isReturn && checkedCount === totalCount;
 
   if (allChecked && totalCount > 0) {
     return {
@@ -159,7 +177,12 @@ export function getReturnAuditDisplayLabel(label: string): string | null {
   if (l.includes('key') && (l.includes('return') || l.includes('received') || l.includes('hand'))) return null;
   if (l.includes('document') && (l.includes('return') || l.includes('received') || l.includes('hand'))) return null;
   if (l.includes('contract') && (l.includes('close') || l.includes('sign') || l.includes('complete'))) return null;
+  // Hide deposit-status radio options — covered by Phase 3 deposit radio in ReturnOfficeSectionCard.
+  // These are phantom item rows whose checked state is tracked via checklist_instances.return_deposit_status.
+  // Guard covers both correctly-classified (deposit_status ui_section) items via the ui_section filter
+  // upstream, AND wrongly-classified (checklist_actions) items on old templates before migration 061 runs.
   if (l.includes('deposit') && (l.includes('return') || l.includes('refund') || l.includes('held') || l.includes('status'))) return null;
+  if (l.includes('returned to customer') || l.includes('pending admin return') || l.includes('held for damage')) return null;
   // Hide return-specific items not surfaced in this stage
   if (l.includes('deposit') && (l.includes('decision') || l.includes('ready'))) return null;
   if ((l.includes('issue') || l.includes('flagged')) && l.includes('follow')) return null;

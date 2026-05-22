@@ -1263,7 +1263,8 @@
           "blocked": "Blocked",
           "pending": "Pending",
           "completed": "Completed",
-          "vehicleBlock": "Blocked period"
+          "vehicleBlock": "Blocked period",
+          "staleBlock": "Stale block (booking exists): {label}"
         },
         "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
       }

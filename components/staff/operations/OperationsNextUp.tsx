@@ -11,6 +11,7 @@ import { getStatusChipStyle } from '@/lib/statusChip'
 interface Props {
   pickups: OpsUpcomingPickup[]
   returns: OpsUpcomingReturn[]
+  companyTimezone?: string
 }
 
 function formatDate(iso: string, locale: string) {
@@ -21,8 +22,8 @@ function formatDate(iso: string, locale: string) {
   })
 }
 
-function formatTime(iso: string, locale: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string, timeZone?: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
 }
 
 function countdownDays(iso: string): number {
@@ -211,7 +212,7 @@ function NextCard({
   )
 }
 
-export default function OperationsNextUp({ pickups, returns }: Props) {
+export default function OperationsNextUp({ pickups, returns, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.nextUp')
   const tOps = useTranslations('staff.operations')
@@ -293,7 +294,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
                 : <span style={{ ...getStatusChipStyle('preparing'), alignSelf: 'flex-start' }}>{tOps('status.prepNeeded')}</span>
             }
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
-              {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale)}
+              {formatDate(pickup.pickupAt, locale)} · {formatTime(pickup.pickupAt, locale, companyTimezone)}
             </span>
             {pickup.vehicleBlocked && (
               <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockedVehicle')}</span>
@@ -356,7 +357,7 @@ export default function OperationsNextUp({ pickups, returns }: Props) {
               return <span style={{ ...getStatusChipStyle('on_rent'), alignSelf: 'flex-start' }}>{label}</span>
             })()}
             <span style={{ fontSize: '13px', color: 'rgb(var(--text))' }}>
-              {formatDate(ret.returnAt, locale)} · {formatTime(ret.returnAt, locale)}
+              {formatDate(ret.returnAt, locale)} · {formatTime(ret.returnAt, locale, companyTimezone)}
             </span>
             {ret.vehicleBlocked && (
               <span style={{ fontSize: '12px', color: 'rgb(var(--danger))', fontWeight: 500 }}>{tOps('status.blockedVehicle')}</span>

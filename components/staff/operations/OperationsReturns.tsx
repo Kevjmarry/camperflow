@@ -8,10 +8,11 @@ import type { OpsReturn } from '@/lib/staff/operations/getOpsReturnsToday'
 interface Props {
   returns: OpsReturn[]
   quiet?: boolean
+  companyTimezone?: string
 }
 
-function formatTime(iso: string, locale: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string, timeZone?: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
 }
 
 function formatHoursToPickup(
@@ -48,7 +49,7 @@ function getUrgencyStyle(returnAt: string): React.CSSProperties {
   }
 }
 
-export default function OperationsReturns({ returns, quiet }: Props) {
+export default function OperationsReturns({ returns, quiet, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations')
 
@@ -160,7 +161,7 @@ export default function OperationsReturns({ returns, quiet }: Props) {
                   </span>
                 )}
                 <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--brand))' }}>
-                  {formatTime(r.returnAt, locale)}
+                  {formatTime(r.returnAt, locale, companyTimezone)}
                 </span>
                 <Link
                   href={`/${locale}/staff/bookings/${r.id}`}

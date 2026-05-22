@@ -8,10 +8,11 @@ import type { OpsPickup } from '@/lib/staff/operations/getOpsPickupsToday'
 interface Props {
   pickups: OpsPickup[]
   quiet?: boolean
+  companyTimezone?: string
 }
 
-function formatTime(iso: string, locale: string) {
-  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: string, timeZone?: string) {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
 }
 
 function formatHoursToPickup(
@@ -40,7 +41,7 @@ function getUrgencyStyle(pickupAt: string): React.CSSProperties {
   return { border: '1px solid rgb(var(--border))' }
 }
 
-export default function OperationsPickups({ pickups, quiet }: Props) {
+export default function OperationsPickups({ pickups, quiet, companyTimezone }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations')
 
@@ -158,7 +159,7 @@ export default function OperationsPickups({ pickups, quiet }: Props) {
                   </span>
                 )}
                 <span style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--brand))' }}>
-                  {formatTime(p.pickupAt, locale)}
+                  {formatTime(p.pickupAt, locale, companyTimezone)}
                 </span>
                 {p.handoverStatus === 'completed' ? (
                   <span style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{t('status.readyForPickup')}</span>
