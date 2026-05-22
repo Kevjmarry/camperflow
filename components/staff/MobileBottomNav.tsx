@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import LocaleSwitcher from '@/components/LocaleSwitcher'
 
 // Paths that are "owned" by the More sheet
-const MORE_SECTION_PREFIXES = ['/staff/team', '/staff/customers', '/staff/company']
+const MORE_SECTION_PREFIXES = ['/staff/team', '/staff/customers', '/staff/company', '/staff/settings']
 
 // Auth/unauthenticated pages where the nav should not appear
 const AUTH_PATH_FRAGMENTS = ['/staff/login', '/staff/reset', '/staff/invite']
@@ -97,9 +97,10 @@ export default function MobileBottomNav() {
   ]
 
   const moreLinks = [
-    { key: 'team',      href: `/${locale}/staff/team`      },
-    { key: 'customers', href: `/${locale}/staff/customers`  },
-    { key: 'company',   href: `/${locale}/staff/company`    },
+    { key: 'team',      href: `/${locale}/staff/team`                  },
+    { key: 'customers', href: `/${locale}/staff/customers`              },
+    { key: 'company',   href: `/${locale}/staff/company`                },
+    { key: 'billing',   href: `/${locale}/staff/settings/billing`       },
   ]
 
   const handleSignOut = async () => {

@@ -168,7 +168,10 @@
     "capabilityJoiner": " + ",
     "sectionActive": "Active",
     "sectionInactive": "Inactive",
-    "addMember": "Add team member"
+    "addMember": "Add team member",
+    "overLimitBanner": "Some team members exceed your plan's included limit.",
+    "overLimitBannerLink": "Upgrade plan",
+    "overLimitChip": "Over plan limit"
   },
   "staffMember": {
     "backToStaffTeam": "Back to staff team",
@@ -1021,6 +1024,7 @@
       "team": "Staff Team",
       "customers": "Customers",
       "company": "Company Settings",
+      "billing": "Billing",
       "language": "Language",
       "more": "More"
     },
@@ -1433,7 +1437,10 @@
           "cannotSubmitMissingCompanyId": "Cannot submit: company_id is missing",
           "yearInvalid": "Year must be a 4-digit number",
           "insertFailedPrefix": "Insert failed: ",
-          "unexpectedPrefix": "Unexpected error: "
+          "unexpectedPrefix": "Unexpected error: ",
+          "vehicleLimitReached": "Vehicle limit reached.",
+          "overLimit": "Your account is over its plan limit. New vehicles cannot be added until you upgrade or remove excess resources.",
+          "upgradePlan": "Upgrade your plan"
         }
       }
     }
@@ -1779,7 +1786,10 @@
     "holdStatus": {
       "outOfService": "Out of service",
       "outOfServiceWithReason": "Out of service: {reason}"
-    }
+    },
+    "overLimitBanner": "Some vehicles exceed your plan's included limit.",
+    "overLimitBannerLink": "Upgrade plan",
+    "overLimitChip": "Over plan limit"
   },
   "staffVehicleEdit": {
     "title": "Edit vehicle",
@@ -1858,7 +1868,10 @@
       "emailRequiredForLogin": "Email is required when login is enabled",
       "invalidEmail": "Please enter a valid email address",
       "inviteFailed": "Failed to send login invitation",
-      "duplicateEmail": "A team member with this email already exists."
+      "duplicateEmail": "A team member with this email already exists.",
+      "staffLimitReached": "Staff limit reached.",
+      "overLimit": "Your account is over its plan limit. New staff cannot be added until you upgrade or remove excess resources.",
+      "upgradePlan": "Upgrade your plan"
     },
     "form": {
       "firstName": "First name",
@@ -2908,5 +2921,55 @@
     "iosAfter": "then",
     "iosAction": "Add to Home Screen",
     "fallbackHint": "Open your browser menu and choose \"Install\" or \"Add to Home Screen\""
+  },
+  "staffBilling": {
+    "title": "Billing & Subscription",
+    "backToCompany": "Back",
+    "loading": "Loading billing information…",
+    "sections": {
+      "currentPlan": "Current Plan",
+      "usageLimits": "Usage",
+      "billingActions": "Billing Actions",
+      "invoicesPayments": "Invoices & payment methods"
+    },
+    "plan": {
+      "name": "Plan",
+      "status": "Status",
+      "price": "Price",
+      "renewal": "Next payment",
+      "expiry": "Expires on",
+      "per_month": "month",
+      "per_year": "year",
+      "unknown": "Unknown plan",
+      "notSyncedWarning": "Plan is not synced yet."
+    },
+    "status": {
+      "active": "Active",
+      "trialing": "Trial",
+      "past_due": "Past due",
+      "cancelled": "Cancelled",
+      "none": "No subscription"
+    },
+    "usage": {
+      "vehicles": "Vehicles",
+      "staff": "Staff",
+      "used": "{used} / {limit}",
+      "extraPurchased": "{purchased} / {max} extras"
+    },
+    "actions": {
+      "manageBilling": "Manage billing",
+      "changePlan": "Change plan",
+      "opening": "Opening…"
+    },
+    "history": {
+      "openPortal": "Open billing portal"
+    },
+    "overLimit": {
+      "title": "Account is over plan limit",
+      "message": "Your current usage exceeds the limits of your plan. You can continue using existing data, but adding new vehicles or staff is disabled until you upgrade. Warning: excess vehicles, staff members, and related configuration data may be permanently removed after a future grace period."
+    },
+    "errors": {
+      "loadFailed": "Failed to load billing information. Please refresh the page."
+    }
   }
 }

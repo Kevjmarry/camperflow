@@ -62,6 +62,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { data: company } = await supabase
+      .from('companies')
+      .select('over_limit')
+      .eq('id', callerProfile.company_id)
+      .single()
+
+    if (company?.over_limit) {
+      return NextResponse.json({ error: 'over_limit' }, { status: 402 })
+    }
+
     // Verify the target profile exists and belongs to the same company
     const { data: targetProfile, error: targetError } = await supabase
       .from('staff_profiles')

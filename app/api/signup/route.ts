@@ -11,6 +11,9 @@ export async function POST(request: NextRequest) {
     const company_name = typeof rawCompany === 'string' ? rawCompany.trim() : ''
     const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : ''
 
+    // [TEMP LOG] prove which route received the submit — this route has NO Stripe billing fields
+    console.log('[signup] POST received route=/api/signup (FREE path, no Stripe) company_name=%s email=%s', company_name || '(empty)', email || '(empty)')
+
     if (!full_name || !company_name || !email || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }
@@ -19,11 +22,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.camperflow.io'
     const supabase = await createServerClient()
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name } },
+      options: {
+        data: { full_name },
+        emailRedirectTo: `${siteUrl}/api/auth/confirm`,
+      },
     })
 
     if (signUpError) {

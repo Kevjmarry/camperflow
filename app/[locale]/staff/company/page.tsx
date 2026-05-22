@@ -1010,6 +1010,25 @@ export default function CompanySettingsPage() {
             )}
           </form>
 
+          {/* Billing & invoices */}
+          {isAdmin && (
+            <div style={{ borderTop: "1px solid rgb(var(--border))", paddingTop: "var(--space-6)" }}>
+              <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
+                Billing &amp; invoices
+              </h2>
+              <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
+                Manage your subscription, view invoices, and update payment details in the Stripe customer portal.
+              </p>
+              <a
+                href="/api/billing/portal"
+                className="btn btn-secondary"
+                style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", fontSize: "14px" }}
+              >
+                Open billing portal
+              </a>
+            </div>
+          )}
+
           {/* System Recovery — real admin only (role === 'admin'), outside the settings form */}
           {isRealAdmin && (
             <div style={{ borderTop: "2px solid rgb(var(--border))", paddingTop: "var(--space-6)" }}>

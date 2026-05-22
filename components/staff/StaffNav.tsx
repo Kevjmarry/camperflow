@@ -24,6 +24,7 @@ export default function StaffNav() {
     { key: 'guestContent', href: `/${locale}/staff/guest-content` },
     { key: 'team',       href: `/${locale}/staff/team` },
     { key: 'customers',  href: `/${locale}/staff/customers` },
+    { key: 'billing',    href: `/${locale}/staff/settings/billing` },
     { key: 'company',    href: `/${locale}/staff/company` },
   ]
 

@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import PageContainer from '@/components/PageContainer';
 import BackLink from '@/components/staff/BackLink';
 import { createClient } from '@/lib/supabase/client';
@@ -28,6 +29,8 @@ export default function NewVehiclePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
+  const [overLimit, setOverLimit] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +77,14 @@ export default function NewVehiclePage() {
         }
 
         setCompanyId(staffData.company_id);
+
+        const { data: companyData } = await supabase
+          .from('companies')
+          .select('over_limit')
+          .eq('id', staffData.company_id)
+          .single();
+        if (companyData?.over_limit) setOverLimit(true);
+
         setLoading(false);
       } catch (err) {
         setError(`${t('error.unexpectedPrefix')}${err instanceof Error ? err.message : String(err)}`);
@@ -103,14 +114,41 @@ export default function NewVehiclePage() {
       return;
     }
 
+    if (overLimit) {
+      setError(t('error.overLimit'));
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
+    setLimitReached(false);
 
     try {
-      const { data: vehicleData, error: insertError } = await supabase
-        .from('vehicles')
-        .insert({
-          company_id: companyId,
+      const { data: limitData } = await supabase
+        .from('companies')
+        .select('included_vehicles, purchased_extra_vehicles')
+        .eq('id', companyId)
+        .single();
+
+      if (limitData) {
+        const { count: vehicleCount } = await supabase
+          .from('vehicles')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId);
+
+        const vehicleLimit = (limitData.included_vehicles ?? 0) + (limitData.purchased_extra_vehicles ?? 0);
+        if (vehicleLimit > 0 && (vehicleCount ?? 0) >= vehicleLimit) {
+          setError(t('error.vehicleLimitReached'));
+          setLimitReached(true);
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const createRes = await fetch('/api/staff/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: formData.name,
           registration_plate: formData.registration_plate,
           make: formData.make,
@@ -125,15 +163,26 @@ export default function NewVehiclePage() {
           hold_reason: formData.operational_hold && formData.hold_reason.trim()
             ? formData.hold_reason.trim()
             : null,
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (insertError) {
-        setError(`${t('error.insertFailedPrefix')}${insertError.message}`);
+      const createJson = await createRes.json();
+
+      if (!createRes.ok) {
+        if (createJson.error === 'over_limit') {
+          setError(t('error.overLimit'));
+          setOverLimit(true);
+        } else if (createJson.error === 'vehicle_limit_reached') {
+          setError(t('error.vehicleLimitReached'));
+          setLimitReached(true);
+        } else {
+          setError(`${t('error.insertFailedPrefix')}${createJson.error ?? 'Unknown error'}`);
+        }
         setSubmitting(false);
         return;
       }
+
+      const vehicleData = createJson;
 
       if (selectedPhoto && vehicleData) {
         const vehicleId = vehicleData.id;
@@ -225,9 +274,19 @@ export default function NewVehiclePage() {
             <p style={{ marginTop: 'var(--space-2)', color: 'rgb(var(--muted))' }}>{t('subtitle')}</p>
           </div>
 
+          {overLimit && (
+            <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--warning) / 0.1)', border: '1px solid rgb(var(--warning) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--warning))', fontSize: '14px' }}>
+              {t('error.overLimit')}{' '}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', textDecoration: 'underline' }}>{t('error.upgradePlan')}</Link>
+            </div>
+          )}
+
           {error && (
             <div style={{ padding: 'var(--space-4)', background: 'rgb(var(--error) / 0.1)', border: '1px solid rgb(var(--error) / 0.3)', borderRadius: 'var(--radius)', color: 'rgb(var(--error))', fontSize: '14px' }}>
               {error}
+              {limitReached && (
+                <> <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', textDecoration: 'underline' }}>{t('error.upgradePlan')}</Link></>
+              )}
             </div>
           )}
 
@@ -407,7 +466,7 @@ export default function NewVehiclePage() {
             {/* ── End operational hold ────────────────────────────────────── */}
 
             <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
-              <button type="submit" disabled={submitting || !companyId} className="btn btn-primary">
+              <button type="submit" disabled={submitting || !companyId || overLimit} className="btn btn-primary">
                 {submitting ? t('action.creating') : t('action.create')}
               </button>
               <button

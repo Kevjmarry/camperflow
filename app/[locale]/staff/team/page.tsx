@@ -22,6 +22,7 @@ interface StaffProfile {
   can_mechanical: boolean;
   photo_url: string | null;
   active: boolean;
+  created_at: string;
 }
 
 export default function StaffTeamPage() {
@@ -36,6 +37,8 @@ export default function StaffTeamPage() {
   const [staff, setStaff] = useState<StaffProfile[]>([]);
   const [currentAuthUserId, setCurrentAuthUserId] = useState<string | null>(null);
   const [canManageTeam, setCanManageTeam] = useState(false);
+  const [showOverLimitBanner, setShowOverLimitBanner] = useState(false);
+  const [excessStaffIds, setExcessStaffIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const run = async () => {
@@ -66,18 +69,41 @@ export default function StaffTeamPage() {
 
         setCanManageTeam(currentProfile.role === "admin" || currentProfile.can_manage === true);
 
-        const { data: staffProfiles, error: staffErr } = await supabase
-          .from("staff_profiles")
-          .select(
-            "profile_id, id, auth_user_id, company_id, role, name, can_manage, can_clean, can_mechanical, photo_url, active"
-          )
-          .eq("company_id", currentProfile.company_id)
-          .order("role", { ascending: false })
-          .order("created_at", { ascending: true });
+        const [staffRes, billingRes] = await Promise.all([
+          supabase
+            .from("staff_profiles")
+            .select(
+              "profile_id, id, auth_user_id, company_id, role, name, can_manage, can_clean, can_mechanical, photo_url, active, created_at"
+            )
+            .eq("company_id", currentProfile.company_id)
+            .order("role", { ascending: false })
+            .order("created_at", { ascending: true }),
+          fetch('/api/billing/info'),
+        ]);
 
-        if (staffErr) throw staffErr;
+        if (staffRes.error) throw staffRes.error;
 
-        setStaff((staffProfiles || []) as StaffProfile[]);
+        const profiles = (staffRes.data || []) as StaffProfile[];
+        setStaff(profiles);
+
+        let includedStaff = 0;
+        if (billingRes.ok) {
+          const billingData = await billingRes.json();
+          includedStaff = billingData.included_staff ?? 0;
+        }
+
+        if (includedStaff > 0) {
+          const active = profiles.filter(p => p.active);
+          const excessCount = Math.max(0, active.length - includedStaff);
+          if (excessCount > 0) {
+            const newest = [...active]
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, excessCount)
+              .map(p => p.profile_id);
+            setExcessStaffIds(new Set(newest));
+            setShowOverLimitBanner(true);
+          }
+        }
       } catch (err: any) {
         setError(err?.message || t("errorLoadFailed"));
       } finally {
@@ -140,6 +166,26 @@ export default function StaffTeamPage() {
             </p>
           </div>
 
+          {showOverLimitBanner && (
+            <div style={{
+              padding: 'var(--space-3) var(--space-4)',
+              background: 'rgb(var(--warning) / 0.1)',
+              border: '1px solid rgb(var(--warning) / 0.3)',
+              borderRadius: 'var(--radius)',
+              color: 'rgb(var(--warning))',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              flexWrap: 'wrap',
+            }}>
+              {t("overLimitBanner")}{' '}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline' }}>
+                {t("overLimitBannerLink")}
+              </Link>
+            </div>
+          )}
+
           {error && (
             <div
               style={{
@@ -195,6 +241,7 @@ export default function StaffTeamPage() {
                         isCurrentUser={member.auth_user_id === currentAuthUserId}
                         locale={locale}
                         t={t}
+                        isExcess={excessStaffIds.has(member.profile_id)}
                       />
                     ))}
                   </div>
@@ -227,6 +274,7 @@ export default function StaffTeamPage() {
                         isCurrentUser={member.auth_user_id === currentAuthUserId}
                         locale={locale}
                         t={t}
+                        isExcess={false}
                       />
                     ))}
                   </div>
@@ -246,11 +294,13 @@ function StaffCard({
   isCurrentUser,
   locale,
   t,
+  isExcess,
 }: {
   member: StaffProfile;
   isCurrentUser: boolean;
   locale: string;
   t: any;
+  isExcess?: boolean;
 }) {
   const getTypeLabel = (): string => {
     if (member.can_manage) {
@@ -353,6 +403,24 @@ function StaffCard({
             >
               {typeLabel}
             </div>
+          )}
+
+          {isExcess && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              marginTop: 4,
+              padding: '2px 8px',
+              borderRadius: 9999,
+              background: 'rgb(var(--warning) / 0.12)',
+              border: '1px solid rgb(var(--warning) / 0.35)',
+              color: 'rgb(var(--warning))',
+              fontSize: '11px',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+            }}>
+              {t("overLimitChip")}
+            </span>
           )}
         </div>
       </div>

@@ -63,6 +63,8 @@ export default function NewTeamMemberPage() {
   const [photoWarning, setPhotoWarning] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
+  const [overLimit, setOverLimit] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,6 +93,14 @@ export default function NewTeamMemberPage() {
         }
 
         setStaffProfile(profile);
+
+        const { data: companyData } = await supabase
+          .from("companies")
+          .select("over_limit")
+          .eq("id", profile.company_id)
+          .single();
+        if (companyData?.over_limit) setOverLimit(true);
+
         setLoading(false);
       } catch (err) {
         console.error("Permission check error:", err);
@@ -153,10 +163,16 @@ export default function NewTeamMemberPage() {
       return;
     }
 
+    if (overLimit) {
+      setSubmitError(t("errors.overLimit"));
+      return;
+    }
+
     // Compute once here; used throughout the try block below
     const normalizedEmail = formData.email.trim().toLowerCase();
 
     setSubmitting(true);
+    setLimitReached(false);
 
     try {
       // Duplicate email check — inside try so Supabase errors surface properly
@@ -184,14 +200,35 @@ export default function NewTeamMemberPage() {
         }
       }
 
+      const { data: limitData } = await supabase
+        .from("companies")
+        .select("included_staff, purchased_extra_staff")
+        .eq("id", staffProfile!.company_id)
+        .single();
+
+      if (limitData) {
+        const { count: staffCount } = await supabase
+          .from("staff_profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", staffProfile!.company_id)
+          .eq("active", true);
+
+        const staffLimit = (limitData.included_staff ?? 0) + (limitData.purchased_extra_staff ?? 0);
+        if (staffLimit > 0 && (staffCount ?? 0) >= staffLimit) {
+          setLimitReached(true);
+          setSubmitError(t("errors.staffLimitReached"));
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const name = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
       const can_manage = formData.role === "admin";
 
-      const { data: newMember, error: insertError } = await supabase
-        .from("staff_profiles")
-        .insert({
-          company_id: staffProfile.company_id,
-          name,
+      const createRes = await fetch('/api/staff/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           first_name: formData.first_name.trim(),
           last_name: formData.last_name.trim(),
           role: formData.role,
@@ -201,14 +238,24 @@ export default function NewTeamMemberPage() {
           phone: formData.phone.trim() || null,
           email: normalizedEmail || null,
           notes: formData.notes.trim() || null,
-          active: true,
-        })
-        .select("profile_id")
-        .single();
+        }),
+      });
 
-      if (insertError) {
-        throw insertError;
+      const createJson = await createRes.json();
+
+      if (!createRes.ok) {
+        if (createJson.error === 'over_limit') {
+          setOverLimit(true);
+          throw new Error(t('errors.overLimit'));
+        } else if (createJson.error === 'staff_limit_reached') {
+          setLimitReached(true);
+          throw new Error(t('errors.staffLimitReached'));
+        } else {
+          throw new Error(createJson.error || 'Insert failed');
+        }
       }
+
+      const newMember = createJson;
 
       // Non-blocking photo upload
       if (photoFile && newMember?.profile_id) {
@@ -281,7 +328,9 @@ export default function NewTeamMemberPage() {
           if (deleteErr) {
             console.error("Profile rollback after failed invite:", deleteErr);
           }
-          throw new Error(errorData.error || t("errors.inviteFailed"));
+          throw new Error(
+            errorData.error === 'over_limit' ? t('errors.overLimit') : (errorData.error || t("errors.inviteFailed"))
+          );
         }
       }
 
@@ -396,6 +445,22 @@ export default function NewTeamMemberPage() {
             </p>
           </div>
 
+          {overLimit && (
+            <div
+              style={{
+                padding: "var(--space-3) var(--space-4)",
+                background: "rgb(var(--warning) / 0.1)",
+                border: "1px solid rgb(var(--warning) / 0.3)",
+                borderRadius: "var(--radius)",
+                color: "rgb(var(--warning))",
+                fontSize: "14px",
+              }}
+            >
+              {t("errors.overLimit")}{" "}
+              <Link href={`/${locale}/staff/settings/billing`} style={{ color: "inherit", textDecoration: "underline" }}>{t("errors.upgradePlan")}</Link>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <div
               style={{
@@ -416,6 +481,9 @@ export default function NewTeamMemberPage() {
                   }}
                 >
                   {submitError}
+                  {limitReached && (
+                    <> <Link href={`/${locale}/staff/settings/billing`} style={{ color: "inherit", textDecoration: "underline" }}>{t("errors.upgradePlan")}</Link></>
+                  )}
                 </div>
               )}
 
@@ -799,7 +867,7 @@ export default function NewTeamMemberPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={submitting}
+                  disabled={submitting || overLimit}
                 >
                   {submitting ? t("form.saving") : t("form.save")}
                 </button>
