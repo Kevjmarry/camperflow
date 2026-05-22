@@ -10,13 +10,11 @@ interface PlanConfig {
   max_extra_staff: number
 }
 
-// max_extra_* uses 9999 as a sentinel for "unlimited" on Pro because the
-// column is NOT NULL. A future migration can make it nullable.
 const PRICE_PLAN_MAP: Record<string, PlanConfig> = {
-  price_1TZXTPIhm4YI8m30XpwGR05g: { plan: 'starter', included_vehicles: 3,  included_staff: 3,  max_extra_vehicles: 3,    max_extra_staff: 3    },
-  price_1TZSbMIT6IGiVqTFkAdZ6AE4: { plan: 'core',    included_vehicles: 5,  included_staff: 5,  max_extra_vehicles: 5,    max_extra_staff: 5    },
-  price_1TZSf6IT6IGiVqTFpLV72a27: { plan: 'growth',  included_vehicles: 15, included_staff: 15, max_extra_vehicles: 10,   max_extra_staff: 10   },
-  price_1TZSjCIT6IGiVqTFzoyKtcJ0: { plan: 'pro',     included_vehicles: 30, included_staff: 30, max_extra_vehicles: 9999, max_extra_staff: 9999 },
+  price_1TZXTPIhm4YI8m30XpwGR05g: { plan: 'starter', included_vehicles: 3,  included_staff: 3,  max_extra_vehicles: 0, max_extra_staff: 0 },
+  price_1TZXVCIhm4YI8m306ZWJWBfu: { plan: 'core',    included_vehicles: 5,  included_staff: 5,  max_extra_vehicles: 0, max_extra_staff: 0 },
+  price_1TZXXpIhm4YI8m308GZATyhu: { plan: 'growth',  included_vehicles: 15, included_staff: 15, max_extra_vehicles: 0, max_extra_staff: 0 },
+  price_1TZXZRIhm4YI8m308YOwthl4: { plan: 'pro',     included_vehicles: 30, included_staff: 30, max_extra_vehicles: 0, max_extra_staff: 0 },
 }
 
 const FALLBACK_LIMITS: Omit<PlanConfig, 'plan'> = {
