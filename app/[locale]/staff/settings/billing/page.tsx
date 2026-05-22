@@ -127,7 +127,7 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <PageContainer maxWidth="860px" showSignOut={false}>
+      <PageContainer maxWidth="1400px">
         <p style={{ color: 'rgb(var(--muted))', padding: 'var(--space-6) 0' }}>{t('loading')}</p>
       </PageContainer>
     )
@@ -135,7 +135,7 @@ export default function BillingPage() {
 
   if (error || !info) {
     return (
-      <PageContainer maxWidth="860px" showSignOut={false}>
+      <PageContainer maxWidth="1400px">
         <div
           style={{
             padding: 'var(--space-3) var(--space-4)',
@@ -162,7 +162,7 @@ export default function BillingPage() {
   const renewalKey = info.subscription_status === 'cancelled' ? 'plan.expiry' : 'plan.renewal'
 
   return (
-    <PageContainer maxWidth="860px" showSignOut={false}>
+    <PageContainer maxWidth="1400px">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <div>
           <BackLink href={`/${locale}/staff/company`}>{t('backToCompany')}</BackLink>

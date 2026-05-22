@@ -2916,7 +2916,7 @@
   },
   "staffBilling": {
     "title": "Fakturácia a predplatné",
-    "backToCompany": "Späť na nastavenia spoločnosti",
+    "backToCompany": "Späť",
     "loading": "Načítavajú sa fakturačné informácie…",
     "sections": {
       "currentPlan": "Aktuálny plán",

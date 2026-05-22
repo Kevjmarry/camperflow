@@ -2916,7 +2916,7 @@
   },
   "staffBilling": {
     "title": "Billing & Subscription",
-    "backToCompany": "Back to Company Settings",
+    "backToCompany": "Back",
     "loading": "Loading billing information…",
     "sections": {
       "currentPlan": "Current Plan",

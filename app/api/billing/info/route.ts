@@ -77,7 +77,13 @@ export async function GET(_request: NextRequest) {
             company.stripe_subscription_id,
             { expand: ['items.data.price'] },
           )
-          const currentPeriodEnd = (sub as unknown as { current_period_end?: number }).current_period_end ?? null
+          const topLevel = (sub as unknown as Record<string, unknown>)['current_period_end']
+          const item0 = sub.items.data[0] as unknown as Record<string, unknown> | undefined
+          const fromItem = item0?.['current_period_end']
+          const currentPeriodEnd =
+            typeof topLevel === 'number' ? topLevel :
+            typeof fromItem === 'number' ? fromItem :
+            null
           const price = sub.items.data[0]?.price as Stripe.Price | undefined
           stripeData = {
             current_period_end: currentPeriodEnd,

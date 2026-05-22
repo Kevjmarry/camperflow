@@ -2916,7 +2916,7 @@
   },
   "staffBilling": {
     "title": "Abrechnung & Abonnement",
-    "backToCompany": "Zurück zu Firmeneinstellungen",
+    "backToCompany": "Zurück",
     "loading": "Abrechnungsdaten werden geladen…",
     "sections": {
       "currentPlan": "Aktueller Plan",
