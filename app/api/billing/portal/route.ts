@@ -54,9 +54,28 @@ export async function GET(request: NextRequest) {
       ? 'http://localhost:3000'
       : (process.env.NEXT_PUBLIC_SITE_URL || 'https://app.camperflow.io')
 
+    const flow = searchParams.get('flow')
+
+    let flowData: Stripe.BillingPortal.SessionCreateParams['flow_data'] | undefined
+    if (flow === 'subscription_update') {
+      const subs = await stripe.subscriptions.list({
+        customer: company.stripe_customer_id,
+        status: 'active',
+        limit: 1,
+      })
+      const sub = subs.data[0]
+      if (sub) {
+        flowData = {
+          type: 'subscription_update',
+          subscription_update: { subscription: sub.id },
+        }
+      }
+    }
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: company.stripe_customer_id,
       return_url: `${siteUrl}${safeReturnPath}`,
+      ...(flowData ? { flow_data: flowData } : {}),
     })
 
     return NextResponse.redirect(portalSession.url)

@@ -2930,7 +2930,7 @@
       "currentPlan": "Aktuálny plán",
       "usageLimits": "Využitie",
       "billingActions": "Fakturačné akcie",
-      "billingHistory": "História faktúr"
+      "invoicesPayments": "Faktúry & platobné metódy"
     },
     "plan": {
       "name": "Plán",
@@ -2962,8 +2962,6 @@
       "opening": "Otvára sa…"
     },
     "history": {
-      "emptyTitle": "Žiadna história faktúr",
-      "emptyDescription": "Zobrazte a stiahnite faktúry vo fakturačnom portáli.",
       "openPortal": "Otvoriť fakturačný portál"
     },
     "overLimit": {

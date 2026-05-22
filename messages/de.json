@@ -2930,7 +2930,7 @@
       "currentPlan": "Aktueller Plan",
       "usageLimits": "Nutzung",
       "billingActions": "Abrechnungsaktionen",
-      "billingHistory": "Abrechnungsverlauf"
+      "invoicesPayments": "Rechnungen & Zahlungsmethoden"
     },
     "plan": {
       "name": "Plan",
@@ -2962,8 +2962,6 @@
       "opening": "Wird geöffnet…"
     },
     "history": {
-      "emptyTitle": "Kein Rechnungsverlauf",
-      "emptyDescription": "Rechnungen anzeigen und herunterladen im Abrechnungsportal.",
       "openPortal": "Abrechnungsportal öffnen"
     },
     "overLimit": {

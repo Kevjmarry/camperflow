@@ -2930,7 +2930,7 @@
       "currentPlan": "Current Plan",
       "usageLimits": "Usage",
       "billingActions": "Billing Actions",
-      "billingHistory": "Billing History"
+      "invoicesPayments": "Invoices & payment methods"
     },
     "plan": {
       "name": "Plan",
@@ -2962,8 +2962,6 @@
       "opening": "Opening…"
     },
     "history": {
-      "emptyTitle": "No invoice history",
-      "emptyDescription": "View and download invoices in the billing portal.",
       "openPortal": "Open billing portal"
     },
     "overLimit": {

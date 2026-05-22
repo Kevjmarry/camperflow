@@ -121,9 +121,10 @@ export default function BillingPage() {
     return map[status] ?? 'rgb(var(--muted))'
   }
 
-  const openPortal = () => {
+  const openPortal = (flow?: string) => {
     setPortalLoading(true)
-    window.location.href = `/api/billing/portal?returnPath=/${locale}/staff/settings/billing`
+    const base = `/api/billing/portal?returnPath=/${locale}/staff/settings/billing`
+    window.location.href = flow ? `${base}&flow=${flow}` : base
   }
 
   if (loading) {
@@ -347,7 +348,7 @@ export default function BillingPage() {
                   type="button"
                   className="btn btn-secondary"
                   disabled={portalLoading}
-                  onClick={openPortal}
+                  onClick={() => openPortal('subscription_update')}
                   style={{ opacity: portalLoading ? 0.6 : 1, cursor: portalLoading ? 'not-allowed' : 'pointer' }}
                 >
                   {t('actions.changePlan')}
@@ -355,39 +356,20 @@ export default function BillingPage() {
               </div>
             </section>
 
-            {/* ── Billing History ──────────────────────────────────────── */}
+            {/* ── Invoices & Payment Methods ───────────────────────────── */}
             <section>
               <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'rgb(var(--text))', marginBottom: 'var(--space-4)' }}>
-                {t('sections.billingHistory')}
+                {t('sections.invoicesPayments')}
               </h2>
-              <div
-                style={{
-                  border: '1px solid rgb(var(--border))',
-                  borderRadius: 'var(--radius)',
-                  padding: 'var(--space-8)',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                }}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={portalLoading}
+                onClick={openPortal}
+                style={{ fontSize: '14px' }}
               >
-                <p style={{ fontSize: '14px', fontWeight: 500, color: 'rgb(var(--text))', margin: 0 }}>
-                  {t('history.emptyTitle')}
-                </p>
-                <p style={{ fontSize: '13px', color: 'rgb(var(--muted))', margin: 0 }}>
-                  {t('history.emptyDescription')}
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  disabled={portalLoading}
-                  onClick={openPortal}
-                  style={{ fontSize: '14px' }}
-                >
-                  {t('history.openPortal')}
-                </button>
-              </div>
+                {portalLoading ? t('actions.opening') : t('history.openPortal')}
+              </button>
             </section>
 
           </div>
