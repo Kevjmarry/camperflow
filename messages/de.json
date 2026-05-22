@@ -2961,6 +2961,10 @@
       "emptyDescription": "Rechnungen anzeigen und herunterladen im Abrechnungsportal.",
       "openPortal": "Abrechnungsportal öffnen"
     },
+    "overLimit": {
+      "title": "Konto überschreitet Planlimit",
+      "message": "Ihre aktuelle Nutzung überschreitet die Limits Ihres Plans. Sie können Ihre vorhandenen Daten weiterhin nutzen, aber das Hinzufügen neuer Fahrzeuge oder Mitarbeiter ist deaktiviert. Hinweis: Überschüssige Fahrzeuge, Mitarbeiter und zugehörige Konfigurationsdaten könnten nach einer zukünftigen Nachfrist dauerhaft entfernt werden."
+    },
     "errors": {
       "loadFailed": "Abrechnungsdaten konnten nicht geladen werden. Bitte aktualisiere die Seite."
     }

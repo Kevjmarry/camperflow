@@ -2961,6 +2961,10 @@
       "emptyDescription": "Zobrazte a stiahnite faktúry vo fakturačnom portáli.",
       "openPortal": "Otvoriť fakturačný portál"
     },
+    "overLimit": {
+      "title": "Účet prekračuje limit plánu",
+      "message": "Vaše aktuálne využitie prekračuje limity vášho plánu. Môžete naďalej používať existujúce dáta, ale pridávanie nových vozidiel alebo personálu je zakázané. Upozornenie: prebytočné vozidlá, personál a súvisiace konfiguračné údaje môžu byť natrvalo odstránené po budúcom období odkladu."
+    },
     "errors": {
       "loadFailed": "Fakturačné informácie sa nepodarilo načítať. Obnovte stránku."
     }

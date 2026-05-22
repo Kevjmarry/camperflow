@@ -18,6 +18,7 @@ interface BillingInfo {
   purchased_extra_staff: number
   vehicle_count: number
   staff_count: number
+  over_limit: boolean
   current_period_end: number | null
   amount: number | null
   currency: string | null
@@ -175,6 +176,40 @@ export default function BillingPage() {
             <div>
               <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))', margin: 0 }}>{t('title')}</h1>
             </div>
+
+            {/* ── Over-limit warning ───────────────────────────────────── */}
+            {info.over_limit && (
+              <div
+                style={{
+                  padding: 'var(--space-4)',
+                  background: 'rgb(var(--error) / 0.08)',
+                  border: '1px solid rgb(var(--error) / 0.4)',
+                  borderRadius: 'var(--radius)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-2)',
+                }}
+              >
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--error))', margin: 0 }}>
+                  ⚠ {t('overLimit.title')}
+                </p>
+                <p style={{ fontSize: '13px', color: 'rgb(var(--text))', margin: 0 }}>
+                  {t('overLimit.message')}
+                </p>
+                <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginTop: 'var(--space-1)' }}>
+                  {info.vehicle_count > info.included_vehicles && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--error))' }}>
+                      {t('usage.vehicles')}: {t('usage.used', { used: info.vehicle_count, limit: info.included_vehicles })}
+                    </span>
+                  )}
+                  {info.staff_count > info.included_staff && (
+                    <span style={{ fontSize: '12px', color: 'rgb(var(--error))' }}>
+                      {t('usage.staff')}: {t('usage.used', { used: info.staff_count, limit: info.included_staff })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ── Current Plan ─────────────────────────────────────────── */}
             <section>

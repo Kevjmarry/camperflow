@@ -97,17 +97,24 @@ export async function GET(_request: NextRequest) {
       }
     }
 
+    const includedVehicles = company.included_vehicles ?? 0
+    const includedStaff = company.included_staff ?? 0
+    const over_limit =
+      (includedVehicles > 0 && vehicleCount > includedVehicles) ||
+      (includedStaff > 0 && staffCount > includedStaff)
+
     return NextResponse.json({
       subscription_status: company.subscription_status,
       subscription_plan: company.subscription_plan,
-      included_vehicles: company.included_vehicles,
-      included_staff: company.included_staff,
+      included_vehicles: includedVehicles,
+      included_staff: includedStaff,
       max_extra_vehicles: company.max_extra_vehicles,
       max_extra_staff: company.max_extra_staff,
       purchased_extra_vehicles: company.purchased_extra_vehicles,
       purchased_extra_staff: company.purchased_extra_staff,
       vehicle_count: vehicleCount,
       staff_count: staffCount,
+      over_limit,
       current_period_end: stripeData.current_period_end,
       amount: stripeData.amount,
       currency: stripeData.currency,

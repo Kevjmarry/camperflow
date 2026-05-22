@@ -2961,6 +2961,10 @@
       "emptyDescription": "View and download invoices in the billing portal.",
       "openPortal": "Open billing portal"
     },
+    "overLimit": {
+      "title": "Account is over plan limit",
+      "message": "Your current usage exceeds the limits of your plan. You can continue using existing data, but adding new vehicles or staff is disabled until you upgrade. Warning: excess vehicles, staff members, and related configuration data may be permanently removed after a future grace period."
+    },
     "errors": {
       "loadFailed": "Failed to load billing information. Please refresh the page."
     }

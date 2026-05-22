@@ -58,6 +58,27 @@ export async function POST(request: NextRequest) {
       update.max_extra_staff      = planConfig.max_extra_staff
     }
 
+    // Compute over_limit against new plan limits (requires over_limit boolean column on companies)
+    if (planConfig) {
+      const { data: company } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+        .maybeSingle()
+
+      if (company) {
+        const [vehiclesRes, staffRes] = await Promise.all([
+          supabase.from('vehicles').select('id', { count: 'exact', head: true }).eq('company_id', company.id),
+          supabase.from('staff_profiles').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('active', true),
+        ])
+        const vehicleCount = vehiclesRes.count ?? 0
+        const staffCount = staffRes.count ?? 0
+        update.over_limit =
+          vehicleCount > planConfig.included_vehicles ||
+          staffCount > planConfig.included_staff
+      }
+    }
+
     const { error } = await supabase
       .from('companies')
       .update(update)
