@@ -225,11 +225,10 @@ export default function NewTeamMemberPage() {
       const name = `${formData.first_name.trim()} ${formData.last_name.trim()}`;
       const can_manage = formData.role === "admin";
 
-      const { data: newMember, error: insertError } = await supabase
-        .from("staff_profiles")
-        .insert({
-          company_id: staffProfile.company_id,
-          name,
+      const createRes = await fetch('/api/staff/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           first_name: formData.first_name.trim(),
           last_name: formData.last_name.trim(),
           role: formData.role,
@@ -239,14 +238,24 @@ export default function NewTeamMemberPage() {
           phone: formData.phone.trim() || null,
           email: normalizedEmail || null,
           notes: formData.notes.trim() || null,
-          active: true,
-        })
-        .select("profile_id")
-        .single();
+        }),
+      });
 
-      if (insertError) {
-        throw insertError;
+      const createJson = await createRes.json();
+
+      if (!createRes.ok) {
+        if (createJson.error === 'over_limit') {
+          setOverLimit(true);
+          throw new Error(t('errors.overLimit'));
+        } else if (createJson.error === 'staff_limit_reached') {
+          setLimitReached(true);
+          throw new Error(t('errors.staffLimitReached'));
+        } else {
+          throw new Error(createJson.error || 'Insert failed');
+        }
       }
+
+      const newMember = createJson;
 
       // Non-blocking photo upload
       if (photoFile && newMember?.profile_id) {
@@ -319,7 +328,9 @@ export default function NewTeamMemberPage() {
           if (deleteErr) {
             console.error("Profile rollback after failed invite:", deleteErr);
           }
-          throw new Error(errorData.error || t("errors.inviteFailed"));
+          throw new Error(
+            errorData.error === 'over_limit' ? t('errors.overLimit') : (errorData.error || t("errors.inviteFailed"))
+          );
         }
       }
 

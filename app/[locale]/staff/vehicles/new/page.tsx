@@ -145,10 +145,10 @@ export default function NewVehiclePage() {
         }
       }
 
-      const { data: vehicleData, error: insertError } = await supabase
-        .from('vehicles')
-        .insert({
-          company_id: companyId,
+      const createRes = await fetch('/api/staff/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: formData.name,
           registration_plate: formData.registration_plate,
           make: formData.make,
@@ -163,15 +163,26 @@ export default function NewVehiclePage() {
           hold_reason: formData.operational_hold && formData.hold_reason.trim()
             ? formData.hold_reason.trim()
             : null,
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (insertError) {
-        setError(`${t('error.insertFailedPrefix')}${insertError.message}`);
+      const createJson = await createRes.json();
+
+      if (!createRes.ok) {
+        if (createJson.error === 'over_limit') {
+          setError(t('error.overLimit'));
+          setOverLimit(true);
+        } else if (createJson.error === 'vehicle_limit_reached') {
+          setError(t('error.vehicleLimitReached'));
+          setLimitReached(true);
+        } else {
+          setError(`${t('error.insertFailedPrefix')}${createJson.error ?? 'Unknown error'}`);
+        }
         setSubmitting(false);
         return;
       }
+
+      const vehicleData = createJson;
 
       if (selectedPhoto && vehicleData) {
         const vehicleId = vehicleData.id;
