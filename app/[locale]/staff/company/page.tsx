@@ -55,7 +55,9 @@ export default function CompanySettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
-  const [activeExtrasLang, setActiveExtrasLang] = useState<"en" | "de" | "sk">("sk");
+  const [activeExtrasLang, setActiveExtrasLang] = useState<"en" | "de" | "sk">(
+    locale === "de" || locale === "sk" ? locale : "en"
+  );
   const [extrasLangCopyWarning, setExtrasLangCopyWarning] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   // isRealAdmin: role === 'admin' only — used for the System Recovery section.
@@ -84,8 +86,6 @@ export default function CompanySettingsPage() {
   const [backlogResult, setBacklogResult] = useState<{
     completed: number; cancelled: number; skipped: number; instances: number;
   } | null>(null);
-
-  const [previewBookingCode, setPreviewBookingCode] = useState<string | null>(null);
 
   // ── Auth / profile load ────────────────────────────────────────────────────
 
@@ -128,14 +128,14 @@ export default function CompanySettingsPage() {
       setLoading(false);
       setError(t("errors.loadFailed"));
     }
-  }, [company, themeLoading, t]);
+  }, [company, themeLoading]);
 
   // ── Booking defaults + payment reminders + extras → form ──────────────────
 
   useEffect(() => {
     if (!company?.id) return;
     const load = async () => {
-      const [{ data }, { data: companyRow }, { data: sampleBooking }] = await Promise.all([
+      const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
           .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link, google_review_url")
@@ -146,15 +146,7 @@ export default function CompanySettingsPage() {
           .select("address, email, registration_id, vat_id")
           .eq("id", company.id)
           .maybeSingle(),
-        supabase
-          .from("bookings")
-          .select("booking_code")
-          .eq("company_id", company.id)
-          .not("booking_code", "is", null)
-          .limit(1)
-          .maybeSingle(),
       ]);
-      setPreviewBookingCode((sampleBooking as any)?.booking_code ?? null);
       setFormData((prev) => ({
         ...prev,
         ...(data ? {
@@ -214,14 +206,14 @@ export default function CompanySettingsPage() {
     try {
       setUploadingLogo(true);
       const ext = logoFile.name.split(".").pop();
-      const fileName = `${company.id}-${Date.now()}.${ext}`;
+      const fileName = `${company.id}/logo-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("company-logos")
         .upload(fileName, logoFile, { cacheControl: "3600", upsert: true });
       if (upErr) throw upErr;
       return supabase.storage.from("company-logos").getPublicUrl(fileName).data.publicUrl;
     } catch (err: any) {
-      setError(err.message || t("errors.uploadLogoFailed"));
+      setError("Logo upload failed. Your account may not have permission to upload company logos.");
       return null;
     } finally {
       setUploadingLogo(false);
@@ -232,6 +224,8 @@ export default function CompanySettingsPage() {
     e.preventDefault();
     setError(""); setSuccess(false); setSaving(true);
     if (!formData.name.trim()) { setError(t("errors.companyNameRequired")); setSaving(false); return; }
+    if (!company?.id) { setError(t("errors.loadFailed")); setSaving(false); return; }
+    const companyId = company.id;
     try {
       let finalLogoUrl = formData.logo_url;
       if (logoFile) {
@@ -262,7 +256,7 @@ export default function CompanySettingsPage() {
           registration_id: formData.registration_id.trim() || null,
           vat_id:          formData.vat_id.trim()          || null,
         })
-        .eq("id", company?.id)
+        .eq("id", companyId)
         .select("id");
       if (saveErr) throw saveErr;
       if (!companiesRows || companiesRows.length === 0) throw new Error("Failed to save company row.");
@@ -288,7 +282,7 @@ export default function CompanySettingsPage() {
           google_review_url:                googleReviewUrl.trim() || null,
           map_link:                         formData.map_link.trim() || null,
         })
-        .eq("id", company?.id)
+        .eq("id", companyId)
         .select("id");
       if (settingsErr) throw settingsErr;
       if (!settingsRows || settingsRows.length === 0) throw new Error("Failed to save company settings row.");
@@ -828,11 +822,7 @@ export default function CompanySettingsPage() {
                   </div>
                   <div style={{ marginLeft: "calc(16px + var(--space-3))", marginTop: "var(--space-1)" }}>
                     <a
-                      href={
-                        previewBookingCode
-                          ? `/${locale}/guest/feedback?code=${encodeURIComponent(previewBookingCode)}`
-                          : `/${locale}/guest/feedback?preview=1`
-                      }
+                      href={`/${locale}/guest/feedback?preview=1`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn"

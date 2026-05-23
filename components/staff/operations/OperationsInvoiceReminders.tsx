@@ -168,10 +168,18 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
             const isCopied = copiedIds.has(r.id)
 
             const timingLabel =
-              r.type === 'return_prep' ? t('timing.returnTomorrow')
-              : r.type === 'pre_arrival' ? t('timing.pickupTomorrow')
+              r.type === 'return_prep'
+                ? (r.daysUntilReturn! <= 0 ? t('timing.returnToday')
+                  : r.daysUntilReturn === 1 ? t('timing.returnTomorrow')
+                  : t('timing.returnInDays', { count: r.daysUntilReturn }))
+              : r.type === 'pre_arrival'
+                ? (r.daysUntilPickup <= 0 ? t('timing.pickupToday')
+                  : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
+                  : t('timing.pickupInDays', { count: r.daysUntilPickup }))
               : r.type === 'review_request'
-                ? (r.returnIsToday ? t('timing.returnToday') : t('timing.returnYesterday'))
+                ? (r.returnIsToday ? t('timing.returnToday')
+                  : r.daysUntilReturn === -1 ? t('timing.returnYesterday')
+                  : t('timing.returnDaysAgo', { count: Math.abs(r.daysUntilReturn ?? 1) }))
               : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
               : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
               : t('timing.pickupInDays', { count: r.daysUntilPickup })

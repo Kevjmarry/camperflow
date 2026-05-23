@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export interface OpsVehicleBlock {
   id: string
@@ -23,7 +24,7 @@ export async function getOpsVehicleBlocks(): Promise<OpsVehicleBlock[]> {
 
   if (!companyId) return []
 
-  const now = new Date()
+  const now = getDemoToday(companyId)
   // Show blocks ending in the future (includes currently active + upcoming)
   // Cap to next 30 days so the list stays actionable
   const windowEnd = new Date(now)
@@ -52,7 +53,7 @@ export async function getOpsVehicleBlocks(): Promise<OpsVehicleBlock[]> {
     (vehicles ?? []).map((v) => [v.id, v.name ?? ''])
   )
 
-  const todayStart = new Date()
+  const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
 
   return blocks.map((b) => {

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -53,7 +54,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .maybeSingle()
   const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
 
-  const now = new Date()
+  const now = getDemoToday(companyId)
   const windowStart = new Date(now)
   windowStart.setDate(windowStart.getDate() - 30)
   const windowEnd = new Date(now)

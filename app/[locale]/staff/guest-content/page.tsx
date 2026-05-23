@@ -166,7 +166,7 @@ export default function GuestContentPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : "EN");
+  const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : locale === "sk" ? "SK" : "EN");
   const [copyWarning, setCopyWarning] = useState(false);
 
   // Derived: first language with saved content in guest_content_i18n (SK→EN→DE)

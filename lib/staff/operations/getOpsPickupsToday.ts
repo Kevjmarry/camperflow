@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -83,7 +84,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   const blockingInstanceIds = new Set((blockingItems ?? []).map((i) => i.instance_id))
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = getDemoToday(companyId).toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase

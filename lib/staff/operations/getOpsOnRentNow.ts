@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -31,6 +32,8 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
     .maybeSingle()
   const companyId = profile?.company_id
   if (!isUUID(companyId)) return []
+
+  const now = getDemoToday(companyId)
 
   const { data: onRent, error: onRentError } = await supabase
     .from('ops_bookings')
@@ -103,7 +106,7 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
       prepWindowMs,
       nextBookingPickupAt,
       nextBookingId,
-      isOverdue: b.is_overdue ?? false,
+      isOverdue: new Date(b.return_at) < now,
       prepSeverity,
     }
   })

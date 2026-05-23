@@ -325,6 +325,27 @@
     font-size: 14px;
     color: rgb(var(--muted));
   }
+
+  .reminder-chip-mobile { display: none; }
+  .reminder-row { align-items: center; }
+
+  @media (max-width: 540px) {
+    .reminder-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .reminder-action {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .reminder-action > button {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .reminder-chip-mobile { display: inline; }
+    .reminder-chip-desktop { display: none; }
+  }
 }
 
 @layer utilities {

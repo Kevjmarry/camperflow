@@ -22,9 +22,26 @@ export default async function GuestFeedbackPage({ params, searchParams }: PagePr
   const t = await getTranslations({ locale, namespace: "guestFeedback" });
   const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
 
+  let googleReviewUrl: string | null = null;
+
   if (isPreview) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect(`/${locale}/staff/login`);
+
+    const { data: profile } = await supabase
+      .from("staff_profiles")
+      .select("company_id")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (profile?.company_id) {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("google_review_url")
+        .eq("id", profile.company_id)
+        .maybeSingle();
+      googleReviewUrl = (data as any)?.google_review_url ?? null;
+    }
   }
 
   if (!isPreview && !code) {
@@ -34,8 +51,6 @@ export default async function GuestFeedbackPage({ params, searchParams }: PagePr
       </div>
     );
   }
-
-  let googleReviewUrl: string | null = null;
 
   if (!isPreview) {
     const { data: booking } = await supabase

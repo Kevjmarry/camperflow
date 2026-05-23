@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -98,6 +99,8 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   if (!isUUID(companyId)) return []
 
+  const today = getDemoToday(companyId)
+
   const { data, error } = await supabase
     .from('ops_bookings')
     .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, booking_status')
@@ -176,7 +179,7 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = today.toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase
@@ -244,10 +247,10 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
     (vehicleStatuses ?? []).map((v) => [v.id, ALLOWED_STATUSES.has(v.status) ? v.status as 'ready' | 'preparing' | 'on_rent' : null])
   )
 
-  const todayStart = new Date()
+  const todayStart = new Date(today)
   todayStart.setHours(0, 0, 0, 0)
 
-  const now = new Date()
+  const now = new Date(today)
 
   return (data ?? []).map((b) => {
     const pickupDate = new Date(b.pickup_at)

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -94,6 +95,8 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
 
   if (!isUUID(companyId)) return { rows: [], companyTimezone: 'UTC' }
 
+  const today = getDemoToday(companyId)
+
   const { data: companySettings } = await supabase
     .from('company_settings')
     .select('company_timezone')
@@ -101,7 +104,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
     .maybeSingle()
   const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
 
-  const startOfToday = new Date()
+  const startOfToday = new Date(today)
   startOfToday.setHours(0, 0, 0, 0)
 
   const { data, error } = await supabase
@@ -141,7 +144,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
   )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = today.toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase
@@ -209,7 +212,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
     (vehicleStatuses ?? []).map((v) => [v.id, ALLOWED_STATUSES.has(v.status) ? v.status as 'ready' | 'preparing' | 'on_rent' : null])
   )
 
-  const todayStart = new Date()
+  const todayStart = new Date(today)
   todayStart.setHours(0, 0, 0, 0)
 
   const rows = (data ?? []).filter((b) => !bookingsWithCompletedReturn.has(b.id)).map((b) => {

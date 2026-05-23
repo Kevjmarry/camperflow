@@ -1233,6 +1233,8 @@
           "returnYesterday": "Vrátenie včera",
           "returnToday": "Vrátenie dnes",
           "returnTomorrow": "Vrátenie zajtra",
+          "returnInDays": "Vrátenie za {count}d",
+          "returnDaysAgo": "Vrátenie pred {count}d",
           "pickupTomorrow": "Výber zajtra",
           "pickupToday": "Výber dnes",
           "pickupInDays": "Výber za {count}d"

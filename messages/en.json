@@ -1233,6 +1233,8 @@
           "returnYesterday": "Return yesterday",
           "returnToday": "Return today",
           "returnTomorrow": "Return tomorrow",
+          "returnInDays": "Return in {count}d",
+          "returnDaysAgo": "Return {count}d ago",
           "pickupTomorrow": "Pickup tomorrow",
           "pickupToday": "Pickup today",
           "pickupInDays": "Pickup in {count}d"

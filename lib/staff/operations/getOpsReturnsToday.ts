@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export interface OpsReturn {
   id: string
@@ -78,7 +79,7 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
   )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(Boolean) as string[]
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = getDemoToday(companyId).toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase

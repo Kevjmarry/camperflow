@@ -1233,6 +1233,8 @@
           "returnYesterday": "Rückgabe gestern",
           "returnToday": "Rückgabe heute",
           "returnTomorrow": "Rückgabe morgen",
+          "returnInDays": "Rückgabe in {count} Tagen",
+          "returnDaysAgo": "Rückgabe vor {count} Tagen",
           "pickupTomorrow": "Abholung morgen",
           "pickupToday": "Abholung heute",
           "pickupInDays": "Abholung in {count} Tagen"

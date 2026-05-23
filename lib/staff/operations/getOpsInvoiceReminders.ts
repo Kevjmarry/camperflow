@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v: unknown): v is string { return typeof v === 'string' && UUID_RE.test(v) }
@@ -45,7 +46,10 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
   const companyTimezone: string = (settings as any)?.company_timezone ?? 'UTC'
   const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
 
-  const now = Date.now()
+  const nowDate = getDemoToday(companyId)
+  const now = nowDate.getTime()
+  const todayStart = new Date(nowDate)
+  todayStart.setHours(0, 0, 0, 0)
 
   const [activeResult, completedResult] = await Promise.all([
     supabase
@@ -100,8 +104,9 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     const vehicle = b.vehicles
       ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
       : null
-    const pickupMs = new Date(b.pickup_at).getTime()
-    const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
+    const pickupDay = new Date(b.pickup_at)
+    pickupDay.setHours(0, 0, 0, 0)
+    const daysUntilPickup = Math.round((pickupDay.getTime() - todayStart.getTime()) / 86400000)
 
     // Final payment check: split or custom payment, not yet sent
     if (
@@ -153,8 +158,9 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       b.return_at &&
       b.return_whatsapp_sent !== true
     ) {
-      const returnMs = new Date(b.return_at).getTime()
-      const daysUntilReturn = Math.round((returnMs - now) / 86400000)
+      const returnDay = new Date(b.return_at)
+      returnDay.setHours(0, 0, 0, 0)
+      const daysUntilReturn = Math.round((returnDay.getTime() - todayStart.getTime()) / 86400000)
       if (daysUntilReturn <= 3) results.push({
         type: 'return_prep',
         id: `${b.id}-return-prep`,
@@ -181,10 +187,12 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       const vehicle = b.vehicles
         ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
         : null
-      const pickupMs = b.pickup_at ? new Date(b.pickup_at).getTime() : now
-      const daysUntilPickup = Math.round((pickupMs - now) / 86400000)
-      const returnMs = new Date(b.return_at).getTime()
-      const daysUntilReturn = Math.round((returnMs - now) / 86400000)
+      const pickupDay = b.pickup_at ? new Date(b.pickup_at) : new Date(nowDate)
+      pickupDay.setHours(0, 0, 0, 0)
+      const daysUntilPickup = Math.round((pickupDay.getTime() - todayStart.getTime()) / 86400000)
+      const returnDay = new Date(b.return_at)
+      returnDay.setHours(0, 0, 0, 0)
+      const daysUntilReturn = Math.round((returnDay.getTime() - todayStart.getTime()) / 86400000)
       const returnIsToday = dateFmt.format(new Date(b.return_at)) === todayStr
       results.push({
         type: 'review_request',

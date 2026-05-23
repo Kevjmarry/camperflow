@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export interface OpsSummary {
   pickupsToday: number
@@ -26,7 +27,7 @@ export async function getOpsSummary(): Promise<OpsSummary> {
     }
   }
 
-  const now = new Date()
+  const now = getDemoToday(companyId)
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
   const todayEnd = new Date(now)

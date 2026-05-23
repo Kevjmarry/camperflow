@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export interface OpsBlockedVehicle {
   id: string
@@ -62,7 +63,8 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   if (!vehicleIds.length) return []
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const today = getDemoToday(companyId)
+  const todayStr = today.toISOString().slice(0, 10)
 
   const { data: expiredCompliance, error: ecError } = await supabase
     .from('vehicle_compliance')
@@ -96,7 +98,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
     if (c.expiry_date && warnDays != null) {
       if (c.expiry_date >= todayStr) {
-        const cutoff = new Date()
+        const cutoff = new Date(today)
         cutoff.setDate(cutoff.getDate() + warnDays)
         const cutoffStr = cutoff.toISOString().slice(0, 10)
         if (c.expiry_date <= cutoffStr) {

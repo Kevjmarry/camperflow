@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export interface OpsVehiclePreparing {
   id: string
@@ -25,7 +26,7 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
     return []
   }
 
-  const now = new Date()
+  const now = getDemoToday(companyId)
   const nowStr = now.toISOString()
 
   // Only surface vehicles that have a real confirmed booking within the next

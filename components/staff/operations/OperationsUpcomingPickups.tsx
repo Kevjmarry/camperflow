@@ -11,7 +11,7 @@ interface Props {
   companyTimezone?: string
 }
 
-const LIMIT = 5
+const LIMIT = 3
 
 function formatNextAction(action: string | null | undefined, labels: Record<string, string>): string {
   if (!action) return ''

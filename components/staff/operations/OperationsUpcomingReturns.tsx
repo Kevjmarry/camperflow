@@ -11,7 +11,7 @@ interface Props {
   companyTimezone: string
 }
 
-const LIMIT = 5
+const LIMIT = 3
 
 function formatDate(iso: string, locale: string, timeZone: string) {
   return new Date(iso).toLocaleDateString(locale, {

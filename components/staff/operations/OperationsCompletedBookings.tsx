@@ -10,7 +10,7 @@ interface Props {
   bookings: OpsCompletedBooking[]
 }
 
-const LIMIT = 5
+const LIMIT = 3
 
 function formatDate(iso: string | null, locale: string) {
   if (!iso) return '—'
