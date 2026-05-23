@@ -167,19 +167,20 @@ export default function OperationsInvoiceReminders({ reminders, whatsappTemplate
             const generatedMessage = buildMessage(r)
             const isCopied = copiedIds.has(r.id)
 
+            const daysUntilReturn = r.daysUntilReturn ?? 0
             const timingLabel =
               r.type === 'return_prep'
-                ? (r.daysUntilReturn! <= 0 ? t('timing.returnToday')
-                  : r.daysUntilReturn === 1 ? t('timing.returnTomorrow')
-                  : t('timing.returnInDays', { count: r.daysUntilReturn }))
+                ? (daysUntilReturn <= 0 ? t('timing.returnToday')
+                  : daysUntilReturn === 1 ? t('timing.returnTomorrow')
+                  : t('timing.returnInDays', { count: daysUntilReturn }))
               : r.type === 'pre_arrival'
                 ? (r.daysUntilPickup <= 0 ? t('timing.pickupToday')
                   : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
                   : t('timing.pickupInDays', { count: r.daysUntilPickup }))
               : r.type === 'review_request'
                 ? (r.returnIsToday ? t('timing.returnToday')
-                  : r.daysUntilReturn === -1 ? t('timing.returnYesterday')
-                  : t('timing.returnDaysAgo', { count: Math.abs(r.daysUntilReturn ?? 1) }))
+                  : daysUntilReturn === -1 ? t('timing.returnYesterday')
+                  : t('timing.returnDaysAgo', { count: Math.abs(daysUntilReturn) || 1 }))
               : r.daysUntilPickup <= 0 ? t('timing.pickupToday')
               : r.daysUntilPickup === 1 ? t('timing.pickupTomorrow')
               : t('timing.pickupInDays', { count: r.daysUntilPickup })
