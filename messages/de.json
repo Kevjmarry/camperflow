@@ -295,10 +295,10 @@
     },
     "photoAlt": "Fahrzeug",
     "compliance": {
-      "title": "Compliance",
-      "addButton": "Compliance hinzufügen",
-      "loading": "Compliance wird geladen...",
-      "empty": "Keine Compliance-Einträge gefunden.",
+      "title": "Fahrzeug-Compliance",
+      "addButton": "Fahrzeug-Compliance hinzufügen",
+      "loading": "Fahrzeug-Compliance wird geladen...",
+      "empty": "Keine Fahrzeug-Compliance-Einträge gefunden.",
       "table": {
         "type": "Typ",
         "expiryDate": "Ablaufdatum",
@@ -337,15 +337,15 @@
         "warningKmOverrideLabel": "Eigene Warn-km vor Service"
       },
       "addModal": {
-        "title": "Compliance hinzufügen",
-        "allTracked": "Alle Compliance-Typen werden für dieses Fahrzeug bereits erfasst.",
+        "title": "Fahrzeug-Compliance hinzufügen",
+        "allTracked": "Alle Fahrzeug-Compliance-Typen werden für dieses Fahrzeug bereits erfasst.",
         "close": "Schließen",
-        "typeLabel": "Compliance-Typ",
+        "typeLabel": "Fahrzeug-Compliance-Typ",
         "expiryDateLabel": "Ablaufdatum",
         "notesLabel": "Notizen",
-        "errorTypeRequired": "Bitte einen Compliance-Typ auswählen",
+        "errorTypeRequired": "Bitte einen Fahrzeug-Compliance-Typ auswählen",
         "errorExpiryRequired": "Ablaufdatum ist erforderlich",
-        "errorSaveFailed": "Compliance konnte nicht hinzugefügt werden",
+        "errorSaveFailed": "Fahrzeug-Compliance konnte nicht hinzugefügt werden",
         "cancel": "Abbrechen",
         "saving": "Wird hinzugefügt...",
         "add": "Hinzufügen",
@@ -380,10 +380,10 @@
       "completed": "Abgeschlossen"
     },
     "issues": {
-      "title": "Offene Probleme",
+      "title": "Checklisten-Markierungen",
       "loading": "Wird geladen…",
-      "empty": "Keine offenen Probleme",
-      "fallbackTitle": "Offenes Fahrzeugproblem",
+      "empty": "Keine Checklisten-Markierungen",
+      "fallbackTitle": "Checklisten-Markierung",
       "blocking": "Blockierend",
       "attention": "Achtung",
       "reported": "Gemeldet am {date}",
@@ -1808,7 +1808,7 @@
     },
     "blockingReason": {
       "openIssue": "Offenes Problem",
-      "expiredCompliance": "Abgelaufene Compliance",
+      "expiredCompliance": "Abgelaufene Fahrzeug-Compliance",
       "checklistIncomplete": "Checkliste unvollständig",
       "expiredComplianceWithName": "Abgelaufen: {name}"
     },
@@ -1864,7 +1864,7 @@
     "loadFailed": "Fehler beim Laden des Fahrzeugs.",
     "saveFailed": "Fehler beim Speichern der Änderungen.",
     "deleteFailed": "Fehler beim Löschen des Fahrzeugs.",
-    "createdBanner": "Fahrzeug erfolgreich erstellt. Sie können nun unten Compliance-Einträge hinzufügen.",
+    "createdBanner": "Fahrzeug erfolgreich erstellt. Sie können nun unten Fahrzeug-Compliance-Einträge hinzufügen.",
     "operationalHoldLabel": "Betriebssperre",
     "holdReasonLabel": "Grund der Sperre",
     "holdReasonPlaceholder": "Grund für die Sperre...",
@@ -2305,7 +2305,7 @@
       "description": "Verwaltungstools zur Wiederherstellung des Systemzustands nach einer längeren Inaktivitätsphase.",
       "backlogReview": {
         "title": "Backlog-Überprüfung",
-        "description": "Veraltete Buchungen einzeln überprüfen und entscheiden: als abgeschlossen markieren, stornieren oder vorerst überspringen. Zugehörige Checklisten-Instanzen werden für jede bearbeitete Buchung zwangsweise geschlossen. Fahrzeugprobleme, Compliance-Sperren und manuelle Sperren sind nicht betroffen.",
+        "description": "Veraltete Buchungen einzeln überprüfen und entscheiden: als abgeschlossen markieren, stornieren oder vorerst überspringen. Zugehörige Checklisten-Instanzen werden für jede bearbeitete Buchung zwangsweise geschlossen. Fahrzeugprobleme, Fahrzeug-Compliance-Sperren und manuelle Sperren sind nicht betroffen.",
         "button": "Veralteten Backlog überprüfen",
         "errorLoad": "Veraltete Buchungen konnten nicht geladen werden",
         "errorSubmit": "Entscheidungen konnten nicht angewendet werden",
@@ -2462,7 +2462,7 @@
         "0": "Mechanikpersonal",
         "1": "Administratoren"
       },
-      "usedFor": "Vorbereitung der Fahrzeuge auf die Mietsaison — Sicherheits-, Compliance- und Ausrüstungskontrollen."
+      "usedFor": "Vorbereitung der Fahrzeuge auf die Mietsaison — Sicherheits-, Fahrzeug-Compliance- und Ausrüstungskontrollen."
     },
     "post_season": {
       "createdWhen": {

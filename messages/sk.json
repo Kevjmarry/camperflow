@@ -295,10 +295,10 @@
     },
     "photoAlt": "Vozidlo",
     "compliance": {
-      "title": "Súlad s predpismi",
-      "addButton": "Pridať záznam",
-      "loading": "Načítavanie záznamov...",
-      "empty": "Žiadne záznamy o súlade.",
+      "title": "Súlad vozidla s predpismi",
+      "addButton": "Pridať záznam súladu vozidla",
+      "loading": "Načítavanie záznamov súladu vozidla...",
+      "empty": "Žiadne záznamy o súlade vozidla.",
       "table": {
         "type": "Typ",
         "expiryDate": "Dátum platnosti",
@@ -337,15 +337,15 @@
         "warningKmOverrideLabel": "Vlastné varovanie km pred servisom"
       },
       "addModal": {
-        "title": "Pridať záznam",
-        "allTracked": "Všetky typy súladu sú pre toto vozidlo už sledované.",
+        "title": "Pridať záznam súladu vozidla",
+        "allTracked": "Všetky typy súladu vozidla sú pre toto vozidlo už sledované.",
         "close": "Zavrieť",
-        "typeLabel": "Typ záznamu",
+        "typeLabel": "Typ záznamu súladu vozidla",
         "expiryDateLabel": "Dátum platnosti",
         "notesLabel": "Poznámky",
-        "errorTypeRequired": "Vyberte prosím typ záznamu",
+        "errorTypeRequired": "Vyberte prosím typ záznamu súladu vozidla",
         "errorExpiryRequired": "Dátum platnosti je povinný",
-        "errorSaveFailed": "Pridanie záznamu zlyhalo",
+        "errorSaveFailed": "Pridanie záznamu súladu vozidla zlyhalo",
         "cancel": "Zrušiť",
         "saving": "Pridávanie...",
         "add": "Pridať",
@@ -380,10 +380,10 @@
       "completed": "Dokončené"
     },
     "issues": {
-      "title": "Otvorené problémy",
+      "title": "Záznamy kontrolného zoznamu",
       "loading": "Načítavanie…",
-      "empty": "Žiadne otvorené problémy",
-      "fallbackTitle": "Otvorený problém vozidla",
+      "empty": "Žiadne záznamy kontrolného zoznamu",
+      "fallbackTitle": "Záznam kontrolného zoznamu",
       "blocking": "Blokujúce",
       "attention": "Vyžaduje pozornosť",
       "reported": "Nahlásené {date}",
@@ -1176,7 +1176,7 @@
       "status": {
         "blockedVehicle": "Blokované vozidlo",
         "blockingChecklistIssue": "Blokujúci problém kontrolného zoznamu",
-        "expiredCompliance": "Vypršaná zhoda",
+        "expiredCompliance": "Vypršaný súlad vozidla",
         "openVehicleIssue": "Otvorený problém vozidla",
         "readyForPickup": "Pripravené na výber",
         "urgentIssue": "Urgentný problém",
@@ -1231,8 +1231,8 @@
         "blocked": "Blokované",
         "operationalHold": "Prevádzkové pozastavenie",
         "checklistIssue": "Problém kontrolného zoznamu",
-        "expiredCompliance": "Vypršaná zhoda",
-        "warningCompliance": "Zhoda čoskoro vyprší",
+        "expiredCompliance": "Vypršaný súlad vozidla",
+        "warningCompliance": "Súlad vozidla čoskoro vyprší",
         "vehicleIssue": "Problém vozidla",
         "urgentIssue": "Urgentný problém",
         "attentionIssue": "Problém vyžadujúci pozornosť",
@@ -1808,7 +1808,7 @@
     },
     "blockingReason": {
       "openIssue": "Otvorený problém",
-      "expiredCompliance": "Vypršaná zhoda",
+      "expiredCompliance": "Vypršaný súlad vozidla",
       "checklistIncomplete": "Kontrolný zoznam nedokončený",
       "expiredComplianceWithName": "Vypršané: {name}"
     },
@@ -1864,7 +1864,7 @@
     "loadFailed": "Načítanie vozidla zlyhalo.",
     "saveFailed": "Uloženie zmien zlyhalo.",
     "deleteFailed": "Vymazanie vozidla zlyhalo.",
-    "createdBanner": "Vozidlo bolo úspešne vytvorené. Teraz môžete pridať záznamy o zhode nižšie.",
+    "createdBanner": "Vozidlo bolo úspešne vytvorené. Teraz môžete pridať záznamy o súlade vozidla nižšie.",
     "operationalHoldLabel": "Prevádzkové pozastavenie",
     "holdReasonLabel": "Dôvod pozastavenia",
     "holdReasonPlaceholder": "Dôvod pozastavenia...",
@@ -2305,7 +2305,7 @@
       "description": "Administratívne nástroje na obnovenie stavu systému po období nečinnosti.",
       "backlogReview": {
         "title": "Prehľad nevybavených položiek",
-        "description": "Skontrolujte oneskorené rezervácie jednu po druhej a rozhodnite, čo s každou urobiť: označiť ako dokončenú, zrušiť alebo preskočiť. Príslušné inštancie kontrolných zoznamov sa pri rezerváciách, na ktorých konáte, násilne uzavrú. Problémy vozidiel, blokovania súladu a manuálne pozastavenia nie sú ovplyvnené.",
+        "description": "Skontrolujte oneskorené rezervácie jednu po druhej a rozhodnite, čo s každou urobiť: označiť ako dokončenú, zrušiť alebo preskočiť. Príslušné inštancie kontrolných zoznamov sa pri rezerváciách, na ktorých konáte, násilne uzavrú. Problémy vozidiel, blokovania súladu vozidla a manuálne pozastavenia nie sú ovplyvnené.",
         "button": "Skontrolovať nevybavené položky",
         "errorLoad": "Načítanie oneskorených rezervácií zlyhalo",
         "errorSubmit": "Uplatnenie rozhodnutí zlyhalo",
@@ -2462,7 +2462,7 @@
         "0": "Technický personál",
         "1": "Správcovia"
       },
-      "usedFor": "Príprava vozidiel na sezónu prenájmu — kontroly bezpečnosti, zhody a vybavenia."
+      "usedFor": "Príprava vozidiel na sezónu prenájmu — kontroly bezpečnosti, súladu vozidla a vybavenia."
     },
     "post_season": {
       "createdWhen": {

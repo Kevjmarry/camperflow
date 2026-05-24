@@ -329,7 +329,7 @@ export default function VehicleDetailPage({
       try {
         const { data: issues } = await supabase
           .from('vehicle_issues')
-          .select('id, created_at, source_checklist_instance_id, source_checklist_item_id')
+          .select('id, created_at, source_checklist_instance_id, source_checklist_item_id, blocking')
           .eq('vehicle_id', vehicle.id)
           .eq('resolved', false);
         if (!issues || issues.length === 0) { setVehicleIssues([]); return; }
@@ -378,7 +378,7 @@ export default function VehicleDetailPage({
           id: i.id,
           title: byIssue.get(i.id)?.title ?? null,
           description: byIssue.get(i.id)?.description ?? null,
-          blocking: byIssue.get(i.id)?.blocking ?? false,
+          blocking: (i as any).blocking === true,
           createdAt: i.created_at ?? null,
           checklistInstanceId: byIssue.get(i.id)?.checklistInstanceId ?? null,
         })));
@@ -1102,80 +1102,62 @@ export default function VehicleDetailPage({
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {vehicleIssues.map((issue) => {
-                    const cardStyle: React.CSSProperties = {
-                      padding: "var(--space-4)",
-                      background: issue.blocking ? "rgb(var(--error) / 0.06)" : "rgb(var(--warning) / 0.06)",
-                      border: `1px solid ${issue.blocking ? "rgb(var(--error) / 0.25)" : "rgb(var(--warning) / 0.25)"}`,
-                      borderRadius: "var(--radius)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "var(--space-1)",
-                    };
                     const isResolving = resolvingIssueId === issue.id;
-
-                    const issueHeader = (
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                          {issue.title || t("issues.fallbackTitle")}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            padding: "2px 8px",
-                            borderRadius: "var(--radius)",
-                            background: issue.blocking ? "rgb(var(--error) / 0.15)" : "rgb(var(--warning) / 0.15)",
-                            color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
-                          }}
-                        >
-                          {issue.blocking ? t("issues.blocking") : t("issues.attention")}
-                        </span>
-                      </div>
-                    );
-
-                    const issueBody = (
-                      <>
-                        {issue.description && (
-                          <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>{issue.description}</div>
-                        )}
-                        {issue.createdAt && (
-                          <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
-                            {t("issues.reported", { date: new Date(issue.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" }) })}
-                          </div>
-                        )}
-                      </>
-                    );
-
-                    if (issue.checklistInstanceId) {
-                      return (
-                        <Link
-                          key={issue.id}
-                          href={`/${locale}/staff/checklists/${issue.checklistInstanceId}`}
-                          style={{ textDecoration: "none", ...cardStyle }}
-                        >
-                          {issueHeader}
-                          {issueBody}
-                          <div style={{ fontSize: "11px", color: "rgb(var(--brand))", marginTop: "var(--space-1)" }}>{t("issues.viewChecklist")}</div>
-                        </Link>
-                      );
-                    }
-
                     return (
-                      <div key={issue.id} style={cardStyle}>
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "var(--space-3)", flexWrap: "wrap" }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
-                            {issueHeader}
-                            {issueBody}
+                      <div
+                        key={issue.id}
+                        style={{
+                          padding: "var(--space-4)",
+                          background: issue.blocking ? "rgb(var(--error) / 0.06)" : "rgb(var(--warning) / 0.06)",
+                          border: `1px solid ${issue.blocking ? "rgb(var(--error) / 0.25)" : "rgb(var(--warning) / 0.25)"}`,
+                          borderRadius: "var(--radius)",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: "var(--space-3)",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                            <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                              {issue.title || t("issues.fallbackTitle")}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                padding: "2px 8px",
+                                borderRadius: "var(--radius)",
+                                background: issue.blocking ? "rgb(var(--error) / 0.15)" : "rgb(var(--warning) / 0.15)",
+                                color: issue.blocking ? "rgb(var(--error))" : "rgb(var(--warning))",
+                              }}
+                            >
+                              {issue.blocking ? t("issues.blocking") : t("issues.attention")}
+                            </span>
                           </div>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ fontSize: "13px", padding: "4px 12px", flexShrink: 0, opacity: isResolving ? 0.6 : 1 }}
-                            disabled={isResolving}
-                            onClick={() => handleResolveIssue(issue.id)}
-                          >
-                            {isResolving ? t("issues.resolving") : t("issues.markResolved")}
-                          </button>
+                          {issue.description && (
+                            <div style={{ fontSize: "13px", color: "rgb(var(--muted))" }}>{issue.description}</div>
+                          )}
+                          {issue.createdAt && (
+                            <div style={{ fontSize: "12px", color: "rgb(var(--muted))" }}>
+                              {t("issues.reported", { date: new Date(issue.createdAt).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" }) })}
+                            </div>
+                          )}
+                          {issue.checklistInstanceId && (
+                            <Link href={`/${locale}/staff/checklists/${issue.checklistInstanceId}`} style={{ fontSize: "11px", color: "rgb(var(--brand))" }}>
+                              {t("issues.viewChecklist")}
+                            </Link>
+                          )}
                         </div>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ fontSize: "13px", padding: "4px 12px", flexShrink: 0, opacity: isResolving ? 0.6 : 1 }}
+                          disabled={isResolving}
+                          onClick={() => handleResolveIssue(issue.id)}
+                        >
+                          {isResolving ? t("issues.resolving") : t("issues.markResolved")}
+                        </button>
                       </div>
                     );
                   })}

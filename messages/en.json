@@ -295,10 +295,10 @@
     },
     "photoAlt": "Vehicle",
     "compliance": {
-      "title": "Compliance",
-      "addButton": "Add compliance",
-      "loading": "Loading compliance...",
-      "empty": "No compliance records found.",
+      "title": "Vehicle Compliance",
+      "addButton": "Add vehicle compliance",
+      "loading": "Loading vehicle compliance...",
+      "empty": "No vehicle compliance records found.",
       "table": {
         "type": "Type",
         "expiryDate": "Expiry date",
@@ -328,7 +328,7 @@
         "cancel": "Cancel",
         "saving": "Saving...",
         "save": "Save",
-        "nameLabel": "Compliance name",
+        "nameLabel": "Vehicle compliance name",
         "errorNameRequired": "Please enter a name.",
         "blocksReadinessLabel": "Blocks vehicle readiness",
         "serviceDueKmLabel": "Service due at km",
@@ -337,20 +337,20 @@
         "warningKmOverrideLabel": "Custom warning km before service"
       },
       "addModal": {
-        "title": "Add compliance",
-        "allTracked": "All compliance types are already being tracked for this vehicle.",
+        "title": "Add vehicle compliance",
+        "allTracked": "All vehicle compliance types are already being tracked for this vehicle.",
         "close": "Close",
-        "typeLabel": "Compliance type",
+        "typeLabel": "Vehicle compliance type",
         "expiryDateLabel": "Expiry date",
         "notesLabel": "Notes",
-        "errorTypeRequired": "Please select a compliance type",
+        "errorTypeRequired": "Please select a vehicle compliance type",
         "errorExpiryRequired": "Expiry date is required",
-        "errorSaveFailed": "Failed to add compliance",
+        "errorSaveFailed": "Failed to add vehicle compliance",
         "cancel": "Cancel",
         "saving": "Adding...",
         "add": "Add",
-        "customOption": "Custom compliance",
-        "customNameLabel": "Compliance name",
+        "customOption": "Custom vehicle compliance",
+        "customNameLabel": "Vehicle compliance name",
         "customNamePlaceholder": "e.g. Fire extinguisher …",
         "errorCustomNameRequired": "Please enter a name.",
         "customBlocksReadinessLabel": "Blocks vehicle readiness",
@@ -380,10 +380,10 @@
       "completed": "Completed"
     },
     "issues": {
-      "title": "Open issues",
+      "title": "Checklist flags",
       "loading": "Loading…",
-      "empty": "No open issues",
-      "fallbackTitle": "Open vehicle issue",
+      "empty": "No checklist flags",
+      "fallbackTitle": "Checklist flag",
       "blocking": "Blocking",
       "attention": "Attention",
       "reported": "Reported {date}",
@@ -1176,7 +1176,7 @@
       "status": {
         "blockedVehicle": "Blocked vehicle",
         "blockingChecklistIssue": "Blocking checklist issue",
-        "expiredCompliance": "Expired compliance",
+        "expiredCompliance": "Expired vehicle compliance",
         "openVehicleIssue": "Open vehicle issue",
         "readyForPickup": "Ready for pickup",
         "urgentIssue": "Urgent issue",
@@ -1231,8 +1231,8 @@
         "blocked": "Blocked",
         "operationalHold": "Operational hold",
         "checklistIssue": "Checklist issue",
-        "expiredCompliance": "Expired compliance",
-        "warningCompliance": "Compliance due soon",
+        "expiredCompliance": "Expired vehicle compliance",
+        "warningCompliance": "Vehicle compliance due soon",
         "vehicleIssue": "Vehicle issue",
         "urgentIssue": "Urgent issue",
         "attentionIssue": "Attention issue",
@@ -1808,7 +1808,7 @@
     },
     "blockingReason": {
       "openIssue": "Open issue",
-      "expiredCompliance": "Expired compliance",
+      "expiredCompliance": "Expired vehicle compliance",
       "checklistIncomplete": "Checklist incomplete",
       "expiredComplianceWithName": "Expired {name}"
     },
@@ -1864,7 +1864,7 @@
     "loadFailed": "Failed to load vehicle.",
     "saveFailed": "Failed to save changes.",
     "deleteFailed": "Failed to delete vehicle.",
-    "createdBanner": "Vehicle created successfully. You can now add compliance records below.",
+    "createdBanner": "Vehicle created successfully. You can now add vehicle compliance records below.",
     "operationalHoldLabel": "Operational hold",
     "holdReasonLabel": "Hold reason",
     "holdReasonPlaceholder": "Reason for hold...",
@@ -2305,7 +2305,7 @@
       "description": "Administrative tools to recover system state after a period of inactivity.",
       "backlogReview": {
         "title": "Backlog review",
-        "description": "Review overdue bookings one by one and choose what to do with each: mark as completed, cancel, or skip for now. Force-closes associated checklist instances for any booking you act on. Vehicle issues, compliance blockers, and manual holds are not affected.",
+        "description": "Review overdue bookings one by one and choose what to do with each: mark as completed, cancel, or skip for now. Force-closes associated checklist instances for any booking you act on. Vehicle issues, vehicle compliance blockers, and manual holds are not affected.",
         "button": "Review stale backlog",
         "errorLoad": "Failed to load stale bookings",
         "errorSubmit": "Failed to apply decisions",
@@ -2462,7 +2462,7 @@
         "0": "Mechanical staff",
         "1": "Administrators"
       },
-      "usedFor": "Preparing vehicles for the rental season — safety, compliance, and equipment checks."
+      "usedFor": "Preparing vehicles for the rental season — safety, vehicle compliance, and equipment checks."
     },
     "post_season": {
       "createdWhen": {

@@ -115,7 +115,7 @@ export default async function OperationsPage({
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
-  type AttentionItem = { key: string; line1: string; subtext?: string; chips: Chip[]; severity: 'block' | 'warn' }
+  type AttentionItem = { key: string; line1: string; chips: Chip[]; severity: 'block' | 'warn' }
   const attentionItems: AttentionItem[] = []
   const seenKeys = new Set<string>()
   // Track vehicle names already covered by a booking-based attention item so
@@ -152,11 +152,9 @@ export default async function OperationsPage({
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
         : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#issues` : undefined,
     })
-    const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
-      subtext: ctx || undefined,
       chips,
       severity: (p.vehicleBlocked || p.hasBlockingIssue) ? 'block' : 'warn',
     }, `pickup-${p.id}`)
@@ -188,11 +186,9 @@ export default async function OperationsPage({
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
         : p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#issues` : undefined,
     })
-    const ctx = [p.bookingNumber, p.customerName].filter(Boolean).join(' · ')
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
-      subtext: ctx || undefined,
       chips,
       severity: (p.vehicleBlocked || p.hasUrgentIssue || p.hasBlockingIssue) ? 'block' : 'warn',
     }, `upcoming-${p.id}`)
@@ -403,16 +399,9 @@ export default async function OperationsPage({
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                              <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {item.line1}
-                              </span>
-                              {item.subtext && (
-                                <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
-                                  {item.subtext}
-                                </span>
-                              )}
-                            </div>
+                            <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {item.line1}
+                            </span>
                           </div>
                           <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {item.chips.map((chip, i) => (

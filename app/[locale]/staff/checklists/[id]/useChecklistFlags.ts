@@ -146,7 +146,7 @@ export function useChecklistFlags({
       issue_title: item.template.label,
       issue_description: draft.note.trim(),
       issue_severity: uiToDbSeverity(draft.severity),
-      issue_blocking: draft.severity === 'urgent',
+      issue_blocking: uiToDbSeverity(draft.severity) === 'high',
       linked_vehicle_issue_id: vehicleIssueId,
     };
 
