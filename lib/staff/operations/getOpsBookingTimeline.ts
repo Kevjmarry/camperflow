@@ -23,6 +23,7 @@ export interface OpsTimelineVehicleBlock {
   id: string
   vehicleId: string
   label: string | null
+  blockType: string | null
   startAt: string
   endAt: string
 }
@@ -33,12 +34,13 @@ export interface OpsTimelineData {
   vehicleBlocks: OpsTimelineVehicleBlock[]
   companyTimezone: string
   today: string // ISO string — frozen for demo company, real clock for others
+  companyId: string
 }
 
 export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString() }
+  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString(), companyId: '' }
 
   const { data: profile } = await supabase
     .from('staff_profiles')
@@ -46,7 +48,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
-  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString() }
+  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString(), companyId: '' }
 
   const { data: companySettings } = await supabase
     .from('company_settings')
@@ -70,7 +72,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   if (vError) throw vError
 
   const vehicleIds = (vehicles ?? []).map((v) => v.id).filter(isUUID)
-  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone, today: now.toISOString() }
+  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone, today: now.toISOString(), companyId }
 
   // Bookings overlapping the window: return_at >= windowStart AND pickup_at <= windowEnd
   const { data: bookings, error: bError } = await supabase
@@ -88,7 +90,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
 
   const { data: blocks } = await supabase
     .from('vehicle_blocks')
-    .select('id, vehicle_id, label, start_at, end_at')
+    .select('id, vehicle_id, label, block_type, start_at, end_at')
     .eq('company_id', companyId)
     .gte('end_at', windowStart.toISOString())
     .lte('start_at', windowEnd.toISOString())
@@ -98,6 +100,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     id: bl.id,
     vehicleId: bl.vehicle_id,
     label: bl.label ?? null,
+    blockType: bl.block_type ?? null,
     startAt: bl.start_at,
     endAt: bl.end_at,
   }))
@@ -120,5 +123,6 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     vehicleBlocks,
     companyTimezone,
     today: now.toISOString(),
+    companyId,
   }
 }

@@ -1118,6 +1118,14 @@
         "inDays": "{count, plural, one {in 1 Tag} other {in # Tagen}}",
         "view": "Anzeigen"
       },
+      "blockTypes": {
+        "unavailable": "Nicht verfügbar",
+        "maintenance": "Wartung",
+        "work": "Arbeit",
+        "owner_use": "Eigennutzung",
+        "manual_note": "Notiz",
+        "external_hold": "Externe Sperre"
+      },
       "vehicleBlocks": {
         "title": "Fahrzeugsperren",
         "defaultLabel": "Gesperrter Zeitraum",

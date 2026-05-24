@@ -6,6 +6,7 @@ export interface OpsVehicleBlock {
   vehicleId: string
   vehicleName: string
   label: string | null
+  blockType: string | null
   startAt: string
   endAt: string
   isActive: boolean
@@ -32,7 +33,7 @@ export async function getOpsVehicleBlocks(): Promise<OpsVehicleBlock[]> {
 
   const { data: blocks, error } = await supabase
     .from('vehicle_blocks')
-    .select('id, vehicle_id, label, start_at, end_at')
+    .select('id, vehicle_id, label, block_type, start_at, end_at')
     .eq('company_id', companyId)
     .gt('end_at', now.toISOString())
     .lte('start_at', windowEnd.toISOString())
@@ -69,6 +70,7 @@ export async function getOpsVehicleBlocks(): Promise<OpsVehicleBlock[]> {
       vehicleId: b.vehicle_id,
       vehicleName: vehicleNameById.get(b.vehicle_id) ?? '',
       label: b.label ?? null,
+      blockType: b.block_type ?? null,
       startAt: b.start_at,
       endAt: b.end_at,
       isActive,

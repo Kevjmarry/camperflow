@@ -882,6 +882,7 @@ export async function POST(request: NextRequest) {
             source_booking_id: n.sourceBookingId,
             source_reference: n.sourceReference ?? null,
             label: n.label ?? null,
+            block_type: n.blockType ?? 'unavailable',
             start_at: applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc),
             end_at: applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true),
             source_metadata: n.rawMetadata,

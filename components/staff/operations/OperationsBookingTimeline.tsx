@@ -10,8 +10,18 @@ export interface TimelineVehicleBlock {
   id: string
   vehicleId: string
   label: string | null
+  blockType?: string | null
   startAt: string
   endAt: string
+}
+
+const BLOCK_TYPE_ICON: Record<string, string> = {
+  maintenance:   '🔧',
+  work:          '🛠',
+  owner_use:     '🏠',
+  manual_note:   '📝',
+  external_hold: '🔗',
+  unavailable:   '⛔',
 }
 
 interface Props {
@@ -51,6 +61,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   const params = useParams()
   const locale = params.locale as string
   const t = useTranslations('staff.operations.bookingTimeline')
+  const tTypes = useTranslations('staff.operations.blockTypes')
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -304,10 +315,20 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                       const hasBookingOverlap = vBookings.some(
                         b => new Date(b.pickupAt).getTime() < blE && new Date(b.returnAt).getTime() > blS
                       )
+                      const typeLabel = bl.blockType
+                        ? tTypes(bl.blockType as Parameters<typeof tTypes>[0])
+                        : t('legend.vehicleBlock')
+                      const typeIcon = BLOCK_TYPE_ICON[bl.blockType ?? ''] ?? '⛔'
+                      const displayLabel = bl.label
+                        ? `${typeIcon} ${bl.label}`
+                        : `${typeIcon} ${typeLabel}`
+                      const tooltipText = hasBookingOverlap
+                        ? t('legend.staleBlock', { label: bl.label ?? typeLabel })
+                        : `${typeLabel}${bl.label ? ` · ${bl.label}` : ''}`
                       return (
                         <div
                           key={bl.id}
-                          title={hasBookingOverlap ? t('legend.staleBlock', { label: bl.label ?? '' }) : (bl.label ?? t('legend.vehicleBlock'))}
+                          title={tooltipText}
                           style={{
                             position: 'absolute',
                             left: `${cStart * PX_PER_DAY}px`,
@@ -336,7 +357,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                               textOverflow: 'ellipsis',
                             }}
                           >
-                            {bl.label}
+                            {displayLabel}
                           </span>
                         </div>
                       )

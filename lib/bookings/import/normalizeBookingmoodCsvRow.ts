@@ -77,6 +77,45 @@ function buildNormalizedMetadata(
   return normalized;
 }
 
+// ── block_type classification ─────────────────────────────────────────────
+
+/** Machine-generated placeholder labels that carry no useful information. */
+const MACHINE_BLOCK_LABEL_RE =
+  /^(blocked[\s-]?period|blocked|not[\s-]?available|unavailable(ility)?|owner[\s-]?(block|hold)|hold|personal|closure)$/i;
+
+const MAINTENANCE_TEXT_RE = /\b(maintenance|repair|service)\b/i;
+const WORK_JOB_TEXT_RE = /\b(work|job)\b/i;
+const OWNER_USE_TEXT_RE = /\b(owner|family|private|personal)\b/i;
+const EXTERNAL_HOLD_TEXT_RE = /\b(external|booked|hold|reserved)\b/i;
+
+function classifyBlockType(
+  row: Record<string, string>
+): NonNullable<import("@/lib/bookings/import/types").NormalizedImportBooking["blockType"]> {
+  // type column is the most reliable signal
+  const t = normalizeType(row.type ?? row.Type ?? "");
+  if (t === "maintenance") return "maintenance";
+  if (t === "owner-block" || t === "owner-blocked") return "owner_use";
+
+  // scan free-text fields for semantic keywords
+  const text = [
+    row.title, row.Title,
+    row.reason, row.Reason,
+    row.description, row.Description,
+    row.notes, row.Notes,
+    row.origin, row.Origin,
+    row.reference,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (MAINTENANCE_TEXT_RE.test(text)) return "maintenance";
+  if (WORK_JOB_TEXT_RE.test(text)) return "work";
+  if (OWNER_USE_TEXT_RE.test(text)) return "owner_use";
+  if (EXTERNAL_HOLD_TEXT_RE.test(text)) return "external_hold";
+
+  return "unavailable";
+}
+
 // ── blocked-period detection ───────────────────────────────────────────────
 
 /**
@@ -136,7 +175,8 @@ function extractBlockLabel(row: Record<string, string>): string | undefined {
     row.description ?? row.Description ??
     row.name ?? row.Name
   )?.trim();
-  return value || undefined;
+  if (!value || MACHINE_BLOCK_LABEL_RE.test(value)) return undefined;
+  return value;
 }
 
 // ── date helpers ──────────────────────────────────────────────────────────
@@ -174,6 +214,7 @@ export function normalizeBookingmoodCsvRow(
       sourceBookingId: row.external_id || row.reference || "",
       sourceReference: row.reference || undefined,
       bookingType: "blocked_period",
+      blockType: classifyBlockType(row),
       label: extractBlockLabel(row),
       vehicleReference: row.product || "",
       pickupAt: row.start_date || "",

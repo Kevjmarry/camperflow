@@ -1118,6 +1118,14 @@
         "inDays": "in {count}d",
         "view": "View"
       },
+      "blockTypes": {
+        "unavailable": "Unavailable",
+        "maintenance": "Maintenance",
+        "work": "Work",
+        "owner_use": "Owner use",
+        "manual_note": "Note",
+        "external_hold": "External hold"
+      },
       "vehicleBlocks": {
         "title": "Vehicle blocks",
         "defaultLabel": "Blocked period",

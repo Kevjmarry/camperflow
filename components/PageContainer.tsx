@@ -10,6 +10,7 @@ interface PageContainerProps {
   title?: string
   maxWidth?: string
   showSignOut?: boolean
+  rightActions?: React.ReactNode
 }
 
 export default function PageContainer({
@@ -17,6 +18,7 @@ export default function PageContainer({
   title,
   maxWidth = '1400px',
   showSignOut = true,
+  rightActions,
 }: PageContainerProps) {
   const router = useRouter()
   const params = useParams()
@@ -48,7 +50,7 @@ export default function PageContainer({
             : 'calc(60px + env(safe-area-inset-bottom))',
         } as React.CSSProperties}
       >
-        {(title || showSignOut) && (
+        {(title || showSignOut || rightActions) && (
           <div
             style={{
               display: 'flex',
@@ -74,11 +76,14 @@ export default function PageContainer({
               <div />
             )}
 
-            {showSignOut && (
-              <button onClick={handleSignOut} className="btn btn-secondary">
-                {t('signOut')}
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              {rightActions}
+              {showSignOut && (
+                <button onClick={handleSignOut} className="btn btn-secondary">
+                  {t('signOut')}
+                </button>
+              )}
+            </div>
           </div>
         )}
 

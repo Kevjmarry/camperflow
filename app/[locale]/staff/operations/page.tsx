@@ -19,8 +19,13 @@ import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimel
 import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
 import { getOpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
 import type { OpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
+import OperationsDemoControls from '@/components/staff/operations/OperationsDemoControls'
+import { getDemoToday } from '@/lib/helpers/demoDate'
 
 export const dynamic = 'force-dynamic'
+
+const ALPINE_DEMO_COMPANY_ID = 'aa8c5a35-8c06-4dee-8c13-7b3523f549d2'
+
 
 // ── StatusChip ────────────────────────────────────────────────────────────────
 
@@ -111,6 +116,7 @@ export default async function OperationsPage({
   ]
   const upcomingReturns: OpsUpcomingReturn[] = upcomingReturnsResult.rows
   const returnsTimezone: string = upcomingReturnsResult.companyTimezone
+  const isAlpineDemo = timelineData.companyId === ALPINE_DEMO_COMPANY_ID
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
@@ -160,7 +166,7 @@ export default async function OperationsPage({
   }
 
   // Upcoming pickups within 5 calendar days with a blocking risk signal
-  const fiveDaysCutoff = new Date()
+  const fiveDaysCutoff = getDemoToday(timelineData.companyId)
   fiveDaysCutoff.setDate(fiveDaysCutoff.getDate() + 5)
   fiveDaysCutoff.setHours(23, 59, 59, 999)
   for (const p of upcomingPickups) {
@@ -271,7 +277,7 @@ export default async function OperationsPage({
   ].slice(0, 3)
 
   return (
-    <PageContainer maxWidth="1400px">
+    <PageContainer maxWidth="1400px" rightActions={isAlpineDemo ? <OperationsDemoControls /> : undefined}>
       {/*
         On mobile: ops-outer-card is a plain wrapper; ops-inner-card (surface page-surface)
         is the visible card starting at OperationsOnRentNow.

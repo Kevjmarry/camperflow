@@ -1118,6 +1118,14 @@
         "inDays": "za {count}d",
         "view": "Zobraziť"
       },
+      "blockTypes": {
+        "unavailable": "Nedostupné",
+        "maintenance": "Údržba",
+        "work": "Práca",
+        "owner_use": "Vlastné použitie",
+        "manual_note": "Poznámka",
+        "external_hold": "Externá blokácia"
+      },
       "vehicleBlocks": {
         "title": "Blokovania vozidiel",
         "defaultLabel": "Blokované obdobie",

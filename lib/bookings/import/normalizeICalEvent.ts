@@ -220,6 +220,54 @@ function classifyICalEvent(
   return "blocked_period";
 }
 
+// ── block_type classification ─────────────────────────────────────────────────
+
+const MAINTENANCE_RE = /\b(maintenance|repair|service)\b/i;
+const WORK_JOB_RE = /\b(work|job)\b/i;
+
+/**
+ * True when `summary` is machine-generated OTA placeholder text (e.g. "Blocked",
+ * "Not available") that carries no meaningful information for the user.
+ * These strings should not be exposed as a visible label in the UI.
+ */
+function isMachineBlockedLabel(summary: string): boolean {
+  // Exact or near-exact match against the known OTA placeholder patterns.
+  // We use word-boundary anchors already in BLOCKED_SUMMARY_PATTERNS, but here
+  // we also require the whole trimmed string to be short and devoid of extra
+  // human-entered context words — the goal is to suppress only the boilerplate.
+  return (
+    BLOCKED_SUMMARY_PATTERNS.some((re) => re.test(summary)) &&
+    // Exclude summaries where the matched keyword is embedded in a longer
+    // human sentence (e.g. "Annual maintenance and tyre check" should pass through).
+    summary.trim().split(/\s+/).length <= 4
+  );
+}
+
+type BlockType = NonNullable<NormalizedImportBooking["blockType"]>;
+
+/**
+ * Derive a semantic block_type from the VEVENT summary and URL path.
+ *
+ * Classification order:
+ *   1. summary contains maintenance / repair / service → maintenance
+ *   2. summary contains work / job                    → work
+ *   3. /calendar-events/ URL + human-written summary  → owner_use
+ *      (host deliberately created this block with a descriptive title)
+ *   4. fallback                                       → unavailable
+ */
+function classifyBlockType(summary: string, urlPath: string): BlockType {
+  if (MAINTENANCE_RE.test(summary)) return "maintenance";
+  if (WORK_JOB_RE.test(summary)) return "work";
+  if (
+    urlPath.includes("/calendar-events/") &&
+    summary.length > 0 &&
+    !isMachineBlockedLabel(summary)
+  ) {
+    return "owner_use";
+  }
+  return "unavailable";
+}
+
 // ── customer info extraction ──────────────────────────────────────────────────
 
 /**
@@ -323,11 +371,20 @@ export function normalizeICalEvent(
   const bookingType = classifyICalEvent(event, attendeeName, customerEmail);
 
   if (bookingType === "blocked_period") {
+    const urlPath = getProp(event, "URL")?.value ?? "";
+    const blockType = classifyBlockType(summary, urlPath);
+
+    // Suppress machine-generated OTA placeholder text (e.g. "Blocked", "Not available")
+    // so the UI can render a localized default instead of the raw boilerplate string.
+    const label =
+      summary && !isMachineBlockedLabel(summary) ? summary : undefined;
+
     return {
       sourceType: "ical",
       sourceBookingId: uid,
       bookingType,
-      label: summary || undefined,
+      blockType,
+      label,
       vehicleReference: effectiveVehicleReference,
       pickupAt,
       returnAt,

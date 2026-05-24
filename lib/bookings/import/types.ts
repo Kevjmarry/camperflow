@@ -39,6 +39,8 @@ export interface NormalizedImportBooking {
   bookingType: NormalizedImportBookingType;
   /** Human-readable label for blocked periods (e.g. "Maintenance", "Staff hold"). */
   label?: string;
+  /** Semantic classification of why the block exists (only for bookingType === "blocked_period"). */
+  blockType?: "unavailable" | "maintenance" | "work" | "owner_use" | "manual_note" | "external_hold";
   externalStatus?: string;
   vehicleReference: string;
   pickupAt: string;
