@@ -136,6 +136,34 @@ export default function MobileBottomNav() {
         .mobile-sheet-animate {
           animation: mobileSheetSlideUp 0.22s cubic-bezier(0.32, 0.72, 0, 1) both;
         }
+        .more-sheet-link {
+          transition: color 0.15s, background 0.15s;
+        }
+        .more-sheet-link:not([data-active="true"]):hover {
+          color: rgb(var(--text)) !important;
+          background: rgb(var(--brand) / 0.06) !important;
+        }
+        .more-sheet-link[data-active="true"]:hover {
+          background: rgb(var(--brand) / 0.18) !important;
+        }
+        .more-sign-out-btn {
+          transition: background 0.15s;
+        }
+        .more-sign-out-btn:hover {
+          background: rgb(var(--error) / 0.07) !important;
+        }
+        .mobile-nav-tab {
+          transition: color 0.15s, background 0.15s;
+        }
+        .mobile-nav-tab:not([data-active="true"]):hover {
+          background: rgb(var(--brand) / 0.06);
+        }
+        .mobile-more-btn {
+          transition: color 0.15s, background 0.15s;
+        }
+        .mobile-more-btn:not([data-expanded="true"]):hover {
+          background: rgb(var(--brand) / 0.06);
+        }
       `}</style>
 
       {/* Backdrop */}
@@ -176,6 +204,8 @@ export default function MobileBottomNav() {
                 key={key}
                 href={href}
                 onClick={() => setMoreOpen(false)}
+                data-active={isActive ? 'true' : undefined}
+                className="more-sheet-link"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -211,6 +241,7 @@ export default function MobileBottomNav() {
           <button
             type="button"
             onClick={handleSignOut}
+            className="more-sign-out-btn"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -256,6 +287,8 @@ export default function MobileBottomNav() {
               key={key}
               href={href}
               onClick={() => setMoreOpen(false)}
+              data-active={isActive ? 'true' : undefined}
+              className="mobile-nav-tab"
               style={{
                 flex: 1,
                 display: 'flex',
@@ -280,6 +313,7 @@ export default function MobileBottomNav() {
         <button
           type="button"
           onClick={() => setMoreOpen(v => !v)}
+          className="mobile-more-btn"
           style={{
             flex: 1,
             display: 'flex',
@@ -297,6 +331,7 @@ export default function MobileBottomNav() {
           }}
           aria-expanded={moreOpen}
           aria-haspopup="menu"
+          data-expanded={moreOpen ? 'true' : undefined}
         >
           <MoreIcon active={isMoreActive || moreOpen} />
           {t('more')}

@@ -112,6 +112,7 @@ interface VehicleComplianceSectionProps {
   vehicleId: string;
   locale: string;
   latestOdometer?: number | null;
+  vehicleCategory?: string;
   editingRow: ComplianceRow | null;
   onEditRow: (row: ComplianceRow | null) => void;
   showAddModal: boolean;
@@ -152,6 +153,7 @@ export default function VehicleComplianceSection({
   vehicleId,
   locale,
   latestOdometer,
+  vehicleCategory,
   editingRow,
   onEditRow,
   showAddModal,
@@ -368,7 +370,7 @@ export default function VehicleComplianceSection({
 
                   <div style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
                     <div>{formatDate(row.expiry_date)}</div>
-                    {row.service_due_odometer_km != null && (
+                    {row.service_due_odometer_km != null && vehicleCategory !== "caravan" && (
                       <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
                         {tV("compliance.dueAtKm", { n: row.service_due_odometer_km.toLocaleString(locale) })}
                       </div>

@@ -282,7 +282,11 @@
       "vin": "VIN",
       "notes": "Poznámky",
       "noNotes": "Žiadne poznámky",
-      "latestOdometer": "Posledný stav tachometra"
+      "latestOdometer": "Posledný stav tachometra",
+      "vehicleCategory": "Kategória",
+      "vehicleCategoryMotorhome": "Obytný automobil",
+      "vehicleCategoryCampervan": "Campervan",
+      "vehicleCategoryCaravan": "Karavan"
     },
     "section": {
       "photo": "Fotografia",
@@ -1109,7 +1113,14 @@
         "itemOf": "{current} z {total}",
         "dueToday": "Dnes splatné",
         "dueTomorrow": "Zajtra splatné",
-        "dueInDays": "Splatné za {count} dní"
+        "dueInDays": "Splatné za {count} dní",
+        "preArrivalMessage": "Správa pred príchodom",
+        "returnPrepMessage": "Správa pred vrátením",
+        "copyMessage": "Kopírovať správu",
+        "messageCopied": "Skopírované!",
+        "markSent": "Označiť ako odoslané",
+        "cardView": "Karta",
+        "listView": "Zoznam"
       },
       "upcomingReturns": {
         "title": "Nadchádzajúce vrátenia",
@@ -1224,7 +1235,10 @@
         "warningCompliance": "Zhoda čoskoro vyprší",
         "vehicleIssue": "Problém vozidla",
         "urgentIssue": "Urgentný problém",
-        "attentionIssue": "Problém vyžadujúci pozornosť"
+        "attentionIssue": "Problém vyžadujúci pozornosť",
+        "expiredPrefix": "Vypršané:",
+        "expiringPrefix": "Čoskoro vyprší:",
+        "checklistFlag": "Príznak checklistu"
       },
       "reminders": {
         "title": "Pripomienky",
@@ -1232,10 +1246,10 @@
         "view": "Zobraziť",
         "type": {
           "balance_invoice": "Odoslať faktúru za zvyšných 50 %",
-          "pre_arrival": "Odoslať WhatsApp pred príchodom",
-          "return_prep": "Odoslať WhatsApp pred vrátením",
+          "pre_arrival": "Odoslať správu pred príchodom",
+          "return_prep": "Odoslať správu pred vrátením",
           "review_imported": "Skontrolovať pripomienky",
-          "review_request": "Odoslať WhatsApp žiadosť o hodnotenie"
+          "review_request": "Odoslať žiadosť o hodnotenie"
         },
         "timing": {
           "returnYesterday": "Vrátenie včera",
@@ -1247,7 +1261,7 @@
           "pickupToday": "Výber dnes",
           "pickupInDays": "Výber za {count}d"
         },
-        "copyWhatsApp": "Kopírovať správu WhatsApp",
+        "copyWhatsApp": "Kopírovať správu",
         "copied": "Skopírované!",
         "noReviewLink": "Odkaz na hodnotenie chýba"
       },
@@ -1431,7 +1445,11 @@
           "notes": "Poznámky (voliteľné)",
           "operationalHold": "Prevádzkové pozastavenie",
           "holdReason": "Dôvod pozastavenia",
-          "holdReasonPlaceholder": "Dôvod pozastavenia..."
+          "holdReasonPlaceholder": "Dôvod pozastavenia...",
+          "vehicleCategory": "Kategória vozidla",
+          "vehicleCategoryMotorhome": "Obytný automobil",
+          "vehicleCategoryCampervan": "Campervan",
+          "vehicleCategoryCaravan": "Karavan"
         },
         "status": {
           "ready": "Pripravené",
@@ -1548,11 +1566,11 @@
         "balanceInvoiceReminder": "Pripomenúť mi záverečnú platbu",
         "balanceReminderTiming": "{days} dní pred prevzatím",
         "balanceReminderTimingCustom": "{days} dní pred prevzatím",
-        "preArrivalMessage": "WhatsApp správa pred príchodom",
-        "preArrivalReminder": "Pripomenúť mi odoslanie WhatsApp pred príchodom",
-        "returnPrepMessage": "WhatsApp správa na prípravu vrátenia",
-        "returnPrepReminder": "Pripomenúť mi odoslanie WhatsApp pred vrátením",
-        "reviewRequestReminder": "Pripomenúť mi odoslanie WhatsApp so žiadosťou o hodnotenie",
+        "preArrivalMessage": "Správa pred príchodom",
+        "preArrivalReminder": "Pripomenúť mi odoslanie správy pred príchodom",
+        "returnPrepMessage": "Správa na prípravu vrátenia",
+        "returnPrepReminder": "Pripomenúť mi odoslanie správy pred vrátením",
+        "reviewRequestReminder": "Pripomenúť mi odoslanie žiadosti o hodnotenie",
         "statusLabel": "Stav:",
         "notSent": "Nevykonané",
         "sent": "Vykonané",
@@ -1854,7 +1872,11 @@
     "widthPlaceholder": "napr. 2.10",
     "heightPlaceholder": "napr. 2.85",
     "chooseFile": "Vybrať súbor",
-    "youtubeUrlLabel": "YouTube URL (nepovinné)"
+    "youtubeUrlLabel": "YouTube URL (nepovinné)",
+    "vehicleCategoryLabel": "Kategória vozidla",
+    "vehicleCategoryMotorhome": "Obytný automobil",
+    "vehicleCategoryCampervan": "Campervan",
+    "vehicleCategoryCaravan": "Karavan"
   },
   "staffTeamNew": {
     "checkingPermissions": "Kontrola oprávnení…",
@@ -2160,7 +2182,7 @@
       "secondaryColorUsage": "Používa sa pre akcenty a zvýraznenia",
       "emergencyPhoneUsage": "Tieto čísla sú zobrazené hosťom na stránke Núdzové situácie. Nechajte prázdne pre zobrazenie zástupného textu.",
       "addressUsage": "Vytlačí sa na správach o dôkazoch a PDF dokumentoch.",
-      "mapLinkUsage": "Používa sa v šablónach WhatsApp správ ako '{map_link}'."
+      "mapLinkUsage": "Používa sa v šablónach správ ako '{map_link}'."
     },
     "actions": {
       "uploadLogo": "Nahrať logo",
@@ -2214,21 +2236,21 @@
         "customWindowHelper": "Platí len pre vlastné platby (napr. platba pri prevzatí, barter, manuálna dohoda)."
       },
       "preArrival": {
-        "label": "Zapnúť pripomienky WhatsApp pred príchodom",
+        "label": "Zapnúť správové pripomienky pred príchodom",
         "helper": "Odosiela sa deň pred prevzatím.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Ahoj '{customer_name}', prevzatie vozidla '{vehicle_name}' je zajtra…"
       },
       "returnPrep": {
-        "label": "Zapnúť pripomienky WhatsApp na prípravu vrátenia",
+        "label": "Zapnúť správové pripomienky na prípravu vrátenia",
         "helper": "Odosiela sa deň pred vrátením.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Ahoj '{customer_name}', vrátenie vozidla '{vehicle_name}' je zajtra…"
       },
       "reviewRequest": {
-        "label": "Povoliť WhatsApp pripomienky hodnotení a spätnej väzby",
+        "label": "Povoliť správové pripomienky hodnotení a spätnej väzby",
         "helper": "Odoslaná v deň vrátenia alebo na druhý deň.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",

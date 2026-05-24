@@ -282,7 +282,11 @@
       "vin": "VIN",
       "notes": "Notizen",
       "noNotes": "Keine Notizen",
-      "latestOdometer": "Aktueller Kilometerstand"
+      "latestOdometer": "Aktueller Kilometerstand",
+      "vehicleCategory": "Kategorie",
+      "vehicleCategoryMotorhome": "Wohnmobil",
+      "vehicleCategoryCampervan": "Campervan",
+      "vehicleCategoryCaravan": "Wohnwagen"
     },
     "section": {
       "photo": "Foto",
@@ -1109,7 +1113,14 @@
         "itemOf": "{current} von {total}",
         "dueToday": "Heute fällig",
         "dueTomorrow": "Morgen fällig",
-        "dueInDays": "Fällig in {count} Tagen"
+        "dueInDays": "Fällig in {count} Tagen",
+        "preArrivalMessage": "Nachricht vor Ankunft",
+        "returnPrepMessage": "Nachricht zur Rückgabe",
+        "copyMessage": "Nachricht kopieren",
+        "messageCopied": "Kopiert!",
+        "markSent": "Als gesendet markieren",
+        "cardView": "Kartenansicht",
+        "listView": "Listenansicht"
       },
       "upcomingReturns": {
         "title": "Bevorstehende Rückgaben",
@@ -1224,7 +1235,10 @@
         "warningCompliance": "Prüfung bald fällig",
         "vehicleIssue": "Fahrzeugproblem",
         "urgentIssue": "Dringendes Problem",
-        "attentionIssue": "Aufmerksamkeit erforderlich"
+        "attentionIssue": "Aufmerksamkeit erforderlich",
+        "expiredPrefix": "Abgelaufen:",
+        "expiringPrefix": "Bald fällig:",
+        "checklistFlag": "Checklisten-Markierung"
       },
       "reminders": {
         "title": "Erinnerungen",
@@ -1232,10 +1246,10 @@
         "view": "Anzeigen",
         "type": {
           "balance_invoice": "Restrechnung (50%) senden",
-          "pre_arrival": "WhatsApp vor Ankunft senden",
-          "return_prep": "WhatsApp zur Rückgabevorbereitung senden",
+          "pre_arrival": "Nachricht vor Ankunft senden",
+          "return_prep": "Nachricht zur Rückgabevorbereitung senden",
           "review_imported": "Erinnerungen prüfen",
-          "review_request": "WhatsApp-Bewertungsanfrage senden"
+          "review_request": "Bewertungsanfrage senden"
         },
         "timing": {
           "returnYesterday": "Rückgabe gestern",
@@ -1247,7 +1261,7 @@
           "pickupToday": "Abholung heute",
           "pickupInDays": "Abholung in {count} Tagen"
         },
-        "copyWhatsApp": "WhatsApp-Nachricht kopieren",
+        "copyWhatsApp": "Nachricht kopieren",
         "copied": "Kopiert!",
         "noReviewLink": "Kein Bewertungslink hinterlegt"
       },
@@ -1431,7 +1445,11 @@
           "notes": "Notizen (optional)",
           "operationalHold": "Betriebssperre",
           "holdReason": "Grund der Sperre",
-          "holdReasonPlaceholder": "Grund für die Sperre..."
+          "holdReasonPlaceholder": "Grund für die Sperre...",
+          "vehicleCategory": "Fahrzeugkategorie",
+          "vehicleCategoryMotorhome": "Wohnmobil",
+          "vehicleCategoryCampervan": "Campervan",
+          "vehicleCategoryCaravan": "Wohnwagen"
         },
         "status": {
           "ready": "Bereit",
@@ -1548,11 +1566,11 @@
         "balanceInvoiceReminder": "Erinnerung an Abschlusszahlung",
         "balanceReminderTiming": "{days} Tage vor Abholung",
         "balanceReminderTimingCustom": "{days} Tage vor Abholung",
-        "preArrivalMessage": "WhatsApp-Nachricht vor Ankunft",
-        "preArrivalReminder": "Erinnere mich, WhatsApp vor Ankunft zu senden",
-        "returnPrepMessage": "WhatsApp-Nachricht zur Rückgabevorbereitung",
-        "returnPrepReminder": "Erinnere mich, WhatsApp zur Rückgabe zu senden",
-        "reviewRequestReminder": "Erinnere mich, WhatsApp für Bewertungsanfrage zu senden",
+        "preArrivalMessage": "Nachricht vor Ankunft",
+        "preArrivalReminder": "Erinnere mich, Nachricht vor Ankunft zu senden",
+        "returnPrepMessage": "Nachricht zur Rückgabevorbereitung",
+        "returnPrepReminder": "Erinnere mich, Nachricht zur Rückgabe zu senden",
+        "reviewRequestReminder": "Erinnere mich, Bewertungsanfrage zu senden",
         "statusLabel": "Status:",
         "notSent": "Nicht erledigt",
         "sent": "Erledigt",
@@ -1854,7 +1872,11 @@
     "widthPlaceholder": "z. B. 2,10",
     "heightPlaceholder": "z. B. 2,85",
     "chooseFile": "Datei auswählen",
-    "youtubeUrlLabel": "YouTube URL (optional)"
+    "youtubeUrlLabel": "YouTube URL (optional)",
+    "vehicleCategoryLabel": "Fahrzeugkategorie",
+    "vehicleCategoryMotorhome": "Wohnmobil",
+    "vehicleCategoryCampervan": "Campervan",
+    "vehicleCategoryCaravan": "Wohnwagen"
   },
   "staffTeamNew": {
     "checkingPermissions": "Berechtigungen werden geprüft…",
@@ -2160,7 +2182,7 @@
       "secondaryColorUsage": "Wird für Akzente und Hervorhebungen verwendet",
       "emergencyPhoneUsage": "Diese Nummern werden Gästen auf der Notfallseite angezeigt. Leer lassen, um einen Platzhalter anzuzeigen.",
       "addressUsage": "Wird auf Beweisberichten und PDF-Dokumenten gedruckt.",
-      "mapLinkUsage": "Wird in WhatsApp-Nachrichtenvorlagen als '{map_link}' verwendet."
+      "mapLinkUsage": "Wird in Nachrichtenvorlagen als '{map_link}' verwendet."
     },
     "actions": {
       "uploadLogo": "Logo hochladen",
@@ -2214,21 +2236,21 @@
         "customWindowHelper": "Gilt nur für benutzerdefinierte Zahlungen (z. B. Zahlung bei Abholung, Tausch, manuelle Vereinbarung)."
       },
       "preArrival": {
-        "label": "Vorankunfts-WhatsApp-Erinnerungen aktivieren",
+        "label": "Vorankunfts-Nachrichten-Erinnerungen aktivieren",
         "helper": "Wird am Tag vor der Abholung gesendet.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hallo '{customer_name}', Ihre Abholung für '{vehicle_name}' ist morgen…"
       },
       "returnPrep": {
-        "label": "Rückgabevorbereitung-WhatsApp-Erinnerungen aktivieren",
+        "label": "Rückgabevorbereitung-Nachrichten-Erinnerungen aktivieren",
         "helper": "Wird am Tag vor der Rückgabe gesendet.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hallo '{customer_name}', Ihre Rückgabe für '{vehicle_name}' ist morgen…"
       },
       "reviewRequest": {
-        "label": "Bewertungen & Feedback WhatsApp-Erinnerungen aktivieren",
+        "label": "Bewertungen & Feedback Nachrichten-Erinnerungen aktivieren",
         "helper": "Wird am Rückgabetag oder am Tag danach gesendet.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",

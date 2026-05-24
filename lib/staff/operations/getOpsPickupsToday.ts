@@ -23,9 +23,12 @@ export interface OpsPickup {
   hasBlockingIssue: boolean
   hasExpiredCompliance: boolean
   hasOpenVehicleIssue: boolean
+  openVehicleIssueIsChecklistFlag: boolean
   vehicleStatus: 'ready' | 'preparing' | 'on_rent' | null
   vehicleId: string | null
   openVehicleIssueChecklistInstanceId: string | null
+  expiredComplianceName: string | null
+  openVehicleIssueTitle: string | null
 }
 
 export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
@@ -89,7 +92,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase
         .from('vehicle_compliance')
-        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness)')
+        .select('vehicle_id, expiry_date, compliance_types!inner(blocks_readiness, name)')
         .in('vehicle_id', vehicleIds)
         .not('expiry_date', 'is', null)
         .lt('expiry_date', todayStr)
@@ -100,10 +103,17 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const vehiclesWithExpiredCompliance = new Set((expiredCompliance ?? []).map((c) => c.vehicle_id))
 
+  const vehicleFirstExpiredComplianceName = new Map<string, string>()
+  for (const c of (expiredCompliance ?? [])) {
+    if (!c.vehicle_id || vehicleFirstExpiredComplianceName.has(c.vehicle_id)) continue
+    const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { name?: string } | null
+    if (ct?.name) vehicleFirstExpiredComplianceName.set(c.vehicle_id, ct.name)
+  }
+
   const { data: openIssues, error: oiError } = vehicleIds.length
     ? await supabase
         .from('vehicle_issues')
-        .select('id, vehicle_id, source_checklist_instance_id')
+        .select('id, vehicle_id, source_checklist_instance_id, source_checklist_item_id')
         .in('vehicle_id', vehicleIds)
         .eq('resolved', false)
     : { data: [], error: null }
@@ -111,6 +121,26 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
   if (oiError) throw oiError
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
+
+  const issueItemIds = (openIssues ?? []).map((i) => (i as { source_checklist_item_id?: string | null }).source_checklist_item_id).filter(isUUID)
+  const { data: issueItemTitles } = issueItemIds.length
+    ? await supabase.from('checklist_instance_items').select('id, issue_title').in('id', issueItemIds)
+    : { data: [] }
+  const itemTitleMap = new Map<string, string>((issueItemTitles ?? []).filter((i) => i.issue_title).map((i) => [i.id, i.issue_title as string]))
+
+  const vehicleFirstIssueTitleMap = new Map<string, string>()
+  const vehiclesWithChecklistFlaggedIssue = new Set<string>()
+  for (const issue of (openIssues ?? [])) {
+    if (!isUUID(issue.vehicle_id)) continue
+    const itemId = (issue as { source_checklist_item_id?: string | null }).source_checklist_item_id
+    if (isUUID(itemId)) {
+      vehiclesWithChecklistFlaggedIssue.add(issue.vehicle_id)
+      if (!vehicleFirstIssueTitleMap.has(issue.vehicle_id)) {
+        const title = itemTitleMap.get(itemId)
+        if (title) vehicleFirstIssueTitleMap.set(issue.vehicle_id, title)
+      }
+    }
+  }
 
   // Prefer the durable source column; fall back to reverse lookup for legacy rows.
   const issueChecklistMap = new Map<string, string>()
@@ -175,9 +205,12 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       hasBlockingIssue: handover ? blockingInstanceIds.has(handover.id) : false,
       hasExpiredCompliance: b.vehicle_id ? vehiclesWithExpiredCompliance.has(b.vehicle_id) : false,
       hasOpenVehicleIssue: b.vehicle_id ? vehiclesWithOpenIssues.has(b.vehicle_id) : false,
+      openVehicleIssueIsChecklistFlag: b.vehicle_id ? vehiclesWithChecklistFlaggedIssue.has(b.vehicle_id) : false,
       vehicleStatus: b.vehicle_id ? (vehicleStatusMap.get(b.vehicle_id) ?? null) : null,
       vehicleId: b.vehicle_id ?? null,
       openVehicleIssueChecklistInstanceId: b.vehicle_id ? (vehicleIssueChecklistMap.get(b.vehicle_id) ?? null) : null,
+      expiredComplianceName: b.vehicle_id ? (vehicleFirstExpiredComplianceName.get(b.vehicle_id) ?? null) : null,
+      openVehicleIssueTitle: b.vehicle_id ? (vehicleFirstIssueTitleMap.get(b.vehicle_id) ?? null) : null,
     }
   })
 }

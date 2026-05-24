@@ -173,7 +173,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
       <style>{`
         .ops-tl-outer { padding: var(--space-6); }
         @media (max-width: 480px) {
-          .ops-tl-outer { padding: var(--space-3); width: 100vw; margin-left: calc(50% - 50vw); border-radius: 0 !important; border: none !important; box-shadow: 0 -1px 0 rgb(var(--border) / 0.5), 0 1px 0 rgb(var(--border) / 0.5) !important; }
+          .ops-tl-outer { padding: var(--space-3); width: calc(100% + 2 * var(--space-4)); margin-left: calc(-1 * var(--space-4)); border-radius: 0 !important; border: none !important; box-shadow: 0 -1px 0 rgb(var(--border) / 0.5), 0 1px 0 rgb(var(--border) / 0.5) !important; }
           .ops-tl-label-col { width: 80px !important; box-shadow: 6px 0 0 rgb(var(--surface)); }
           .ops-tl-day-row { margin-bottom: 0 !important; }
         }
@@ -199,7 +199,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
       </div>
 
       {/* Scrollable timeline */}
-      <div ref={scrollRef} style={{ overflowX: 'auto', width: '100%' }}>
+      <div ref={scrollRef} style={{ overflowX: 'auto', width: '100%', overscrollBehaviorX: 'contain' }}>
         <div style={{ minWidth: `${LEFT_COL_PX + TIMELINE_PX}px` }}>
 
           {/* Month header row */}

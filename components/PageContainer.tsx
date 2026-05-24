@@ -11,6 +11,7 @@ interface PageContainerProps {
   maxWidth?: string
   showSignOut?: boolean
   rightActions?: React.ReactNode
+  topBanner?: React.ReactNode
 }
 
 export default function PageContainer({
@@ -19,6 +20,7 @@ export default function PageContainer({
   maxWidth = '1400px',
   showSignOut = true,
   rightActions,
+  topBanner,
 }: PageContainerProps) {
   const router = useRouter()
   const params = useParams()
@@ -50,6 +52,7 @@ export default function PageContainer({
             : 'calc(60px + env(safe-area-inset-bottom))',
         } as React.CSSProperties}
       >
+        {topBanner}
         {(title || showSignOut || rightActions) && (
           <div
             style={{

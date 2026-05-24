@@ -37,6 +37,7 @@ export default function NewVehiclePage() {
   const [formData, setFormData] = useState({
     name: '',
     registration_plate: '',
+    vehicle_category: 'motorhome',
     make: '',
     model: '',
     year: '',
@@ -151,6 +152,7 @@ export default function NewVehiclePage() {
         body: JSON.stringify({
           name: formData.name,
           registration_plate: formData.registration_plate,
+          vehicle_category: formData.vehicle_category,
           make: formData.make,
           model: formData.model,
           year: yearNum,
@@ -374,6 +376,20 @@ export default function NewVehiclePage() {
                 onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
                 style={inputStyle}
               />
+            </div>
+
+            {/* Vehicle category */}
+            <div>
+              <label htmlFor="vehicle_category" style={labelStyle}>{t('field.vehicleCategory')}</label>
+              <select
+                id="vehicle_category" value={formData.vehicle_category} disabled={submitting}
+                onChange={(e) => setFormData({ ...formData, vehicle_category: e.target.value })}
+                style={inputStyle}
+              >
+                <option value="motorhome">{t('field.vehicleCategoryMotorhome')}</option>
+                <option value="campervan">{t('field.vehicleCategoryCampervan')}</option>
+                <option value="caravan">{t('field.vehicleCategoryCaravan')}</option>
+              </select>
             </div>
 
             {/* Dimensions */}

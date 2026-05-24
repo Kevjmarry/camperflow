@@ -2,17 +2,13 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import PageContainer from '@/components/PageContainer'
 import OperationsInvoiceReminders from '@/components/staff/operations/OperationsInvoiceReminders'
-import OperationsUpcomingPickups from '@/components/staff/operations/OperationsUpcomingPickups'
-import OperationsUpcomingReturns from '@/components/staff/operations/OperationsUpcomingReturns'
 import OperationsNextUp from '@/components/staff/operations/OperationsNextUp'
-import OperationsCompletedBookings from '@/components/staff/operations/OperationsCompletedBookings'
 import OperationsOnRentNow from '@/components/staff/operations/OperationsOnRentNow'
 import { getOpsPickupsToday } from '@/lib/staff/operations/getOpsPickupsToday'
 import { getOpsUpcomingPickups } from '@/lib/staff/operations/getOpsUpcomingPickups'
 import type { OpsUpcomingPickup } from '@/lib/staff/operations/getOpsUpcomingPickups'
 import { getOpsUpcomingReturns, type OpsUpcomingReturn } from '@/lib/staff/operations/getOpsUpcomingReturns'
 import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceReminders'
-import { getOpsCompletedBookings } from '@/lib/staff/operations/getOpsCompletedBookings'
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
 import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
 import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimeline'
@@ -82,7 +78,6 @@ export default async function OperationsPage({
     { name: 'getOpsUpcomingPickups',   fn: getOpsUpcomingPickups },
     { name: 'getOpsUpcomingReturns',   fn: getOpsUpcomingReturns },
     { name: 'getOpsInvoiceReminders',  fn: getOpsInvoiceReminders },
-    { name: 'getOpsCompletedBookings', fn: getOpsCompletedBookings },
     { name: 'getOpsBlockedVehicles',   fn: getOpsBlockedVehicles },
     { name: 'getOpsOnRentNow',         fn: getOpsOnRentNow },
     { name: 'getOpsBookingTimeline',   fn: getOpsBookingTimeline },
@@ -100,7 +95,6 @@ export default async function OperationsPage({
     upcomingPickups,
     upcomingReturnsResult,
     invoiceReminders,
-    completed,
     blockedVehicles,
     onRentNow,
     timelineData,
@@ -109,7 +103,6 @@ export default async function OperationsPage({
     Awaited<ReturnType<typeof getOpsUpcomingPickups>>,
     Awaited<ReturnType<typeof getOpsUpcomingReturns>>,
     Awaited<ReturnType<typeof getOpsInvoiceReminders>>,
-    Awaited<ReturnType<typeof getOpsCompletedBookings>>,
     Awaited<ReturnType<typeof getOpsBlockedVehicles>>,
     Awaited<ReturnType<typeof getOpsOnRentNow>>,
     Awaited<ReturnType<typeof getOpsBookingTimeline>>,
@@ -117,6 +110,8 @@ export default async function OperationsPage({
   const upcomingReturns: OpsUpcomingReturn[] = upcomingReturnsResult.rows
   const returnsTimezone: string = upcomingReturnsResult.companyTimezone
   const isAlpineDemo = timelineData.companyId === ALPINE_DEMO_COMPANY_ID
+
+  const truncate = (s: string, n = 22) => s.length > n ? s.slice(0, n - 1) + '…' : s
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
@@ -144,12 +139,14 @@ export default async function OperationsPage({
       href: p.checklistInstanceId ? `/${locale}/staff/checklists/${p.checklistInstanceId}?from=booking` : undefined,
     })
     if (p.hasExpiredCompliance) chips.push({
-      label: t('attentionChip.expiredCompliance'),
+      label: p.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${p.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
     if (p.hasOpenVehicleIssue) chips.push({
-      label: t('attentionChip.vehicleIssue'),
+      label: p.openVehicleIssueIsChecklistFlag
+        ? (p.openVehicleIssueTitle ? `${t('attentionChip.checklistFlag')} · ${truncate(p.openVehicleIssueTitle, 18)}` : t('attentionChip.checklistFlag'))
+        : t('attentionChip.vehicleIssue'),
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
@@ -178,12 +175,14 @@ export default async function OperationsPage({
     if (p.hasAttentionIssue) chips.push({ label: t('attentionChip.attentionIssue'), severity: 'warning' })
     if (!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue) chips.push({ label: t('attentionChip.checklistIssue'), severity: 'critical' })
     if (p.hasExpiredCompliance) chips.push({
-      label: t('attentionChip.expiredCompliance'),
+      label: p.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${p.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
     if (p.hasOpenVehicleIssue) chips.push({
-      label: t('attentionChip.vehicleIssue'),
+      label: p.openVehicleIssueIsChecklistFlag
+        ? (p.openVehicleIssueTitle ? `${t('attentionChip.checklistFlag')} · ${truncate(p.openVehicleIssueTitle, 18)}` : t('attentionChip.checklistFlag'))
+        : t('attentionChip.vehicleIssue'),
       severity: 'warning',
       href: p.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${p.openVehicleIssueChecklistInstanceId}`
@@ -211,22 +210,29 @@ export default async function OperationsPage({
       href: `/${locale}/staff/vehicles/${v.id}`,
     })
     if (v.hasExpiredCompliance) chips.push({
-      label: t('attentionChip.expiredCompliance'),
+      label: v.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${v.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: `/${locale}/staff/vehicles/${v.id}#compliance`,
     })
     if (!v.hasExpiredCompliance && v.hasWarningCompliance) chips.push({
-      label: t('attentionChip.warningCompliance'),
+      label: v.warningComplianceName ? `${t('attentionChip.expiringPrefix')} ${v.warningComplianceName}` : t('attentionChip.warningCompliance'),
       severity: 'warning',
       href: `/${locale}/staff/vehicles/${v.id}#compliance`,
     })
-    if (v.hasOpenVehicleIssue) chips.push({
-      label: t('attentionChip.vehicleIssue'),
-      severity: 'warning',
-      href: v.openVehicleIssueChecklistInstanceId
+    if (v.hasOpenVehicleIssue) {
+      const issueHref = v.openVehicleIssueChecklistInstanceId
         ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
-        : `/${locale}/staff/vehicles/${v.id}#issues`,
-    })
+        : `/${locale}/staff/vehicles/${v.id}#issues`
+      for (const issue of v.openVehicleIssues) {
+        chips.push({
+          label: issue.isChecklistFlag
+            ? (issue.title ? `${t('attentionChip.checklistFlag')} · ${truncate(issue.title, 18)}` : t('attentionChip.checklistFlag'))
+            : t('attentionChip.vehicleIssue'),
+          severity: 'warning',
+          href: issueHref,
+        })
+      }
+    }
     addItem(`vehicle-${v.id}`, {
       line1: v.name,
       chips,
@@ -266,6 +272,9 @@ export default async function OperationsPage({
     hasExtraDriver: false,
     handoverDone: p.handoverStatus === 'completed',
     prepDone: false,
+    expiredComplianceName: p.expiredComplianceName,
+    openVehicleIssueTitle: p.openVehicleIssueTitle,
+    openVehicleIssueIsChecklistFlag: p.openVehicleIssueIsChecklistFlag,
   }))
   const todayPickupIds = new Set(pickups.map((p) => p.id))
   const overdueUpcoming = upcomingPickups.filter((p) => !todayPickupIds.has(p.id) && p.daysUntil < 0)
@@ -276,8 +285,32 @@ export default async function OperationsPage({
     ...futureUpcoming,
   ].slice(0, 3)
 
+  const demoBanner = isAlpineDemo ? (
+    <div
+      className="ops-demo-banner"
+      style={{
+        fontSize: '12px',
+        fontWeight: 600,
+        color: '#92400e',
+        background: '#fef3c7',
+        border: '1px solid #fcd34d',
+        borderRadius: 'var(--radius)',
+        padding: '8px 14px',
+        textAlign: 'center',
+        letterSpacing: '0.01em',
+        marginBottom: 'var(--space-3)',
+      }}
+    >
+      Demo mode · Sample data only — not a real account
+    </div>
+  ) : undefined
+
   return (
-    <PageContainer maxWidth="1400px" rightActions={isAlpineDemo ? <OperationsDemoControls /> : undefined}>
+    <PageContainer
+      maxWidth="1400px"
+      topBanner={demoBanner}
+      rightActions={isAlpineDemo ? <OperationsDemoControls /> : undefined}
+    >
       {/*
         On mobile: ops-outer-card is a plain wrapper; ops-inner-card (surface page-surface)
         is the visible card starting at OperationsOnRentNow.
@@ -294,6 +327,15 @@ export default async function OperationsPage({
             padding: var(--space-8);
           }
           .ops-inner-card {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .ops-inner-card > div > .surface {
             background: transparent !important;
             border: none !important;
             border-radius: 0 !important;
@@ -331,6 +373,9 @@ export default async function OperationsPage({
                   pickups={nextPickups}
                   returns={upcomingReturns.slice(0, 3)}
                   companyTimezone={timelineData.companyTimezone}
+                  preArrivalReminders={invoiceReminders.filter(r => r.type === 'pre_arrival')}
+                  returnPrepReminders={invoiceReminders.filter(r => r.type === 'return_prep')}
+                  whatsappTemplates={whatsappTemplates}
                 />
 
                 {/* Attention needed strip */}
@@ -370,8 +415,8 @@ export default async function OperationsPage({
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                            {item.chips.map((chip) => (
-                              <StatusChip key={chip.label} label={chip.label} severity={chip.severity} href={chip.href} />
+                            {item.chips.map((chip, i) => (
+                              <StatusChip key={`${chip.label}-${i}`} label={chip.label} severity={chip.severity} href={chip.href} />
                             ))}
                           </div>
                         </div>
@@ -380,10 +425,7 @@ export default async function OperationsPage({
                   </div>
                 )}
 
-                <OperationsInvoiceReminders reminders={invoiceReminders} whatsappTemplates={whatsappTemplates} />
-                <OperationsUpcomingPickups pickups={upcomingPickups} companyTimezone={timelineData.companyTimezone} />
-                <OperationsUpcomingReturns returns={upcomingReturns} companyTimezone={returnsTimezone} />
-                <OperationsCompletedBookings bookings={completed} />
+                <OperationsInvoiceReminders reminders={invoiceReminders.filter(r => r.type !== 'pre_arrival' && r.type !== 'return_prep')} whatsappTemplates={whatsappTemplates} />
               </div>
             </div>
 

@@ -22,6 +22,7 @@ interface Vehicle {
   id: string;
   name: string;
   registration_plate: string;
+  vehicle_category: string;
   make: string | null;
   model: string | null;
   year: number | null;
@@ -82,6 +83,7 @@ export default function EditVehiclePage({
   const [formData, setFormData] = useState<VehicleFormData>({
     name: "",
     registration_plate: "",
+    vehicle_category: "motorhome",
     make: "",
     model: "",
     year: "",
@@ -169,6 +171,7 @@ export default function EditVehiclePage({
         setFormData({
           name: vehicleData.name || "",
           registration_plate: vehicleData.registration_plate || "",
+          vehicle_category: vehicleData.vehicle_category || "motorhome",
           make: vehicleData.make || "",
           model: vehicleData.model || "",
           year: vehicleData.year?.toString() || "",
@@ -460,6 +463,7 @@ export default function EditVehiclePage({
         .update({
           name: formData.name,
           registration_plate: formData.registration_plate,
+          vehicle_category: formData.vehicle_category,
           make: formData.make || null,
           model: formData.model || null,
           year: formData.year ? parseInt(formData.year) : null,
@@ -556,7 +560,9 @@ export default function EditVehiclePage({
       .map((r) => r.compliance_type_id)
   );
   const availableToAdd = allTypes.filter(
-    (ct) => ct.allow_multiple || !trackedSingleTypeIds.has(ct.id)
+    (ct) =>
+      (ct.allow_multiple || !trackedSingleTypeIds.has(ct.id)) &&
+      !(formData.vehicle_category === "caravan" && ct.slug === "engine-service")
   );
 
   // ── Style objects (page-level only) ───────────────────────────────────────

@@ -282,7 +282,11 @@
       "vin": "VIN",
       "notes": "Notes",
       "noNotes": "No notes",
-      "latestOdometer": "Latest odometer"
+      "latestOdometer": "Latest odometer",
+      "vehicleCategory": "Category",
+      "vehicleCategoryMotorhome": "Motorhome",
+      "vehicleCategoryCampervan": "Campervan",
+      "vehicleCategoryCaravan": "Caravan"
     },
     "section": {
       "photo": "Photo",
@@ -1109,7 +1113,14 @@
         "itemOf": "{current} of {total}",
         "dueToday": "Due today",
         "dueTomorrow": "Due tomorrow",
-        "dueInDays": "Due in {count} days"
+        "dueInDays": "Due in {count} days",
+        "preArrivalMessage": "Pre-arrival message",
+        "returnPrepMessage": "Return-prep message",
+        "copyMessage": "Copy message",
+        "messageCopied": "Copied!",
+        "markSent": "Mark sent",
+        "cardView": "Card view",
+        "listView": "List view"
       },
       "upcomingReturns": {
         "title": "Upcoming returns",
@@ -1224,7 +1235,10 @@
         "warningCompliance": "Compliance due soon",
         "vehicleIssue": "Vehicle issue",
         "urgentIssue": "Urgent issue",
-        "attentionIssue": "Attention issue"
+        "attentionIssue": "Attention issue",
+        "expiredPrefix": "Expired",
+        "expiringPrefix": "Due soon:",
+        "checklistFlag": "Checklist flag"
       },
       "reminders": {
         "title": "Reminders",
@@ -1232,10 +1246,10 @@
         "view": "View",
         "type": {
           "balance_invoice": "Send remaining 50% invoice",
-          "pre_arrival": "Send pre-arrival WhatsApp",
-          "return_prep": "Send return-prep WhatsApp",
+          "pre_arrival": "Send pre-arrival message",
+          "return_prep": "Send return-prep message",
           "review_imported": "Review reminders",
-          "review_request": "Send review request WhatsApp"
+          "review_request": "Send review request message"
         },
         "timing": {
           "returnYesterday": "Return yesterday",
@@ -1247,7 +1261,7 @@
           "pickupToday": "Pickup today",
           "pickupInDays": "Pickup in {count}d"
         },
-        "copyWhatsApp": "Copy WhatsApp message",
+        "copyWhatsApp": "Copy message",
         "copied": "Copied!",
         "noReviewLink": "No review link set"
       },
@@ -1431,7 +1445,11 @@
           "notes": "Notes (optional)",
           "operationalHold": "Operational hold",
           "holdReason": "Hold reason",
-          "holdReasonPlaceholder": "Reason for hold..."
+          "holdReasonPlaceholder": "Reason for hold...",
+          "vehicleCategory": "Vehicle category",
+          "vehicleCategoryMotorhome": "Motorhome",
+          "vehicleCategoryCampervan": "Campervan",
+          "vehicleCategoryCaravan": "Caravan"
         },
         "status": {
           "ready": "Ready",
@@ -1548,11 +1566,11 @@
         "balanceInvoiceReminder": "Remind me about final payment",
         "balanceReminderTiming": "{days} days before pickup",
         "balanceReminderTimingCustom": "{days} days before pickup",
-        "preArrivalMessage": "Pre-arrival WhatsApp message",
-        "preArrivalReminder": "Remind me to send pre-arrival WhatsApp",
-        "returnPrepMessage": "Return-prep WhatsApp message",
-        "returnPrepReminder": "Remind me to send return-prep WhatsApp",
-        "reviewRequestReminder": "Remind me to send review request WhatsApp",
+        "preArrivalMessage": "Pre-arrival message",
+        "preArrivalReminder": "Remind me to send pre-arrival message",
+        "returnPrepMessage": "Return-prep message",
+        "returnPrepReminder": "Remind me to send return-prep message",
+        "reviewRequestReminder": "Remind me to send review request message",
         "statusLabel": "Status:",
         "notSent": "Not done",
         "sent": "Done",
@@ -1854,7 +1872,11 @@
     "widthPlaceholder": "e.g. 2.10",
     "heightPlaceholder": "e.g. 2.85",
     "chooseFile": "Choose file",
-    "youtubeUrlLabel": "YouTube URL (optional)"
+    "youtubeUrlLabel": "YouTube URL (optional)",
+    "vehicleCategoryLabel": "Vehicle category",
+    "vehicleCategoryMotorhome": "Motorhome",
+    "vehicleCategoryCampervan": "Campervan",
+    "vehicleCategoryCaravan": "Caravan"
   },
   "staffTeamNew": {
     "checkingPermissions": "Checking permissions…",
@@ -2160,7 +2182,7 @@
       "secondaryColorUsage": "Used for accents and highlights",
       "emergencyPhoneUsage": "These numbers are shown to guests on the Emergency page. Leave blank to show a placeholder.",
       "addressUsage": "Printed on evidence reports and PDF documents.",
-      "mapLinkUsage": "Used in WhatsApp message templates as '{map_link}'."
+      "mapLinkUsage": "Used in message templates as '{map_link}'."
     },
     "actions": {
       "uploadLogo": "Upload logo",
@@ -2214,21 +2236,21 @@
         "customWindowHelper": "Applies to custom payments only (e.g. pay on pickup, barter, manual arrangement)."
       },
       "preArrival": {
-        "label": "Enable pre-arrival WhatsApp reminders",
+        "label": "Enable pre-arrival message reminders",
         "helper": "Sent the day before pickup.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hello again, your '{vehicle_name}' pickup is tomorrow…"
       },
       "returnPrep": {
-        "label": "Enable return-prep WhatsApp reminders",
+        "label": "Enable return-prep message reminders",
         "helper": "Sent the day before return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hello again, your '{vehicle_name}' return is tomorrow…"
       },
       "reviewRequest": {
-        "label": "Enable reviews & feedback WhatsApp reminders",
+        "label": "Enable reviews & feedback message reminders",
         "helper": "Sent on the day of or day after return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",

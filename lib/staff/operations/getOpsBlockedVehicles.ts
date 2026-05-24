@@ -9,6 +9,9 @@ export interface OpsBlockedVehicle {
   hasWarningCompliance: boolean
   hasOpenVehicleIssue: boolean
   openVehicleIssueChecklistInstanceId: string | null
+  expiredComplianceName: string | null
+  warningComplianceName: string | null
+  openVehicleIssues: { title: string | null; isChecklistFlag: boolean }[]
 }
 
 /**
@@ -68,7 +71,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
 
   const { data: expiredCompliance, error: ecError } = await supabase
     .from('vehicle_compliance')
-    .select('vehicle_id')
+    .select('vehicle_id, compliance_types(name)')
     .in('vehicle_id', vehicleIds)
     .not('expiry_date', 'is', null)
     .lt('expiry_date', todayStr)
@@ -79,18 +82,26 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     (expiredCompliance ?? []).filter((c) => isUUID(c.vehicle_id)).map((c) => c.vehicle_id)
   )
 
+  const vehicleFirstExpiredComplianceName = new Map<string, string>()
+  for (const c of (expiredCompliance ?? [])) {
+    if (!isUUID(c.vehicle_id) || vehicleFirstExpiredComplianceName.has(c.vehicle_id)) continue
+    const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { name?: string } | null
+    if (ct?.name) vehicleFirstExpiredComplianceName.set(c.vehicle_id, ct.name)
+  }
+
   // Warning-soon: blocks_readiness compliance not yet expired/overdue but within threshold
   const { data: warningCandidates, error: wcError } = await supabase
     .from('vehicle_compliance')
-    .select('vehicle_id, expiry_date, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(warning_days_before, warning_km_before, blocks_readiness), vehicles(latest_odometer)')
+    .select('vehicle_id, expiry_date, service_due_odometer_km, warning_days_before_override, warning_km_before_override, compliance_types(warning_days_before, warning_km_before, blocks_readiness, name), vehicles(latest_odometer)')
     .in('vehicle_id', vehicleIds)
 
   if (wcError) throw wcError
 
   const vehiclesWithWarningCompliance = new Set<string>()
+  const vehicleFirstWarningComplianceName = new Map<string, string>()
   for (const c of (warningCandidates ?? [])) {
     if (!isUUID(c.vehicle_id)) continue
-    const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { warning_days_before: number | null; warning_km_before: number | null; blocks_readiness: boolean } | null
+    const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { warning_days_before: number | null; warning_km_before: number | null; blocks_readiness: boolean; name?: string } | null
     if (!ct?.blocks_readiness) continue
 
     const warnDays = c.warning_days_before_override ?? ct.warning_days_before
@@ -103,6 +114,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
         const cutoffStr = cutoff.toISOString().slice(0, 10)
         if (c.expiry_date <= cutoffStr) {
           vehiclesWithWarningCompliance.add(c.vehicle_id)
+          if (ct?.name && !vehicleFirstWarningComplianceName.has(c.vehicle_id)) vehicleFirstWarningComplianceName.set(c.vehicle_id, ct.name)
           continue
         }
       }
@@ -113,13 +125,14 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
       const odo = veh?.latest_odometer
       if (odo != null && odo < c.service_due_odometer_km && odo >= c.service_due_odometer_km - warnKm) {
         vehiclesWithWarningCompliance.add(c.vehicle_id)
+        if (ct?.name && !vehicleFirstWarningComplianceName.has(c.vehicle_id)) vehicleFirstWarningComplianceName.set(c.vehicle_id, ct.name)
       }
     }
   }
 
   const { data: openIssues, error: oiError } = await supabase
     .from('vehicle_issues')
-    .select('id, vehicle_id, source_checklist_instance_id')
+    .select('id, vehicle_id, source_checklist_instance_id, source_checklist_item_id')
     .in('vehicle_id', vehicleIds)
     .eq('resolved', false)
 
@@ -128,6 +141,23 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
   const vehiclesWithOpenIssues = new Set(
     (openIssues ?? []).filter((i) => isUUID(i.vehicle_id)).map((i) => i.vehicle_id)
   )
+
+  const issueItemIds = (openIssues ?? []).map((i) => (i as { source_checklist_item_id?: string | null }).source_checklist_item_id).filter(isUUID)
+  const { data: issueItemTitles } = issueItemIds.length
+    ? await supabase.from('checklist_instance_items').select('id, issue_title').in('id', issueItemIds)
+    : { data: [] }
+  const itemTitleMap = new Map<string, string>((issueItemTitles ?? []).filter((i) => i.issue_title).map((i) => [i.id, i.issue_title as string]))
+
+  const vehicleIssuesMap = new Map<string, { title: string | null; isChecklistFlag: boolean }[]>()
+  for (const issue of (openIssues ?? [])) {
+    if (!isUUID(issue.vehicle_id)) continue
+    const itemId = (issue as { source_checklist_item_id?: string | null }).source_checklist_item_id
+    const isChecklistFlag = isUUID(itemId)
+    const title = isChecklistFlag ? (itemTitleMap.get(itemId) ?? null) : null
+    const arr = vehicleIssuesMap.get(issue.vehicle_id) ?? []
+    arr.push({ title, isChecklistFlag })
+    vehicleIssuesMap.set(issue.vehicle_id, arr)
+  }
 
   // Prefer the durable source column; fall back to reverse lookup for legacy rows.
   const issueChecklistMap = new Map<string, string>()
@@ -176,5 +206,8 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
       hasWarningCompliance: vehiclesWithWarningCompliance.has(v.id),
       hasOpenVehicleIssue: vehiclesWithOpenIssues.has(v.id),
       openVehicleIssueChecklistInstanceId: vehicleIssueChecklistMap.get(v.id as string) ?? null,
+      expiredComplianceName: vehicleFirstExpiredComplianceName.get(v.id as string) ?? null,
+      warningComplianceName: vehicleFirstWarningComplianceName.get(v.id as string) ?? null,
+      openVehicleIssues: vehicleIssuesMap.get(v.id as string) ?? [],
     }))
 }

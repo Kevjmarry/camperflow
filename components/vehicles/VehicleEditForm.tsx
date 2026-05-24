@@ -11,6 +11,7 @@ import VehicleComplianceSection from "@/components/vehicles/VehicleComplianceSec
 export interface VehicleFormData {
   name: string;
   registration_plate: string;
+  vehicle_category: string;
   make: string;
   model: string;
   year: string;
@@ -265,6 +266,20 @@ export default function VehicleEditForm({
         />
       </div>
 
+      {/* Vehicle category */}
+      <div>
+        <label htmlFor="vehicle_category" style={labelStyle}>{t("vehicleCategoryLabel")}</label>
+        <select
+          id="vehicle_category" name="vehicle_category"
+          value={formData.vehicle_category} onChange={onChange}
+          style={inputStyle}
+        >
+          <option value="motorhome">{t("vehicleCategoryMotorhome")}</option>
+          <option value="campervan">{t("vehicleCategoryCampervan")}</option>
+          <option value="caravan">{t("vehicleCategoryCaravan")}</option>
+        </select>
+      </div>
+
       {/* Make / Model */}
       <div
         className="grid-two-col"
@@ -475,6 +490,7 @@ export default function VehicleEditForm({
         vehicleId={vehicleId}
         locale={locale}
         latestOdometer={latestOdometer}
+        vehicleCategory={formData.vehicle_category}
         editingRow={editingRow}
         onEditRow={onEditRow}
         showAddModal={showAddModal}

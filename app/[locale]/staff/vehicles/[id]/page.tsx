@@ -15,6 +15,7 @@ interface Vehicle {
   id: string;
   name: string;
   registration_plate: string;
+  vehicle_category: string | null;
   make: string | null;
   model: string | null;
   year: number | null;
@@ -254,7 +255,7 @@ export default function VehicleDetailPage({
           await Promise.all([
             supabase
               .from("vehicles")
-              .select("id, name, registration_plate, make, model, year, vin, notes, photo_url, status, latest_odometer, length_m, width_m, height_m, youtube_url")
+              .select("id, name, registration_plate, vehicle_category, make, model, year, vin, notes, photo_url, status, latest_odometer, length_m, width_m, height_m, youtube_url")
               .eq("id", id)
               .single(),
             supabase
@@ -551,7 +552,11 @@ export default function VehicleDetailPage({
   };
 
   const trackedTypeIds = new Set(compliance.map((r) => r.compliance_type_id));
-  const availableToAdd = allTypes.filter((ct) => !trackedTypeIds.has(ct.id));
+  const availableToAdd = allTypes.filter(
+    (ct) =>
+      !trackedTypeIds.has(ct.id) &&
+      !(vehicle?.vehicle_category === "caravan" && ct.slug === "engine-service")
+  );
 
   // Mirror the vehicles-list derived status: a ready vehicle with any
   // incomplete vehicle-scope checklist should display as 'preparing'.
@@ -563,6 +568,8 @@ export default function VehicleDetailPage({
     )
       ? "preparing"
       : (vehicle?.status ?? "ready");
+
+  const vehicleCategory = vehicle?.vehicle_category || 'motorhome';
 
   const getVehicleStatusLabel = (status: string) => {
     switch (status) {
@@ -845,11 +852,14 @@ export default function VehicleDetailPage({
               <div className="surface" style={{ padding: "var(--space-6)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                   <Field label="Registration plate" value={vehicle.registration_plate || "—"} />
+                  <Field label={t("fields.vehicleCategory")} value={t(`fields.vehicleCategory${vehicleCategory.charAt(0).toUpperCase() + vehicleCategory.slice(1)}`)} />
                   <Field label={t("fields.make")}  value={vehicle.make  || "—"} />
                   <Field label={t("fields.model")} value={vehicle.model || "—"} />
                   <Field label={t("fields.year")}  value={vehicle.year ? String(vehicle.year) : "—"} />
                   <Field label={t("fields.vin")}   value={vehicle.vin   || "—"} />
-                  <Field label={t("fields.latestOdometer")} value={vehicle.latest_odometer != null ? `${vehicle.latest_odometer.toLocaleString(locale)} km` : "—"} />
+                  {vehicleCategory !== "caravan" && (
+                    <Field label={t("fields.latestOdometer")} value={vehicle.latest_odometer != null ? `${vehicle.latest_odometer.toLocaleString(locale)} km` : "—"} />
+                  )}
                 </div>
               </div>
             </div>
@@ -942,7 +952,7 @@ export default function VehicleDetailPage({
                 )}
               </div>
 
-              {vehicle.latest_odometer != null && (
+              {vehicle.latest_odometer != null && vehicleCategory !== "caravan" && (
                 <div style={{ fontSize: "13px", color: "rgb(var(--muted))", marginBottom: "var(--space-3)" }}>
                   {t("fields.latestOdometer")}: <span style={{ fontWeight: 600, color: "rgb(var(--text))" }}>{vehicle.latest_odometer.toLocaleString(locale)} km</span>
                 </div>
@@ -1039,7 +1049,7 @@ export default function VehicleDetailPage({
 
                         <div className="compliance-row-date" style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
                           <div>{formatDate(row.expiry_date)}</div>
-                          {row.service_due_odometer_km != null && (
+                          {row.service_due_odometer_km != null && vehicleCategory !== "caravan" && (
                             <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
                               Due at {row.service_due_odometer_km.toLocaleString(locale)} km
                             </div>

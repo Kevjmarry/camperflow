@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      name, registration_plate, make, model, year,
+      name, registration_plate, vehicle_category, make, model, year,
       vin, length_m, width_m, height_m, notes,
       operational_hold, hold_reason,
     } = body
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         company_id: callerProfile.company_id,
         name,
         registration_plate,
+        vehicle_category: vehicle_category ?? 'motorhome',
         make,
         model,
         year,

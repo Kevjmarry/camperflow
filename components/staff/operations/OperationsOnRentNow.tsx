@@ -137,6 +137,7 @@ export default function OperationsOnRentNow({ rows, companyTimezone }: Props) {
             flex-direction: column;
             gap: 0;
             padding: var(--space-3);
+            align-items: stretch;
           }
           /* Vehicle + View action on one line */
           .on-rent-col-vehicle {
@@ -309,25 +310,25 @@ export default function OperationsOnRentNow({ rows, companyTimezone }: Props) {
                       {t('noUpcomingBooking')}
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgb(var(--text))' }}>
                           {formatPrepWindow(r.prepWindowMs)}
                         </span>
-                        {r.nextBookingPickupAt && (
-                          <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
-                            {t('nextBookingAt', {
-                              date: formatDateShort(r.nextBookingPickupAt),
-                              time: formatTime(r.nextBookingPickupAt),
-                            })}
-                          </span>
+                        {r.prepSeverity && (
+                          <SeverityChip
+                            severity={r.prepSeverity}
+                            label={t(`prepSeverity.${r.prepSeverity}`)}
+                          />
                         )}
                       </div>
-                      {r.prepSeverity && (
-                        <SeverityChip
-                          severity={r.prepSeverity}
-                          label={t(`prepSeverity.${r.prepSeverity}`)}
-                        />
+                      {r.nextBookingPickupAt && (
+                        <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>
+                          {t('nextBookingAt', {
+                            date: formatDateShort(r.nextBookingPickupAt),
+                            time: formatTime(r.nextBookingPickupAt),
+                          })}
+                        </span>
                       )}
                     </div>
                   )}

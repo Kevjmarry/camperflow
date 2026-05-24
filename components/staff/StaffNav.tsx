@@ -114,6 +114,17 @@ export default function StaffNav() {
         @media (min-width: 768px) {
           .staff-nav-fade, .staff-nav-arrow { display: none !important; }
         }
+        .staff-nav-link {
+          transition: color 0.15s, background 0.15s;
+          border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        }
+        .staff-nav-link:not([data-active="true"]):hover {
+          color: rgb(var(--text-secondary)) !important;
+          background: rgb(var(--brand) / 0.06);
+        }
+        .staff-nav-link[data-active="true"]:hover {
+          background: rgb(var(--brand) / 0.07);
+        }
       `}</style>
 
       {/* Scrollable links + fade indicators */}
@@ -166,6 +177,7 @@ export default function StaffNav() {
                 key={key}
                 href={href}
                 data-active={isActive ? 'true' : undefined}
+                className="staff-nav-link"
                 style={{
                   display: 'flex',
                   alignItems: 'center',

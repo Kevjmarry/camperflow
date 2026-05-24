@@ -462,20 +462,21 @@ export default function VehiclesPage() {
                       <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--muted))' }}>
                         Live vehicle status
                       </span>
-                      <span style={getStatusChipStyle(vehicle.status)}>
-                        {getStatusLabel(vehicle.status)}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        {vehicle.blockingReason && !vehicle.operational_hold && (
+                          <span style={{
+                            fontSize: '13px',
+                            color: 'rgb(var(--warning, var(--muted)))',
+                            fontStyle: 'italic'
+                          }}>
+                            {vehicle.blockingReason}
+                          </span>
+                        )}
+                        <span style={getStatusChipStyle(vehicle.status)}>
+                          {getStatusLabel(vehicle.status)}
+                        </span>
+                      </div>
                     </div>
-
-                    {vehicle.blockingReason && !vehicle.operational_hold && (
-                      <span style={{
-                        fontSize: '13px',
-                        color: 'rgb(var(--warning, var(--muted)))',
-                        fontStyle: 'italic'
-                      }}>
-                        {vehicle.blockingReason}
-                      </span>
-                    )}
 
                     {vehicle.isExcess && (
                       <Link href={`/${locale}/staff/settings/billing`} style={{
