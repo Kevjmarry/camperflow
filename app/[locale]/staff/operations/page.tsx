@@ -115,12 +115,15 @@ export default async function OperationsPage({
 
   // Build compact attention strip — deduped by vehicleId+bookingId, capped at 5
   type Chip = { label: string; severity: 'critical' | 'warning'; href?: string }
-  type AttentionItem = { key: string; line1: string; chips: Chip[]; severity: 'block' | 'warn' }
+  type AttentionItem = { key: string; line1: string; vehicleId?: string; chips: Chip[]; severity: 'block' | 'warn' }
   const attentionItems: AttentionItem[] = []
   const seenKeys = new Set<string>()
   // Track vehicle names already covered by a booking-based attention item so
   // the vehicle-based source below doesn't produce duplicates.
   const seenVehicleNames = new Set<string>()
+  // blockedVehicles provides the full expanded compliance/issue chip sets;
+  // booking loops must defer those chips to avoid single-name collapse.
+  const blockedVehicleByName = new Map(blockedVehicles.map(v => [v.name, v]))
 
   const addItem = (dedupeKey: string, item: Omit<AttentionItem, 'key'>, prefixKey: string) => {
     if (seenKeys.has(dedupeKey)) return
@@ -138,12 +141,12 @@ export default async function OperationsPage({
       severity: 'critical',
       href: p.checklistInstanceId ? `/${locale}/staff/checklists/${p.checklistInstanceId}?from=booking` : undefined,
     })
-    if (p.hasExpiredCompliance) chips.push({
+    if (p.hasExpiredCompliance && !blockedVehicleByName.has(p.vehicleName)) chips.push({
       label: p.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${p.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
-    if (p.hasOpenVehicleIssue) chips.push({
+    if (p.hasOpenVehicleIssue && !blockedVehicleByName.has(p.vehicleName)) chips.push({
       label: p.openVehicleIssueIsChecklistFlag
         ? (p.openVehicleIssueTitle ? `${t('attentionChip.checklistFlag')} · ${truncate(p.openVehicleIssueTitle, 18)}` : t('attentionChip.checklistFlag'))
         : t('attentionChip.vehicleIssue'),
@@ -155,6 +158,7 @@ export default async function OperationsPage({
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
+      vehicleId: p.vehicleId ?? undefined,
       chips,
       severity: (p.vehicleBlocked || p.hasBlockingIssue) ? 'block' : 'warn',
     }, `pickup-${p.id}`)
@@ -172,12 +176,12 @@ export default async function OperationsPage({
     if (p.hasUrgentIssue) chips.push({ label: t('attentionChip.urgentIssue'), severity: 'critical' })
     if (p.hasAttentionIssue) chips.push({ label: t('attentionChip.attentionIssue'), severity: 'warning' })
     if (!p.hasUrgentIssue && !p.hasAttentionIssue && p.hasBlockingIssue) chips.push({ label: t('attentionChip.checklistIssue'), severity: 'critical' })
-    if (p.hasExpiredCompliance) chips.push({
+    if (p.hasExpiredCompliance && !blockedVehicleByName.has(p.vehicleName)) chips.push({
       label: p.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${p.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
       severity: 'critical',
       href: p.vehicleId ? `/${locale}/staff/vehicles/${p.vehicleId}#compliance` : undefined,
     })
-    if (p.hasOpenVehicleIssue) chips.push({
+    if (p.hasOpenVehicleIssue && !blockedVehicleByName.has(p.vehicleName)) chips.push({
       label: p.openVehicleIssueIsChecklistFlag
         ? (p.openVehicleIssueTitle ? `${t('attentionChip.checklistFlag')} · ${truncate(p.openVehicleIssueTitle, 18)}` : t('attentionChip.checklistFlag'))
         : t('attentionChip.vehicleIssue'),
@@ -189,6 +193,7 @@ export default async function OperationsPage({
     seenVehicleNames.add(p.vehicleName)
     addItem(`booking-${p.id}`, {
       line1: p.vehicleName,
+      vehicleId: p.vehicleId ?? undefined,
       chips,
       severity: (p.vehicleBlocked || p.hasUrgentIssue || p.hasBlockingIssue) ? 'block' : 'warn',
     }, `upcoming-${p.id}`)
@@ -197,40 +202,44 @@ export default async function OperationsPage({
   // Vehicle-based attention items: vehicles with blocking signals but no
   // current booking-based entry (e.g. out-of-season fleet with expired compliance).
   for (const v of blockedVehicles) {
-    if (seenVehicleNames.has(v.name)) continue
     if (!v.hasOperationalHold && !v.hasExpiredCompliance && !v.hasWarningCompliance && !v.hasOpenVehicleIssue) continue
-    const chips: Chip[] = []
-    if (v.hasOperationalHold) chips.push({
-      label: t('attentionChip.operationalHold'),
-      severity: 'critical',
-      href: `/${locale}/staff/vehicles/${v.id}`,
-    })
-    if (v.hasExpiredCompliance) chips.push({
-      label: v.expiredComplianceName ? `${t('attentionChip.expiredPrefix')} ${v.expiredComplianceName}` : t('attentionChip.expiredCompliance'),
-      severity: 'critical',
-      href: `/${locale}/staff/vehicles/${v.id}#compliance`,
-    })
-    if (!v.hasExpiredCompliance && v.hasWarningCompliance) chips.push({
-      label: v.warningComplianceName ? `${t('attentionChip.expiringPrefix')} ${v.warningComplianceName}` : t('attentionChip.warningCompliance'),
-      severity: 'warning',
-      href: `/${locale}/staff/vehicles/${v.id}#compliance`,
-    })
-    if (v.hasOpenVehicleIssue) {
-      const issueHref = v.openVehicleIssueChecklistInstanceId
-        ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
-        : `/${locale}/staff/vehicles/${v.id}#issues`
-      for (const issue of v.openVehicleIssues) {
-        chips.push({
-          label: issue.isChecklistFlag
-            ? (issue.title ? `${t('attentionChip.checklistFlag')} · ${truncate(issue.title, 18)}` : t('attentionChip.checklistFlag'))
-            : t('attentionChip.vehicleIssue'),
-          severity: 'warning',
-          href: issueHref,
-        })
-      }
+    const complianceHref = `/${locale}/staff/vehicles/${v.id}#compliance`
+    const issueHref = v.openVehicleIssueChecklistInstanceId
+      ? `/${locale}/staff/checklists/${v.openVehicleIssueChecklistInstanceId}`
+      : `/${locale}/staff/vehicles/${v.id}#issues`
+    const signalChips: Chip[] = []
+    for (const name of v.expiredComplianceNames) {
+      signalChips.push({ label: `${t('attentionChip.expiredPrefix')} ${name}`, severity: 'critical', href: complianceHref })
     }
+    for (const name of v.warningComplianceNames) {
+      signalChips.push({ label: `${t('attentionChip.expiringPrefix')} ${name}`, severity: 'warning', href: complianceHref })
+    }
+    for (const issue of v.openVehicleIssues) {
+      signalChips.push({
+        label: issue.isChecklistFlag
+          ? (issue.title ? `${t('attentionChip.checklistFlag')} · ${truncate(issue.title, 18)}` : t('attentionChip.checklistFlag'))
+          : t('attentionChip.vehicleIssue'),
+        severity: issue.blocking ? 'critical' : 'warning',
+        href: issueHref,
+      })
+    }
+    if (seenVehicleNames.has(v.name)) {
+      // Vehicle already has a booking item — augment it with the full signal chips
+      const existing = attentionItems.find(item => item.line1 === v.name)
+      if (existing) {
+        existing.vehicleId = existing.vehicleId ?? v.id
+        if (v.hasOperationalHold) existing.chips.unshift({ label: t('attentionChip.operationalHold'), severity: 'critical', href: `/${locale}/staff/vehicles/${v.id}` })
+        existing.chips.push(...signalChips)
+        if (v.hasOperationalHold || v.hasExpiredCompliance) existing.severity = 'block'
+      }
+      continue
+    }
+    const chips: Chip[] = []
+    if (v.hasOperationalHold) chips.push({ label: t('attentionChip.operationalHold'), severity: 'critical', href: `/${locale}/staff/vehicles/${v.id}` })
+    chips.push(...signalChips)
     addItem(`vehicle-${v.id}`, {
       line1: v.name,
+      vehicleId: v.id,
       chips,
       severity: v.hasOperationalHold || v.hasExpiredCompliance ? 'block' : 'warn',
     }, `vehicle-${v.id}`)
@@ -338,6 +347,15 @@ export default async function OperationsPage({
             box-shadow: none !important;
             padding: 0 !important;
           }
+          .ops-attention-row {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .ops-attention-chips {
+            justify-content: flex-start !important;
+            flex-shrink: 1;
+            width: 100%;
+          }
         }
       `}</style>
       <div className="ops-outer-card">
@@ -386,6 +404,7 @@ export default async function OperationsPage({
                       {urgentItems.map((item) => (
                         <div
                           key={item.key}
+                          className="ops-attention-row"
                           style={{
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -399,11 +418,17 @@ export default async function OperationsPage({
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {item.line1}
-                            </span>
+                            {item.vehicleId ? (
+                              <Link href={`/${locale}/staff/vehicles/${item.vehicleId}`} style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'none' }}>
+                                {item.line1}
+                              </Link>
+                            ) : (
+                              <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {item.line1}
+                              </span>
+                            )}
                           </div>
-                          <div style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <div className="ops-attention-chips" style={{ display: 'flex', gap: '4px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             {item.chips.map((chip, i) => (
                               <StatusChip key={`${chip.label}-${i}`} label={chip.label} severity={chip.severity} href={chip.href} />
                             ))}

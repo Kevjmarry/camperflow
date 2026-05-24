@@ -9,9 +9,9 @@ export interface OpsBlockedVehicle {
   hasWarningCompliance: boolean
   hasOpenVehicleIssue: boolean
   openVehicleIssueChecklistInstanceId: string | null
-  expiredComplianceName: string | null
-  warningComplianceName: string | null
-  openVehicleIssues: { title: string | null; isChecklistFlag: boolean }[]
+  expiredComplianceNames: string[]
+  warningComplianceNames: string[]
+  openVehicleIssues: { title: string | null; blocking: boolean; isChecklistFlag: boolean }[]
 }
 
 /**
@@ -82,11 +82,14 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     (expiredCompliance ?? []).filter((c) => isUUID(c.vehicle_id)).map((c) => c.vehicle_id)
   )
 
-  const vehicleFirstExpiredComplianceName = new Map<string, string>()
+  const vehicleExpiredComplianceNames = new Map<string, string[]>()
   for (const c of (expiredCompliance ?? [])) {
-    if (!isUUID(c.vehicle_id) || vehicleFirstExpiredComplianceName.has(c.vehicle_id)) continue
+    if (!isUUID(c.vehicle_id)) continue
     const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { name?: string } | null
-    if (ct?.name) vehicleFirstExpiredComplianceName.set(c.vehicle_id, ct.name)
+    if (!ct?.name) continue
+    const arr = vehicleExpiredComplianceNames.get(c.vehicle_id) ?? []
+    arr.push(ct.name)
+    vehicleExpiredComplianceNames.set(c.vehicle_id, arr)
   }
 
   // Warning-soon: blocks_readiness compliance not yet expired/overdue but within threshold
@@ -98,41 +101,57 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
   if (wcError) throw wcError
 
   const vehiclesWithWarningCompliance = new Set<string>()
-  const vehicleFirstWarningComplianceName = new Map<string, string>()
+  const vehicleWarningComplianceNames = new Map<string, string[]>()
   for (const c of (warningCandidates ?? [])) {
     if (!isUUID(c.vehicle_id)) continue
     const ct = Array.isArray(c.compliance_types) ? c.compliance_types[0] : c.compliance_types as { warning_days_before: number | null; warning_km_before: number | null; blocks_readiness: boolean; name?: string } | null
     if (!ct?.blocks_readiness) continue
 
-    const warnDays = c.warning_days_before_override ?? ct.warning_days_before
-    const warnKm = c.warning_km_before_override ?? ct.warning_km_before
-
-    if (c.expiry_date && warnDays != null) {
-      if (c.expiry_date >= todayStr) {
-        const cutoff = new Date(today)
-        cutoff.setDate(cutoff.getDate() + warnDays)
-        const cutoffStr = cutoff.toISOString().slice(0, 10)
-        if (c.expiry_date <= cutoffStr) {
-          vehiclesWithWarningCompliance.add(c.vehicle_id)
-          if (ct?.name && !vehicleFirstWarningComplianceName.has(c.vehicle_id)) vehicleFirstWarningComplianceName.set(c.vehicle_id, ct.name)
-          continue
+    // Odometer already at/past service point → classify as expired (mirrors DB trigger logic)
+    if (c.service_due_odometer_km != null) {
+      const veh = Array.isArray(c.vehicles) ? c.vehicles[0] : c.vehicles as { latest_odometer: number | null } | null
+      const odo = veh?.latest_odometer
+      if (odo != null && odo >= c.service_due_odometer_km) {
+        vehiclesWithExpiredCompliance.add(c.vehicle_id)
+        if (ct?.name) {
+          const arr = vehicleExpiredComplianceNames.get(c.vehicle_id) ?? []
+          arr.push(ct.name)
+          vehicleExpiredComplianceNames.set(c.vehicle_id, arr)
         }
+        continue
       }
     }
 
-    if (c.service_due_odometer_km != null && warnKm != null) {
+    const warnDays = c.warning_days_before_override ?? ct.warning_days_before
+    const warnKm = c.warning_km_before_override ?? ct.warning_km_before
+
+    let inWindow = false
+
+    if (c.expiry_date && warnDays != null && c.expiry_date >= todayStr) {
+      const cutoff = new Date(today)
+      cutoff.setDate(cutoff.getDate() + warnDays)
+      if (c.expiry_date <= cutoff.toISOString().slice(0, 10)) inWindow = true
+    }
+
+    if (!inWindow && c.service_due_odometer_km != null && warnKm != null) {
       const veh = Array.isArray(c.vehicles) ? c.vehicles[0] : c.vehicles as { latest_odometer: number | null } | null
       const odo = veh?.latest_odometer
-      if (odo != null && odo < c.service_due_odometer_km && odo >= c.service_due_odometer_km - warnKm) {
-        vehiclesWithWarningCompliance.add(c.vehicle_id)
-        if (ct?.name && !vehicleFirstWarningComplianceName.has(c.vehicle_id)) vehicleFirstWarningComplianceName.set(c.vehicle_id, ct.name)
+      if (odo != null && odo < c.service_due_odometer_km && odo >= c.service_due_odometer_km - warnKm) inWindow = true
+    }
+
+    if (inWindow) {
+      vehiclesWithWarningCompliance.add(c.vehicle_id)
+      if (ct?.name) {
+        const arr = vehicleWarningComplianceNames.get(c.vehicle_id) ?? []
+        arr.push(ct.name)
+        vehicleWarningComplianceNames.set(c.vehicle_id, arr)
       }
     }
   }
 
   const { data: openIssues, error: oiError } = await supabase
     .from('vehicle_issues')
-    .select('id, vehicle_id, source_checklist_instance_id, source_checklist_item_id')
+    .select('id, vehicle_id, title, blocking, checklist_instance_id, source_checklist_instance_id, source_checklist_item_id')
     .in('vehicle_id', vehicleIds)
     .eq('resolved', false)
 
@@ -142,45 +161,27 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     (openIssues ?? []).filter((i) => isUUID(i.vehicle_id)).map((i) => i.vehicle_id)
   )
 
-  const issueItemIds = (openIssues ?? []).map((i) => (i as { source_checklist_item_id?: string | null }).source_checklist_item_id).filter(isUUID)
-  const { data: issueItemTitles } = issueItemIds.length
-    ? await supabase.from('checklist_instance_items').select('id, issue_title').in('id', issueItemIds)
-    : { data: [] }
-  const itemTitleMap = new Map<string, string>((issueItemTitles ?? []).filter((i) => i.issue_title).map((i) => [i.id, i.issue_title as string]))
-
-  const vehicleIssuesMap = new Map<string, { title: string | null; isChecklistFlag: boolean }[]>()
+  const vehicleIssuesMap = new Map<string, { title: string | null; blocking: boolean; isChecklistFlag: boolean }[]>()
   for (const issue of (openIssues ?? [])) {
     if (!isUUID(issue.vehicle_id)) continue
-    const itemId = (issue as { source_checklist_item_id?: string | null }).source_checklist_item_id
-    const isChecklistFlag = isUUID(itemId)
-    const title = isChecklistFlag ? (itemTitleMap.get(itemId) ?? null) : null
+    const isChecklistFlag =
+      isUUID((issue as { checklist_instance_id?: string | null }).checklist_instance_id) ||
+      isUUID(issue.source_checklist_instance_id) ||
+      isUUID((issue as { source_checklist_item_id?: string | null }).source_checklist_item_id)
+    const title = (issue as { title?: string | null }).title ?? null
+    const blocking = !!(issue as { blocking?: boolean | null }).blocking
     const arr = vehicleIssuesMap.get(issue.vehicle_id) ?? []
-    arr.push({ title, isChecklistFlag })
+    arr.push({ title, blocking, isChecklistFlag })
     vehicleIssuesMap.set(issue.vehicle_id, arr)
   }
 
-  // Prefer the durable source column; fall back to reverse lookup for legacy rows.
+  // Prefer the direct checklist_instance_id; fall back to source column, then reverse lookup.
   const issueChecklistMap = new Map<string, string>()
   for (const issue of (openIssues ?? [])) {
-    if (issue.source_checklist_instance_id && isUUID(issue.source_checklist_instance_id)) {
-      issueChecklistMap.set(issue.id, issue.source_checklist_instance_id)
-    }
-  }
-  const legacyIssueIds = (openIssues ?? [])
-    .filter((i) => isUUID(i.id) && !i.source_checklist_instance_id)
-    .map((i) => i.id)
-  const { data: linkedItems } = legacyIssueIds.length
-    ? await supabase
-        .from('checklist_instance_items')
-        .select('linked_vehicle_issue_id, instance_id')
-        .in('linked_vehicle_issue_id', legacyIssueIds)
-    : { data: [] }
-  for (const item of (linkedItems ?? [])) {
-    if (item.linked_vehicle_issue_id && item.instance_id && isUUID(item.instance_id)) {
-      if (!issueChecklistMap.has(item.linked_vehicle_issue_id)) {
-        issueChecklistMap.set(item.linked_vehicle_issue_id, item.instance_id)
-      }
-    }
+    const directId = (issue as { checklist_instance_id?: string | null }).checklist_instance_id
+    const sourceId = issue.source_checklist_instance_id
+    const resolved = isUUID(directId) ? directId : isUUID(sourceId) ? sourceId : null
+    if (resolved) issueChecklistMap.set(issue.id, resolved)
   }
   const vehicleIssueChecklistMap = new Map<string, string>()
   for (const issue of (openIssues ?? [])) {
@@ -191,7 +192,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     }
   }
 
-  return (vehicles ?? [])
+  const result = (vehicles ?? [])
     .filter((v) => isUUID(v.id) && (
       v.operational_hold === true ||
       vehiclesWithExpiredCompliance.has(v.id) ||
@@ -206,8 +207,10 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
       hasWarningCompliance: vehiclesWithWarningCompliance.has(v.id),
       hasOpenVehicleIssue: vehiclesWithOpenIssues.has(v.id),
       openVehicleIssueChecklistInstanceId: vehicleIssueChecklistMap.get(v.id as string) ?? null,
-      expiredComplianceName: vehicleFirstExpiredComplianceName.get(v.id as string) ?? null,
-      warningComplianceName: vehicleFirstWarningComplianceName.get(v.id as string) ?? null,
+      expiredComplianceNames: vehicleExpiredComplianceNames.get(v.id as string) ?? [],
+      warningComplianceNames: vehicleWarningComplianceNames.get(v.id as string) ?? [],
       openVehicleIssues: vehicleIssuesMap.get(v.id as string) ?? [],
     }))
+
+  return result
 }

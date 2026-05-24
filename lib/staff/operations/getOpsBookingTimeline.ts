@@ -26,6 +26,8 @@ export interface OpsTimelineVehicleBlock {
   blockType: string | null
   startAt: string
   endAt: string
+  sourceReference: string | null
+  sourceType: string
 }
 
 export interface OpsTimelineData {
@@ -90,7 +92,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
 
   const { data: blocks } = await supabase
     .from('vehicle_blocks')
-    .select('id, vehicle_id, label, block_type, start_at, end_at')
+    .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference')
     .eq('company_id', companyId)
     .gte('end_at', windowStart.toISOString())
     .lte('start_at', windowEnd.toISOString())
@@ -103,6 +105,8 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     blockType: bl.block_type ?? null,
     startAt: bl.start_at,
     endAt: bl.end_at,
+    sourceReference: bl.source_reference ?? null,
+    sourceType: bl.source_type,
   }))
 
   return {

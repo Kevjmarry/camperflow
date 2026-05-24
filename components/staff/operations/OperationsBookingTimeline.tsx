@@ -13,6 +13,8 @@ export interface TimelineVehicleBlock {
   blockType?: string | null
   startAt: string
   endAt: string
+  sourceReference?: string | null
+  sourceType?: string | null
 }
 
 const BLOCK_TYPE_ICON: Record<string, string> = {
@@ -62,6 +64,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   const locale = params.locale as string
   const t = useTranslations('staff.operations.bookingTimeline')
   const tTypes = useTranslations('staff.operations.blockTypes')
+  const [selectedBlock, setSelectedBlock] = useState<(TimelineVehicleBlock & { vehicleName: string }) | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -329,6 +332,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                         <div
                           key={bl.id}
                           title={tooltipText}
+                          onClick={hasBookingOverlap ? undefined : () => setSelectedBlock({ ...bl, vehicleName: v.name })}
                           style={{
                             position: 'absolute',
                             left: `${cStart * PX_PER_DAY}px`,
@@ -340,7 +344,8 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                             borderRadius: '3px',
                             overflow: 'hidden',
                             zIndex: 1,
-                            pointerEvents: 'none',
+                            pointerEvents: hasBookingOverlap ? 'none' : 'auto',
+                            cursor: hasBookingOverlap ? 'default' : 'pointer',
                             opacity: hasBookingOverlap ? 0.35 : 1,
                           }}
                         >
@@ -423,6 +428,75 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
       <p style={{ marginTop: 'var(--space-2)', fontSize: '11px', color: 'rgb(var(--muted))', margin: 'var(--space-2) 0 0' }}>
         {t('footerHint')}
       </p>
+
+      {selectedBlock && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setSelectedBlock(null)}
+        >
+          <div
+            style={{ background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', minWidth: '280px', maxWidth: '400px', width: '90vw', boxShadow: 'var(--shadow-lg)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: 'rgb(var(--muted))', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                  {t('legend.vehicleBlock')}
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: 'rgb(var(--text))' }}>
+                  {selectedBlock.vehicleName}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBlock(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', color: 'rgb(var(--muted))', fontSize: '16px', lineHeight: 1 }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Type */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 'var(--space-2)' }}>
+              <span style={{ fontSize: '15px' }}>{BLOCK_TYPE_ICON[selectedBlock.blockType ?? ''] ?? '⛔'}</span>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'rgb(var(--text))' }}>
+                {selectedBlock.blockType ? tTypes(selectedBlock.blockType as Parameters<typeof tTypes>[0]) : t('legend.vehicleBlock')}
+              </span>
+            </div>
+
+            {/* Label */}
+            {selectedBlock.label && (
+              <div style={{ fontSize: '13px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-3)' }}>
+                {selectedBlock.label}
+              </div>
+            )}
+
+            {/* Dates */}
+            <div style={{ borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
+                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>From</span>
+                <span style={{ color: 'rgb(var(--text))' }}>
+                  {new Date(selectedBlock.startAt).toLocaleString('en-GB', { timeZone: companyTimezone, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
+                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>To</span>
+                <span style={{ color: 'rgb(var(--text))' }}>
+                  {new Date(selectedBlock.endAt).toLocaleString('en-GB', { timeZone: companyTimezone, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+
+            {/* Source reference */}
+            {selectedBlock.sourceReference && (
+              <div style={{ marginTop: 'var(--space-3)', fontSize: '11px', color: 'rgb(var(--muted))', borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-2)', wordBreak: 'break-all' }}>
+                Ref: {selectedBlock.sourceReference}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
