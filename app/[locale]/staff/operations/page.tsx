@@ -314,6 +314,7 @@ export default async function OperationsPage({
               bookings={timelineData.bookings}
               vehicleBlocks={timelineData.vehicleBlocks}
               companyTimezone={timelineData.companyTimezone}
+              today={timelineData.today}
             />
 
             {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}

@@ -19,6 +19,7 @@ interface Props {
   bookings: OpsTimelineBooking[]
   vehicleBlocks?: TimelineVehicleBlock[]
   companyTimezone?: string
+  today?: string // ISO string from server loader — frozen for demo company
 }
 
 const DAYS_BACK = 30
@@ -44,7 +45,7 @@ const FALLBACK_STYLE = STATUS_STYLE.draft
 
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
-export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC' }: Props) {
+export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC', today }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
@@ -63,7 +64,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
 
   if (!mounted) return null
 
-  const now = new Date()
+  const now = today ? new Date(today) : new Date()
 
   // Compute company-local midnight for today by subtracting elapsed time since
   // midnight in the company timezone (no library needed — Intl gives us hh/mm/ss).

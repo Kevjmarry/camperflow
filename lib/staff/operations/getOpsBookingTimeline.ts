@@ -32,12 +32,13 @@ export interface OpsTimelineData {
   bookings: OpsTimelineBooking[]
   vehicleBlocks: OpsTimelineVehicleBlock[]
   companyTimezone: string
+  today: string // ISO string — frozen for demo company, real clock for others
 }
 
 export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC' }
+  if (!user?.id || !isUUID(user.id)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString() }
 
   const { data: profile } = await supabase
     .from('staff_profiles')
@@ -45,7 +46,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   const companyId = profile?.company_id
-  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC' }
+  if (!isUUID(companyId)) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone: 'UTC', today: new Date().toISOString() }
 
   const { data: companySettings } = await supabase
     .from('company_settings')
@@ -69,7 +70,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   if (vError) throw vError
 
   const vehicleIds = (vehicles ?? []).map((v) => v.id).filter(isUUID)
-  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone }
+  if (!vehicleIds.length) return { vehicles: [], bookings: [], vehicleBlocks: [], companyTimezone, today: now.toISOString() }
 
   // Bookings overlapping the window: return_at >= windowStart AND pickup_at <= windowEnd
   const { data: bookings, error: bError } = await supabase
@@ -118,5 +119,6 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
       })),
     vehicleBlocks,
     companyTimezone,
+    today: now.toISOString(),
   }
 }
