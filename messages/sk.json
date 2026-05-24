@@ -595,7 +595,8 @@
       "clearFilters": "Zrušiť filtre",
       "activeOnly": "Iba aktívne",
       "completedOnly": "Iba dokončené",
-      "hideCancelled": "Skryť zrušené"
+      "hideCancelled": "Skryť zrušené",
+      "showBlocks": "Zobraziť blokované obdobia"
     },
     "sort": {
       "label": "Zoradiť:",
@@ -610,6 +611,7 @@
     "emptyAdminSuffix": " Vytvorte svoju prvú rezerváciu.",
     "noResults": "Žiadne rezervácie nezodpovedajú filtrom.",
     "yearGroupBookings": "{count, plural, one {# rezervácia} few {# rezervácie} other {# rezervácií}}",
+    "blockImportedLabel": "Importované",
     "table": {
       "bookingNumber": "Rezervácia č.",
       "customer": "Zákazník",
@@ -1289,6 +1291,13 @@
           "completed": "Dokončená",
           "vehicleBlock": "Blokované obdobie",
           "staleBlock": "Zastaraná blokácia (existuje rezervácia): {label}"
+        },
+        "modal": {
+          "from": "Od",
+          "to": "Do",
+          "durationDays": "{days, plural, one {# deň} few {# dni} other {# dní}}",
+          "importedBadge": "Importované",
+          "sourceTypeLabel": "Zdroj"
         },
         "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
       }

@@ -595,7 +595,8 @@
       "clearFilters": "Clear filters",
       "activeOnly": "Active only",
       "completedOnly": "Completed only",
-      "hideCancelled": "Hide cancelled"
+      "hideCancelled": "Hide cancelled",
+      "showBlocks": "Show blocked periods"
     },
     "sort": {
       "label": "Sort:",
@@ -610,6 +611,7 @@
     "emptyAdminSuffix": " Create your first booking to get started.",
     "noResults": "No bookings match your filters.",
     "yearGroupBookings": "{count, plural, one {# booking} other {# bookings}}",
+    "blockImportedLabel": "Imported",
     "table": {
       "bookingNumber": "Booking #",
       "customer": "Customer",
@@ -1289,6 +1291,13 @@
           "completed": "Completed",
           "vehicleBlock": "Blocked period",
           "staleBlock": "Stale block (booking exists): {label}"
+        },
+        "modal": {
+          "from": "From",
+          "to": "To",
+          "durationDays": "{days, plural, one {# day} other {# days}}",
+          "importedBadge": "Imported",
+          "sourceTypeLabel": "Source"
         },
         "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
       }

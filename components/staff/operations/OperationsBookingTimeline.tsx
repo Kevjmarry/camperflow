@@ -472,26 +472,38 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
               </div>
             )}
 
+            {/* Imported badge */}
+            {selectedBlock.sourceType && selectedBlock.sourceType !== 'manual' && (
+              <div style={{ marginBottom: 'var(--space-2)' }}>
+                <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgb(var(--muted) / 0.12)', color: 'rgb(var(--muted))', fontWeight: 500 }}>
+                  {t('modal.importedBadge')}
+                </span>
+              </div>
+            )}
+
             {/* Dates */}
             <div style={{ borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>From</span>
+                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>{t('modal.from')}</span>
                 <span style={{ color: 'rgb(var(--text))' }}>
                   {new Date(selectedBlock.startAt).toLocaleString('en-GB', { timeZone: companyTimezone, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>To</span>
+                <span style={{ color: 'rgb(var(--muted))', minWidth: '32px' }}>{t('modal.to')}</span>
                 <span style={{ color: 'rgb(var(--text))' }}>
                   {new Date(selectedBlock.endAt).toLocaleString('en-GB', { timeZone: companyTimezone, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
+              </div>
+              <div style={{ marginTop: '2px', fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                {t('modal.durationDays', { days: Math.round((new Date(selectedBlock.endAt).getTime() - new Date(selectedBlock.startAt).getTime()) / 86_400_000) })}
               </div>
             </div>
 
             {/* Source reference */}
             {selectedBlock.sourceReference && (
               <div style={{ marginTop: 'var(--space-3)', fontSize: '11px', color: 'rgb(var(--muted))', borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-2)', wordBreak: 'break-all' }}>
-                Ref: {selectedBlock.sourceReference}
+                {t('modal.sourceTypeLabel')}: {selectedBlock.sourceReference}
               </div>
             )}
           </div>

@@ -595,7 +595,8 @@
       "clearFilters": "Filter zurücksetzen",
       "activeOnly": "Nur aktive",
       "completedOnly": "Nur abgeschlossene",
-      "hideCancelled": "Stornierte ausblenden"
+      "hideCancelled": "Stornierte ausblenden",
+      "showBlocks": "Gesperrte Zeiträume anzeigen"
     },
     "sort": {
       "label": "Sortierung:",
@@ -610,6 +611,7 @@
     "emptyAdminSuffix": " Erstellen Sie Ihre erste Buchung, um zu starten.",
     "noResults": "Keine Buchungen entsprechen Ihren Filtern.",
     "yearGroupBookings": "{count, plural, one {# Buchung} other {# Buchungen}}",
+    "blockImportedLabel": "Importiert",
     "table": {
       "bookingNumber": "Buchungsnr.",
       "customer": "Kunde",
@@ -1289,6 +1291,13 @@
           "completed": "Abgeschlossen",
           "vehicleBlock": "Gesperrter Zeitraum",
           "staleBlock": "Veraltete Sperre (Buchung vorhanden): {label}"
+        },
+        "modal": {
+          "from": "Von",
+          "to": "Bis",
+          "durationDays": "{days, plural, one {# Tag} other {# Tage}}",
+          "importedBadge": "Importiert",
+          "sourceTypeLabel": "Quelle"
         },
         "footerHint": "Hervorgehobene Spalte = Heute · Scrollen zum Navigieren · Stornierte Buchungen ausgeblendet"
       }

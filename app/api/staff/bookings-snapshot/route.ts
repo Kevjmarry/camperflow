@@ -94,7 +94,7 @@ export async function GET() {
   if (companyId) {
     const { data: blocks } = await supabase
       .from('vehicle_blocks')
-      .select('id, vehicle_id, label, start_at, end_at')
+      .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference, vehicles(name)')
       .eq('company_id', companyId)
       .gte('end_at', new Date().toISOString())
       .order('start_at', { ascending: true })
@@ -102,9 +102,13 @@ export async function GET() {
     vehicleBlocks = (blocks ?? []).map((bl) => ({
       id: bl.id,
       vehicleId: bl.vehicle_id,
+      vehicleName: (bl.vehicles as any)?.name ?? null,
       label: bl.label ?? null,
+      blockType: bl.block_type ?? null,
       startAt: bl.start_at,
       endAt: bl.end_at,
+      sourceType: bl.source_type ?? null,
+      sourceReference: bl.source_reference ?? null,
     }))
   }
 

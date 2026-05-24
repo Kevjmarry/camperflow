@@ -42,12 +42,26 @@ interface Booking {
   checklists?: ChecklistInstance[];
 }
 
+interface BlockRow extends TimelineVehicleBlock {
+  vehicleName: string | null
+}
+
+const BLOCK_TYPE_ICON: Record<string, string> = {
+  maintenance:   '🔧',
+  work:          '🛠',
+  owner_use:     '🏠',
+  manual_note:   '📝',
+  external_hold: '🔗',
+  unavailable:   '⛔',
+}
+
 export default function BookingsPage() {
   const { locale } = useParams<{ locale: string }>();
   const t = useTranslations("bookings");
+  const tBlockTypes = useTranslations("staff.operations.blockTypes");
   const { company } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [vehicleBlocks, setVehicleBlocks] = useState<TimelineVehicleBlock[]>([]);
+  const [vehicleBlocks, setVehicleBlocks] = useState<BlockRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [canManage, setCanManage] = useState<boolean | null>(null);
@@ -57,6 +71,7 @@ export default function BookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("nextPickup");
   const [hideCancelled, setHideCancelled] = useState<boolean>(true);
+  const [showBlocks, setShowBlocks] = useState<boolean>(true);
   const [activeOnly, setActiveOnly] = useState<boolean>(false);
   const [completedOnly, setCompletedOnly] = useState<boolean>(false);
   const [vehicleFilter, setVehicleFilter] = useState<string>("all");
@@ -99,8 +114,11 @@ const [dateFrom, setDateFrom] = useState<string>("");
       const name = canManage ? b.vehicles?.name : b.vehicle_name;
       if (name) seen.set(name, name);
     }
+    for (const bl of vehicleBlocks) {
+      if (bl.vehicleName) seen.set(bl.vehicleName, bl.vehicleName);
+    }
     return Array.from(seen.keys()).sort((a, b) => a.localeCompare(b));
-  }, [bookings, canManage]);
+  }, [bookings, vehicleBlocks, canManage]);
 
   const timelineVehicles = useMemo<OpsTimelineVehicle[]>(() => {
     const map = new Map<string, string>();
@@ -210,17 +228,40 @@ if (dateFrom) {
     return result;
   }, [bookings, statusFilter, vehicleFilter, dateFrom, dateTo, searchQuery, sortBy, canManage, hideCancelled, activeOnly, completedOnly]);
 
-  const groupedBookings = useMemo(() => {
-    const map = new Map<number, Booking[]>();
-    for (const b of displayedBookings) {
-      const year = new Date(b.pickup_at).getFullYear();
-      if (!map.has(year)) map.set(year, []);
-      map.get(year)!.push(b);
+  const displayedBlocks = useMemo(() => {
+    if (!showBlocks || statusFilter !== 'all') return []
+    let result = vehicleBlocks
+    if (vehicleFilter !== 'all') {
+      result = result.filter(bl => bl.vehicleName === vehicleFilter)
+    }
+    if (dateFrom) result = result.filter(bl => bl.startAt.slice(0, 10) >= dateFrom)
+    if (dateTo) result = result.filter(bl => bl.startAt.slice(0, 10) <= dateTo)
+    return result
+  }, [vehicleBlocks, showBlocks, statusFilter, vehicleFilter, dateFrom, dateTo])
+
+  const groupedRows = useMemo(() => {
+    type Row = { kind: 'booking'; item: Booking } | { kind: 'block'; item: BlockRow }
+    const rows: Row[] = [
+      ...displayedBookings.map(item => ({ kind: 'booking' as const, item })),
+      ...displayedBlocks.map(item => ({ kind: 'block' as const, item })),
+    ]
+    const map = new Map<number, Row[]>()
+    for (const row of rows) {
+      const year = new Date(row.kind === 'booking' ? row.item.pickup_at : row.item.startAt).getFullYear()
+      if (!map.has(year)) map.set(year, [])
+      map.get(year)!.push(row)
+    }
+    for (const [, items] of map) {
+      items.sort((a, b) => {
+        const ad = a.kind === 'booking' ? a.item.pickup_at : a.item.startAt
+        const bd = b.kind === 'booking' ? b.item.pickup_at : b.item.startAt
+        return ad.localeCompare(bd)
+      })
     }
     return Array.from(map.entries())
-      .sort((a, b) => b[0] - a[0])
-      .map(([year, items]) => ({ year, items }));
-  }, [displayedBookings]);
+      .sort(([ya], [yb]) => yb - ya)
+      .map(([year, items]) => ({ year, items }))
+  }, [displayedBookings, displayedBlocks]);
 
   const toggleYear = (year: number) => {
     setExpandedYears(prev => {
@@ -233,7 +274,7 @@ if (dateFrom) {
   const hasActiveFilters =
     statusFilter !== 'all' || vehicleFilter !== 'all' ||
     dateFrom !== '' || dateTo !== '' || searchQuery.trim() !== '' || sortBy !== 'nextPickup' ||
-    !hideCancelled || activeOnly || completedOnly;
+    !hideCancelled || activeOnly || completedOnly || !showBlocks;
 
   const clearFilters = () => {
     setStatusFilter('all');
@@ -243,6 +284,7 @@ setDateFrom('');
     setSearchQuery('');
     setSortBy('nextPickup');
     setHideCancelled(true);
+    setShowBlocks(true);
     setActiveOnly(false);
     setCompletedOnly(false);
   };
@@ -661,6 +703,10 @@ setDateFrom('');
                 <input type="checkbox" checked={hideCancelled} onChange={e => setHideCancelled(e.target.checked)} />
                 {t("filter.hideCancelled")}
               </label>
+              <label style={{ ...filterLabelStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-1)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={showBlocks} onChange={e => setShowBlocks(e.target.checked)} />
+                {t("filter.showBlocks")}
+              </label>
 
               {hasActiveFilters && (
                 <button
@@ -718,7 +764,7 @@ setDateFrom('');
             </div>
           )}
 
-          {!loading && !error && bookings.length > 0 && displayedBookings.length === 0 && (
+          {!loading && !error && bookings.length > 0 && displayedBookings.length === 0 && displayedBlocks.length === 0 && (
             <div style={{
               textAlign: 'center',
               padding: 'var(--space-8)',
@@ -728,7 +774,7 @@ setDateFrom('');
             </div>
           )}
 
-          {!loading && !error && displayedBookings.length > 0 && (
+          {!loading && !error && (displayedBookings.length > 0 || displayedBlocks.length > 0) && (
             <>
               {/* Desktop Table View */}
               <div className="desktop-table" style={{ overflowX: 'auto' }}>
@@ -779,7 +825,7 @@ setDateFrom('');
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedBookings.map(({ year, items }) => {
+                    {groupedRows.map(({ year, items }) => {
                       const isExpanded = expandedYears.has(year);
                       const colSpan = canManage ? 10 : 8;
                       return (
@@ -819,7 +865,56 @@ setDateFrom('');
                               </button>
                             </td>
                           </tr>
-                          {isExpanded && items.map((booking) => {
+                          {isExpanded && items.map((row) => {
+                            if (row.kind === 'block') {
+                              const bl = row.item;
+                              const blockDays = Math.round((new Date(bl.endAt).getTime() - new Date(bl.startAt).getTime()) / 86_400_000);
+                              return (
+                                <tr
+                                  key={`block-${bl.id}`}
+                                  style={{ borderBottom: '1px solid rgb(var(--border))', background: 'rgb(var(--danger) / 0.04)' }}
+                                >
+                                  {canManage && <td style={tdMuted}>—</td>}
+                                  {canManage && (
+                                    <td style={td}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', lineHeight: '1.35' }}>
+                                        <div style={{ fontWeight: 500, color: 'rgb(var(--text))' }}>
+                                          {BLOCK_TYPE_ICON[bl.blockType ?? ''] ?? '⛔'} {tBlockTypes((bl.blockType ?? 'unavailable') as any)}
+                                        </div>
+                                        {bl.label && <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{bl.label}</div>}
+                                      </div>
+                                    </td>
+                                  )}
+                                  <td style={td}>
+                                    {bl.vehicleName ? (
+                                      <Link href={`/${locale}/staff/vehicles/${bl.vehicleId}`} style={{ color: 'rgb(var(--brand))', textDecoration: 'none', fontWeight: 500 }}>
+                                        {bl.vehicleName}
+                                      </Link>
+                                    ) : <span style={{ color: 'rgb(var(--muted))' }}>{t("unassigned")}</span>}
+                                  </td>
+                                  <td style={td}>{formatDate(bl.startAt)}</td>
+                                  <td style={td}>{getTimeToPickup(bl.startAt) ?? <span style={{ color: 'rgb(var(--muted))' }}>—</span>}</td>
+                                  <td style={td}>{formatDate(bl.endAt)}</td>
+                                  <td style={tdMuted}>—</td>
+                                  <td style={td}>
+                                    <span style={{ ...getStatusChipStyle('blocked'), fontSize: '11px' }}>
+                                      {!canManage && `${BLOCK_TYPE_ICON[bl.blockType ?? ''] ?? '⛔'} `}{tBlockTypes((bl.blockType ?? 'unavailable') as any)}
+                                    </span>
+                                  </td>
+                                  <td style={td}>
+                                    {!isNaN(blockDays) && blockDays >= 0
+                                      ? <span style={{ fontSize: '14px', color: 'rgb(var(--text))' }}>{t("time.days", { count: blockDays })}</span>
+                                      : <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
+                                  </td>
+                                  <td style={tdMuted}>
+                                    {bl.sourceType && bl.sourceType !== 'manual'
+                                      ? <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t("blockImportedLabel")}</span>
+                                      : '—'}
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            const booking = row.item;
                             const timeToPickup = getTimeToPickup(booking.pickup_at);
                             const effectiveStatus = isEffectivelyOnRent(booking) ? 'on_rent' : booking.status;
                             return (
@@ -885,7 +980,7 @@ setDateFrom('');
 
               {/* Mobile Card View */}
               <div className="mobile-cards">
-                {groupedBookings.map(({ year, items }) => {
+                {groupedRows.map(({ year, items }) => {
                   const isExpanded = expandedYears.has(year);
                   return (
                     <div key={`year-mobile-${year}`}>
@@ -916,7 +1011,57 @@ setDateFrom('');
                           · {t("yearGroupBookings", { count: items.length })}
                         </span>
                       </button>
-                      {isExpanded && items.map((booking) => {
+                      {isExpanded && items.map((row) => {
+                  if (row.kind === 'block') {
+                    const bl = row.item;
+                    return (
+                      <div
+                        key={`block-mob-${bl.id}`}
+                        style={{
+                          padding: 'var(--space-4)',
+                          border: '1px solid rgb(var(--danger) / 0.35)',
+                          borderRadius: 'var(--radius)',
+                          background: 'rgb(var(--danger) / 0.04)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 'var(--space-3)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 'var(--space-3)', borderBottom: '1px solid rgb(var(--border))' }}>
+                          <span style={{ ...getStatusChipStyle('blocked'), fontSize: '12px' }}>
+                            {BLOCK_TYPE_ICON[bl.blockType ?? ''] ?? '⛔'} {tBlockTypes((bl.blockType ?? 'unavailable') as any)}
+                          </span>
+                          {bl.sourceType && bl.sourceType !== 'manual' && (
+                            <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgb(var(--muted) / 0.12)', color: 'rgb(var(--muted))', fontWeight: 500 }}>
+                              {t("blockImportedLabel")}
+                            </span>
+                          )}
+                        </div>
+                        {bl.label && (
+                          <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{bl.label}</div>
+                        )}
+                        <div>
+                          <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{t("table.vehicle")}</div>
+                          {bl.vehicleName ? (
+                            <Link href={`/${locale}/staff/vehicles/${bl.vehicleId}`} style={{ color: 'rgb(var(--brand))', textDecoration: 'none', fontWeight: 500 }}>
+                              {bl.vehicleName}
+                            </Link>
+                          ) : <span style={{ color: 'rgb(var(--muted))' }}>{t("unassigned")}</span>}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{t("table.pickup")}</div>
+                            <div style={{ color: 'rgb(var(--text))' }}>{formatDate(bl.startAt)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{t("table.return")}</div>
+                            <div style={{ color: 'rgb(var(--text))' }}>{formatDate(bl.endAt)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  const booking = row.item;
                   const timeToPickup = getTimeToPickup(booking.pickup_at);
                   const effectiveStatus = isEffectivelyOnRent(booking) ? 'on_rent' : booking.status;
                   return (
