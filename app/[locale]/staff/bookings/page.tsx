@@ -12,6 +12,29 @@ import { useTheme } from "@/contexts/ThemeContext";
 import OperationsBookingTimeline, { TimelineVehicleBlock } from "@/components/staff/operations/OperationsBookingTimeline";
 import type { OpsTimelineVehicle, OpsTimelineBooking } from "@/lib/staff/operations/getOpsBookingTimeline";
 
+interface BlockModalState {
+  mode: 'create' | 'edit'
+  blockId?: string
+  vehicleId: string
+  blockType: string
+  label: string
+  startAt: string
+  endAt: string
+  sourceType?: string | null
+  syncLocked?: boolean | null
+}
+
+const BLOCK_TYPES = ['unavailable', 'maintenance', 'work', 'owner_use', 'manual_note', 'external_hold'] as const
+
+function dateToDatetimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function isoToDatetimeLocal(iso: string): string {
+  return dateToDatetimeLocal(new Date(iso))
+}
+
 interface ChecklistInstance {
   id: string;
   booking_id: string;
@@ -59,6 +82,7 @@ export default function BookingsPage() {
   const { locale } = useParams<{ locale: string }>();
   const t = useTranslations("bookings");
   const tBlockTypes = useTranslations("staff.operations.blockTypes");
+  const tBM = useTranslations("bookings.blockModal");
   const { company } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [vehicleBlocks, setVehicleBlocks] = useState<BlockRow[]>([]);
@@ -66,6 +90,10 @@ export default function BookingsPage() {
   const [error, setError] = useState("");
   const [canManage, setCanManage] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [vehicles, setVehicles] = useState<{ id: string; name: string }[]>([]);
+  const [blockModal, setBlockModal] = useState<BlockModalState | null>(null);
+  const [blockSaving, setBlockSaving] = useState(false);
+  const [blockError, setBlockError] = useState('');
 
   // Filter + sort state
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -83,6 +111,97 @@ const [dateFrom, setDateFrom] = useState<string>("");
   useEffect(() => {
     fetchSnapshot();
   }, []);
+
+  useEffect(() => {
+    if (!canManage) return;
+    fetch('/api/staff/vehicle-blocks')
+      .then(r => r.json())
+      .then(d => setVehicles(d.vehicles ?? []))
+      .catch(() => {});
+  }, [canManage]);
+
+  const openCreateModal = () => {
+    setBlockError('');
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0);
+    const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59);
+    setBlockModal({
+      mode: 'create',
+      vehicleId: vehicles[0]?.id ?? '',
+      blockType: 'unavailable',
+      label: '',
+      startAt: dateToDatetimeLocal(todayStart),
+      endAt: dateToDatetimeLocal(tomorrowEnd),
+    });
+  };
+
+  const handleEditBlock = (block: TimelineVehicleBlock & { vehicleName: string }) => {
+    setBlockError('');
+    setBlockModal({
+      mode: 'edit',
+      blockId: block.id,
+      vehicleId: block.vehicleId,
+      blockType: block.blockType ?? 'unavailable',
+      label: block.label ?? '',
+      startAt: isoToDatetimeLocal(block.startAt),
+      endAt: isoToDatetimeLocal(block.endAt),
+      sourceType: block.sourceType,
+      syncLocked: block.syncLocked,
+    });
+  };
+
+  const handleBlockDelete = async (blockId: string) => {
+    try {
+      await fetch(`/api/staff/vehicle-blocks/${blockId}`, { method: 'DELETE' });
+      await fetchSnapshot();
+    } catch {
+      // silent — user can retry via edit modal
+    }
+  };
+
+  const handleBlockSave = async () => {
+    if (!blockModal) return;
+    setBlockError('');
+    if (!blockModal.vehicleId || !blockModal.blockType || !blockModal.startAt || !blockModal.endAt) {
+      setBlockError(tBM('errorRequired'));
+      return;
+    }
+    const startISO = new Date(blockModal.startAt).toISOString();
+    const endISO = new Date(blockModal.endAt).toISOString();
+    if (new Date(endISO) <= new Date(startISO)) {
+      setBlockError(tBM('errorEndBeforeStart'));
+      return;
+    }
+    setBlockSaving(true);
+    try {
+      const isEdit = blockModal.mode === 'edit';
+      const res = await fetch(
+        isEdit ? `/api/staff/vehicle-blocks/${blockModal.blockId}` : '/api/staff/vehicle-blocks',
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicleId: blockModal.vehicleId,
+            blockType: blockModal.blockType,
+            label: blockModal.label || null,
+            startAt: startISO,
+            endAt: endISO,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const d = await res.json();
+        setBlockError(d.error || tBM('errorSave'));
+        return;
+      }
+      setBlockModal(null);
+      await fetchSnapshot();
+    } catch {
+      setBlockError(tBM('errorSave'));
+    } finally {
+      setBlockSaving(false);
+    }
+  };
 
   const fetchSnapshot = async () => {
     try {
@@ -251,17 +370,39 @@ if (dateFrom) {
       if (!map.has(year)) map.set(year, [])
       map.get(year)!.push(row)
     }
+    const now = new Date().toISOString()
     for (const [, items] of map) {
       items.sort((a, b) => {
         const ad = a.kind === 'booking' ? a.item.pickup_at : a.item.startAt
         const bd = b.kind === 'booking' ? b.item.pickup_at : b.item.startAt
-        return ad.localeCompare(bd)
+        const aEnd = a.kind === 'booking' ? a.item.return_at : a.item.endAt
+        const bEnd = b.kind === 'booking' ? b.item.return_at : b.item.endAt
+        switch (sortBy) {
+          case 'nextPickup': {
+            const aOnRent = a.kind === 'booking' ? (a.item.status === 'on_rent' || isEffectivelyOnRent(a.item)) : (a.item.startAt <= now && a.item.endAt > now)
+            const bOnRent = b.kind === 'booking' ? (b.item.status === 'on_rent' || isEffectivelyOnRent(b.item)) : (b.item.startAt <= now && b.item.endAt > now)
+            if (aOnRent !== bOnRent) return aOnRent ? -1 : 1
+            const aFuture = ad >= now
+            const bFuture = bd >= now
+            if (aFuture && bFuture) return ad.localeCompare(bd)
+            if (!aFuture && !bFuture) return bd.localeCompare(ad)
+            return aFuture ? -1 : 1
+          }
+          case 'rentingNow': {
+            const aOnRent = a.kind === 'booking' ? (a.item.status === 'on_rent' || isEffectivelyOnRent(a.item)) : (a.item.startAt <= now && a.item.endAt > now)
+            const bOnRent = b.kind === 'booking' ? (b.item.status === 'on_rent' || isEffectivelyOnRent(b.item)) : (b.item.startAt <= now && b.item.endAt > now)
+            if (aOnRent !== bOnRent) return aOnRent ? -1 : 1
+            return ad.localeCompare(bd)
+          }
+          case 'lastReturned': return bEnd.localeCompare(aEnd)
+          default: return ad.localeCompare(bd)
+        }
       })
     }
     return Array.from(map.entries())
       .sort(([ya], [yb]) => yb - ya)
       .map(([year, items]) => ({ year, items }))
-  }, [displayedBookings, displayedBlocks]);
+  }, [displayedBookings, displayedBlocks, sortBy]);
 
   const toggleYear = (year: number) => {
     setExpandedYears(prev => {
@@ -312,12 +453,13 @@ setDateFrom('');
   };
 
   const getTimeToReturn = (returnAt: string) => {
-    const now = new Date();
-    const ret = new Date(returnAt);
-    const diffMs = ret.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const toYMD = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: tz });
+    const todayYMD = toYMD(new Date());
+    const retYMD = toYMD(new Date(returnAt));
 
-    if (diffDays < 0) return null;
+    if (retYMD < todayYMD) return null;
+
+    const diffDays = Math.round((new Date(retYMD).getTime() - new Date(todayYMD).getTime()) / 86400000);
 
     const label =
       diffDays === 0 ? t("time.today") :
@@ -342,12 +484,13 @@ setDateFrom('');
   };
 
   const getTimeToPickup = (pickupAt: string) => {
-    const now = new Date();
-    const pickup = new Date(pickupAt);
-    const diffMs = pickup.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const toYMD = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: tz });
+    const todayYMD = toYMD(new Date());
+    const pickupYMD = toYMD(new Date(pickupAt));
 
-    if (diffDays < 0) return null;
+    if (pickupYMD < todayYMD) return null;
+
+    const diffDays = Math.round((new Date(pickupYMD).getTime() - new Date(todayYMD).getTime()) / 86400000);
 
     const label =
       diffDays === 0 ? t("time.today") :
@@ -561,6 +704,8 @@ setDateFrom('');
             vehicles={timelineVehicles}
             bookings={timelineBookings}
             vehicleBlocks={vehicleBlocks}
+            onEditBlock={canManage ? handleEditBlock : undefined}
+            onDeleteBlock={canManage ? handleBlockDelete : undefined}
           />
         )}
       <div className="surface page-surface">
@@ -588,6 +733,13 @@ setDateFrom('');
                 >
                   {t("action.importBookings")}
                 </Link>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={openCreateModal}
+                >
+                  {t("action.addBlockedPeriod")}
+                </button>
                 <Link
                   href={`/${locale}/staff/bookings/new`}
                   className="btn btn-primary"
@@ -907,9 +1059,18 @@ setDateFrom('');
                                       : <span style={{ color: 'rgb(var(--muted))' }}>—</span>}
                                   </td>
                                   <td style={tdMuted}>
-                                    {bl.sourceType && bl.sourceType !== 'manual'
-                                      ? <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t("blockImportedLabel")}</span>
-                                      : '—'}
+                                    {canManage
+                                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                          {bl.sourceType && bl.sourceType !== 'manual' && (
+                                            <span style={{ fontSize: '11px', color: 'rgb(var(--muted))' }}>
+                                              {bl.syncLocked ? t("blockEditedLabel") : t("blockImportedLabel")}
+                                            </span>
+                                          )}
+                                          <button type="button" onClick={() => handleEditBlock({ ...bl, vehicleName: bl.vehicleName ?? '' })} style={{ all: 'unset', cursor: 'pointer', fontSize: '13px', color: 'rgb(var(--brand))' }}>{t("action.edit")}</button>
+                                        </span>
+                                      : bl.sourceType && bl.sourceType !== 'manual' && !bl.syncLocked
+                                        ? <span style={{ fontSize: '12px', color: 'rgb(var(--muted))' }}>{t("blockImportedLabel")}</span>
+                                        : '—'}
                                   </td>
                                 </tr>
                               );
@@ -1031,11 +1192,20 @@ setDateFrom('');
                           <span style={{ ...getStatusChipStyle('blocked'), fontSize: '12px' }}>
                             {BLOCK_TYPE_ICON[bl.blockType ?? ''] ?? '⛔'} {tBlockTypes((bl.blockType ?? 'unavailable') as any)}
                           </span>
-                          {bl.sourceType && bl.sourceType !== 'manual' && (
+                          {canManage ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              {bl.sourceType && bl.sourceType !== 'manual' && (
+                                <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgb(var(--muted) / 0.12)', color: 'rgb(var(--muted))', fontWeight: 500 }}>
+                                  {bl.syncLocked ? t("blockEditedLabel") : t("blockImportedLabel")}
+                                </span>
+                              )}
+                              <button type="button" onClick={() => handleEditBlock({ ...bl, vehicleName: bl.vehicleName ?? '' })} style={{ all: 'unset', cursor: 'pointer', fontSize: '13px', color: 'rgb(var(--brand))' }}>{t("action.edit")}</button>
+                            </span>
+                          ) : bl.sourceType && bl.sourceType !== 'manual' && !bl.syncLocked ? (
                             <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgb(var(--muted) / 0.12)', color: 'rgb(var(--muted))', fontWeight: 500 }}>
                               {t("blockImportedLabel")}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         {bl.label && (
                           <div style={{ fontSize: '13px', color: 'rgb(var(--muted))' }}>{bl.label}</div>
@@ -1198,6 +1368,125 @@ setDateFrom('');
         </div>
       </div>
       </div>
+      {/* Blocked period create/edit modal */}
+      {blockModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setBlockModal(null)}
+        >
+          <div
+            style={{ background: 'rgb(var(--surface))', border: '1px solid rgb(var(--border))', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', minWidth: '280px', maxWidth: '440px', width: '90vw', boxShadow: 'var(--shadow-lg)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'rgb(var(--text))', margin: 0 }}>
+                {blockModal.mode === 'create' ? tBM('titleCreate') : tBM('titleEdit')}
+              </h2>
+              <button onClick={() => setBlockModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', color: 'rgb(var(--muted))', fontSize: '16px', lineHeight: 1 }} aria-label="Close">✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{tBM('vehicleLabel')}</label>
+                <select
+                  className="input"
+                  value={blockModal.vehicleId}
+                  onChange={e => setBlockModal(m => m && ({ ...m, vehicleId: e.target.value }))}
+                  style={{ width: '100%' }}
+                >
+                  {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{tBM('blockTypeLabel')}</label>
+                <select
+                  className="input"
+                  value={blockModal.blockType}
+                  onChange={e => setBlockModal(m => m && ({ ...m, blockType: e.target.value }))}
+                  style={{ width: '100%' }}
+                >
+                  {BLOCK_TYPES.map(bt => (
+                    <option key={bt} value={bt}>{BLOCK_TYPE_ICON[bt]} {tBlockTypes(bt)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{tBM('labelField')}</label>
+                <input
+                  type="text"
+                  className="input"
+                  value={blockModal.label}
+                  onChange={e => setBlockModal(m => m && ({ ...m, label: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{tBM('startAtLabel')}</label>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={blockModal.startAt}
+                    onChange={e => setBlockModal(m => m && ({ ...m, startAt: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'rgb(var(--muted))', marginBottom: 'var(--space-1)' }}>{tBM('endAtLabel')}</label>
+                  <input
+                    type="datetime-local"
+                    className="input"
+                    value={blockModal.endAt}
+                    onChange={e => setBlockModal(m => m && ({ ...m, endAt: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {blockError && (
+                <div style={{ fontSize: '13px', color: 'rgb(var(--error))' }}>{blockError}</div>
+              )}
+
+              <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleBlockSave}
+                  disabled={blockSaving}
+                  style={{ flex: 1 }}
+                >
+                  {blockSaving ? '…' : tBM('save')}
+                </button>
+                {blockModal.mode === 'edit' && (!blockModal.sourceType || blockModal.sourceType === 'manual' || blockModal.syncLocked === true) && (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={async () => {
+                      if (!blockModal.blockId) return;
+                      setBlockSaving(true);
+                      try {
+                        await fetch(`/api/staff/vehicle-blocks/${blockModal.blockId}`, { method: 'DELETE' });
+                        setBlockModal(null);
+                        await fetchSnapshot();
+                      } catch {
+                        setBlockError(tBM('errorSave'));
+                      } finally {
+                        setBlockSaving(false);
+                      }
+                    }}
+                    disabled={blockSaving}
+                  >
+                    {tBM('delete')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

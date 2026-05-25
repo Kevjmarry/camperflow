@@ -90,16 +90,32 @@ export async function GET() {
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let vehicleBlocks: any[] = []
   if (companyId) {
-    const { data: blocks } = await supabase
+    const now = new Date().toISOString()
+    const { data: blocks, error: blocksError } = await supabase
       .from('vehicle_blocks')
-      .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference, vehicles(name)')
+      .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference, sync_locked, vehicles(name)')
       .eq('company_id', companyId)
-      .gte('end_at', new Date().toISOString())
+      .gte('end_at', now)
       .order('start_at', { ascending: true })
 
-    vehicleBlocks = (blocks ?? []).map((bl) => ({
+    // If sync_locked column is missing (migration 065 not yet applied), retry
+    // without it so blocks still appear in the UI.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let rawBlocks: any[] | null = blocks
+    if (blocksError) {
+      const { data: fallback } = await supabase
+        .from('vehicle_blocks')
+        .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference, vehicles(name)')
+        .eq('company_id', companyId)
+        .gte('end_at', now)
+        .order('start_at', { ascending: true })
+      rawBlocks = fallback
+    }
+
+    vehicleBlocks = (rawBlocks ?? []).map((bl) => ({
       id: bl.id,
       vehicleId: bl.vehicle_id,
       vehicleName: (bl.vehicles as any)?.name ?? null,
@@ -109,6 +125,7 @@ export async function GET() {
       endAt: bl.end_at,
       sourceType: bl.source_type ?? null,
       sourceReference: bl.source_reference ?? null,
+      syncLocked: (bl as any).sync_locked ?? false,
     }))
   }
 

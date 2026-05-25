@@ -872,6 +872,26 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // If the block was manually edited in CamperFlow, preserve user changes —
+      // only refresh import_last_seen_at so the sync cleanup doesn't prune it.
+      const { data: lockedCheck } = await supabase
+        .from('vehicle_blocks')
+        .select('id, sync_locked')
+        .eq('company_id', companyId)
+        .eq('source_type', n.sourceType)
+        .eq('source_booking_id', n.sourceBookingId)
+        .maybeSingle();
+
+      if (lockedCheck?.sync_locked) {
+        const { error } = await supabase
+          .from('vehicle_blocks')
+          .update({ import_last_seen_at: now })
+          .eq('id', lockedCheck.id);
+        if (error) errors.push({ rowNumber: row.rowNumber, message: error.message });
+        else blocked++;
+        continue;
+      }
+
       const { error } = await supabase
         .from('vehicle_blocks')
         .upsert(

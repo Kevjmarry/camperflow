@@ -575,7 +575,8 @@
       "view": "View",
       "viewEdit": "View / Edit",
       "viewBooking": "View booking",
-      "viewEditBooking": "View & edit booking"
+      "viewEditBooking": "View & edit booking",
+      "addBlockedPeriod": "Add blocked period"
     },
     "filter": {
       "statusLabel": "Status:",
@@ -612,6 +613,24 @@
     "noResults": "No bookings match your filters.",
     "yearGroupBookings": "{count, plural, one {# booking} other {# bookings}}",
     "blockImportedLabel": "Imported",
+    "blockEditedLabel": "Edited in CF",
+    "addBlockedPeriod": "Add blocked period",
+    "blockModal": {
+      "titleCreate": "Add blocked period",
+      "titleEdit": "Edit blocked period",
+      "vehicleLabel": "Vehicle",
+      "blockTypeLabel": "Type",
+      "labelField": "Label (optional)",
+      "startAtLabel": "Start",
+      "endAtLabel": "End",
+      "save": "Save",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this blocked period?",
+      "cancel": "Cancel",
+      "errorRequired": "Vehicle, type, start and end are required.",
+      "errorEndBeforeStart": "End must be after start.",
+      "errorSave": "Failed to save."
+    },
     "table": {
       "bookingNumber": "Booking #",
       "customer": "Customer",
@@ -1297,7 +1316,12 @@
           "to": "To",
           "durationDays": "{days, plural, one {# day} other {# days}}",
           "importedBadge": "Imported",
-          "sourceTypeLabel": "Source"
+          "editedBadge": "Edited in CamperFlow",
+          "sourceTypeLabel": "Source",
+          "edit": "Edit",
+          "delete": "Delete",
+          "deleteConfirm": "Delete this blocked period?",
+          "cancel": "Cancel"
         },
         "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
       }

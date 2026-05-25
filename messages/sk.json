@@ -575,7 +575,8 @@
       "view": "Zobraziť",
       "viewEdit": "Zobraziť / Upraviť",
       "viewBooking": "Zobraziť rezerváciu",
-      "viewEditBooking": "Zobraziť a upraviť rezerváciu"
+      "viewEditBooking": "Zobraziť a upraviť rezerváciu",
+      "addBlockedPeriod": "Pridať blokované obdobie"
     },
     "filter": {
       "statusLabel": "Stav:",
@@ -612,6 +613,24 @@
     "noResults": "Žiadne rezervácie nezodpovedajú filtrom.",
     "yearGroupBookings": "{count, plural, one {# rezervácia} few {# rezervácie} other {# rezervácií}}",
     "blockImportedLabel": "Importované",
+    "blockEditedLabel": "Upravené v CF",
+    "addBlockedPeriod": "Pridať blokované obdobie",
+    "blockModal": {
+      "titleCreate": "Pridať blokované obdobie",
+      "titleEdit": "Upraviť blokované obdobie",
+      "vehicleLabel": "Vozidlo",
+      "blockTypeLabel": "Typ",
+      "labelField": "Označenie (voliteľné)",
+      "startAtLabel": "Začiatok",
+      "endAtLabel": "Koniec",
+      "save": "Uložiť",
+      "delete": "Zmazať",
+      "deleteConfirm": "Zmazať toto blokované obdobie?",
+      "cancel": "Zrušiť",
+      "errorRequired": "Vozidlo, typ, začiatok a koniec sú povinné.",
+      "errorEndBeforeStart": "Koniec musí byť po začiatku.",
+      "errorSave": "Uloženie zlyhalo."
+    },
     "table": {
       "bookingNumber": "Rezervácia č.",
       "customer": "Zákazník",
@@ -1297,7 +1316,12 @@
           "to": "Do",
           "durationDays": "{days, plural, one {# deň} few {# dni} other {# dní}}",
           "importedBadge": "Importované",
-          "sourceTypeLabel": "Zdroj"
+          "editedBadge": "Upravené v CamperFlow",
+          "sourceTypeLabel": "Zdroj",
+          "edit": "Upraviť",
+          "delete": "Zmazať",
+          "deleteConfirm": "Zmazať toto blokované obdobie?",
+          "cancel": "Zrušiť"
         },
         "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
       }

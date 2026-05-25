@@ -15,6 +15,7 @@ export interface TimelineVehicleBlock {
   endAt: string
   sourceReference?: string | null
   sourceType?: string | null
+  syncLocked?: boolean | null
 }
 
 const BLOCK_TYPE_ICON: Record<string, string> = {
@@ -32,6 +33,8 @@ interface Props {
   vehicleBlocks?: TimelineVehicleBlock[]
   companyTimezone?: string
   today?: string // ISO string from server loader — frozen for demo company
+  onEditBlock?: (block: TimelineVehicleBlock & { vehicleName: string }) => void
+  onDeleteBlock?: (blockId: string) => void
 }
 
 const DAYS_BACK = 30
@@ -57,7 +60,7 @@ const FALLBACK_STYLE = STATUS_STYLE.draft
 
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
-export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC', today }: Props) {
+export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC', today, onEditBlock, onDeleteBlock }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
@@ -65,6 +68,7 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
   const t = useTranslations('staff.operations.bookingTimeline')
   const tTypes = useTranslations('staff.operations.blockTypes')
   const [selectedBlock, setSelectedBlock] = useState<(TimelineVehicleBlock & { vehicleName: string }) | null>(null)
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -472,11 +476,11 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
               </div>
             )}
 
-            {/* Imported badge */}
+            {/* Imported / Edited badge */}
             {selectedBlock.sourceType && selectedBlock.sourceType !== 'manual' && (
               <div style={{ marginBottom: 'var(--space-2)' }}>
                 <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: 'rgb(var(--muted) / 0.12)', color: 'rgb(var(--muted))', fontWeight: 500 }}>
-                  {t('modal.importedBadge')}
+                  {selectedBlock.syncLocked ? t('modal.editedBadge') : t('modal.importedBadge')}
                 </span>
               </div>
             )}
@@ -504,6 +508,54 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
             {selectedBlock.sourceReference && (
               <div style={{ marginTop: 'var(--space-3)', fontSize: '11px', color: 'rgb(var(--muted))', borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-2)', wordBreak: 'break-all' }}>
                 {t('modal.sourceTypeLabel')}: {selectedBlock.sourceReference}
+              </div>
+            )}
+
+            {/* Edit / Delete — edit available for all blocks; delete only for manual or sync_locked */}
+            {(onEditBlock || onDeleteBlock) && (
+              <div style={{ marginTop: 'var(--space-4)', borderTop: '1px solid rgb(var(--border))', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {!deleteConfirming ? (
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    {onEditBlock && (
+                      <button
+                        className="btn btn-secondary"
+                        style={{ flex: 1, fontSize: '14px' }}
+                        onClick={() => { onEditBlock(selectedBlock); setSelectedBlock(null); setDeleteConfirming(false) }}
+                      >
+                        {t('modal.edit')}
+                      </button>
+                    )}
+                    {onDeleteBlock && (selectedBlock.sourceType === 'manual' || selectedBlock.syncLocked) && (
+                      <button
+                        className="btn btn-danger"
+                        style={{ flex: 1, fontSize: '14px' }}
+                        onClick={() => setDeleteConfirming(true)}
+                      >
+                        {t('modal.delete')}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    <div style={{ fontSize: '13px', color: 'rgb(var(--error))' }}>{t('modal.deleteConfirm')}</div>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ flex: 1, fontSize: '13px' }}
+                        onClick={() => setDeleteConfirming(false)}
+                      >
+                        {t('modal.cancel')}
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        style={{ flex: 1, fontSize: '13px' }}
+                        onClick={() => { onDeleteBlock!(selectedBlock.id); setSelectedBlock(null); setDeleteConfirming(false) }}
+                      >
+                        {t('modal.delete')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -575,7 +575,8 @@
       "view": "Ansehen",
       "viewEdit": "Ansehen / Bearbeiten",
       "viewBooking": "Buchung ansehen",
-      "viewEditBooking": "Buchung ansehen & bearbeiten"
+      "viewEditBooking": "Buchung ansehen & bearbeiten",
+      "addBlockedPeriod": "Gesperrten Zeitraum hinzufügen"
     },
     "filter": {
       "statusLabel": "Status:",
@@ -612,6 +613,24 @@
     "noResults": "Keine Buchungen entsprechen Ihren Filtern.",
     "yearGroupBookings": "{count, plural, one {# Buchung} other {# Buchungen}}",
     "blockImportedLabel": "Importiert",
+    "blockEditedLabel": "In CF bearbeitet",
+    "addBlockedPeriod": "Gesperrten Zeitraum hinzufügen",
+    "blockModal": {
+      "titleCreate": "Gesperrten Zeitraum hinzufügen",
+      "titleEdit": "Gesperrten Zeitraum bearbeiten",
+      "vehicleLabel": "Fahrzeug",
+      "blockTypeLabel": "Typ",
+      "labelField": "Bezeichnung (optional)",
+      "startAtLabel": "Start",
+      "endAtLabel": "Ende",
+      "save": "Speichern",
+      "delete": "Löschen",
+      "deleteConfirm": "Diesen gesperrten Zeitraum löschen?",
+      "cancel": "Abbrechen",
+      "errorRequired": "Fahrzeug, Typ, Start und Ende sind erforderlich.",
+      "errorEndBeforeStart": "Ende muss nach dem Start liegen.",
+      "errorSave": "Speichern fehlgeschlagen."
+    },
     "table": {
       "bookingNumber": "Buchungsnr.",
       "customer": "Kunde",
@@ -1297,7 +1316,12 @@
           "to": "Bis",
           "durationDays": "{days, plural, one {# Tag} other {# Tage}}",
           "importedBadge": "Importiert",
-          "sourceTypeLabel": "Quelle"
+          "editedBadge": "In CamperFlow bearbeitet",
+          "sourceTypeLabel": "Quelle",
+          "edit": "Bearbeiten",
+          "delete": "Löschen",
+          "deleteConfirm": "Diesen gesperrten Zeitraum löschen?",
+          "cancel": "Abbrechen"
         },
         "footerHint": "Hervorgehobene Spalte = Heute · Scrollen zum Navigieren · Stornierte Buchungen ausgeblendet"
       }

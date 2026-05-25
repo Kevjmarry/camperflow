@@ -28,6 +28,7 @@ export interface OpsTimelineVehicleBlock {
   endAt: string
   sourceReference: string | null
   sourceType: string
+  syncLocked: boolean
 }
 
 export interface OpsTimelineData {
@@ -90,15 +91,30 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
 
   if (bError) throw bError
 
-  const { data: blocks } = await supabase
+  const { data: blocks, error: blocksError } = await supabase
     .from('vehicle_blocks')
-    .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference')
+    .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference, sync_locked')
     .eq('company_id', companyId)
     .gte('end_at', windowStart.toISOString())
     .lte('start_at', windowEnd.toISOString())
     .order('start_at', { ascending: true })
 
-  const vehicleBlocks: OpsTimelineVehicleBlock[] = (blocks ?? []).map((bl) => ({
+  // If sync_locked column is missing (migration 065 not yet applied), retry
+  // without it so blocks still appear on the timeline.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rawBlocks: any[] | null = blocks
+  if (blocksError) {
+    const { data: fallback } = await supabase
+      .from('vehicle_blocks')
+      .select('id, vehicle_id, label, block_type, start_at, end_at, source_type, source_reference')
+      .eq('company_id', companyId)
+      .gte('end_at', windowStart.toISOString())
+      .lte('start_at', windowEnd.toISOString())
+      .order('start_at', { ascending: true })
+    rawBlocks = fallback
+  }
+
+  const vehicleBlocks: OpsTimelineVehicleBlock[] = (rawBlocks ?? []).map((bl) => ({
     id: bl.id,
     vehicleId: bl.vehicle_id,
     label: bl.label ?? null,
@@ -107,6 +123,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
     endAt: bl.end_at,
     sourceReference: bl.source_reference ?? null,
     sourceType: bl.source_type,
+    syncLocked: bl.sync_locked ?? false,
   }))
 
   return {
