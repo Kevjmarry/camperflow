@@ -127,6 +127,26 @@ function localDateInCompanyTz(utcIso: string, tz: string): string {
   return fmt.format(new Date(utcIso));
 }
 
+/**
+ * Returns the local time string (HH:MM:SS) in COMPANY_TIMEZONE for a UTC ISO
+ * instant. Used in the BM-iCal date-only merge to extract only the time-of-day
+ * from an existing stored timestamp so it can be re-applied to a new source date.
+ */
+function localTimeInCompanyTz(utcIso: string, tz: string): string {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date(utcIso));
+  const get = (type: string) => (parts.find((p) => p.type === type)?.value ?? '00').padStart(2, '0');
+  // Guard against the rare ICU "24" emitted for midnight — normalise to "00".
+  const h = String(parseInt(get('hour'), 10) % 24).padStart(2, '0');
+  return `${h}:${get('minute')}:${get('second')}`;
+}
+
 function generateBookingNumber(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -681,13 +701,24 @@ export async function POST(request: NextRequest) {
           // Only explicit real iCal times may override unconditionally.
           const pickupIsDateOnly = !n.pickupAtExplicitUtc && (looksDateOnly(n.pickupAt) || isMidnightInCompanyTz(n.pickupAt, companyTimezone));
           const returnIsDateOnly = !n.returnAtExplicitUtc && (looksDateOnly(n.returnAt) || isMidnightInCompanyTz(n.returnAt, companyTimezone));
+          // When the iCal carries only a date (no real time), preserve the
+          // existing CF-enriched time-of-day — but re-apply it to the NEW
+          // source date so a date change in the source is never silently lost.
           const mergedPickupAt =
             pickupIsDateOnly && existing!.pickup_at && !looksDateOnly(existing!.pickup_at) && !isMidnightInCompanyTz(existing!.pickup_at, companyTimezone)
-              ? existing!.pickup_at
+              ? localToUtcIso(
+                  localDateInCompanyTz(n.pickupAt, companyTimezone),
+                  localTimeInCompanyTz(existing!.pickup_at, companyTimezone),
+                  companyTimezone,
+                )
               : applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc);
           const mergedReturnAt =
             returnIsDateOnly && existing!.return_at && !looksDateOnly(existing!.return_at) && !isMidnightInCompanyTz(existing!.return_at, companyTimezone)
-              ? existing!.return_at
+              ? localToUtcIso(
+                  localDateInCompanyTz(n.returnAt, companyTimezone),
+                  localTimeInCompanyTz(existing!.return_at, companyTimezone),
+                  companyTimezone,
+                )
               : applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true);
 
           const customerId = await findOrCreateCustomer(
@@ -744,10 +775,8 @@ export async function POST(request: NextRequest) {
           const mergedSourceRef = (existing?.source_reference?.trim() || n.sourceReference) ?? null;
           const mergedVehicleId = existing?.vehicle_id || row.matchedVehicleId;
 
-          const resolvedPickupAt = existing?.pickup_at ||
-            applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc);
-          const resolvedReturnAt = existing?.return_at ||
-            applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true);
+          const resolvedPickupAt = applyDefaultTime(n.pickupAt, defaultPickupTime, companyTimezone, n.pickupAtExplicitUtc);
+          const resolvedReturnAt = applyDefaultTime(n.returnAt, defaultDropoffTime, companyTimezone, n.returnAtExplicitUtc, true);
 
           let customerId: { id: string; isNew: boolean } | null = null;
           if (!existing?.customer_id) {
@@ -917,6 +946,21 @@ export async function POST(request: NextRequest) {
       } else {
         blocked++;
       }
+    }
+
+    // Delete stale imported vehicle_blocks not seen in this sync run.
+    // Scoped to source_types present in this batch so CF-created/manual blocks
+    // (different source_type) are never touched. sync_locked blocks are skipped.
+    if (blockRows.length > 0) {
+      const blockSourceTypes = [...new Set(blockRows.map((r) => r.normalized!.sourceType))];
+      await supabase
+        .from('vehicle_blocks')
+        .delete()
+        .eq('company_id', companyId)
+        .in('vehicle_id', [...validVehicleIds])
+        .in('source_type', blockSourceTypes)
+        .eq('sync_locked', false)
+        .lt('import_last_seen_at', now);
     }
 
     // Cancel stale bookings that were not seen in this sync run.
