@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { InstallBanner } from "@/components/InstallBanner";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { OfflineBadge } from "@/components/OfflineBadge";
+import { locales } from "@/i18n";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,8 +32,6 @@ export const metadata: Metadata = {
     "mobile-web-app-capable": "yes",
   },
 };
-
-const locales = ["en", "de", "sk"] as const;
 
 export default async function RootLayout({
   children,

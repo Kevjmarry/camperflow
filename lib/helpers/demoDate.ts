@@ -11,9 +11,10 @@ export function getDemoToday(companyId: string): Date {
   if (companyId !== DEMO_COMPANY_ID) return new Date()
   const envDate = process.env.DEMO_FROZEN_DATE
   if (envDate) {
+    // Slice to YYYY-MM-DD so this handles both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:mm:ssZ'.
     // Use noon UTC to avoid midnight boundary edge cases when callers
     // derive todayStart (00:00) and todayEnd (23:59) from this base.
-    const d = new Date(`${envDate}T12:00:00.000Z`)
+    const d = new Date(`${envDate.slice(0, 10)}T12:00:00.000Z`)
     if (!isNaN(d.getTime())) return d
   }
   return new Date()

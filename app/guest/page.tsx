@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { locales, type Locale } from '@/i18n';
 
-const VALID_LOCALES = ['en', 'de', 'sk'] as const;
-type GuestLocale = (typeof VALID_LOCALES)[number];
+type GuestLocale = Locale;
 const GUEST_FALLBACK_LOCALE: GuestLocale = 'sk';
 
 interface BookingCompany {
@@ -35,7 +35,7 @@ export default async function GuestRedirectPage({
           .single();
 
         const lang = settings?.default_guest_language;
-        if (lang && (VALID_LOCALES as readonly string[]).includes(lang)) {
+        if (lang && (locales as readonly string[]).includes(lang)) {
           locale = lang as GuestLocale;
         }
       }

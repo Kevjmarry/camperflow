@@ -1,9 +1,7 @@
 import { cookies, headers } from 'next/headers';
+import { locales, type Locale, defaultLocale } from '../i18n';
 
-export const locales = ['en', 'de', 'sk'] as const;
-export type Locale = (typeof locales)[number];
-
-export const defaultLocale: Locale = 'en';
+export { locales, type Locale, defaultLocale };
 
 /**
  * Detects the user's preferred locale based on:

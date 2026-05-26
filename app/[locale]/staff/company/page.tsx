@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import BackLink from "@/components/staff/BackLink";
 import type { ExtraCatalogItem } from "@/contexts/ThemeContext";
+import { locales, type Locale } from "@/i18n";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -55,9 +56,7 @@ export default function CompanySettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
-  const [activeExtrasLang, setActiveExtrasLang] = useState<"en" | "de" | "sk">(
-    locale === "de" || locale === "sk" ? locale : "en"
-  );
+  const [activeExtrasLang, setActiveExtrasLang] = useState<Locale>(locale as Locale);
   const [extrasLangCopyWarning, setExtrasLangCopyWarning] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   // isRealAdmin: role === 'admin' only — used for the System Recovery section.
@@ -859,7 +858,7 @@ export default function CompanySettingsPage() {
               </p>
               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
                 <div style={{ borderBottom: "1px solid rgb(var(--border))" }}>
-                  {(["en", "de", "sk"] as const).map((lang) => (
+                  {locales.map((lang) => (
                     <button
                       key={lang}
                       type="button"

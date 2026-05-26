@@ -16,8 +16,14 @@ export default function OperationsDemoControls() {
     setResetting(true)
     try {
       const res = await fetch('/api/staff/demo/reset', { method: 'POST' })
-      console.log('[demo reset]', res.status, await res.json())
-    } finally {
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        console.error('[demo reset] failed', res.status, await res.json())
+        setResetting(false)
+      }
+    } catch (err) {
+      console.error('[demo reset] error', err)
       setResetting(false)
     }
   }

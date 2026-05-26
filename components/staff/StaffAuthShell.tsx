@@ -2,12 +2,13 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { locales, type Locale } from "@/i18n";
 
 function AuthLocaleSwitcher() {
   const pathname = usePathname();
   const currentLocale = pathname.split("/")[1];
 
-  function switchLocale(newLocale: "en" | "de" | "sk") {
+  function switchLocale(newLocale: Locale) {
     const parts = window.location.pathname.split("/");
     if (parts[1] === newLocale) return;
     parts[1] = newLocale;
@@ -17,7 +18,7 @@ function AuthLocaleSwitcher() {
 
   return (
     <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-      {(["en", "de", "sk"] as const).map((loc) => (
+      {locales.map((loc) => (
         <button
           key={loc}
           onClick={() => switchLocale(loc)}

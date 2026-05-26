@@ -5,13 +5,12 @@ import { use, FormEvent, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { InstallBanner } from "@/components/InstallBanner";
-
-type Locale = "en" | "de" | "sk";
+import { locales, type Locale, defaultLocale } from "@/i18n";
 
 export default function AppEntryPage({ params }: { params: Promise<{ locale: string }> }) {
   const router = useRouter();
   const { locale: rawLocale } = use(params);
-  const locale: Locale = rawLocale === "de" ? "de" : rawLocale === "sk" ? "sk" : "en";
+  const locale: Locale = locales.includes(rawLocale as Locale) ? (rawLocale as Locale) : defaultLocale;
   const [bookingCode, setBookingCode] = useState("");
   const [staffOffline, setStaffOffline] = useState(false);
   const t = useTranslations("entry");
@@ -82,7 +81,7 @@ export default function AppEntryPage({ params }: { params: Promise<{ locale: str
             </div>
 
             <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
-              {(["en", "de", "sk"] as const).map((loc) => (
+              {locales.map((loc) => (
                 <button
                   key={loc}
                   onClick={() => handleLocaleChange(loc)}

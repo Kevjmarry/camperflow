@@ -13,6 +13,7 @@ import { getStatusChipStyle } from "@/lib/statusChip";
 import { BookingChecklistsSection, ChecklistInstance } from "@/components/bookings/BookingChecklistsSection";
 import { BookingSummaryCard } from "@/components/bookings/BookingSummaryCard";
 import type { BookingFormData } from "@/components/bookings/BookingEditForm";
+import { locales, type Locale } from "@/i18n";
 
 type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
 type VehicleStatus = 'ready' | 'preparing' | 'on_rent';
@@ -520,7 +521,7 @@ export default function BookingDetailPage() {
           .eq('id', data.company_id)
           .maybeSingle();
         const lang = (langSettings as any)?.default_guest_language;
-        setGuestLocale(lang && ['en', 'de', 'sk'].includes(lang) ? lang : 'sk');
+        setGuestLocale(lang && (locales as readonly string[]).includes(lang) ? lang : 'sk');
 
         let { data: reminderSettings, error: reminderError } = await supabase
           .from('company_settings')

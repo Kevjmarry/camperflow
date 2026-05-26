@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { locales, type Locale } from '@/i18n';
 
 export default function LocaleSwitcher() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function LocaleSwitcher() {
   const segments = pathname.split('/');
   const currentLocale = segments[1];
 
-  function switchLocale(newLocale: 'en' | 'de' | 'sk') {
+  function switchLocale(newLocale: Locale) {
     if (currentLocale === newLocale) return;
     const nextPath = '/' + [newLocale, ...segments.slice(2)].join('/');
     // Preserve query string (e.g. ?code=... for guest flow)
@@ -23,7 +24,7 @@ export default function LocaleSwitcher() {
 
   return (
     <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-      {(['en', 'de', 'sk'] as const).map((loc) => (
+      {locales.map((loc) => (
         <button
           key={loc}
           onClick={() => switchLocale(loc)}
