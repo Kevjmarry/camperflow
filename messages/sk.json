@@ -34,7 +34,7 @@
     "passwordLabel": "Heslo",
     "passwordPlaceholder": "Zadajte heslo",
     "signIn": "Prihlásiť sa",
-    "signingIn": "Prihlasovanie...",
+    "signingIn": "Prihlasovanie…",
     "backToHome": "Späť na úvodnú stránku",
     "rememberEmail": "Zapamätať e-mail na tomto zariadení",
     "inviteOnly": "Účty sa vytvárajú iba na pozvanie. Kontaktujte svojho manažéra.",
@@ -59,7 +59,7 @@
       "title": "Nastaviť nové heslo",
       "subtitle": "Zadajte a potvrďte nové heslo.",
       "verifying": "Overovanie odkazu na obnovenie…",
-      "sessionMissing": "Relácia chýba!",
+      "sessionMissing": "Odkaz na obnovenie vypršal alebo je neplatný.",
       "newPasswordLabel": "Nové heslo",
       "confirmPasswordLabel": "Potvrdiť nové heslo",
       "confirmPasswordPlaceholder": "Zopakujte nové heslo",
@@ -265,7 +265,7 @@
     "status": {
       "ready": "Pripravené",
       "preparing": "Pripravuje sa",
-      "onRent": "Na prenájme"
+      "onRent": "V prenájme"
     },
     "field": {
       "registration": "Evidenčné číslo",
@@ -276,6 +276,7 @@
     "fields": {
       "photo": "Fotografia",
       "noPhoto": "Žiadna fotografia",
+      "registrationPlate": "Evidenčné číslo",
       "make": "Značka",
       "model": "Model",
       "year": "Rok",
@@ -288,6 +289,15 @@
       "vehicleCategoryCampervan": "Campervan",
       "vehicleCategoryCaravan": "Karavan"
     },
+    "dimensions": {
+      "title": "Rozmery",
+      "length": "Dĺžka",
+      "width": "Šírka",
+      "height": "Výška"
+    },
+    "videoTour": {
+      "title": "Video prehliadka"
+    },
     "section": {
       "photo": "Fotografia",
       "vin": "VIN",
@@ -295,10 +305,10 @@
     },
     "photoAlt": "Vozidlo",
     "compliance": {
-      "title": "Súlad vozidla s predpismi",
-      "addButton": "Pridať záznam súladu vozidla",
-      "loading": "Načítavanie záznamov súladu vozidla...",
-      "empty": "Žiadne záznamy o súlade vozidla.",
+      "title": "Platnosti a kontroly vozidla",
+      "addButton": "Pridať záznam",
+      "loading": "Načítavanie platností a kontrol...",
+      "empty": "Žiadne záznamy o platnostiach a kontrolách.",
       "table": {
         "type": "Typ",
         "expiryDate": "Dátum platnosti",
@@ -337,15 +347,15 @@
         "warningKmOverrideLabel": "Vlastné varovanie km pred servisom"
       },
       "addModal": {
-        "title": "Pridať záznam súladu vozidla",
-        "allTracked": "Všetky typy súladu vozidla sú pre toto vozidlo už sledované.",
+        "title": "Pridať záznam",
+        "allTracked": "Všetky záznamy sú pre toto vozidlo už sledované.",
         "close": "Zavrieť",
-        "typeLabel": "Typ záznamu súladu vozidla",
+        "typeLabel": "Typ záznamu",
         "expiryDateLabel": "Dátum platnosti",
         "notesLabel": "Poznámky",
-        "errorTypeRequired": "Vyberte prosím typ záznamu súladu vozidla",
+        "errorTypeRequired": "Vyberte prosím typ záznamu",
         "errorExpiryRequired": "Dátum platnosti je povinný",
-        "errorSaveFailed": "Pridanie záznamu súladu vozidla zlyhalo",
+        "errorSaveFailed": "Pridanie záznamu zlyhalo",
         "cancel": "Zrušiť",
         "saving": "Pridávanie...",
         "add": "Pridať",
@@ -365,7 +375,7 @@
         "gasInspection": "Plynová kontrola",
         "habitationService": "Servis obytnej časti",
         "generalService": "Všeobecný servis",
-        "engineService": "Servis motora"
+        "engineService": "Servis vozidla"
       }
     },
     "checklists": {
@@ -380,10 +390,10 @@
       "completed": "Dokončené"
     },
     "issues": {
-      "title": "Záznamy kontrolného zoznamu",
+      "title": "Označenia z kontrolných zoznamov",
       "loading": "Načítavanie…",
-      "empty": "Žiadne záznamy kontrolného zoznamu",
-      "fallbackTitle": "Záznam kontrolného zoznamu",
+      "empty": "Žiadne označenia z kontrolných zoznamov",
+      "fallbackTitle": "Označenie z kontrolného zoznamu",
       "blocking": "Blokujúce",
       "attention": "Vyžaduje pozornosť",
       "reported": "Nahlásené {date}",
@@ -613,7 +623,7 @@
     "noResults": "Žiadne rezervácie nezodpovedajú filtrom.",
     "yearGroupBookings": "{count, plural, one {# rezervácia} few {# rezervácie} other {# rezervácií}}",
     "blockImportedLabel": "Importované",
-    "blockEditedLabel": "Upravené v CF",
+    "blockEditedLabel": "Upravené v CamperFlow",
     "addBlockedPeriod": "Pridať blokované obdobie",
     "blockModal": {
       "titleCreate": "Pridať blokované obdobie",
@@ -1002,7 +1012,16 @@
     "evidenceGroupDamage": "Poškodenie",
     "evidenceDownloadAll": "Stiahnuť všetky fotografie",
     "includedInBooking": "Súčasť vašej rezervácie",
-    "videoTour": "Video prehliadka"
+    "videoTour": "Video prehliadka",
+    "make": "Výrobca",
+    "model": "Model",
+    "year": "Rok výroby",
+    "evidenceZipping": "Pripravuje sa…",
+    "videoTourIframeTitle": "Video prehliadka vozidla",
+    "lightboxAriaLabel": "Prehliadač fotografií",
+    "lightboxClose": "Zavrieť",
+    "lightboxPrev": "Predchádzajúca fotografia",
+    "lightboxNext": "Nasledujúca fotografia"
   },
   "guestBookings": {
     "redirecting": "Presmerovanie…",
@@ -1036,7 +1055,7 @@
       "passwordLabel": "Heslo",
       "passwordPlaceholder": "Zadajte heslo",
       "signInButton": "Prihlásiť sa",
-      "signingIn": "Prihlasovanie...",
+      "signingIn": "Prihlasovanie…",
       "accessDenied": "Prístup zamietnutý. Tento účet nemá oprávnenia personálu.",
       "unexpectedError": "Vyskytla sa neočakávaná chyba. Skúste to znova."
     },
@@ -1124,8 +1143,8 @@
         "extraDriver": "Ďalší vodič"
       },
       "nextUp": {
-        "nextPickup": "Ďalší výber",
-        "nextReturn": "Ďalšie vrátenie",
+        "nextPickup": "Nadchádzajúci výber",
+        "nextReturn": "Nadchádzajúce vrátenie",
         "view": "Zobraziť rezerváciu",
         "nonePickup": "Žiadne nadchádzajúce výbery",
         "noneReturn": "Žiadne nadchádzajúce vrátenia",
@@ -1186,7 +1205,7 @@
         "overdueDays": "pred {count}d",
         "inHours": "za {count}h",
         "inDaysShort": "za {count}d",
-        "nextPickupLabel": "Ďalší výber"
+        "nextPickupLabel": "Nadchádzajúci výber"
       },
       "summary": {
         "pickupsToday": "Dnešné výbery",
@@ -1324,6 +1343,9 @@
           "cancel": "Zrušiť"
         },
         "footerHint": "Zvýraznený stĺpec = dnes · Posúvajte pre navigáciu · Zrušené rezervácie sú skryté"
+      },
+      "demoMode": {
+        "banner": "Demo mód – iba vzorové dáta"
       }
     },
     "checklistsPage": {
@@ -1354,7 +1376,7 @@
         "guest_prereturn": "Predbežné vrátenie hosťom",
         "vehicle_readiness": "Pripravenosť vozidla",
         "maintenance": "Údržba",
-        "mechanical": "Technický kontrolný zoznam"
+        "mechanical": "Mechanika"
       },
       "severity": {
         "low": "Nízka",
@@ -1371,8 +1393,8 @@
         "status": "Stav",
         "issue": "Problém",
         "severity": "Závažnosť",
-        "pickup": "Výber",
-        "pickupIn": "Výber za",
+        "pickup": "Prevzatie",
+        "pickupIn": "Prevzatie za",
         "return": "Vrátenie",
         "returnIn": "Vrátenie za",
         "progress": "Pokrok",
@@ -1390,7 +1412,18 @@
         "bookingChecklists": "Nenašli sa žiadne kontrolné zoznamy rezervácií.",
         "vehicleChecklists": "Kontrolné zoznamy pripravenosti vozidiel sa aktualizujú. Skontrolujte neskôr."
       },
-      "bookingRef": "Rezervácia č. {number}"
+      "bookingRef": "Rezervácia č. {number}",
+      "actions": {
+        "open": "Otvoriť",
+        "continue": "Pokračovať",
+        "viewReport": "Zobraziť správu",
+        "locked": "Zamknuté"
+      },
+      "daysUntil": {
+        "today": "Dnes",
+        "tomorrow": "Zajtra",
+        "days": "{count} dní"
+      }
     },
     "bookings": {
       "new": {
@@ -1610,6 +1643,7 @@
         "markChecked": "Označiť ako skontrolované",
         "markSent": "Označiť ako odoslané",
         "disableReminder": "Vypnúť pripomienku",
+        "enableReminder": "Zapnúť pripomienku",
         "reminderDisabled": "Pripomienka vypnutá · Zapnúť",
         "sentAt": "Odoslané · {date}",
         "clear": "Vymazať"
@@ -1682,7 +1716,9 @@
       "deleteFailed": "Vymazanie rezervácie zlyhalo",
       "deletePermissionDenied": "Prístup zamietnutý: Nemáte oprávnenie na vymazanie tejto rezervácie",
       "pickupChecklistRequired": "Kontrolný zoznam prevzatia musí byť dokončený pred označením rezervácie ako prenajatej.",
-      "returnChecklistRequired": "Kontrolný zoznam vrátenia musí byť dokončený pred označením rezervácie ako dokončenej."
+      "returnChecklistRequired": "Kontrolný zoznam vrátenia musí byť dokončený pred označením rezervácie ako dokončenej.",
+      "customerLoadFailed": "Načítanie záznamu zákazníka zlyhalo",
+      "reminderMarkFailed": "Označenie pripomienky zlyhalo"
     },
     "warning": {
       "vehicleConflict": "Upozornenie: Vozidlo je už rezervované v tomto období (Rezervácia {bookingNumber}). Vyberte prosím iné vozidlo alebo dátumy.",
@@ -1797,7 +1833,9 @@
       "uploadPhotoFailed": "Nahrávanie fotografie zlyhalo",
       "nameRequired": "Meno a priezvisko sú povinné.",
       "saveFailed": "Uloženie zmien zlyhalo",
-      "deactivateFailed": "Deaktivácia člena personálu zlyhala"
+      "deactivateFailed": "Deaktivácia člena personálu zlyhala",
+      "deleteActiveMember": "Môžete odstrániť iba neaktívnych členov personálu.",
+      "inviteFailed": "Odoslanie pozvánky zlyhalo."
     },
     "passwordRequired": "Zadajte nové heslo a potvrďte ho.",
     "passwordMismatch": "Heslá sa nezhodujú.",
@@ -1809,7 +1847,9 @@
     "statusInactive": "Neaktívny",
     "reactivate": "Reaktivovať",
     "reactivating": "Reaktivuje sa...",
-    "reactivateConfirm": "Reaktivovať tohto člena personálu?"
+    "reactivateConfirm": "Reaktivovať tohto člena personálu?",
+    "reactivateFailed": "Reaktivácia člena personálu zlyhala.",
+    "notAllowedToggleActive": "Iba správcovia môžu aktivovať alebo deaktivovať členov personálu."
   },
   "staffVehicles": {
     "errors": {
@@ -1833,7 +1873,8 @@
     "status": {
       "ready": "Pripravené",
       "preparing": "Pripravuje sa",
-      "onRent": "Na prenájme"
+      "onRent": "V prenájme",
+      "liveLabel": "Aktuálny stav vozidla"
     },
     "buttons": {
       "edit": "Upraviť",
@@ -2303,7 +2344,9 @@
       "activeLabel": "Aktívny",
       "removeButton": "Odstrániť",
       "addButton": "Pridať doplnok",
-      "empty": "Žiadne doplnky nie sú nakonfigurované."
+      "empty": "Žiadne doplnky nie sú nakonfigurované.",
+      "copyFromSk": "Kopírovať z pôvodného jazyka (SK)",
+      "copyFromSkWarning": "Skopírované zo slovenčiny. Prosím preložte pred uložením."
     },
     "guestInfo": {
       "title": "Informácie pre hostí",
@@ -2332,6 +2375,11 @@
         "addFaqButton": "Pridať otázku",
         "noFaq": "Žiadne otázky nie sú nakonfigurované."
       }
+    },
+    "billing": {
+      "title": "Fakturácia & faktúry",
+      "description": "Spravujte svoje predplatné, zobrazte faktúry a aktualizujte platobné údaje na portáli zákazníkov Stripe.",
+      "openPortal": "Otvoriť fakturačný portál"
     },
     "systemRecovery": {
       "title": "Obnova systému",
@@ -2809,12 +2857,27 @@
     "vehicleDataAdblue": "AdBlue",
     "vehicleDataSelectPlaceholder": "— Vybrať —",
     "vehicleDataFull": "Plné",
-    "vehicleDataEmpty": "Prázdne"
+    "vehicleDataEmpty": "Prázdne",
+    "offlineBanner": "Ste offline — tento kontrolný zoznam je iba na čítanie. Znovu sa pripojte na vykonanie zmien.",
+    "extrasHandedOverTitle": "Odovzdané doplnky",
+    "extrasHandedOverItem": "{name} odovzdané",
+    "extrasReturnedTitle": "Vrátené doplnky",
+    "extrasReturnedItem": "{name} vrátené",
+    "flagPhotosTitle": "Fotografie (voliteľné)",
+    "pickupWarningTitle": "Chýbajúce údaje",
+    "pickupWarningBody": "Nezadali ste nasledujúce údaje:",
+    "pickupWarningContinue": "Pokračovať napriek tomu",
+    "pickupWarningGoBack": "Späť",
+    "pickupWarningFieldKm": "KM",
+    "pickupWarningFieldFuel": "Palivo",
+    "pickupWarningFieldAdblue": "AdBlue",
+    "pickupWarningFieldPhotos": "Fotografie"
   },
   "bookingsImport": {
     "backToBookings": "Späť na rezervácie",
     "title": "Import rezervácií",
     "subtitle": "Nahrajte CSV alebo JSON export z vašej rezervačnej platformy.",
+    "serverError": "Chyba servera {status}",
     "tabs": {
       "file": "Nahrať súbor",
       "ical": "iCal URL"
@@ -2976,7 +3039,8 @@
     "noCode": "Kód rezervácie nebol nájdený. Použite prosím odkaz z Vašej potvrdzujúcej správy.",
     "notFound": "Rezervácia nebola nájdená.",
     "back": "Späť",
-    "previewBadge": "Náhľad"
+    "previewBadge": "Náhľad",
+    "submitError": "Niečo sa pokazilo. Skúste to prosím znova."
   },
   "installBanner": {
     "title": "Nainštalovať CamperFlow",

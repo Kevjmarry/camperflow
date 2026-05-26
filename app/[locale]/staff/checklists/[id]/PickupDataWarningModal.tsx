@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 type PickupDataWarningModalProps = {
   isOpen: boolean;
   missing: string[];
@@ -7,15 +9,25 @@ type PickupDataWarningModalProps = {
   onCancel: () => void;
 };
 
-const FIELD_LABELS: Record<string, string> = { km: 'KM', fuel: 'Fuel', adblue: 'AdBlue', photos: 'Photos' };
-
 export default function PickupDataWarningModal({
   isOpen,
   missing,
   onConfirm,
   onCancel,
 }: PickupDataWarningModalProps) {
+  const t = useTranslations('checklistDetail');
+
   if (!isOpen) return null;
+
+  const fieldLabel = (key: string): string => {
+    switch (key) {
+      case 'km': return t('pickupWarningFieldKm');
+      case 'fuel': return t('pickupWarningFieldFuel');
+      case 'adblue': return t('pickupWarningFieldAdblue');
+      case 'photos': return t('pickupWarningFieldPhotos');
+      default: return key;
+    }
+  };
 
   return (
     <div
@@ -44,16 +56,16 @@ export default function PickupDataWarningModal({
       >
         <div>
           <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'rgb(var(--text))', margin: '0 0 6px' }}>
-            Missing pickup information
+            {t('pickupWarningTitle')}
           </h2>
           <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
-            You have not entered the following:
+            {t('pickupWarningBody')}
           </p>
         </div>
         <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {missing.map((key) => (
             <li key={key} style={{ fontSize: '14px', color: 'rgb(var(--text))', fontWeight: 500 }}>
-              {FIELD_LABELS[key] ?? key}
+              {fieldLabel(key)}
             </li>
           ))}
         </ul>
@@ -64,7 +76,7 @@ export default function PickupDataWarningModal({
             className="btn btn-primary"
             style={{ width: '100%', padding: '10px', fontSize: '14px', fontWeight: 600 }}
           >
-            Continue anyway
+            {t('pickupWarningContinue')}
           </button>
           <button
             type="button"
@@ -81,7 +93,7 @@ export default function PickupDataWarningModal({
               cursor: 'pointer',
             }}
           >
-            Go back
+            {t('pickupWarningGoBack')}
           </button>
         </div>
       </div>

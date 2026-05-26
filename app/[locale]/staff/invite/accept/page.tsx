@@ -99,7 +99,7 @@ export default function StaffInviteAcceptPage() {
         router.push(`/${locale}/staff/login`);
       }, 2000);
     } catch {
-      setError("An unexpected error occurred.");
+      setError(t("invite.unexpected"));
     } finally {
       setLoading(false);
     }

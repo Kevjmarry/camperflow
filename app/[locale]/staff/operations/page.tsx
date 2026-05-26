@@ -306,7 +306,7 @@ export default async function OperationsPage({
         marginBottom: 'var(--space-3)',
       }}
     >
-      Demo mode · Sample data only — not a real account
+      {t('demoMode.banner')}
     </div>
   ) : undefined
 

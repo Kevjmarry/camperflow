@@ -460,7 +460,7 @@ export default function VehiclesPage() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                       <span style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgb(var(--muted))' }}>
-                        Live vehicle status
+                        {t("status.liveLabel")}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                         {vehicle.blockingReason && !vehicle.operational_hold && (

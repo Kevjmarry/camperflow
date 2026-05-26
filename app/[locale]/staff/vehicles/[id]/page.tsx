@@ -851,7 +851,7 @@ export default function VehicleDetailPage({
 
               <div className="surface" style={{ padding: "var(--space-6)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-                  <Field label="Registration plate" value={vehicle.registration_plate || "—"} />
+                  <Field label={t("fields.registrationPlate")} value={vehicle.registration_plate || "—"} />
                   <Field label={t("fields.vehicleCategory")} value={t(`fields.vehicleCategory${vehicleCategory.charAt(0).toUpperCase() + vehicleCategory.slice(1)}`)} />
                   <Field label={t("fields.make")}  value={vehicle.make  || "—"} />
                   <Field label={t("fields.model")} value={vehicle.model || "—"} />
@@ -868,12 +868,12 @@ export default function VehicleDetailPage({
             {(vehicle.length_m != null || vehicle.width_m != null || vehicle.height_m != null) && (
               <div className="surface" style={{ padding: "var(--space-6)" }}>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
-                  Dimensions
+                  {t("dimensions.title")}
                 </div>
                 <div className="dimensions-grid">
-                  <DimensionField label="Length" value={vehicle.length_m} />
-                  <DimensionField label="Width"  value={vehicle.width_m} />
-                  <DimensionField label="Height" value={vehicle.height_m} />
+                  <DimensionField label={t("dimensions.length")} value={vehicle.length_m} />
+                  <DimensionField label={t("dimensions.width")}  value={vehicle.width_m} />
+                  <DimensionField label={t("dimensions.height")} value={vehicle.height_m} />
                 </div>
               </div>
             )}
@@ -909,13 +909,13 @@ export default function VehicleDetailPage({
               return (
                 <div className="surface" style={{ padding: "var(--space-6)" }}>
                   <div style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-4)" }}>
-                    Video tour
+                    {t("videoTour.title")}
                   </div>
                   <div style={{ maxWidth: 854, margin: "0 auto", width: "100%" }}>
                   <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
                     <iframe
                       src={`https://www.youtube.com/embed/${embedId}`}
-                      title="Video tour"
+                      title={t("videoTour.title")}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
@@ -1051,7 +1051,7 @@ export default function VehicleDetailPage({
                           <div>{formatDate(row.expiry_date)}</div>
                           {row.service_due_odometer_km != null && vehicleCategory !== "caravan" && (
                             <div style={{ fontSize: "12px", color: "rgb(var(--muted))", marginTop: 2 }}>
-                              Due at {row.service_due_odometer_km.toLocaleString(locale)} km
+                              {t("compliance.dueAtKm", { n: row.service_due_odometer_km.toLocaleString(locale) })}
                             </div>
                           )}
                         </div>

@@ -618,19 +618,19 @@ try{
                   )}
                   {vehicle.make && (
                     <div>
-                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Make</p>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{t("make")}</p>
                       <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.make}</p>
                     </div>
                   )}
                   {vehicle.model && (
                     <div>
-                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Model</p>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{t("model")}</p>
                       <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.model}</p>
                     </div>
                   )}
                   {vehicle.year != null && (
                     <div>
-                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>Year</p>
+                      <p style={{ fontSize: "12px", color: "rgb(var(--muted))", marginBottom: 4 }}>{t("year")}</p>
                       <p style={{ fontSize: "14px", fontWeight: "600", color: "rgb(var(--text))" }}>{vehicle.year}</p>
                     </div>
                   )}
@@ -765,7 +765,7 @@ try{
                   <div style={{ position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: "var(--radius)", overflow: "hidden", border: "1px solid rgb(var(--border))" }}>
                     <iframe
                       src={`https://www.youtube.com/embed/${getYouTubeEmbedId(vehicle.youtube_url)}`}
-                      title="Vehicle video tour"
+                      title={t("videoTourIframeTitle")}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
@@ -793,7 +793,7 @@ try{
               }}
             >
               <h2>{t("evidencePhotosTitle")}</h2>
-              <EvidenceDownloadButton urls={allEvidenceUrls} label={t("evidenceDownloadAll")} />
+              <EvidenceDownloadButton urls={allEvidenceUrls} label={t("evidenceDownloadAll")} busyLabel={t("evidenceZipping")} />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
@@ -860,7 +860,7 @@ try{
           }}
           role="dialog"
           aria-modal="true"
-          aria-label="Photo viewer"
+          aria-label={t("lightboxAriaLabel")}
         >
           {/* Backdrop */}
           <div id="cf-lb-bg" style={{ position: "absolute", inset: 0 }} />
@@ -869,7 +869,7 @@ try{
           <button
             id="cf-lb-close"
             type="button"
-            aria-label="Close"
+            aria-label={t("lightboxClose")}
             className="cf-lb-nav"
             style={{
               position: "absolute",
@@ -886,7 +886,7 @@ try{
           <button
             id="cf-lb-prev"
             type="button"
-            aria-label="Previous photo"
+            aria-label={t("lightboxPrev")}
             className="cf-lb-nav"
             style={{
               position: "absolute",
@@ -903,7 +903,7 @@ try{
           <button
             id="cf-lb-next"
             type="button"
-            aria-label="Next photo"
+            aria-label={t("lightboxNext")}
             className="cf-lb-nav"
             style={{
               position: "absolute",

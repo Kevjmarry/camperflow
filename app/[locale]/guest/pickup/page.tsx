@@ -396,7 +396,7 @@ export default async function GuestPickupPage({ params, searchParams }: PageProp
             {guestInfo.contact_whatsapp && (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                 <span style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", color: "rgb(var(--text-secondary))" }}>
-                  WhatsApp
+                  {t("contactWhatsapp")}
                 </span>
                 <a
                   href={toWaHref(guestInfo.contact_whatsapp)}

@@ -506,18 +506,18 @@ function bgOverallStatus(cls: ChecklistItem[]): string {
   return 'not_started';
 }
 
-function bgActionLabel(c: ChecklistItem): string {
-  if (c.status === 'completed')   return 'View report';
-  if (c.status === 'in_progress') return 'Continue';
-  return 'Open';
+function bgActionLabel(c: ChecklistItem, t: (key: string) => string): string {
+  if (c.status === 'completed')   return t('actions.viewReport');
+  if (c.status === 'in_progress') return t('actions.continue');
+  return t('actions.open');
 }
 
 // Matches the bookings-page getTimeToPickup chip style; returns null when past/missing.
-function daysUntil(isoDate: string | undefined): React.ReactNode {
+function daysUntil(isoDate: string | undefined, t: (key: string, values?: Record<string, string | number | Date>) => string): React.ReactNode {
   if (!isoDate) return null;
   const diffDays = Math.ceil((new Date(isoDate).getTime() - Date.now()) / 86_400_000);
   if (diffDays < 0) return null;
-  const label = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `${diffDays} days`;
+  const label = diffDays === 0 ? t('daysUntil.today') : diffDays === 1 ? t('daysUntil.tomorrow') : t('daysUntil.days', { count: diffDays });
   const urgent = diffDays <= 3;
   return (
     <span style={{
@@ -680,8 +680,8 @@ export function BookingGroupSection({
                   const actionable = group.checklists.find(
                     c => c.status !== 'completed' && !bgIsLocked(c, phLocked, retBlocked)
                   ) ?? null;
-                  const pickupIn = daysUntil(group.pickup_at);
-                  const returnIn = daysUntil(group.return_at);
+                  const pickupIn = daysUntil(group.pickup_at, t);
+                  const returnIn = daysUntil(group.return_at, t);
                   return (
                     <Fragment key={group.booking_id}>
                       <tr
@@ -771,7 +771,7 @@ export function BookingGroupSection({
                                         className="btn btn-secondary"
                                         style={{ fontSize: '13px', padding: 'var(--space-1) var(--space-3)', minHeight: '28px', opacity: 0.5, cursor: 'not-allowed', userSelect: 'none' }}
                                       >
-                                        Locked
+                                        {t('actions.locked')}
                                       </span>
                                     ) : (
                                       <Link
@@ -779,7 +779,7 @@ export function BookingGroupSection({
                                         className="btn btn-secondary"
                                         style={{ fontSize: '13px', padding: 'var(--space-1) var(--space-3)', minHeight: '28px' }}
                                       >
-                                        {bgActionLabel(c)}
+                                        {bgActionLabel(c, t)}
                                       </Link>
                                     )}
                                   </div>
@@ -837,8 +837,8 @@ export function BookingGroupSection({
                   const { phLocked, retBlocked } = bgLockState(group.checklists);
                   const status = bgOverallStatus(group.checklists);
                   const completedCount = group.checklists.filter(c => c.status === 'completed').length;
-                  const mPickupIn = daysUntil(group.pickup_at);
-                  const mReturnIn = daysUntil(group.return_at);
+                  const mPickupIn = daysUntil(group.pickup_at, t);
+                  const mReturnIn = daysUntil(group.return_at, t);
                   return (
                     <div
                       key={group.booking_id}
@@ -918,7 +918,7 @@ export function BookingGroupSection({
                                     className="btn btn-secondary"
                                     style={{ fontSize: '13px', padding: 'var(--space-1) var(--space-3)', minHeight: '28px', opacity: 0.5, cursor: 'not-allowed', userSelect: 'none', whiteSpace: 'nowrap' }}
                                   >
-                                    Locked
+                                    {t('actions.locked')}
                                   </span>
                                 ) : (
                                   <Link
@@ -926,7 +926,7 @@ export function BookingGroupSection({
                                     className="btn btn-secondary"
                                     style={{ fontSize: '13px', padding: 'var(--space-1) var(--space-3)', minHeight: '28px', whiteSpace: 'nowrap' }}
                                   >
-                                    {bgActionLabel(c)}
+                                    {bgActionLabel(c, t)}
                                   </Link>
                                 )}
                               </div>

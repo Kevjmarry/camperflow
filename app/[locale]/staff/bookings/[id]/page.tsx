@@ -624,7 +624,7 @@ export default function BookingDetailPage() {
       .single();
 
     if (custError || !custFull) {
-      setError(custError?.message ?? "Failed to load customer record.");
+      setError(custError?.message ?? t("error.customerLoadFailed"));
       setLinkingCustomer(false);
       return;
     }
@@ -981,7 +981,7 @@ export default function BookingDetailPage() {
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setError(json?.error || 'Failed to mark reminder');
+        setError(json?.error || t("error.reminderMarkFailed"));
         return;
       }
       setOpsSent(prev => ({ ...prev, [field]: true }));
@@ -1702,7 +1702,7 @@ export default function BookingDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
-                        aria-label={opsEnabled.balance_invoice_reminder_enabled ? "Disable reminder" : "Enable reminder"}
+                        aria-label={opsEnabled.balance_invoice_reminder_enabled ? t("operations.task.disableReminder") : t("operations.task.enableReminder")}
                         disabled={reminderSaving === 'balance_invoice_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('balance_invoice_reminder_enabled', !opsEnabled.balance_invoice_reminder_enabled)}
                         style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.balance_invoice_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.balance_invoice_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
@@ -1770,7 +1770,7 @@ export default function BookingDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
-                        aria-label={opsEnabled.prearrival_reminder_enabled ? "Disable reminder" : "Enable reminder"}
+                        aria-label={opsEnabled.prearrival_reminder_enabled ? t("operations.task.disableReminder") : t("operations.task.enableReminder")}
                         disabled={reminderSaving === 'prearrival_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('prearrival_reminder_enabled', !opsEnabled.prearrival_reminder_enabled)}
                         style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.prearrival_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.prearrival_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
@@ -1813,7 +1813,7 @@ export default function BookingDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
-                        aria-label={opsEnabled.return_prep_reminder_enabled ? "Disable reminder" : "Enable reminder"}
+                        aria-label={opsEnabled.return_prep_reminder_enabled ? t("operations.task.disableReminder") : t("operations.task.enableReminder")}
                         disabled={reminderSaving === 'return_prep_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('return_prep_reminder_enabled', !opsEnabled.return_prep_reminder_enabled)}
                         style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.return_prep_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.return_prep_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}
@@ -1856,7 +1856,7 @@ export default function BookingDetailPage() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
-                        aria-label={opsEnabled.review_request_reminder_enabled ? "Disable reminder" : "Enable reminder"}
+                        aria-label={opsEnabled.review_request_reminder_enabled ? t("operations.task.disableReminder") : t("operations.task.enableReminder")}
                         disabled={reminderSaving === 'review_request_reminder_enabled'}
                         onClick={() => handleReminderEnabledToggle('review_request_reminder_enabled', !opsEnabled.review_request_reminder_enabled)}
                         style={{ flexShrink: 0, width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 2, background: opsEnabled.review_request_reminder_enabled === true ? 'rgb(var(--success))' : opsEnabled.review_request_reminder_enabled === false ? 'rgb(var(--error))' : 'rgb(var(--border))', transition: 'background 0.15s', display: 'flex', alignItems: 'center' }}

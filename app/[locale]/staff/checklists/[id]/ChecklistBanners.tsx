@@ -51,7 +51,7 @@ export default function ChecklistBanners({
           }}
         >
           <span style={{ flexShrink: 0 }}>⚠</span>
-          <span>You&apos;re offline — this checklist is read-only. Reconnect to make changes.</span>
+          <span>{t('offlineBanner')}</span>
         </div>
       )}
 

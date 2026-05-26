@@ -428,7 +428,7 @@ export default function ChecklistItem({
               {/* Photos */}
               <div>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', marginBottom: '6px' }}>
-                  Photos (optional)
+                  {t('flagPhotosTitle')}
                 </div>
                 {flagDraft.photos.length > 0 && (
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>

@@ -213,7 +213,7 @@ export default function CompanySettingsPage() {
       if (upErr) throw upErr;
       return supabase.storage.from("company-logos").getPublicUrl(fileName).data.publicUrl;
     } catch (err: any) {
-      setError("Logo upload failed. Your account may not have permission to upload company logos.");
+      setError(t("errors.uploadLogoFailed"));
       return null;
     } finally {
       setUploadingLogo(false);
@@ -901,13 +901,13 @@ export default function CompanySettingsPage() {
                       lineHeight: "1.4",
                     }}
                   >
-                    Copy from original language (SK)
+                    {t("extrasCatalog.copyFromSk")}
                   </button>
                 )}
               </div>
               {extrasLangCopyWarning && (
                 <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginBottom: "var(--space-2)", marginTop: 0 }}>
-                  Copied from Slovak. Please translate before saving.
+                  {t("extrasCatalog.copyFromSkWarning")}
                 </p>
               )}
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -1004,17 +1004,17 @@ export default function CompanySettingsPage() {
           {isAdmin && (
             <div style={{ borderTop: "1px solid rgb(var(--border))", paddingTop: "var(--space-6)" }}>
               <h2 style={{ fontSize: "20px", marginBottom: "var(--space-2)", color: "rgb(var(--text))" }}>
-                Billing &amp; invoices
+                {t("billing.title")}
               </h2>
               <p className="helper-text" style={{ marginBottom: "var(--space-4)" }}>
-                Manage your subscription, view invoices, and update payment details in the Stripe customer portal.
+                {t("billing.description")}
               </p>
               <a
                 href="/api/billing/portal"
                 className="btn btn-secondary"
                 style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", fontSize: "14px" }}
               >
-                Open billing portal
+                {t("billing.openPortal")}
               </a>
             </div>
           )}

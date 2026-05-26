@@ -213,7 +213,10 @@ type ImportResult = {
   errors: { rowNumber: number; message: string }[];
 };
 
-async function callImportRoute(rows: ImportPreviewRow[]): Promise<ImportResult> {
+async function callImportRoute(
+  rows: ImportPreviewRow[],
+  serverErrorFallback: (status: number) => string,
+): Promise<ImportResult> {
   const readyRows = rows.filter(
     (r) =>
       (r.actionType === "create" || r.actionType === "update" || r.actionType === "block") &&
@@ -229,7 +232,7 @@ async function callImportRoute(rows: ImportPreviewRow[]): Promise<ImportResult> 
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data?.error ?? `Server error ${res.status}`);
+    throw new Error(data?.error ?? serverErrorFallback(res.status));
   }
 
   return data as ImportResult;
@@ -468,7 +471,7 @@ export default function BookingImportPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.error ?? `Server error ${res.status}`);
+        throw new Error(data?.error ?? t("serverError", { status: res.status }));
       }
 
       setSourceType("ical");
@@ -498,7 +501,7 @@ export default function BookingImportPage() {
     setImportResult(null);
     setImportError(null);
     try {
-      const result = await callImportRoute(previewRows);
+      const result = await callImportRoute(previewRows, (status) => t("serverError", { status }));
       setImportResult(result);
       // Persist the iCal URL for this vehicle after a successful iCal import
       if (importMode === "ical" && icalVehicleId && icalUrl.trim()) {

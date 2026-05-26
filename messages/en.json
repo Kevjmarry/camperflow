@@ -34,7 +34,7 @@
     "passwordLabel": "Password",
     "passwordPlaceholder": "Enter your password",
     "signIn": "Sign in",
-    "signingIn": "Signing in...",
+    "signingIn": "Signing in…",
     "backToHome": "Back to home",
     "rememberEmail": "Remember email on this device",
     "inviteOnly": "Accounts are created by invitation only. Contact your manager.",
@@ -59,7 +59,7 @@
       "title": "Set new password",
       "subtitle": "Enter and confirm your new password below.",
       "verifying": "Verifying your reset link…",
-      "sessionMissing": "Auth session missing!",
+      "sessionMissing": "Reset link expired or invalid.",
       "newPasswordLabel": "New password",
       "confirmPasswordLabel": "Confirm new password",
       "confirmPasswordPlaceholder": "Repeat your new password",
@@ -265,7 +265,7 @@
     "status": {
       "ready": "Ready",
       "preparing": "Preparing",
-      "onRent": "On Rent"
+      "onRent": "On rent"
     },
     "field": {
       "registration": "Registration",
@@ -276,6 +276,7 @@
     "fields": {
       "photo": "Photo",
       "noPhoto": "No photo",
+      "registrationPlate": "Registration plate",
       "make": "Make",
       "model": "Model",
       "year": "Year",
@@ -288,6 +289,15 @@
       "vehicleCategoryCampervan": "Campervan",
       "vehicleCategoryCaravan": "Caravan"
     },
+    "dimensions": {
+      "title": "Dimensions",
+      "length": "Length",
+      "width": "Width",
+      "height": "Height"
+    },
+    "videoTour": {
+      "title": "Video tour"
+    },
     "section": {
       "photo": "Photo",
       "vin": "VIN",
@@ -296,9 +306,9 @@
     "photoAlt": "Vehicle",
     "compliance": {
       "title": "Vehicle Compliance",
-      "addButton": "Add vehicle compliance",
-      "loading": "Loading vehicle compliance...",
-      "empty": "No vehicle compliance records found.",
+      "addButton": "Add compliance record",
+      "loading": "Loading compliance records...",
+      "empty": "No compliance records found.",
       "table": {
         "type": "Type",
         "expiryDate": "Expiry date",
@@ -337,15 +347,15 @@
         "warningKmOverrideLabel": "Custom warning km before service"
       },
       "addModal": {
-        "title": "Add vehicle compliance",
-        "allTracked": "All vehicle compliance types are already being tracked for this vehicle.",
+        "title": "Add compliance record",
+        "allTracked": "All compliance types are already tracked for this vehicle.",
         "close": "Close",
-        "typeLabel": "Vehicle compliance type",
+        "typeLabel": "Compliance type",
         "expiryDateLabel": "Expiry date",
         "notesLabel": "Notes",
-        "errorTypeRequired": "Please select a vehicle compliance type",
+        "errorTypeRequired": "Please select a compliance type",
         "errorExpiryRequired": "Expiry date is required",
-        "errorSaveFailed": "Failed to add vehicle compliance",
+        "errorSaveFailed": "Failed to add compliance record",
         "cancel": "Cancel",
         "saving": "Adding...",
         "add": "Add",
@@ -583,7 +593,7 @@
       "all": "All",
       "pending": "Pending",
       "confirmed": "Confirmed",
-      "onRent": "On Rent",
+      "onRent": "On rent",
       "completed": "Completed",
       "cancelled": "Cancelled",
       "vehicleLabel": "Vehicle:",
@@ -613,7 +623,7 @@
     "noResults": "No bookings match your filters.",
     "yearGroupBookings": "{count, plural, one {# booking} other {# bookings}}",
     "blockImportedLabel": "Imported",
-    "blockEditedLabel": "Edited in CF",
+    "blockEditedLabel": "Edited in CamperFlow",
     "addBlockedPeriod": "Add blocked period",
     "blockModal": {
       "titleCreate": "Add blocked period",
@@ -657,7 +667,7 @@
       "draft": "Pending",
       "confirmed": "Confirmed",
       "blocked": "Blocked",
-      "onRent": "On Rent",
+      "onRent": "On rent",
       "completed": "Completed",
       "cancelled": "Cancelled"
     },
@@ -1002,7 +1012,16 @@
     "evidenceGroupDamage": "Damage",
     "evidenceDownloadAll": "Download All Photos",
     "includedInBooking": "Included in your booking",
-    "videoTour": "Video Tour"
+    "videoTour": "Video Tour",
+    "make": "Make",
+    "model": "Model",
+    "year": "Year",
+    "evidenceZipping": "Preparing…",
+    "videoTourIframeTitle": "Vehicle video tour",
+    "lightboxAriaLabel": "Photo viewer",
+    "lightboxClose": "Close",
+    "lightboxPrev": "Previous photo",
+    "lightboxNext": "Next photo"
   },
   "guestBookings": {
     "redirecting": "Redirecting…",
@@ -1036,7 +1055,7 @@
       "passwordLabel": "Password",
       "passwordPlaceholder": "Enter your password",
       "signInButton": "Sign in",
-      "signingIn": "Signing in...",
+      "signingIn": "Signing in…",
       "accessDenied": "Access denied. This account does not have staff privileges.",
       "unexpectedError": "An unexpected error occurred. Please try again."
     },
@@ -1169,7 +1188,7 @@
         "empty": "No vehicles currently on rent.",
         "vehicle": "Vehicle",
         "customer": "Customer",
-        "comingBack": "Coming back",
+        "comingBack": "Return",
         "prepWindow": "Prep window",
         "noUpcomingBooking": "No upcoming booking",
         "nextBookingAt": "Next: {date}, {time}",
@@ -1203,7 +1222,7 @@
         "urgentIssue": "Urgent issue",
         "attentionIssue": "Attention issue",
         "handoverComplete": "Handover complete",
-        "prepNeeded": "Prep needed"
+        "prepNeeded": "Prep required"
       },
       "action": {
         "preparing": "Preparing",
@@ -1304,7 +1323,7 @@
         "empty": "No vehicles found.",
         "legend": {
           "confirmed": "Confirmed",
-          "onRent": "On Rent",
+          "onRent": "On rent",
           "blocked": "Blocked",
           "pending": "Pending",
           "completed": "Completed",
@@ -1324,6 +1343,9 @@
           "cancel": "Cancel"
         },
         "footerHint": "Highlighted column = today · Scroll to navigate · Cancelled bookings hidden"
+      },
+      "demoMode": {
+        "banner": "Demo mode — sample data only"
       }
     },
     "checklistsPage": {
@@ -1354,7 +1376,7 @@
         "guest_prereturn": "Guest Pre-Return",
         "vehicle_readiness": "Vehicle Readiness",
         "maintenance": "Maintenance",
-        "mechanical": "Mechanical Checklist"
+        "mechanical": "Mechanical"
       },
       "severity": {
         "low": "Low",
@@ -1390,7 +1412,18 @@
         "bookingChecklists": "No booking checklists found.",
         "vehicleChecklists": "Vehicle readiness checklists are being updated. Check back soon."
       },
-      "bookingRef": "Booking #{number}"
+      "bookingRef": "Booking #{number}",
+      "actions": {
+        "open": "Open",
+        "continue": "Continue",
+        "viewReport": "View report",
+        "locked": "Locked"
+      },
+      "daysUntil": {
+        "today": "Today",
+        "tomorrow": "Tomorrow",
+        "days": "{count} days"
+      }
     },
     "bookings": {
       "new": {
@@ -1610,6 +1643,7 @@
         "markChecked": "Mark checked",
         "markSent": "Mark sent",
         "disableReminder": "Disable reminder",
+        "enableReminder": "Enable reminder",
         "reminderDisabled": "Reminder off · Enable",
         "sentAt": "Sent · {date}",
         "clear": "Clear"
@@ -1682,7 +1716,9 @@
       "deleteFailed": "Failed to delete booking",
       "deletePermissionDenied": "Permission denied: You do not have access to delete this booking",
       "pickupChecklistRequired": "The pickup checklist must be completed before marking this booking as on rent.",
-      "returnChecklistRequired": "The return checklist must be completed before marking this booking as completed."
+      "returnChecklistRequired": "The return checklist must be completed before marking this booking as completed.",
+      "customerLoadFailed": "Failed to load customer record",
+      "reminderMarkFailed": "Failed to mark reminder"
     },
     "warning": {
       "vehicleConflict": "Warning: Vehicle is already booked during this period (Booking {bookingNumber}). Please choose a different vehicle or dates.",
@@ -1797,7 +1833,9 @@
       "uploadPhotoFailed": "Failed to upload photo",
       "nameRequired": "First name and last name are required.",
       "saveFailed": "Failed to save changes",
-      "deactivateFailed": "Failed to deactivate staff member"
+      "deactivateFailed": "Failed to deactivate staff member",
+      "deleteActiveMember": "You can only delete inactive staff members.",
+      "inviteFailed": "Failed to send invite."
     },
     "passwordRequired": "Please enter a new password and confirm it.",
     "passwordMismatch": "Passwords do not match.",
@@ -1809,7 +1847,9 @@
     "statusInactive": "Inactive",
     "reactivate": "Reactivate",
     "reactivating": "Reactivating...",
-    "reactivateConfirm": "Reactivate this staff member?"
+    "reactivateConfirm": "Reactivate this staff member?",
+    "reactivateFailed": "Failed to reactivate staff member.",
+    "notAllowedToggleActive": "Only administrators can activate or deactivate staff members."
   },
   "staffVehicles": {
     "errors": {
@@ -1833,7 +1873,8 @@
     "status": {
       "ready": "Ready",
       "preparing": "Preparing",
-      "onRent": "On rent"
+      "onRent": "On rent",
+      "liveLabel": "Live vehicle status"
     },
     "buttons": {
       "edit": "Edit",
@@ -1843,7 +1884,7 @@
       "openIssue": "Open issue",
       "expiredCompliance": "Expired vehicle compliance",
       "checklistIncomplete": "Checklist incomplete",
-      "expiredComplianceWithName": "Expired {name}"
+      "expiredComplianceWithName": "Expired: {name}"
     },
     "holdStatus": {
       "outOfService": "Out of service",
@@ -2303,7 +2344,9 @@
       "activeLabel": "Active",
       "removeButton": "Remove",
       "addButton": "Add extra",
-      "empty": "No extras configured."
+      "empty": "No extras configured.",
+      "copyFromSk": "Copy from original language (SK)",
+      "copyFromSkWarning": "Copied from Slovak. Please translate before saving."
     },
     "guestInfo": {
       "title": "Guest Information",
@@ -2332,6 +2375,11 @@
         "addFaqButton": "Add FAQ",
         "noFaq": "No FAQ items configured."
       }
+    },
+    "billing": {
+      "title": "Billing & invoices",
+      "description": "Manage your subscription, view invoices, and update payment details in the Stripe customer portal.",
+      "openPortal": "Open billing portal"
     },
     "systemRecovery": {
       "title": "System Recovery",
@@ -2809,12 +2857,27 @@
     "vehicleDataAdblue": "AdBlue",
     "vehicleDataSelectPlaceholder": "— Select —",
     "vehicleDataFull": "Full",
-    "vehicleDataEmpty": "Empty"
+    "vehicleDataEmpty": "Empty",
+    "offlineBanner": "You're offline — this checklist is read-only. Reconnect to make changes.",
+    "extrasHandedOverTitle": "Extras handed over",
+    "extrasHandedOverItem": "{name} handed over",
+    "extrasReturnedTitle": "Extras returned",
+    "extrasReturnedItem": "{name} returned",
+    "flagPhotosTitle": "Photos (optional)",
+    "pickupWarningTitle": "Missing required information",
+    "pickupWarningBody": "You have not entered the following:",
+    "pickupWarningContinue": "Continue anyway",
+    "pickupWarningGoBack": "Go back",
+    "pickupWarningFieldKm": "KM",
+    "pickupWarningFieldFuel": "Fuel",
+    "pickupWarningFieldAdblue": "AdBlue",
+    "pickupWarningFieldPhotos": "Photos"
   },
   "bookingsImport": {
     "backToBookings": "Back to bookings",
     "title": "Import bookings",
     "subtitle": "Upload a CSV or JSON export from your booking platform.",
+    "serverError": "Server error {status}",
     "tabs": {
       "file": "File upload",
       "ical": "iCal URL"
@@ -2943,7 +3006,7 @@
     "table": {
       "bookingNumber": "Booking #",
       "status": "Status",
-      "pickup": "Pick-up",
+      "pickup": "Pickup",
       "return": "Return"
     },
     "status": {
@@ -2976,7 +3039,8 @@
     "noCode": "No booking code found. Please use the link from your confirmation message.",
     "notFound": "Booking not found.",
     "back": "Back",
-    "previewBadge": "Preview"
+    "previewBadge": "Preview",
+    "submitError": "Something went wrong. Please try again."
   },
   "installBanner": {
     "title": "Install CamperFlow",

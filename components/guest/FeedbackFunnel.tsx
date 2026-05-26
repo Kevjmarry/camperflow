@@ -19,6 +19,7 @@ export interface FeedbackMessages {
   doneHeading: string;
   doneBody: string;
   previewBadge: string;
+  submitError: string;
 }
 
 interface Props {
@@ -51,7 +52,7 @@ export default function FeedbackFunnel({ bookingCode, googleReviewUrl, messages:
       if (!res.ok) throw new Error('failed');
       setStep('done');
     } catch {
-      setSubmitError('Something went wrong. Please try again.');
+      setSubmitError(m.submitError);
     } finally {
       setSubmitting(false);
     }

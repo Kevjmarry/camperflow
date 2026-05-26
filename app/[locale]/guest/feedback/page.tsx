@@ -92,6 +92,7 @@ export default async function GuestFeedbackPage({ params, searchParams }: PagePr
     doneHeading:     t("doneHeading"),
     doneBody:        t("doneBody"),
     previewBadge:    t("previewBadge"),
+    submitError:     t("submitError"),
   };
 
   return (

@@ -1452,7 +1452,7 @@ export default function ChecklistDetailClient({
                 footerContent={isPickupOrHandover && pickupExtras.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
-                      Extras handed over
+                      {t('extrasHandedOverTitle')}
                     </span>
                     {pickupExtras.map((extra) => (
                       <div
@@ -1521,7 +1521,7 @@ export default function ChecklistDetailClient({
                             </div>
                           </label>
                           <span style={{ fontWeight: 500, marginTop: '2px' }}>
-                            {(extra.name_i18n as Record<string, string> | undefined)?.[locale] || extra.name_i18n?.sk || extra.name} handed over
+                            {t('extrasHandedOverItem', { name: (extra.name_i18n as Record<string, string> | undefined)?.[locale] || (extra.name_i18n as any)?.sk || extra.name })}
                           </span>
                         </div>
                       </div>
@@ -1700,7 +1700,7 @@ export default function ChecklistDetailClient({
                 footerContent={returnExtras.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <span style={{ fontWeight: 600, fontSize: '13px', color: 'rgb(var(--text))' }}>
-                      Extras returned
+                      {t('extrasReturnedTitle')}
                     </span>
                     {returnExtras.map((extra) => (
                       <div
@@ -1770,7 +1770,7 @@ export default function ChecklistDetailClient({
                             </div>
                           </label>
                           <span style={{ fontWeight: 500, marginTop: '2px' }}>
-                            {(extra.name_i18n as Record<string, string> | undefined)?.[locale] || extra.name_i18n?.sk || extra.name} returned
+                            {t('extrasReturnedItem', { name: (extra.name_i18n as Record<string, string> | undefined)?.[locale] || (extra.name_i18n as any)?.sk || extra.name })}
                           </span>
                         </div>
                       </div>

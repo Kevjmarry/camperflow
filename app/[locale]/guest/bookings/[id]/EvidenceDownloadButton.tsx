@@ -6,9 +6,10 @@ import { useState } from "react";
 interface Props {
   urls: string[];
   label: string;
+  busyLabel?: string;
 }
 
-export function EvidenceDownloadButton({ urls, label }: Props) {
+export function EvidenceDownloadButton({ urls, label, busyLabel }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function handleDownload() {
@@ -85,7 +86,7 @@ export function EvidenceDownloadButton({ urls, label }: Props) {
         />
         <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
-      {busy ? "Zipping…" : label}
+      {busy ? (busyLabel ?? "…") : label}
     </button>
   );
 }

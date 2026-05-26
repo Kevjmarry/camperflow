@@ -205,7 +205,7 @@ export default function StaffMemberPage() {
 
       await refetchMember();
     } catch (err: any) {
-      setInviteError(err?.message || 'Failed to send invite.');
+      setInviteError(err?.message || t('errors.inviteFailed'));
     } finally {
       setIsInviting(false);
     }
@@ -421,7 +421,7 @@ export default function StaffMemberPage() {
     }
 
     if (member.active === true) {
-      setDeleteError("You can only delete inactive staff members.");
+      setDeleteError(t('errors.deleteActiveMember'));
       return;
     }
 
