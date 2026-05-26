@@ -1373,10 +1373,13 @@
         "cleaning": "Čistenie",
         "pickup": "Prevzatie",
         "return": "Vrátenie",
+        "handover": "Odovzdanie",
         "guest_prereturn": "Predbežné vrátenie hosťom",
         "vehicle_readiness": "Pripravenosť vozidla",
         "maintenance": "Údržba",
-        "mechanical": "Mechanika"
+        "mechanical": "Mechanika",
+        "pre_season": "Pred sezónou",
+        "post_season": "Po sezóne"
       },
       "severity": {
         "low": "Nízka",
@@ -2476,6 +2479,7 @@
   "checklistTypeLabels": {
     "pickup": "Prevzatie",
     "return": "Vrátenie",
+    "handover": "Odovzdanie",
     "cleaning": "Čistenie",
     "mechanical": "Mechanické",
     "guest_prereturn": "Predbežné vrátenie hosťom",

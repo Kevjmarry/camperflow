@@ -1373,10 +1373,13 @@
         "cleaning": "Reinigung",
         "pickup": "Abnahme",
         "return": "Rückgabe",
+        "handover": "Übergabe",
         "guest_prereturn": "Gast-Vorabnahme",
         "vehicle_readiness": "Fahrzeugbereitschaft",
         "maintenance": "Wartung",
-        "mechanical": "Mechanik"
+        "mechanical": "Mechanik",
+        "pre_season": "Vorsaison",
+        "post_season": "Nachsaison"
       },
       "severity": {
         "low": "Niedrig",
@@ -2476,6 +2479,7 @@
   "checklistTypeLabels": {
     "pickup": "Abholung",
     "return": "Rückgabe",
+    "handover": "Übergabe",
     "cleaning": "Reinigung",
     "mechanical": "Mechanik",
     "guest_prereturn": "Gäste-Vorrückgabe",

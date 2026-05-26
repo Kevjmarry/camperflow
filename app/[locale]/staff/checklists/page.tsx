@@ -304,12 +304,14 @@ export default function ChecklistsPage() {
       const map: Record<string, string> = {
         cleaning:          t('checklistTypes.cleaning'),
         pickup:            t('checklistTypes.pickup'),
-        handover:          t('checklistTypes.pickup'),
+        handover:          t('checklistTypes.handover'),
         return:            t('checklistTypes.return'),
         guest_prereturn:   t('checklistTypes.guest_prereturn'),
         vehicle_readiness: t('checklistTypes.vehicle_readiness'),
         maintenance:       t('checklistTypes.maintenance'),
         mechanical:        t('checklistTypes.mechanical'),
+        pre_season:        t('checklistTypes.pre_season'),
+        post_season:       t('checklistTypes.post_season'),
       };
       return map[type] ?? type;
     },

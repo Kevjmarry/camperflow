@@ -1373,10 +1373,13 @@
         "cleaning": "Cleaning",
         "pickup": "Pickup",
         "return": "Return",
+        "handover": "Handover",
         "guest_prereturn": "Guest Pre-Return",
         "vehicle_readiness": "Vehicle Readiness",
         "maintenance": "Maintenance",
-        "mechanical": "Mechanical"
+        "mechanical": "Mechanical",
+        "pre_season": "Pre-Season",
+        "post_season": "Post-Season"
       },
       "severity": {
         "low": "Low",
@@ -2476,6 +2479,7 @@
   "checklistTypeLabels": {
     "pickup": "Pickup",
     "return": "Return",
+    "handover": "Handover",
     "cleaning": "Cleaning",
     "mechanical": "Mechanical",
     "guest_prereturn": "Guest Pre-Return",
