@@ -8,6 +8,8 @@ import BackLink from "@/components/staff/BackLink";
 import { createClient } from "@/lib/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 
+type Vehicle = { id: string; name: string; registration: string };
+
 export default function AddonsPage() {
   const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
@@ -20,6 +22,9 @@ export default function AddonsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [widgetSaving, setWidgetSaving] = useState(false);
+  const [widgetError, setWidgetError] = useState("");
+  const [widgetSuccess, setWidgetSuccess] = useState(false);
 
   const [addonStates, setAddonStates] = useState<Record<string, boolean>>({});
 
@@ -27,6 +32,12 @@ export default function AddonsPage() {
   const [reviewRequestRemindersEnabled, setReviewRequestRemindersEnabled] = useState(true);
   const [reviewRequestTemplate, setReviewRequestTemplate] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
+
+  // Availability Widget fields
+  const [widgetPublicEnabled, setWidgetPublicEnabled] = useState(false);
+  const [widgetVehicleIds, setWidgetVehicleIds] = useState<string[]>([]);
+  const [widgetRequestEmail, setWidgetRequestEmail] = useState('');
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   // ── Auth check ──────────────────────────────────────────────────────────────
 
@@ -46,7 +57,7 @@ export default function AddonsPage() {
     init();
   }, [supabase, locale, router]);
 
-  // ── Load review funnel settings ─────────────────────────────────────────────
+  // ── Load settings ───────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!company?.id) {
@@ -54,21 +65,29 @@ export default function AddonsPage() {
       return;
     }
     const load = async () => {
-      const [{ data: settings }, { data: addons }] = await Promise.all([
+      const [{ data: settings }, { data: addons }, { data: vehicleRows }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("review_request_reminders_enabled, review_request_whatsapp_template, google_review_url")
+          .select("review_request_reminders_enabled, review_request_whatsapp_template, google_review_url, widget_public_enabled, widget_vehicle_ids, widget_request_email")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
           .from("company_addons")
           .select("addon_key, enabled")
           .eq("company_id", company.id),
+        supabase
+          .from("vehicles")
+          .select("id, name, registration")
+          .eq("company_id", company.id)
+          .order("name"),
       ]);
-if (settings) {
+      if (settings) {
         setReviewRequestRemindersEnabled((settings as any).review_request_reminders_enabled ?? true);
         setReviewRequestTemplate((settings as any).review_request_whatsapp_template ?? '');
         setGoogleReviewUrl((settings as any).google_review_url ?? '');
+        setWidgetPublicEnabled((settings as any).widget_public_enabled ?? false);
+        setWidgetVehicleIds((settings as any).widget_vehicle_ids ?? []);
+        setWidgetRequestEmail((settings as any).widget_request_email ?? '');
       }
       if (addons) {
         const states: Record<string, boolean> = {};
@@ -77,12 +96,15 @@ if (settings) {
         }
         setAddonStates(states);
       }
+      if (vehicleRows) {
+        setVehicles(vehicleRows as Vehicle[]);
+      }
       setLoading(false);
     };
     load();
   }, [company?.id, themeLoading, supabase]);
 
-  // ── Save handler ────────────────────────────────────────────────────────────
+  // ── Review Funnel save ──────────────────────────────────────────────────────
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -107,7 +129,43 @@ if (settings) {
     }
   };
 
-  // ── Early return: loading ───────────────────────────────────────────────────
+  // ── Widget save ─────────────────────────────────────────────────────────────
+
+  const handleWidgetSave = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!company?.id) return;
+    setWidgetError(""); setWidgetSuccess(false); setWidgetSaving(true);
+    try {
+      const { error: saveErr } = await supabase
+        .from("company_settings")
+        .update({
+          widget_public_enabled: widgetPublicEnabled,
+          widget_vehicle_ids: widgetVehicleIds.length > 0 ? widgetVehicleIds : null,
+          widget_request_email: widgetRequestEmail.trim() || null,
+        })
+        .eq("id", company.id);
+      if (saveErr) throw saveErr;
+      setWidgetSuccess(true);
+      setTimeout(() => setWidgetSuccess(false), 3000);
+    } catch (err: any) {
+      setWidgetError(err.message || t("errors.saveSettingsFailed"));
+    } finally {
+      setWidgetSaving(false);
+    }
+  };
+
+  // ── Vehicle selection helpers ───────────────────────────────────────────────
+
+  const toggleVehicle = (id: string) => {
+    setWidgetVehicleIds(prev =>
+      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+    );
+  };
+
+  // null = all vehicles; non-empty array = specific subset
+  const allVehiclesSelected = widgetVehicleIds.length === 0;
+
+  // ── Loading ─────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -121,9 +179,13 @@ if (settings) {
     );
   }
 
-  // Explicit DB state: only true === Enabled; false or missing row === Disabled
   const reviewFunnelEnabled = addonStates['review_funnel'] === true;
   const availabilityWidgetEnabled = addonStates['availability_widget'] === true;
+
+  // Embed snippet shown to staff
+  const embedSnippet = company?.id
+    ? `<iframe\n  src="${typeof window !== 'undefined' ? window.location.origin : ''}/${locale}/widget/${company.id}"\n  width="100%"\n  height="600"\n  frameborder="0"\n  style="border:none;border-radius:8px;"\n></iframe>`
+    : '';
 
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -192,7 +254,6 @@ if (settings) {
                 {/* Card body */}
                 <form onSubmit={handleSave} style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
 
-                  {/* Locked notice */}
                   {!reviewFunnelEnabled && (
                     <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
                       This add-on is not enabled for this company.
@@ -330,43 +391,235 @@ if (settings) {
               <div style={{
                 border: "1px solid rgb(var(--border))",
                 borderRadius: "var(--radius)",
-                padding: "var(--space-5) var(--space-6)",
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: "var(--space-4)",
-                flexWrap: "wrap",
                 opacity: availabilityWidgetEnabled ? 1 : 0.6,
               }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                  <span style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>
-                    Availability Widget
+
+                {/* Card header */}
+                <div style={{
+                  padding: "var(--space-5) var(--space-6)",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: "var(--space-4)",
+                  flexWrap: "wrap",
+                  borderBottom: "1px solid rgb(var(--border))",
+                }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "rgb(var(--text))" }}>
+                      Availability Widget
+                    </span>
+                    <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0, lineHeight: 1.5, maxWidth: "480px" }}>
+                      Embed a live availability calendar on your website so guests can check vehicle availability before enquiring.
+                    </p>
+                  </div>
+                  <span style={{
+                    flexShrink: 0,
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    padding: "3px 10px",
+                    borderRadius: "9999px",
+                    background: availabilityWidgetEnabled
+                      ? "rgb(var(--success) / 0.12)"
+                      : "rgb(var(--muted) / 0.12)",
+                    color: availabilityWidgetEnabled
+                      ? "rgb(var(--success))"
+                      : "rgb(var(--muted))",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {availabilityWidgetEnabled ? "Enabled" : "Disabled"}
                   </span>
-                  <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0, lineHeight: 1.5, maxWidth: "480px" }}>
-                    Embed a live availability calendar on your website so guests can check vehicle availability before enquiring.
-                  </p>
+                </div>
+
+                {/* Card body */}
+                <form onSubmit={handleWidgetSave} style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
+
                   {!availabilityWidgetEnabled && (
                     <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
                       This add-on is not enabled for this company.
                     </p>
                   )}
-                </div>
-                <span style={{
-                  flexShrink: 0,
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  padding: "3px 10px",
-                  borderRadius: "9999px",
-                  background: availabilityWidgetEnabled
-                    ? "rgb(var(--success) / 0.12)"
-                    : "rgb(var(--muted) / 0.12)",
-                  color: availabilityWidgetEnabled
-                    ? "rgb(var(--success))"
-                    : "rgb(var(--muted))",
-                  whiteSpace: "nowrap",
-                }}>
-                  {availabilityWidgetEnabled ? "Enabled" : "Disabled"}
-                </span>
+
+                  {/* Public embed toggle */}
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: (isAdmin && availabilityWidgetEnabled) ? "pointer" : "default" }}>
+                      <input
+                        type="checkbox"
+                        checked={widgetPublicEnabled}
+                        onChange={(e) => setWidgetPublicEnabled(e.target.checked)}
+                        disabled={!isAdmin || !availabilityWidgetEnabled}
+                      />
+                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
+                        Enable public widget
+                      </span>
+                    </label>
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
+                      When enabled, the embed link below will serve a live availability calendar to your website visitors.
+                    </p>
+                  </div>
+
+                  {/* Vehicle selection */}
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <span className="label" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                      Vehicles shown in widget
+                    </span>
+                    <p className="helper-text" style={{ marginTop: 0, marginBottom: "var(--space-3)" }}>
+                      Select which vehicles guests can see. Leave all unchecked to show all vehicles.
+                    </p>
+                    {vehicles.length === 0 ? (
+                      <p style={{ fontSize: "13px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
+                        No vehicles found for this company.
+                      </p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                        {vehicles.map(v => (
+                          <label
+                            key={v.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "var(--space-3)",
+                              cursor: (isAdmin && availabilityWidgetEnabled) ? "pointer" : "default",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={widgetVehicleIds.includes(v.id)}
+                              onChange={() => toggleVehicle(v.id)}
+                              disabled={!isAdmin || !availabilityWidgetEnabled}
+                            />
+                            <span style={{ fontSize: "14px", color: "rgb(var(--text))" }}>
+                              {v.name}
+                              <span style={{ marginLeft: "var(--space-2)", fontSize: "12px", color: "rgb(var(--muted))" }}>
+                                {v.registration}
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                        {allVehiclesSelected && vehicles.length > 0 && (
+                          <p style={{ margin: "var(--space-1) 0 0", fontSize: "12px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
+                            All vehicles will be shown (none selected = show all).
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Reservation request email */}
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <label htmlFor="widget_request_email" className="label">
+                      Reservation request email
+                    </label>
+                    <input
+                      id="widget_request_email"
+                      type="email"
+                      className="input"
+                      placeholder="e.g. bookings@yourcompany.com"
+                      value={widgetRequestEmail}
+                      onChange={(e) => setWidgetRequestEmail(e.target.value)}
+                      disabled={!isAdmin || !availabilityWidgetEnabled}
+                      style={{ width: "100%", maxWidth: "400px" }}
+                    />
+                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                      Enquiries submitted via the widget are sent to this address. Leave blank to use your company contact email.
+                    </p>
+                  </div>
+
+                  {/* Embed code preview */}
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <span className="label" style={{ display: "block", marginBottom: "var(--space-2)" }}>
+                      Embed code
+                    </span>
+                    <p className="helper-text" style={{ marginTop: 0, marginBottom: "var(--space-3)" }}>
+                      Paste this snippet into your website where you want the availability calendar to appear.
+                    </p>
+                    <pre style={{
+                      margin: 0,
+                      padding: "var(--space-4)",
+                      background: "rgb(var(--surface-alt, var(--surface)))",
+                      border: "1px solid rgb(var(--border))",
+                      borderRadius: "var(--radius)",
+                      fontSize: "12px",
+                      fontFamily: "monospace",
+                      color: "rgb(var(--text))",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all",
+                      lineHeight: 1.6,
+                      opacity: availabilityWidgetEnabled ? 1 : 0.5,
+                    }}>
+                      {embedSnippet || '<iframe\n  src="/widget/[company-id]"\n  ...\n></iframe>'}
+                    </pre>
+                    {availabilityWidgetEnabled && embedSnippet && (
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{
+                          marginTop: "var(--space-2)",
+                          fontSize: "12px",
+                          padding: "var(--space-1) var(--space-3)",
+                        }}
+                        onClick={() => navigator.clipboard?.writeText(embedSnippet)}
+                      >
+                        Copy
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Preview button */}
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <a
+                      href={availabilityWidgetEnabled && company?.id ? `/${locale}/widget/${company.id}` : undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      tabIndex={availabilityWidgetEnabled ? 0 : -1}
+                      aria-disabled={!availabilityWidgetEnabled}
+                      className="btn"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "var(--space-2)",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        background: availabilityWidgetEnabled ? "rgb(var(--brand-light))" : "rgb(var(--muted) / 0.08)",
+                        color: availabilityWidgetEnabled ? "rgb(var(--brand))" : "rgb(var(--muted))",
+                        border: availabilityWidgetEnabled
+                          ? "1px solid rgb(var(--brand) / 0.35)"
+                          : "1px solid rgb(var(--border))",
+                        padding: "var(--space-2) var(--space-4)",
+                        pointerEvents: availabilityWidgetEnabled ? "auto" : "none",
+                        cursor: availabilityWidgetEnabled ? "pointer" : "default",
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                        <path d="M5.5 2.5H2a1 1 0 0 0-1 1V12a1 1 0 0 0 1 1h8.5a1 1 0 0 0 1-1V8.5M8.5 1H13m0 0v4.5M13 1 6.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Preview widget
+                    </a>
+                  </div>
+
+                  {widgetError && (
+                    <div style={{ padding: "var(--space-3) var(--space-4)", background: "rgb(var(--error) / 0.1)", border: "1px solid rgb(var(--error) / 0.3)", borderRadius: "var(--radius)", color: "rgb(var(--error))", fontSize: "14px" }}>
+                      {widgetError}
+                    </div>
+                  )}
+                  {widgetSuccess && (
+                    <div style={{ padding: "var(--space-3) var(--space-4)", background: "rgb(var(--success) / 0.1)", border: "1px solid rgb(var(--success) / 0.3)", borderRadius: "var(--radius)", color: "rgb(var(--success))", fontSize: "14px" }}>
+                      {t("success.saved")}
+                    </div>
+                  )}
+
+                  {isAdmin && (
+                    <div>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={widgetSaving || !availabilityWidgetEnabled}
+                        style={{ opacity: (widgetSaving || !availabilityWidgetEnabled) ? 0.6 : 1, cursor: (widgetSaving || !availabilityWidgetEnabled) ? "not-allowed" : "pointer" }}
+                      >
+                        {widgetSaving ? t("actions.saving") : t("actions.saveChanges")}
+                      </button>
+                    </div>
+                  )}
+                </form>
               </div>
 
             </div>
