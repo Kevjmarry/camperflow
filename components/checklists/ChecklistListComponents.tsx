@@ -203,7 +203,7 @@ function getItemYear(item: ChecklistItem): number {
   const dateStr = isPickup
     ? (item.pickup_at ?? item.return_at ?? item.created_at)
     : (item.return_at ?? item.pickup_at ?? item.created_at);
-  return new Date(dateStr).getFullYear();
+  return new Date(dateStr.length === 10 ? dateStr + 'T00:00:00' : dateStr).getFullYear();
 }
 
 // ─── ChecklistSection (booking checklists, grouped by status) ────────────────

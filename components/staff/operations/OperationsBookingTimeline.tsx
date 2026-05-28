@@ -35,6 +35,7 @@ interface Props {
   today?: string // ISO string from server loader — frozen for demo company
   onEditBlock?: (block: TimelineVehicleBlock & { vehicleName: string }) => void
   onDeleteBlock?: (blockId: string) => void
+  onCellClick?: (payload: { vehicleId: string; vehicleName: string; dateISO: string; x: number; y: number }) => void
 }
 
 const DAYS_BACK = 30
@@ -60,7 +61,7 @@ const FALLBACK_STYLE = STATUS_STYLE.draft
 
 const LEGEND_STATUSES = ['confirmed', 'on_rent', 'blocked', 'draft', 'completed'] as const
 
-export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC', today, onEditBlock, onDeleteBlock }: Props) {
+export default function OperationsBookingTimeline({ vehicles, bookings, vehicleBlocks = [], companyTimezone = 'UTC', today, onEditBlock, onDeleteBlock, onCellClick }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const params = useParams()
@@ -306,7 +307,15 @@ export default function OperationsBookingTimeline({ vehicles, bookings, vehicleB
                       position: 'relative',
                       borderTop: '1px solid rgb(var(--border) / 0.7)',
                       background: i % 2 !== 0 ? `${DAY_BG}, rgb(var(--muted) / 0.04)` : DAY_BG,
+                      cursor: onCellClick ? 'cell' : undefined,
                     }}
+                    onClick={onCellClick ? (e: React.MouseEvent<HTMLDivElement>) => {
+                      if (e.target !== e.currentTarget) return
+                      const xInBar = e.clientX - e.currentTarget.getBoundingClientRect().left
+                      const dayIdx = Math.max(0, Math.floor(xInBar / PX_PER_DAY))
+                      const clicked = new Date(windowStart.getTime() + dayIdx * 86_400_000)
+                      onCellClick({ vehicleId: v.id, vehicleName: v.name, dateISO: clicked.toLocaleDateString('en-CA', { timeZone: companyTimezone }), x: e.clientX, y: e.clientY })
+                    } : undefined}
                   >
                     {weekendOffsets.map((leftPx) => (
                       <div key={leftPx} style={{ position: 'absolute', top: 0, bottom: 0, left: leftPx, width: PX_PER_DAY, background: '#f3f0ff', pointerEvents: 'none', zIndex: 0 }} />

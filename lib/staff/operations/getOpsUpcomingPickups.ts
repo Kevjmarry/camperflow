@@ -104,6 +104,14 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const today = getDemoToday(companyId)
 
+  const { data: companySettings } = await supabase
+    .from('company_settings')
+    .select('company_timezone')
+    .eq('id', companyId)
+    .maybeSingle()
+  const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
+  const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
+
   const { data, error } = await supabase
     .from('ops_bookings')
     .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, booking_status')
@@ -182,7 +190,7 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
   )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = dateFmt.format(today)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase

@@ -103,6 +103,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
     .eq('id', companyId)
     .maybeSingle()
   const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
+  const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
 
   const startOfToday = new Date(today)
   startOfToday.setHours(0, 0, 0, 0)
@@ -144,7 +145,7 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
   )
 
   const vehicleIds = (data ?? []).map((b) => b.vehicle_id).filter(isUUID)
-  const todayStr = today.toISOString().slice(0, 10)
+  const todayStr = dateFmt.format(today)
 
   const { data: expiredCompliance, error: ecError } = vehicleIds.length
     ? await supabase

@@ -54,10 +54,10 @@ interface SharedFields {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const LANGS = ["EN", "DE", "SK"] as const;
+const LANGS = ["EN", "DE", "SK", "PL"] as const;
 type Lang = typeof LANGS[number];
 
-// Shape of the JSONB column: { EN: {...}, DE: {...}, SK: {...} }
+// Shape of the JSONB column: { EN: {...}, DE: {...}, SK: {...}, PL: {...} }
 type I18nJson = Partial<Record<Lang, Partial<Omit<I18nFields, "faq_items"> & { faq_items: FaqItem[] | null }>>>;
 
 const EMPTY_I18N: I18nFields = {
@@ -79,6 +79,7 @@ function makeEmptyI18nRecord(): Record<Lang, I18nFields> {
     EN: { ...EMPTY_I18N, faq_items: [] },
     DE: { ...EMPTY_I18N, faq_items: [] },
     SK: { ...EMPTY_I18N, faq_items: [] },
+    PL: { ...EMPTY_I18N, faq_items: [] },
   };
 }
 
@@ -166,7 +167,7 @@ export default function GuestContentPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : locale === "sk" ? "SK" : "EN");
+  const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : locale === "sk" ? "SK" : locale === "pl" ? "PL" : "EN");
   const [copyWarning, setCopyWarning] = useState(false);
 
   // Derived: first language with saved content in guest_content_i18n (SK→EN→DE)

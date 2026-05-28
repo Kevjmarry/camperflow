@@ -58,7 +58,14 @@ export async function getOpsVehiclesPreparing(): Promise<OpsVehiclePreparing[]> 
 
   const vehiclesWithOpenIssues = new Set((openIssues ?? []).map((i) => i.vehicle_id))
 
-  const todayStr = now.toISOString().slice(0, 10)
+  const { data: companySettings } = await supabase
+    .from('company_settings')
+    .select('company_timezone')
+    .eq('id', companyId)
+    .maybeSingle()
+  const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
+  const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
+  const todayStr = dateFmt.format(now)
 
   const { data: complianceRecords, error: complianceError } = vehicleIds.length
     ? await supabase

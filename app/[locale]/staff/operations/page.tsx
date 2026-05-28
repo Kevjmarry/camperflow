@@ -12,7 +12,7 @@ import { getOpsInvoiceReminders } from '@/lib/staff/operations/getOpsInvoiceRemi
 import { getOpsBlockedVehicles } from '@/lib/staff/operations/getOpsBlockedVehicles'
 import { getOpsOnRentNow } from '@/lib/staff/operations/getOpsOnRentNow'
 import { getOpsBookingTimeline } from '@/lib/staff/operations/getOpsBookingTimeline'
-import OperationsBookingTimeline from '@/components/staff/operations/OperationsBookingTimeline'
+import OperationsTimelineClient from '@/components/staff/operations/OperationsTimelineClient'
 import { getOpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
 import type { OpsWhatsAppTemplates } from '@/lib/staff/operations/getOpsWhatsAppTemplates'
 import OperationsDemoControls from '@/components/staff/operations/OperationsDemoControls'
@@ -371,7 +371,7 @@ export default async function OperationsPage({
 
           {/* Sections */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            <OperationsBookingTimeline
+            <OperationsTimelineClient
               vehicles={timelineData.vehicles}
               bookings={timelineData.bookings}
               vehicleBlocks={timelineData.vehicleBlocks}

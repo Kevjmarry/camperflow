@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, Fragment, CSSProperties } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/components/PageContainer";
@@ -11,6 +11,14 @@ import BackLink from "@/components/staff/BackLink";
 import { useTheme } from "@/contexts/ThemeContext";
 import OperationsBookingTimeline, { TimelineVehicleBlock } from "@/components/staff/operations/OperationsBookingTimeline";
 import type { OpsTimelineVehicle, OpsTimelineBooking } from "@/lib/staff/operations/getOpsBookingTimeline";
+
+interface CellMenu {
+  vehicleId: string
+  vehicleName: string
+  dateISO: string
+  x: number
+  y: number
+}
 
 interface BlockModalState {
   mode: 'create' | 'edit'
@@ -80,6 +88,7 @@ const BLOCK_TYPE_ICON: Record<string, string> = {
 
 export default function BookingsPage() {
   const { locale } = useParams<{ locale: string }>();
+  const router = useRouter();
   const t = useTranslations("bookings");
   const tBlockTypes = useTranslations("staff.operations.blockTypes");
   const tBM = useTranslations("bookings.blockModal");
@@ -94,6 +103,7 @@ export default function BookingsPage() {
   const [blockModal, setBlockModal] = useState<BlockModalState | null>(null);
   const [blockSaving, setBlockSaving] = useState(false);
   const [blockError, setBlockError] = useState('');
+  const [cellMenu, setCellMenu] = useState<CellMenu | null>(null);
 
   // Filter + sort state
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -134,6 +144,36 @@ const [dateFrom, setDateFrom] = useState<string>("");
       endAt: dateToDatetimeLocal(tomorrowEnd),
     });
   };
+
+  const handleCellClick = (payload: CellMenu) => {
+    setCellMenu(payload)
+  }
+
+  const openCreateBlockFromCell = () => {
+    if (!cellMenu) return
+    setCellMenu(null)
+    setBlockError('')
+    const [yr, mo, d] = cellMenu.dateISO.split('-').map(Number)
+    const start = new Date(yr, mo - 1, d, 9, 0)
+    const end = new Date(yr, mo - 1, d, 17, 0)
+    setBlockModal({
+      mode: 'create',
+      vehicleId: cellMenu.vehicleId,
+      blockType: 'unavailable',
+      label: '',
+      startAt: dateToDatetimeLocal(start),
+      endAt: dateToDatetimeLocal(end),
+    })
+  }
+
+  const openNewBookingFromCell = () => {
+    if (!cellMenu) return
+    const params = new URLSearchParams()
+    if (cellMenu.dateISO) params.set('date', cellMenu.dateISO)
+    if (cellMenu.vehicleId) params.set('vehicleId', cellMenu.vehicleId)
+    setCellMenu(null)
+    router.push(`/${locale}/staff/bookings/new?${params.toString()}`)
+  }
 
   const handleEditBlock = (block: TimelineVehicleBlock & { vehicleName: string }) => {
     setBlockError('');
@@ -302,11 +342,11 @@ const [dateFrom, setDateFrom] = useState<string>("");
       });
     }
 
-if (dateFrom) {
-      result = result.filter(b => b.pickup_at >= dateFrom);
-    }
-    if (dateTo) {
-      result = result.filter(b => b.pickup_at.slice(0, 10) <= dateTo);
+    if (dateFrom || dateTo) {
+      const tz = company?.company_timezone ?? 'UTC'
+      const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
+      if (dateFrom) result = result.filter(b => dateFmt.format(new Date(b.pickup_at)) >= dateFrom)
+      if (dateTo)   result = result.filter(b => dateFmt.format(new Date(b.pickup_at)) <= dateTo)
     }
 
     if (searchQuery.trim()) {
@@ -345,7 +385,7 @@ if (dateFrom) {
     });
 
     return result;
-  }, [bookings, statusFilter, vehicleFilter, dateFrom, dateTo, searchQuery, sortBy, canManage, hideCancelled, activeOnly, completedOnly]);
+  }, [bookings, statusFilter, vehicleFilter, dateFrom, dateTo, searchQuery, sortBy, canManage, hideCancelled, activeOnly, completedOnly, company]);
 
   const displayedBlocks = useMemo(() => {
     if (!showBlocks || statusFilter !== 'all') return []
@@ -353,10 +393,14 @@ if (dateFrom) {
     if (vehicleFilter !== 'all') {
       result = result.filter(bl => bl.vehicleName === vehicleFilter)
     }
-    if (dateFrom) result = result.filter(bl => bl.startAt.slice(0, 10) >= dateFrom)
-    if (dateTo) result = result.filter(bl => bl.startAt.slice(0, 10) <= dateTo)
+    if (dateFrom || dateTo) {
+      const tz = company?.company_timezone ?? 'UTC'
+      const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
+      if (dateFrom) result = result.filter(bl => dateFmt.format(new Date(bl.startAt)) >= dateFrom)
+      if (dateTo)   result = result.filter(bl => dateFmt.format(new Date(bl.startAt)) <= dateTo)
+    }
     return result
-  }, [vehicleBlocks, showBlocks, statusFilter, vehicleFilter, dateFrom, dateTo])
+  }, [vehicleBlocks, showBlocks, statusFilter, vehicleFilter, dateFrom, dateTo, company])
 
   const groupedRows = useMemo(() => {
     type Row = { kind: 'booking'; item: Booking } | { kind: 'block'; item: BlockRow }
@@ -706,6 +750,7 @@ setDateFrom('');
             vehicleBlocks={vehicleBlocks}
             onEditBlock={canManage ? handleEditBlock : undefined}
             onDeleteBlock={canManage ? handleBlockDelete : undefined}
+            onCellClick={canManage ? handleCellClick : undefined}
           />
         )}
       <div className="surface page-surface">
@@ -1368,6 +1413,50 @@ setDateFrom('');
         </div>
       </div>
       </div>
+      {/* Cell-click context menu */}
+      {cellMenu && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1500 }}
+          onClick={() => setCellMenu(null)}
+        >
+          <div
+            style={{
+              position: 'fixed',
+              top: Math.min(cellMenu.y + 8, window.innerHeight - 96),
+              left: Math.min(cellMenu.x + 8, window.innerWidth - 200),
+              background: 'rgb(var(--surface))',
+              border: '1px solid rgb(var(--border))',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '4px',
+              zIndex: 1501,
+              minWidth: '190px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1px',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '7px 10px', fontSize: '13px', color: 'rgb(var(--text))', borderRadius: 'var(--radius-sm)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgb(var(--muted) / 0.1)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onClick={openCreateBlockFromCell}
+            >
+              ⛔ {t('addBlockedPeriod')}
+            </button>
+            <button
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '7px 10px', fontSize: '13px', color: 'rgb(var(--text))', borderRadius: 'var(--radius-sm)' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgb(var(--muted) / 0.1)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onClick={openNewBookingFromCell}
+            >
+              + {t('action.newBooking')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Blocked period create/edit modal */}
       {blockModal && (
         <div

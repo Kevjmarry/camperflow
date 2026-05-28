@@ -67,7 +67,15 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
   if (!vehicleIds.length) return []
 
   const today = getDemoToday(companyId)
-  const todayStr = today.toISOString().slice(0, 10)
+
+  const { data: companySettings } = await supabase
+    .from('company_settings')
+    .select('company_timezone')
+    .eq('id', companyId)
+    .maybeSingle()
+  const companyTimezone: string = (companySettings as any)?.company_timezone ?? 'UTC'
+  const dateFmt = new Intl.DateTimeFormat('en-CA', { timeZone: companyTimezone, year: 'numeric', month: '2-digit', day: '2-digit' })
+  const todayStr = dateFmt.format(today)
 
   const { data: expiredCompliance, error: ecError } = await supabase
     .from('vehicle_compliance')
@@ -130,7 +138,7 @@ export async function getOpsBlockedVehicles(): Promise<OpsBlockedVehicle[]> {
     if (c.expiry_date && warnDays != null && c.expiry_date >= todayStr) {
       const cutoff = new Date(today)
       cutoff.setDate(cutoff.getDate() + warnDays)
-      if (c.expiry_date <= cutoff.toISOString().slice(0, 10)) inWindow = true
+      if (c.expiry_date <= dateFmt.format(cutoff)) inWindow = true
     }
 
     if (!inWindow && c.service_due_odometer_km != null && warnKm != null) {

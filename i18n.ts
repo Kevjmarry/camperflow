@@ -9,7 +9,7 @@
  */
 
 // ── Active (live) ──────────────────────────────────────────────────────────────
-export const activeLocales = ['en', 'de', 'sk'] as const;
+export const activeLocales = ['en', 'de', 'sk', 'pl'] as const;
 export type Locale = (typeof activeLocales)[number];
 export const defaultLocale: Locale = 'en';
 
@@ -20,18 +20,18 @@ export const localeNames: Record<Locale, string> = {
   en: 'English',
   de: 'Deutsch',
   sk: 'Slovenčina',
+  pl: 'Polski',
 };
 
 // ── Planned (not yet live) ─────────────────────────────────────────────────────
 export const plannedLocales = [
-  'pl', 'hu', 'cs', 'hr', 'sl',
+  'hu', 'cs', 'hr', 'sl',
   'it', 'es', 'et', 'lv', 'lt',
   'nl', 'fr',
 ] as const;
 export type PlannedLocale = (typeof plannedLocales)[number];
 
 export const plannedLocaleNames: Record<PlannedLocale, string> = {
-  pl: 'Polski',
   hu: 'Magyar',
   cs: 'Čeština',
   hr: 'Hrvatski',

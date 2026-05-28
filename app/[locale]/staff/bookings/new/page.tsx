@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import type { ExtrasData } from "@/components/bookings/BookingEditForm";
 import { EMPTY_EXTRAS } from "@/components/bookings/BookingEditForm";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import BackLink from "@/components/staff/BackLink";
@@ -42,6 +42,7 @@ export default function NewBookingPage() {
 
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -51,7 +52,7 @@ export default function NewBookingPage() {
   const [formData, setFormData] = useState({
     pickup_at: "",
     return_at: "",
-    vehicle_id: "",
+    vehicle_id: searchParams.get('vehicleId') ?? "",
     customer_name: "",
     customer_phone: "",
     customer_email: "",
@@ -84,11 +85,14 @@ export default function NewBookingPage() {
         .eq("id", companyId)
         .maybeSingle();
       if (!data) return;
-      const today = new Date();
+      const dateParam = searchParams.get('date')
+      const baseDate = dateParam
+        ? (() => { const [y, m, d] = dateParam.split('-').map(Number); return new Date(y, m - 1, d) })()
+        : new Date()
       setFormData((prev) => ({
         ...prev,
-        pickup_at: prev.pickup_at || (data.pickup_time ? toDatetimeLocal(today, data.pickup_time) : ""),
-        return_at: prev.return_at || (data.dropoff_time ? toDatetimeLocal(today, data.dropoff_time) : ""),
+        pickup_at: prev.pickup_at || (data.pickup_time ? toDatetimeLocal(baseDate, data.pickup_time) : ""),
+        return_at: prev.return_at || (data.dropoff_time ? toDatetimeLocal(baseDate, data.dropoff_time) : ""),
       }));
     };
     applyDefaults();

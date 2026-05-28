@@ -48,8 +48,12 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const nowDate = getDemoToday(companyId)
   const now = nowDate.getTime()
-  const todayStart = new Date(nowDate)
-  todayStart.setHours(0, 0, 0, 0)
+  const todayYMD = dateFmt.format(nowDate)
+  const todayMs = Date.parse(todayYMD + 'T00:00:00Z')
+  const daysFromToday = (iso: string | Date): number => {
+    const d = typeof iso === 'string' ? new Date(iso) : iso
+    return Math.round((Date.parse(dateFmt.format(d) + 'T00:00:00Z') - todayMs) / 86400000)
+  }
 
   const [activeResult, completedResult] = await Promise.all([
     supabase
@@ -104,9 +108,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     const vehicle = b.vehicles
       ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
       : null
-    const pickupDay = new Date(b.pickup_at)
-    pickupDay.setHours(0, 0, 0, 0)
-    const daysUntilPickup = Math.round((pickupDay.getTime() - todayStart.getTime()) / 86400000)
+    const daysUntilPickup = daysFromToday(b.pickup_at)
 
     // Final payment check: split or custom payment, not yet sent
     if (
@@ -158,9 +160,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       b.return_at &&
       b.return_whatsapp_sent !== true
     ) {
-      const returnDay = new Date(b.return_at)
-      returnDay.setHours(0, 0, 0, 0)
-      const daysUntilReturn = Math.round((returnDay.getTime() - todayStart.getTime()) / 86400000)
+      const daysUntilReturn = daysFromToday(b.return_at)
       if (daysUntilReturn <= 3) results.push({
         type: 'return_prep',
         id: `${b.id}-return-prep`,
@@ -187,12 +187,8 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       const vehicle = b.vehicles
         ? Array.isArray(b.vehicles) ? b.vehicles[0] : b.vehicles
         : null
-      const pickupDay = b.pickup_at ? new Date(b.pickup_at) : new Date(nowDate)
-      pickupDay.setHours(0, 0, 0, 0)
-      const daysUntilPickup = Math.round((pickupDay.getTime() - todayStart.getTime()) / 86400000)
-      const returnDay = new Date(b.return_at)
-      returnDay.setHours(0, 0, 0, 0)
-      const daysUntilReturn = Math.round((returnDay.getTime() - todayStart.getTime()) / 86400000)
+      const daysUntilPickup = daysFromToday(b.pickup_at ?? nowDate)
+      const daysUntilReturn = daysFromToday(b.return_at)
       const returnIsToday = dateFmt.format(new Date(b.return_at)) === todayStr
       results.push({
         type: 'review_request',
