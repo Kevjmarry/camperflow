@@ -6,9 +6,10 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import LocaleSwitcher from '@/components/LocaleSwitcher'
+import { useTheme } from '@/contexts/ThemeContext'
 
 // Paths that are "owned" by the More sheet
-const MORE_SECTION_PREFIXES = ['/staff/team', '/staff/customers', '/staff/company', '/staff/settings']
+const MORE_SECTION_PREFIXES = ['/staff/team', '/staff/customers', '/staff/company', '/staff/settings', '/staff/addons']
 
 // Auth/unauthenticated pages where the nav should not appear
 const AUTH_PATH_FRAGMENTS = ['/staff/login', '/staff/reset', '/staff/invite']
@@ -82,25 +83,38 @@ export default function MobileBottomNav() {
   const router = useRouter()
   const t = useTranslations('staff.nav')
   const tPC = useTranslations('pageContainer')
+  const { company } = useTheme()
   const [moreOpen, setMoreOpen] = useState(false)
 
   // Hide on auth/non-authenticated pages
   if (AUTH_PATH_FRAGMENTS.some(f => pathname.includes(f))) return null
 
+  const coreAccess = company?.core_operations_access ?? true
+  const reviewFunnelAccess = company?.review_funnel_access ?? true
+
   const isMoreActive = MORE_SECTION_PREFIXES.some(p => pathname.includes(p))
 
   const tabs = [
-    { key: 'operations', href: `/${locale}/staff/operations`, Icon: OperationsIcon },
-    { key: 'bookings',   href: `/${locale}/staff/bookings`,   Icon: BookingsIcon   },
-    { key: 'vehicles',   href: `/${locale}/staff/vehicles`,   Icon: VehiclesIcon   },
-    { key: 'checklists', href: `/${locale}/staff/checklists`, Icon: ChecklistsIcon },
+    ...(coreAccess ? [
+      { key: 'operations', href: `/${locale}/staff/operations`, Icon: OperationsIcon },
+      { key: 'bookings',   href: `/${locale}/staff/bookings`,   Icon: BookingsIcon   },
+      { key: 'vehicles',   href: `/${locale}/staff/vehicles`,   Icon: VehiclesIcon   },
+      { key: 'checklists', href: `/${locale}/staff/checklists`, Icon: ChecklistsIcon },
+    ] : []),
   ]
 
   const moreLinks = [
-    { key: 'team',      href: `/${locale}/staff/team`                  },
-    { key: 'customers', href: `/${locale}/staff/customers`              },
-    { key: 'company',   href: `/${locale}/staff/company`                },
-    { key: 'billing',   href: `/${locale}/staff/settings/billing`       },
+    ...(coreAccess ? [
+      { key: 'team',      href: `/${locale}/staff/team`            },
+      { key: 'customers', href: `/${locale}/staff/customers`        },
+      { key: 'billing',   href: `/${locale}/staff/settings/billing` },
+    ] : []),
+    ...(reviewFunnelAccess ? [
+      { key: 'addons', href: `/${locale}/staff/addons` },
+    ] : []),
+    ...(coreAccess ? [
+      { key: 'company',   href: `/${locale}/staff/company`          },
+    ] : []),
   ]
 
   const handleSignOut = async () => {

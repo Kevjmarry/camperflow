@@ -43,11 +43,8 @@ export default function CompanySettingsPage() {
   const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
   const [preArrivalRemindersEnabled, setPreArrivalRemindersEnabled] = useState(true);
   const [returnPrepRemindersEnabled, setReturnPrepRemindersEnabled] = useState(true);
-  const [reviewRequestRemindersEnabled, setReviewRequestRemindersEnabled] = useState(true);
   const [preArrivalTemplate, setPreArrivalTemplate] = useState('');
   const [returnPrepTemplate, setReturnPrepTemplate] = useState('');
-  const [reviewRequestTemplate, setReviewRequestTemplate] = useState('');
-  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,7 +134,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, review_request_whatsapp_template, map_link, google_review_url")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, map_link")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -174,12 +171,9 @@ export default function CompanySettingsPage() {
         setFinalPaymentRemindersEnabled(!!(data as any).final_payment_reminders_enabled);
         setPreArrivalRemindersEnabled((data as any).pre_arrival_reminders_enabled ?? true);
         setReturnPrepRemindersEnabled((data as any).return_prep_reminders_enabled ?? true);
-        setReviewRequestRemindersEnabled((data as any).review_request_reminders_enabled ?? true);
         setExtrasCatalog((data as any).extras_catalog ?? []);
         setPreArrivalTemplate((data as any).pre_arrival_whatsapp_template ?? '');
         setReturnPrepTemplate((data as any).return_prep_whatsapp_template ?? '');
-        setReviewRequestTemplate((data as any).review_request_whatsapp_template ?? '');
-        setGoogleReviewUrl((data as any).google_review_url ?? '');
       }
     };
     load();
@@ -272,13 +266,10 @@ export default function CompanySettingsPage() {
           final_payment_reminders_enabled: finalPaymentRemindersEnabled,
           pre_arrival_reminders_enabled:    preArrivalRemindersEnabled,
           return_prep_reminders_enabled:    returnPrepRemindersEnabled,
-          review_request_reminders_enabled: reviewRequestRemindersEnabled,
           extras_catalog:                   extrasCatalog.length > 0 ? extrasCatalog : null,
           company_timezone:                 formData.company_timezone,
           pre_arrival_whatsapp_template:    preArrivalTemplate.trim() || null,
           return_prep_whatsapp_template:    returnPrepTemplate.trim() || null,
-          review_request_whatsapp_template: reviewRequestTemplate.trim() || null,
-          google_review_url:                googleReviewUrl.trim() || null,
           map_link:                         formData.map_link.trim() || null,
         })
         .eq("id", companyId)
@@ -748,100 +739,6 @@ export default function CompanySettingsPage() {
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.returnPrep.templateHelper")}
                     </p>
-                  </div>
-                </div>
-
-                {/* Review request WhatsApp reminder */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  <div>
-                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
-                      <input
-                        type="checkbox"
-                        checked={reviewRequestRemindersEnabled}
-                        onChange={(e) => setReviewRequestRemindersEnabled(e.target.checked)}
-                        disabled={!isAdmin}
-                      />
-                      <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
-                        {t("reminders.reviewRequest.label")}
-                      </span>
-                    </label>
-                    <p className="helper-text" style={{ marginTop: "var(--space-1)", marginLeft: "calc(16px + var(--space-3))" }}>
-                      {t("reminders.reviewRequest.helper")}
-                    </p>
-                  </div>
-                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
-                    <label htmlFor="review_request_template" className="label">
-                      {t("reminders.reviewRequest.templateLabel")}
-                    </label>
-                    <textarea
-                      id="review_request_template"
-                      className="input"
-                      rows={4}
-                      placeholder={t("reminders.reviewRequest.templatePlaceholder")}
-                      value={reviewRequestTemplate}
-                      onChange={(e) => setReviewRequestTemplate(e.target.value)}
-                      disabled={!isAdmin}
-                      style={{ width: "100%", maxWidth: "560px", resize: "vertical", fontFamily: "inherit" }}
-                    />
-                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
-                      {t("reminders.reviewRequest.templateHelper")}
-                    </p>
-                  </div>
-                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
-                    <label htmlFor="google_review_url" className="label">
-                      {t("reminders.reviewRequest.googleReviewUrlLabel")}
-                    </label>
-                    <input
-                      id="google_review_url"
-                      type="url"
-                      className="input"
-                      placeholder={t("reminders.reviewRequest.googleReviewUrlPlaceholder")}
-                      value={googleReviewUrl}
-                      onChange={(e) => setGoogleReviewUrl(e.target.value)}
-                      disabled={!isAdmin}
-                      style={{ width: "100%", maxWidth: "560px" }}
-                    />
-                    <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
-                      {t("reminders.reviewRequest.googleReviewUrlHelper")}
-                    </p>
-                    {!googleReviewUrl.trim() && (
-                      <p style={{
-                        marginTop: "var(--space-2)",
-                        fontSize: "13px",
-                        color: "rgb(161 98 7)",
-                        background: "rgb(254 243 199)",
-                        border: "1px solid rgb(253 230 138)",
-                        borderRadius: "var(--radius)",
-                        padding: "var(--space-2) var(--space-3)",
-                        lineHeight: 1.5,
-                      }}>
-                        {t("reminders.reviewRequest.noReviewUrlWarning")}
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ marginLeft: "calc(16px + var(--space-3))", marginTop: "var(--space-1)" }}>
-                    <a
-                      href={`/${locale}/guest/feedback?preview=1`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "var(--space-2)",
-                        fontSize: "13px",
-                        fontWeight: 500,
-                        background: "rgb(var(--brand-light))",
-                        color: "rgb(var(--brand))",
-                        border: "1px solid rgb(var(--brand) / 0.35)",
-                        padding: "var(--space-2) var(--space-4)",
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-                        <path d="M5.5 2.5H2a1 1 0 0 0-1 1V12a1 1 0 0 0 1 1h8.5a1 1 0 0 0 1-1V8.5M8.5 1H13m0 0v4.5M13 1 6.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {t("reminders.reviewRequest.previewFeedbackPage")}
-                    </a>
                   </div>
                 </div>
 

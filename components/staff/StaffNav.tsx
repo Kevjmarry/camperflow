@@ -16,16 +16,26 @@ export default function StaffNav() {
   const [showLeft, setShowLeft] = useState(false)
   const [showRight, setShowRight] = useState(false)
 
+  const coreAccess = company?.core_operations_access ?? true
+  const reviewFunnelAccess = company?.review_funnel_access ?? true
+
   const links = [
-    { key: 'operations', href: `/${locale}/staff/operations` },
-    { key: 'bookings',   href: `/${locale}/staff/bookings` },
-    { key: 'vehicles',   href: `/${locale}/staff/vehicles` },
-    { key: 'checklists', href: `/${locale}/staff/checklists` },
-    { key: 'guestContent', href: `/${locale}/staff/guest-content` },
-    { key: 'team',       href: `/${locale}/staff/team` },
-    { key: 'customers',  href: `/${locale}/staff/customers` },
-    { key: 'billing',    href: `/${locale}/staff/settings/billing` },
-    { key: 'company',    href: `/${locale}/staff/company` },
+    ...(coreAccess ? [
+      { key: 'operations',  href: `/${locale}/staff/operations` },
+      { key: 'bookings',    href: `/${locale}/staff/bookings` },
+      { key: 'vehicles',    href: `/${locale}/staff/vehicles` },
+      { key: 'checklists',  href: `/${locale}/staff/checklists` },
+      { key: 'guestContent', href: `/${locale}/staff/guest-content` },
+      { key: 'team',        href: `/${locale}/staff/team` },
+      { key: 'customers',   href: `/${locale}/staff/customers` },
+      { key: 'billing',     href: `/${locale}/staff/settings/billing` },
+    ] : []),
+    ...(reviewFunnelAccess ? [
+      { key: 'addons', href: `/${locale}/staff/addons` },
+    ] : []),
+    ...(coreAccess ? [
+      { key: 'company',     href: `/${locale}/staff/company` },
+    ] : []),
   ]
 
   function updateFades() {

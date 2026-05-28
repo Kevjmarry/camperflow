@@ -18,6 +18,8 @@ export interface CompanySettings {
   secondary_color: string;
   accent_color: string;
   company_timezone: string;
+  core_operations_access?: boolean;
+  review_funnel_access?: boolean;
 }
 
 interface ThemeContextType {
@@ -34,6 +36,8 @@ const defaultCompany: CompanySettings = {
   secondary_color: "#8b5cf6",
   accent_color: "#10b981",
   company_timezone: "Europe/Bratislava",
+  core_operations_access: true,
+  review_funnel_access: true,
 };
 
 const STORAGE_KEY = "camperflow:last_company_theme";
@@ -66,6 +70,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearCachedTheme = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  };
+
   const loadCompanySettings = async (): Promise<void> => {
     const requestId = ++requestIdRef.current;
 
@@ -79,6 +89,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setLoading(value);
     };
 
+    // Tracks whether getUser() confirmed an authenticated session.
+    // Used in the catch to avoid wiping cache on a pure network failure
+    // when auth state was never established.
+    let userIsAuthenticated = false;
+
     try {
       const supabase = createClient();
 
@@ -86,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // No authenticated user → try cached company first
+      // No authenticated user → cached theme is safe for public/pre-login display
       if (!user) {
         const cached = loadCachedTheme();
         if (cached) {
@@ -99,6 +114,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      userIsAuthenticated = true;
+
       const { data: staffProfile } = await supabase
         .from("staff_profiles")
         .select("company_id")
@@ -106,45 +123,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (!staffProfile?.company_id) {
-        const cached = loadCachedTheme();
-        if (cached) {
-          safeSetCompany(cached);
-          applyTheme(cached);
-        } else {
-          safeSetCompany(defaultCompany);
-          applyTheme(defaultCompany);
-        }
+        // Authenticated user with no company link — never show stale cached company data
+        clearCachedTheme();
+        applyTheme(defaultCompany);
+        safeSetCompany(null);
         return;
       }
 
       const { data: companyData } = await supabase
         .from("companies")
-        .select("id, name, logo_url, primary_color, secondary_color, accent_color, company_timezone")
+        .select("id, name, logo_url, primary_color, secondary_color, accent_color, company_timezone, core_operations_access, review_funnel_access")
         .eq("id", staffProfile.company_id)
         .maybeSingle();
 
       if (!companyData) {
-        const cached = loadCachedTheme();
-        if (cached) {
-          safeSetCompany(cached);
-          applyTheme(cached);
-        } else {
-          safeSetCompany(defaultCompany);
-          applyTheme(defaultCompany);
-        }
+        // Company row missing for this profile — treat same as no company link
+        clearCachedTheme();
+        applyTheme(defaultCompany);
+        safeSetCompany(null);
         return;
       }
 
       safeSetCompany(companyData);
       applyAndCacheTheme(companyData);
     } catch {
-      const cached = loadCachedTheme();
-      if (cached) {
-        safeSetCompany(cached);
-        applyTheme(cached);
-      } else {
-        safeSetCompany(defaultCompany);
+      if (userIsAuthenticated) {
+        // Auth was confirmed but a subsequent query failed — don't fall back to stale cache
+        clearCachedTheme();
         applyTheme(defaultCompany);
+        safeSetCompany(null);
+      } else {
+        // getUser() itself threw (e.g. network down) — auth state unknown, keep cache
+        const cached = loadCachedTheme();
+        if (cached) {
+          safeSetCompany(cached);
+          applyTheme(cached);
+        } else {
+          safeSetCompany(defaultCompany);
+          applyTheme(defaultCompany);
+        }
       }
     } finally {
       safeSetLoading(false);
