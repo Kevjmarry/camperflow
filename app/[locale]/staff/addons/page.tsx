@@ -54,7 +54,7 @@ export default function AddonsPage() {
       return;
     }
     const load = async () => {
-      const [{ data }, { data: addons }] = await Promise.all([
+      const [{ data: settings }, { data: addons }] = await Promise.all([
         supabase
           .from("company_settings")
           .select("review_request_reminders_enabled, review_request_whatsapp_template, google_review_url")
@@ -65,10 +65,10 @@ export default function AddonsPage() {
           .select("addon_key, enabled")
           .eq("company_id", company.id),
       ]);
-      if (data) {
-        setReviewRequestRemindersEnabled((data as any).review_request_reminders_enabled ?? true);
-        setReviewRequestTemplate((data as any).review_request_whatsapp_template ?? '');
-        setGoogleReviewUrl((data as any).google_review_url ?? '');
+if (settings) {
+        setReviewRequestRemindersEnabled((settings as any).review_request_reminders_enabled ?? true);
+        setReviewRequestTemplate((settings as any).review_request_whatsapp_template ?? '');
+        setGoogleReviewUrl((settings as any).google_review_url ?? '');
       }
       if (addons) {
         const states: Record<string, boolean> = {};
@@ -192,14 +192,21 @@ export default function AddonsPage() {
                 {/* Card body */}
                 <form onSubmit={handleSave} style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
 
+                  {/* Locked notice */}
+                  {!reviewFunnelEnabled && (
+                    <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
+                      This add-on is not enabled for this company.
+                    </p>
+                  )}
+
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                     <div>
-                      <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: isAdmin ? "pointer" : "default" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: (isAdmin && reviewFunnelEnabled) ? "pointer" : "default" }}>
                         <input
                           type="checkbox"
                           checked={reviewRequestRemindersEnabled}
                           onChange={(e) => setReviewRequestRemindersEnabled(e.target.checked)}
-                          disabled={!isAdmin}
+                          disabled={!isAdmin || !reviewFunnelEnabled}
                         />
                         <span style={{ fontSize: "14px", fontWeight: 500, color: "rgb(var(--text))" }}>
                           {t("reminders.reviewRequest.label")}
@@ -220,7 +227,7 @@ export default function AddonsPage() {
                         placeholder={t("reminders.reviewRequest.templatePlaceholder")}
                         value={reviewRequestTemplate}
                         onChange={(e) => setReviewRequestTemplate(e.target.value)}
-                        disabled={!isAdmin}
+                        disabled={!isAdmin || !reviewFunnelEnabled}
                         style={{ width: "100%", maxWidth: "560px", resize: "vertical", fontFamily: "inherit" }}
                       />
                       <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
@@ -240,13 +247,13 @@ export default function AddonsPage() {
                       placeholder={t("reminders.reviewRequest.googleReviewUrlPlaceholder")}
                       value={googleReviewUrl}
                       onChange={(e) => setGoogleReviewUrl(e.target.value)}
-                      disabled={!isAdmin}
+                      disabled={!isAdmin || !reviewFunnelEnabled}
                       style={{ width: "100%", maxWidth: "560px" }}
                     />
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.reviewRequest.googleReviewUrlHelper")}
                     </p>
-                    {!googleReviewUrl.trim() && (
+                    {!googleReviewUrl.trim() && reviewFunnelEnabled && (
                       <p style={{
                         marginTop: "var(--space-2)",
                         fontSize: "13px",
@@ -264,9 +271,11 @@ export default function AddonsPage() {
 
                   <div style={{ marginLeft: "calc(16px + var(--space-3))", marginTop: "var(--space-1)" }}>
                     <a
-                      href={`/${locale}/guest/feedback?preview=1`}
+                      href={reviewFunnelEnabled ? `/${locale}/guest/feedback?preview=1` : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
+                      tabIndex={reviewFunnelEnabled ? 0 : -1}
+                      aria-disabled={!reviewFunnelEnabled}
                       className="btn"
                       style={{
                         display: "inline-flex",
@@ -274,10 +283,14 @@ export default function AddonsPage() {
                         gap: "var(--space-2)",
                         fontSize: "13px",
                         fontWeight: 500,
-                        background: "rgb(var(--brand-light))",
-                        color: "rgb(var(--brand))",
-                        border: "1px solid rgb(var(--brand) / 0.35)",
+                        background: reviewFunnelEnabled ? "rgb(var(--brand-light))" : "rgb(var(--muted) / 0.08)",
+                        color: reviewFunnelEnabled ? "rgb(var(--brand))" : "rgb(var(--muted))",
+                        border: reviewFunnelEnabled
+                          ? "1px solid rgb(var(--brand) / 0.35)"
+                          : "1px solid rgb(var(--border))",
                         padding: "var(--space-2) var(--space-4)",
+                        pointerEvents: reviewFunnelEnabled ? "auto" : "none",
+                        cursor: reviewFunnelEnabled ? "pointer" : "default",
                       }}
                     >
                       <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -303,8 +316,8 @@ export default function AddonsPage() {
                       <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={saving}
-                        style={{ opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}
+                        disabled={saving || !reviewFunnelEnabled}
+                        style={{ opacity: (saving || !reviewFunnelEnabled) ? 0.6 : 1, cursor: (saving || !reviewFunnelEnabled) ? "not-allowed" : "pointer" }}
                       >
                         {saving ? t("actions.saving") : t("actions.saveChanges")}
                       </button>
@@ -332,6 +345,11 @@ export default function AddonsPage() {
                   <p style={{ fontSize: "14px", color: "rgb(var(--muted))", margin: 0, lineHeight: 1.5, maxWidth: "480px" }}>
                     Embed a live availability calendar on your website so guests can check vehicle availability before enquiring.
                   </p>
+                  {!availabilityWidgetEnabled && (
+                    <p style={{ margin: 0, fontSize: "13px", color: "rgb(var(--muted))", fontStyle: "italic" }}>
+                      This add-on is not enabled for this company.
+                    </p>
+                  )}
                 </div>
                 <span style={{
                   flexShrink: 0,
