@@ -2529,5 +2529,46 @@
     "errors": {
       "loadFailed": "Abrechnungsdaten konnten nicht geladen werden. Bitte aktualisiere die Seite."
     }
+  },
+  "widget": {
+    "unavailable": "Verfügbarkeits-Widget ist derzeit nicht verfügbar.",
+    "noVehicles": "Keine Fahrzeuge für dieses Widget konfiguriert.",
+    "defaultTitle": "Fahrzeugverfügbarkeit",
+    "defaultSubtitle": "Daten wählen um Verfügbarkeit anzufragen",
+    "poweredBy": "Powered by CamperFlow",
+    "legend": {
+      "available": "Verfügbar",
+      "booked": "Gebucht",
+      "unavailable": "Nicht verfügbar"
+    },
+    "calendar": {
+      "pickupSelected": "Abholdatum gewählt — jetzt Rückgabedatum auswählen"
+    },
+    "enquiry": {
+      "ctaButton": "Verfügbarkeit anfragen / Anfragen",
+      "formTitle": "Buchung anfragen",
+      "formSubtitle": "Gib deine Daten ein und wir melden uns bald bei dir.",
+      "vehicleLabel": "Fahrzeug",
+      "vehiclePlaceholder": "Fahrzeug auswählen…",
+      "pickupLabel": "Abholdatum",
+      "returnLabel": "Rückgabedatum",
+      "nameLabel": "Dein Name",
+      "namePlaceholder": "Vollständiger Name",
+      "emailLabel": "E-Mail-Adresse",
+      "emailPlaceholder": "du@beispiel.com",
+      "phoneLabel": "Telefon (optional)",
+      "phonePlaceholder": "+49 555 000 0000",
+      "messageLabel": "Nachricht (optional)",
+      "messagePlaceholder": "Fragen oder besondere Anforderungen…",
+      "submit": "Anfrage senden",
+      "submitting": "Wird gesendet…",
+      "successTitle": "Anfrage gesendet!",
+      "successMessage": "Wir haben deine Anfrage erhalten und werden uns bald melden.",
+      "errorRequired": "Bitte alle Pflichtfelder ausfüllen.",
+      "errorReturnDate": "Das Rückgabedatum muss nach dem Abholdatum liegen.",
+      "errorVehicle": "Bitte ein Fahrzeug auswählen.",
+      "errorGeneric": "Etwas ist schief gelaufen. Bitte versuche es erneut.",
+      "errorNetwork": "Netzwerkfehler. Bitte versuche es erneut."
+    }
   }
 }

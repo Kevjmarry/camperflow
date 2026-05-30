@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, FormEvent } from 'react'
+import { useTranslations } from 'next-intl'
 import type { DayPrefill } from './WidgetEnquirySection'
 
 interface FormVehicle {
@@ -44,6 +45,7 @@ const LABEL_STYLE: React.CSSProperties = {
 }
 
 export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, prefill }: Props) {
+  const t = useTranslations('widget')
   const brandRgb = hexToRgb(primaryColor)
 
   const [vehicleId, setVehicleId] = useState(vehicles.length === 1 ? vehicles[0].id : '')
@@ -83,15 +85,15 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
     e.preventDefault()
     setError('')
     if (!name.trim() || !email.trim() || !pickupDate || !returnDate) {
-      setError('Please fill in all required fields.')
+      setError(t('enquiry.errorRequired'))
       return
     }
     if (returnDate <= pickupDate) {
-      setError('Return date must be after the pickup date.')
+      setError(t('enquiry.errorReturnDate'))
       return
     }
     if (vehicles.length > 1 && !vehicleId) {
-      setError('Please select a vehicle.')
+      setError(t('enquiry.errorVehicle'))
       return
     }
 
@@ -113,12 +115,12 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? 'Something went wrong. Please try again.')
+        setError(data.error ?? t('enquiry.errorGeneric'))
       } else {
         setSubmitted(true)
       }
     } catch {
-      setError('Network error. Please try again.')
+      setError(t('enquiry.errorNetwork'))
     } finally {
       setSubmitting(false)
     }
@@ -135,8 +137,8 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
         color: '#282828',
         lineHeight: 1.6,
       }}>
-        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>Enquiry sent!</div>
-        We have received your enquiry and will be in touch soon.
+        <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 15 }}>{t('enquiry.successTitle')}</div>
+        {t('enquiry.successMessage')}
       </div>
     )
   }
@@ -148,7 +150,7 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
       {vehicles.length > 1 && (
         <div>
           <label htmlFor="wf-vehicle" style={LABEL_STYLE}>
-            Vehicle <span style={{ color: '#ef4444' }}>*</span>
+            {t('enquiry.vehicleLabel')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <select
             id="wf-vehicle"
@@ -157,7 +159,7 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
             style={{ ...INPUT_STYLE, cursor: 'pointer' }}
             required
           >
-            <option value="">Select a vehicle…</option>
+            <option value="">{t('enquiry.vehiclePlaceholder')}</option>
             {vehicles.map(v => (
               <option key={v.id} value={v.id}>
                 {v.name} – {v.registration}
@@ -171,7 +173,7 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 160px' }}>
           <label htmlFor="wf-pickup" style={LABEL_STYLE}>
-            Pickup date <span style={{ color: '#ef4444' }}>*</span>
+            {t('enquiry.pickupLabel')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <input
             id="wf-pickup"
@@ -188,7 +190,7 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
         </div>
         <div style={{ flex: '1 1 160px' }}>
           <label htmlFor="wf-return" style={LABEL_STYLE}>
-            Return date <span style={{ color: '#ef4444' }}>*</span>
+            {t('enquiry.returnLabel')} <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <input
             id="wf-return"
@@ -206,14 +208,14 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
       {/* Name */}
       <div>
         <label htmlFor="wf-name" style={LABEL_STYLE}>
-          Your name <span style={{ color: '#ef4444' }}>*</span>
+          {t('enquiry.nameLabel')} <span style={{ color: '#ef4444' }}>*</span>
         </label>
         <input
           id="wf-name"
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="Full name"
+          placeholder={t('enquiry.namePlaceholder')}
           style={INPUT_STYLE}
           required
           autoComplete="name"
@@ -223,14 +225,14 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
       {/* Email */}
       <div>
         <label htmlFor="wf-email" style={LABEL_STYLE}>
-          Email address <span style={{ color: '#ef4444' }}>*</span>
+          {t('enquiry.emailLabel')} <span style={{ color: '#ef4444' }}>*</span>
         </label>
         <input
           id="wf-email"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder={t('enquiry.emailPlaceholder')}
           style={INPUT_STYLE}
           required
           autoComplete="email"
@@ -239,13 +241,13 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
 
       {/* Phone */}
       <div>
-        <label htmlFor="wf-phone" style={LABEL_STYLE}>Phone (optional)</label>
+        <label htmlFor="wf-phone" style={LABEL_STYLE}>{t('enquiry.phoneLabel')}</label>
         <input
           id="wf-phone"
           type="tel"
           value={phone}
           onChange={e => setPhone(e.target.value)}
-          placeholder="+1 555 000 0000"
+          placeholder={t('enquiry.phonePlaceholder')}
           style={INPUT_STYLE}
           autoComplete="tel"
         />
@@ -253,12 +255,12 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
 
       {/* Message */}
       <div>
-        <label htmlFor="wf-message" style={LABEL_STYLE}>Message (optional)</label>
+        <label htmlFor="wf-message" style={LABEL_STYLE}>{t('enquiry.messageLabel')}</label>
         <textarea
           id="wf-message"
           value={message}
           onChange={e => setMessage(e.target.value)}
-          placeholder="Any questions or special requirements…"
+          placeholder={t('enquiry.messagePlaceholder')}
           rows={3}
           style={{ ...INPUT_STYLE, resize: 'vertical', lineHeight: 1.5 }}
         />
@@ -296,7 +298,7 @@ export default function WidgetEnquiryForm({ companyId, vehicles, primaryColor, p
             fontFamily: 'inherit',
           }}
         >
-          {submitting ? 'Sending…' : 'Send enquiry'}
+          {submitting ? t('enquiry.submitting') : t('enquiry.submit')}
         </button>
       </div>
     </form>

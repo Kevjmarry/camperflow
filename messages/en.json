@@ -2529,5 +2529,46 @@
     "errors": {
       "loadFailed": "Failed to load billing information. Please refresh the page."
     }
+  },
+  "widget": {
+    "unavailable": "Availability widget is not currently available.",
+    "noVehicles": "No vehicles configured for this widget.",
+    "defaultTitle": "Vehicle Availability",
+    "defaultSubtitle": "Select dates to request availability",
+    "poweredBy": "Powered by CamperFlow",
+    "legend": {
+      "available": "Available",
+      "booked": "Booked",
+      "unavailable": "Unavailable"
+    },
+    "calendar": {
+      "pickupSelected": "Pickup selected — now click your return date"
+    },
+    "enquiry": {
+      "ctaButton": "Request availability / Enquire",
+      "formTitle": "Enquire about a booking",
+      "formSubtitle": "Fill in your details and we will get back to you shortly.",
+      "vehicleLabel": "Vehicle",
+      "vehiclePlaceholder": "Select a vehicle…",
+      "pickupLabel": "Pickup date",
+      "returnLabel": "Return date",
+      "nameLabel": "Your name",
+      "namePlaceholder": "Full name",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "phoneLabel": "Phone (optional)",
+      "phonePlaceholder": "+1 555 000 0000",
+      "messageLabel": "Message (optional)",
+      "messagePlaceholder": "Any questions or special requirements…",
+      "submit": "Send enquiry",
+      "submitting": "Sending…",
+      "successTitle": "Enquiry sent!",
+      "successMessage": "We have received your enquiry and will be in touch soon.",
+      "errorRequired": "Please fill in all required fields.",
+      "errorReturnDate": "Return date must be after the pickup date.",
+      "errorVehicle": "Please select a vehicle.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorNetwork": "Network error. Please try again."
+    }
   }
 }

@@ -37,6 +37,9 @@ export default function AddonsPage() {
   const [widgetPublicEnabled, setWidgetPublicEnabled] = useState(false);
   const [widgetVehicleIds, setWidgetVehicleIds] = useState<string[]>([]);
   const [widgetRequestEmail, setWidgetRequestEmail] = useState('');
+  const [widgetShowHeader, setWidgetShowHeader] = useState(true);
+  const [widgetHeaderTitle, setWidgetHeaderTitle] = useState('Vehicle Availability');
+  const [widgetHeaderSubtitle, setWidgetHeaderSubtitle] = useState('Select dates to request availability');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   // ── Auth check ──────────────────────────────────────────────────────────────
@@ -68,7 +71,7 @@ export default function AddonsPage() {
       const [{ data: settings }, { data: addons }, { data: vehicleRows }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("review_request_reminders_enabled, review_request_whatsapp_template, google_review_url, widget_public_enabled, widget_vehicle_ids, widget_request_email")
+          .select("review_request_reminders_enabled, review_request_whatsapp_template, google_review_url, widget_public_enabled, widget_vehicle_ids, widget_request_email, widget_show_header, widget_header_title, widget_header_subtitle")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -88,6 +91,9 @@ export default function AddonsPage() {
         setWidgetPublicEnabled((settings as any).widget_public_enabled ?? false);
         setWidgetVehicleIds((settings as any).widget_vehicle_ids ?? []);
         setWidgetRequestEmail((settings as any).widget_request_email ?? '');
+        setWidgetShowHeader((settings as any).widget_show_header ?? true);
+        setWidgetHeaderTitle((settings as any).widget_header_title ?? 'Vehicle Availability');
+        setWidgetHeaderSubtitle((settings as any).widget_header_subtitle ?? 'Select dates to request availability');
       }
       if (addons) {
         const states: Record<string, boolean> = {};
@@ -139,9 +145,12 @@ export default function AddonsPage() {
       const { error: saveErr } = await supabase
         .from("company_settings")
         .update({
-          widget_public_enabled: widgetPublicEnabled,
-          widget_vehicle_ids: widgetVehicleIds.length > 0 ? widgetVehicleIds : null,
-          widget_request_email: widgetRequestEmail.trim() || null,
+          widget_public_enabled:    widgetPublicEnabled,
+          widget_vehicle_ids:       widgetVehicleIds.length > 0 ? widgetVehicleIds : null,
+          widget_request_email:     widgetRequestEmail.trim() || null,
+          widget_show_header:       widgetShowHeader,
+          widget_header_title:      widgetHeaderTitle.trim() || null,
+          widget_header_subtitle:   widgetHeaderSubtitle.trim() || null,
         })
         .eq("id", company.id);
       if (saveErr) throw saveErr;
@@ -522,6 +531,52 @@ export default function AddonsPage() {
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       Enquiries submitted via the widget are sent to this address. Leave blank to use your company contact email.
                     </p>
+                  </div>
+
+                  {/* Widget header settings */}
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                    <span className="label" style={{ display: "block", marginBottom: "var(--space-3)" }}>
+                      Widget header
+                    </span>
+                    <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: (isAdmin && availabilityWidgetEnabled) ? "pointer" : "default", marginBottom: "var(--space-3)" }}>
+                      <input
+                        type="checkbox"
+                        checked={widgetShowHeader}
+                        onChange={(e) => setWidgetShowHeader(e.target.checked)}
+                        disabled={!isAdmin || !availabilityWidgetEnabled}
+                      />
+                      <span style={{ fontSize: "14px", color: "rgb(var(--text))" }}>Show header on widget</span>
+                    </label>
+                    {widgetShowHeader && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                        <div>
+                          <label htmlFor="widget_header_title" className="label">Header title</label>
+                          <input
+                            id="widget_header_title"
+                            type="text"
+                            className="input"
+                            placeholder="Vehicle Availability"
+                            value={widgetHeaderTitle}
+                            onChange={(e) => setWidgetHeaderTitle(e.target.value)}
+                            disabled={!isAdmin || !availabilityWidgetEnabled}
+                            style={{ width: "100%", maxWidth: "400px" }}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="widget_header_subtitle" className="label">Header subtitle</label>
+                          <input
+                            id="widget_header_subtitle"
+                            type="text"
+                            className="input"
+                            placeholder="Select dates to request availability"
+                            value={widgetHeaderSubtitle}
+                            onChange={(e) => setWidgetHeaderSubtitle(e.target.value)}
+                            disabled={!isAdmin || !availabilityWidgetEnabled}
+                            style={{ width: "100%", maxWidth: "400px" }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Embed code preview */}

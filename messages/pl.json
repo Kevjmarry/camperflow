@@ -2529,5 +2529,46 @@
     "errors": {
       "loadFailed": "Nie udało się załadować informacji o rozliczeniach. Odśwież stronę."
     }
+  },
+  "widget": {
+    "unavailable": "Widget dostępności jest chwilowo niedostępny.",
+    "noVehicles": "Brak pojazdów skonfigurowanych dla tego widgetu.",
+    "defaultTitle": "Dostępność pojazdów",
+    "defaultSubtitle": "Wybierz daty, aby sprawdzić dostępność",
+    "poweredBy": "Powered by CamperFlow",
+    "legend": {
+      "available": "Dostępny",
+      "booked": "Zarezerwowany",
+      "unavailable": "Niedostępny"
+    },
+    "calendar": {
+      "pickupSelected": "Data odbioru wybrana — teraz kliknij datę zwrotu"
+    },
+    "enquiry": {
+      "ctaButton": "Sprawdź dostępność / Zapytaj",
+      "formTitle": "Zapytaj o rezerwację",
+      "formSubtitle": "Wypełnij swoje dane, a my wkrótce się odezwiemy.",
+      "vehicleLabel": "Pojazd",
+      "vehiclePlaceholder": "Wybierz pojazd…",
+      "pickupLabel": "Data odbioru",
+      "returnLabel": "Data zwrotu",
+      "nameLabel": "Twoje imię i nazwisko",
+      "namePlaceholder": "Imię i nazwisko",
+      "emailLabel": "Adres e-mail",
+      "emailPlaceholder": "ty@przyklad.pl",
+      "phoneLabel": "Telefon (opcjonalnie)",
+      "phonePlaceholder": "+48 555 000 000",
+      "messageLabel": "Wiadomość (opcjonalnie)",
+      "messagePlaceholder": "Pytania lub specjalne wymagania…",
+      "submit": "Wyślij zapytanie",
+      "submitting": "Wysyłanie…",
+      "successTitle": "Zapytanie wysłane!",
+      "successMessage": "Otrzymaliśmy Twoje zapytanie i wkrótce się odezwiemy.",
+      "errorRequired": "Proszę wypełnić wszystkie wymagane pola.",
+      "errorReturnDate": "Data zwrotu musi być późniejsza niż data odbioru.",
+      "errorVehicle": "Proszę wybrać pojazd.",
+      "errorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
+      "errorNetwork": "Błąd sieci. Spróbuj ponownie."
+    }
   }
 }

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 import WidgetClient from "@/components/widget/WidgetClient";
 import type { WidgetVehicle, WidgetBookingSlot, WidgetBlockSlot } from "@/components/widget/WidgetTimeline";
 
@@ -29,8 +30,6 @@ function darken(hex: string, amt: number): string {
     .join("")}`;
 }
 
-// Builds CSS variables for the widget including all tokens used by WidgetTimeline
-// (prefixed --wt-* to avoid collisions with any host-page CSS variables).
 function buildThemeCss(primary: string, secondary: string): string {
   return `
     :root {
@@ -47,7 +46,7 @@ function buildThemeCss(primary: string, secondary: string): string {
 
 // ── Unavailable state ─────────────────────────────────────────────────────────
 
-function Unavailable({ name }: { name?: string | null }) {
+function Unavailable({ name, message }: { name?: string | null; message: string }) {
   return (
     <div style={{
       fontFamily: "system-ui, -apple-system, sans-serif",
@@ -60,7 +59,7 @@ function Unavailable({ name }: { name?: string | null }) {
     }}>
       <div>
         {name && <div style={{ fontWeight: 600, marginBottom: 8, color: "#333", fontSize: 16 }}>{name}</div>}
-        <div style={{ fontSize: 14, color: "#888" }}>Availability widget is not currently available.</div>
+        <div style={{ fontSize: 14, color: "#888" }}>{message}</div>
       </div>
     </div>
   );
@@ -69,32 +68,47 @@ function Unavailable({ name }: { name?: string | null }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function WidgetPage({ params }: PageProps) {
-  const { companyId } = await params;
+  const { companyId, locale } = await params;
+  const t = await getTranslations({ locale, namespace: "widget" });
 
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
-    return <Unavailable />;
+    return <Unavailable message={t("unavailable")} />;
   }
 
   const supabase = createServiceClient();
 
-  const { data: rawSettings } = await supabase
-    .from("company_settings")
-    .select("name, logo_url, primary_color, secondary_color, company_timezone, widget_public_enabled, widget_vehicle_ids")
-    .eq("id", companyId)
-    .maybeSingle();
+  // company_settings holds widget flags, timezone, and header config.
+  // companies holds the live brand colours and name (written by the staff Company page).
+  const [{ data: rawSettings }, { data: rawCompany }] = await Promise.all([
+    supabase
+      .from("company_settings")
+      .select("company_timezone, widget_public_enabled, widget_vehicle_ids, widget_show_header, widget_header_title, widget_header_subtitle")
+      .eq("id", companyId)
+      .maybeSingle(),
+    supabase
+      .from("companies")
+      .select("name, primary_color, secondary_color")
+      .eq("id", companyId)
+      .maybeSingle(),
+  ]);
 
   const settings = rawSettings as {
-    name: string | null;
-    logo_url: string | null;
-    primary_color: string | null;
-    secondary_color: string | null;
     company_timezone: string | null;
     widget_public_enabled: boolean;
     widget_vehicle_ids: string[] | null;
+    widget_show_header: boolean | null;
+    widget_header_title: string | null;
+    widget_header_subtitle: string | null;
+  } | null;
+
+  const companyRow = rawCompany as {
+    name: string | null;
+    primary_color: string | null;
+    secondary_color: string | null;
   } | null;
 
   if (!settings?.widget_public_enabled) {
-    return <Unavailable name={settings?.name} />;
+    return <Unavailable name={companyRow?.name} message={t("unavailable")} />;
   }
 
   // Load vehicles
@@ -150,13 +164,14 @@ export default async function WidgetPage({ params }: PageProps) {
     endAt:     (bl as BlockRow).end_at,
   }));
 
-  const primary      = settings.primary_color ?? "#368F8B";
-  const secondary    = settings.secondary_color ?? "#BC8235";
-  const companyName  = settings.name ?? "";
-  const logoUrl      = settings.logo_url ?? null;
-  const timezone     = settings.company_timezone ?? "UTC";
+  // Brand colours from `companies`; timezone and widget config from `company_settings`.
+  const primary    = companyRow?.primary_color   ?? "#368F8B";
+  const secondary  = companyRow?.secondary_color ?? "#BC8235";
+  const timezone   = settings.company_timezone   ?? "UTC";
+  const showHeader = settings.widget_show_header ?? true;
+  const headerTitle    = settings.widget_header_title    ?? t("defaultTitle");
+  const headerSubtitle = settings.widget_header_subtitle ?? t("defaultSubtitle");
 
-  // Vehicles for the enquiry form (includes registration for display)
   const formVehicles = vehicles.map(v => ({ id: v.id, name: v.name, registration: v.registration }));
 
   return (
@@ -164,55 +179,32 @@ export default async function WidgetPage({ params }: PageProps) {
       <style dangerouslySetInnerHTML={{ __html: buildThemeCss(primary, secondary) }} />
       <div style={{
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        padding: "16px",
+        padding: "20px 16px",
         maxWidth: "960px",
         margin: "0 auto",
         color: "#282828",
         boxSizing: "border-box",
       }}>
 
-        {/* Company header */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 20,
-          paddingBottom: 16,
-          borderBottom: `2px solid rgb(var(--wt-brand-secondary))`,
-        }}>
-          {logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt={companyName} style={{ height: 32, objectFit: "contain", flexShrink: 0 }} />
-          )}
-          <div>
-            {companyName && <div style={{ fontWeight: 700, fontSize: 15 }}>{companyName}</div>}
-            <div style={{ fontSize: 12, color: "#888", marginTop: companyName ? 2 : 0 }}>
-              Vehicle Availability
+        {/* Header — conditionally shown */}
+        {showHeader && (
+          <div style={{
+            marginBottom: 24,
+            paddingLeft: 14,
+            borderLeft: `3px solid rgb(var(--wt-brand))`,
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "rgb(var(--wt-text))", lineHeight: 1.2 }}>
+              {headerTitle}
             </div>
+            {headerSubtitle && (
+              <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>
+                {headerSubtitle}
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
-        {/* Timeline legend */}
-        <div style={{ display: "flex", gap: 20, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#555" }}>
-            <div style={{ width: 14, height: 14, borderRadius: 3, border: "1px solid #ddd", background: "#fff", flexShrink: 0 }} />
-            Available
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#555" }}>
-            <div style={{
-              width: 14, height: 14, borderRadius: 3, flexShrink: 0,
-              background: `rgb(var(--wt-brand) / 0.65)`,
-              border: `1px solid rgb(var(--wt-brand) / 0.90)`,
-            }} />
-            Booked
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#555" }}>
-            <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, background: "rgb(220 38 38 / 0.20)", border: "1px solid rgb(220 38 38 / 0.55)" }} />
-            Unavailable
-          </div>
-        </div>
-
-        {/* Timeline + enquiry section (client wrapper manages shared prefill state) */}
+        {/* Calendar (single vehicle) or Timeline (multiple vehicles) + enquiry form */}
         <WidgetClient
           tlVehicles={tlVehicles}
           tlBookings={tlBookings}
@@ -232,7 +224,7 @@ export default async function WidgetPage({ params }: PageProps) {
           color: "#bbb",
           textAlign: "center",
         }}>
-          Powered by CamperFlow
+          {t("poweredBy")}
         </div>
       </div>
     </>

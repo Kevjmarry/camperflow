@@ -2529,5 +2529,46 @@
     "errors": {
       "loadFailed": "Fakturačné informácie sa nepodarilo načítať. Obnovte stránku."
     }
+  },
+  "widget": {
+    "unavailable": "Widget dostupnosti momentálne nie je k dispozícii.",
+    "noVehicles": "Pre tento widget nie sú nakonfigurované žiadne vozidlá.",
+    "defaultTitle": "Dostupnosť vozidiel",
+    "defaultSubtitle": "Vyberte dátumy pre overenie dostupnosti",
+    "poweredBy": "Powered by CamperFlow",
+    "legend": {
+      "available": "Dostupné",
+      "booked": "Rezervované",
+      "unavailable": "Nedostupné"
+    },
+    "calendar": {
+      "pickupSelected": "Dátum vyzdvihnutia zvolený — teraz kliknite na dátum vrátenia"
+    },
+    "enquiry": {
+      "ctaButton": "Overiť dostupnosť / Dopyt",
+      "formTitle": "Dopytovať sa na rezerváciu",
+      "formSubtitle": "Vyplňte vaše údaje a čoskoro sa ozveme.",
+      "vehicleLabel": "Vozidlo",
+      "vehiclePlaceholder": "Vyberte vozidlo…",
+      "pickupLabel": "Dátum vyzdvihnutia",
+      "returnLabel": "Dátum vrátenia",
+      "nameLabel": "Vaše meno",
+      "namePlaceholder": "Celé meno",
+      "emailLabel": "E-mailová adresa",
+      "emailPlaceholder": "vy@priklad.sk",
+      "phoneLabel": "Telefón (nepovinné)",
+      "phonePlaceholder": "+421 555 000 000",
+      "messageLabel": "Správa (nepovinné)",
+      "messagePlaceholder": "Otázky alebo špeciálne požiadavky…",
+      "submit": "Odoslať dopyt",
+      "submitting": "Odosielanie…",
+      "successTitle": "Dopyt odoslaný!",
+      "successMessage": "Obdržali sme váš dopyt a čoskoro sa ozveme.",
+      "errorRequired": "Prosím vyplňte všetky povinné polia.",
+      "errorReturnDate": "Dátum vrátenia musí byť po dátume vyzdvihnutia.",
+      "errorVehicle": "Prosím vyberte vozidlo.",
+      "errorGeneric": "Niečo sa pokazilo. Skúste to prosím znovu.",
+      "errorNetwork": "Chyba siete. Skúste to prosím znovu."
+    }
   }
 }

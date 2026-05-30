@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 
 export interface WidgetVehicle {
   id: string
@@ -34,14 +35,13 @@ interface Props {
   rangeSelection?: RangeSelection
 }
 
-// Same visual constants as OperationsBookingTimeline
 const DAYS_BACK = 7
 const DAYS_FORWARD = 90
 const TOTAL_DAYS = DAYS_BACK + DAYS_FORWARD
-const PX_PER_DAY = 28
+const PX_PER_DAY = 32
 const TIMELINE_PX = TOTAL_DAYS * PX_PER_DAY
-const LEFT_COL_PX = 144
-const ROW_H = 34
+const LEFT_COL_PX = 164
+const ROW_H = 42
 
 const DAY_BG = `repeating-linear-gradient(to right, rgb(var(--wt-muted) / 0.03) 0, rgb(var(--wt-muted) / 0.03) ${PX_PER_DAY}px, transparent ${PX_PER_DAY}px, transparent ${PX_PER_DAY * 2}px)`
 const TODAY_L = DAYS_BACK * PX_PER_DAY
@@ -53,6 +53,8 @@ const BLOCK_BG = 'rgb(220 38 38 / 0.20)'
 const BLOCK_BORDER = 'rgb(220 38 38 / 0.55)'
 
 export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, companyTimezone = 'UTC', onDayClick, rangeSelection }: Props) {
+  const t = useTranslations('widget')
+  const locale = useLocale()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -118,7 +120,7 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
       if (off >= TOTAL_DAYS) break
       if (off >= 0) {
         monthMarkers.push({
-          label: new Date(firstMs).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: companyTimezone }),
+          label: new Date(firstMs).toLocaleDateString(locale, { month: 'short', year: '2-digit', timeZone: companyTimezone }),
           leftPct: (off / TOTAL_DAYS) * 100,
         })
       }
@@ -166,7 +168,7 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
                 style={{
                   position: 'absolute',
                   left: `${leftPct}%`,
-                  fontSize: 10,
+                  fontSize: 11,
                   color: 'rgb(var(--wt-muted))',
                   whiteSpace: 'nowrap',
                   userSelect: 'none',
@@ -189,7 +191,7 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
                   position: 'absolute',
                   left: leftPx,
                   transform: 'translateX(-50%)',
-                  fontSize: isToday ? 10 : 9,
+                  fontSize: isToday ? 11 : 10,
                   fontWeight: isToday ? 700 : undefined,
                   color: isToday ? 'rgb(var(--wt-brand))' : 'rgb(var(--wt-muted) / 0.65)',
                   userSelect: 'none',
@@ -219,13 +221,14 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
               >
                 <span
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 500,
                     color: 'rgb(var(--wt-text))',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    paddingRight: 8,
+                    paddingLeft: 4,
+                    paddingRight: 10,
                     maxWidth: '100%',
                   }}
                 >
@@ -330,13 +333,13 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
                     return (
                       <div
                         key={`bl-${idx}`}
-                        title="Unavailable"
+                        title={t('legend.unavailable')}
                         style={{
                           position: 'absolute',
                           left: cStart * PX_PER_DAY,
                           width: (cEnd - cStart) * PX_PER_DAY,
-                          top: 5,
-                          height: ROW_H - 10,
+                          top: 6,
+                          height: ROW_H - 12,
                           background: BLOCK_BG,
                           border: `1px solid ${BLOCK_BORDER}`,
                           borderRadius: 3,
@@ -357,13 +360,13 @@ export default function WidgetTimeline({ vehicles, bookings, vehicleBlocks, comp
                     return (
                       <div
                         key={`b-${idx}`}
-                        title="Booked"
+                        title={t('legend.booked')}
                         style={{
                           position: 'absolute',
                           left: cStart * PX_PER_DAY,
                           width: (cEnd - cStart) * PX_PER_DAY,
-                          top: 5,
-                          height: ROW_H - 10,
+                          top: 6,
+                          height: ROW_H - 12,
                           background: BOOKED_BG,
                           border: `1px solid ${BOOKED_BORDER}`,
                           borderRadius: 3,

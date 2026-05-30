@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import WidgetEnquiryForm from './WidgetEnquiryForm'
 
 interface FormVehicle {
@@ -30,6 +31,7 @@ function hexToRgb(hex: string): string {
 }
 
 export default function WidgetEnquirySection({ companyId, vehicles, primaryColor, prefill }: Props) {
+  const t = useTranslations('widget')
   const [open, setOpen] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
   const brandRgb = hexToRgb(primaryColor)
@@ -73,16 +75,16 @@ export default function WidgetEnquirySection({ companyId, vehicles, primaryColor
           transition: 'opacity 0.15s',
         }}
       >
-        Request availability / Enquire
+        {t('enquiry.ctaButton')}
       </button>
 
       {/* Form — always mounted so vehicle selection is preserved; shown via CSS only */}
       <div ref={formRef} style={{ display: open ? 'block' : 'none' }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px', color: '#282828' }}>
-          Enquire about a booking
+          {t('enquiry.formTitle')}
         </h2>
         <p style={{ fontSize: 13, color: '#888', margin: '0 0 20px' }}>
-          Fill in your details and we will get back to you shortly.
+          {t('enquiry.formSubtitle')}
         </p>
         <WidgetEnquiryForm
           companyId={companyId}
