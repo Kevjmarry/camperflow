@@ -83,10 +83,6 @@ export async function POST(request: NextRequest) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const senderEmail = process.env.EMAIL_FROM ?? 'noreply@camperflow.io'
-    // DEBUG — remove before merging
-    console.log('[widget/enquiry][DEBUG] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
-    console.log('[widget/enquiry][DEBUG] sender email:', senderEmail)
-    console.log('[widget/enquiry][DEBUG] recipient email:', toEmail)
     const resendResult = await resend.emails.send({
       from: senderEmail,
       to: toEmail,
@@ -94,12 +90,8 @@ export async function POST(request: NextRequest) {
       subject: `New enquiry from ${name.trim()} – ${companyName}`,
       text: lines.join('\n'),
     })
-    // DEBUG — remove before merging
-    console.log('[widget/enquiry][DEBUG] full Resend response:', JSON.stringify(resendResult, null, 2))
     if (resendResult.error) throw resendResult.error
   } catch (err: unknown) {
-    // DEBUG — remove before merging
-    console.error('[widget/enquiry][DEBUG] full caught error:', JSON.stringify(err, Object.getOwnPropertyNames(err as object), 2))
     console.error('[widget/enquiry] email send failed', err)
     return NextResponse.json({ error: 'Failed to send enquiry email' }, { status: 500 })
   }
