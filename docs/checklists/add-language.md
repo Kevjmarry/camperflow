@@ -23,6 +23,8 @@ booking guest-locale validation, cookie action — **all auto**.
 - [ ] Translate all values (do not change any key names)
 - [ ] Run `npm run check:i18n` — must pass with zero errors before continuing
 
+> **Widget namespace (`widget.*`):** This namespace (~30 keys) powers the public-facing availability embed that appears on camper company websites — it is the copy guests read, not internal staff UI. Translate the enquiry form labels, error messages, success messages, and calendar hint text carefully. Keys include `enquiry.ctaButton`, `enquiry.formTitle`, `enquiry.errorRequired`, `calendar.pickupSelected`, and the `legend.*` group.
+
 ---
 
 ## 3 — Database migration
@@ -35,19 +37,42 @@ ALTER TABLE public.company_settings
   DROP CONSTRAINT IF EXISTS company_settings_default_guest_language_check,
   ADD CONSTRAINT company_settings_default_guest_language_check
     CHECK (default_guest_language IS NULL
-        OR default_guest_language IN ('en', 'de', 'sk', '[locale]'));
+        OR default_guest_language IN ('en', 'de', 'sk', 'pl', '[locale]'));
 ```
 
-Replace `[locale]` with the actual code and include all previously active locales.
+Replace `[locale]` with the new locale code. Always include the full current active set.
 
-> **Note:** The current constraint only covers `('en', 'de')` — SK was never added.
-> Fix this at the same time as your first new locale addition.
+> **Note:** The original constraint only covers `('en', 'de')`. SK and PL were subsequently
+> activated but were never added to the constraint. When adding the next locale, include all
+> currently active locales plus the new one:
+>
+> ```sql
+> CHECK (default_guest_language IS NULL
+>     OR default_guest_language IN ('en', 'de', 'sk', 'pl', '[new_locale]'));
+> ```
 
 - [ ] Migration file created and deployed
 
 ---
 
-## 4 — Guest content editor (LANGS array)
+## 4 — Embed language selector (addons page)
+
+The embed-code language picker in the addons page is a **hardcoded `<select>`** — it is not
+driven by `activeLocales`, so it must be updated manually.
+
+File: [`app/[locale]/staff/addons/page.tsx`](../../app/[locale]/staff/addons/page.tsx)
+
+- [ ] Add a new `<option>` to the "Embed language" `<select>` (search for `widget_embed_locale`):
+  ```tsx
+  <option value="[locale]">[LOCALE_CODE] — [Language Name]</option>
+  ```
+
+Without this update staff cannot select the new language when copying the embed snippet, so
+the widget URL they paste into their website will default to the wrong locale.
+
+---
+
+## 5 — Guest content editor (LANGS array)
 
 The guest content editor stores content in a JSONB column with **uppercase** locale keys
 (`EN`, `DE`, `SK`). This is a separate namespace from the URL locale codes.
@@ -62,7 +87,7 @@ File: [`app/[locale]/staff/guest-content/page.tsx`](../../app/[locale]/staff/gue
 
 ---
 
-## 5 — Extras catalog translations (only if supporting translated extras names)
+## 6 — Extras catalog translations (only if supporting translated extras names)
 
 File: [`contexts/ThemeContext.tsx`](../../contexts/ThemeContext.tsx)
 
@@ -78,7 +103,7 @@ Skip this step if extras catalog translations are not needed for the new locale 
 
 ---
 
-## 6 — Verify
+## 7 — Verify
 
 - [ ] `npm run check:i18n` — passes
 - [ ] `npm run build` — no TypeScript errors
