@@ -1739,6 +1739,8 @@
       "preArrival": {
         "label": "Zapnúť správové pripomienky pred príchodom",
         "helper": "Odosiela sa deň pred prevzatím.",
+        "windowLabel": "Okno pripomienky (dní pred prevzatím)",
+        "windowHelper": "Zobrazovať túto rezerváciu v zozname pripomienok toľko dní pred prevzatím.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Ahoj '{customer_name}', prevzatie vozidla '{vehicle_name}' je zajtra…"
@@ -1746,6 +1748,8 @@
       "returnPrep": {
         "label": "Zapnúť správové pripomienky na prípravu vrátenia",
         "helper": "Odosiela sa deň pred vrátením.",
+        "windowLabel": "Okno pripomienky (dní pred vrátením)",
+        "windowHelper": "Zobrazovať túto rezerváciu v zozname pripomienok toľko dní pred vrátením.",
         "templateLabel": "Šablóna správy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Ahoj '{customer_name}', vrátenie vozidla '{vehicle_name}' je zajtra…"

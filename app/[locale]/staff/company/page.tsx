@@ -39,6 +39,8 @@ export default function CompanySettingsPage() {
     registration_id: "",
     vat_id: "",
     map_link: "",
+    pre_arrival_days_before_pickup: "3",
+    return_prep_days_before_return: "3",
   });
   const [finalPaymentRemindersEnabled, setFinalPaymentRemindersEnabled] = useState(false);
   const [preArrivalRemindersEnabled, setPreArrivalRemindersEnabled] = useState(true);
@@ -134,7 +136,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, map_link")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, map_link, pre_arrival_days_before_pickup, return_prep_days_before_return")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -159,6 +161,12 @@ export default function CompanySettingsPage() {
                                     : "1",
           company_timezone: (data as any).company_timezone ?? "Europe/Bratislava",
           map_link: (data as any).map_link ?? "",
+          pre_arrival_days_before_pickup: (data as any).pre_arrival_days_before_pickup != null
+                                    ? String((data as any).pre_arrival_days_before_pickup)
+                                    : "3",
+          return_prep_days_before_return: (data as any).return_prep_days_before_return != null
+                                    ? String((data as any).return_prep_days_before_return)
+                                    : "3",
         } : {}),
         ...(companyRow ? {
           address:         (companyRow as any).address         ?? "",
@@ -235,6 +243,12 @@ export default function CompanySettingsPage() {
       const parsedCustomReminderDays = formData.custom_payment_reminder_days.trim()
         ? parseInt(formData.custom_payment_reminder_days, 10)
         : 1;
+      const parsedPreArrivalDays = formData.pre_arrival_days_before_pickup.trim()
+        ? parseInt(formData.pre_arrival_days_before_pickup, 10)
+        : 3;
+      const parsedReturnPrepDays = formData.return_prep_days_before_return.trim()
+        ? parseInt(formData.return_prep_days_before_return, 10)
+        : 3;
 
       // Save branding + contact fields to companies
       const { data: companiesRows, error: saveErr } = await supabase
@@ -271,6 +285,8 @@ export default function CompanySettingsPage() {
           pre_arrival_whatsapp_template:    preArrivalTemplate.trim() || null,
           return_prep_whatsapp_template:    returnPrepTemplate.trim() || null,
           map_link:                         formData.map_link.trim() || null,
+          pre_arrival_days_before_pickup:   parsedPreArrivalDays,
+          return_prep_days_before_return:   parsedReturnPrepDays,
         })
         .eq("id", companyId)
         .select("id");
@@ -684,7 +700,21 @@ export default function CompanySettingsPage() {
                       {t("reminders.preArrival.helper")}
                     </p>
                   </div>
-                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                    <div>
+                      <label htmlFor="pre_arrival_days_before_pickup" className="label">{t("reminders.preArrival.windowLabel")}</label>
+                      <input
+                        id="pre_arrival_days_before_pickup" name="pre_arrival_days_before_pickup" type="number"
+                        min="0" step="1" className="input"
+                        placeholder="3"
+                        value={formData.pre_arrival_days_before_pickup} onChange={handleChange}
+                        disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                      />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                        {t("reminders.preArrival.windowHelper")}
+                      </p>
+                    </div>
+                    <div>
                     <label htmlFor="pre_arrival_template" className="label">
                       {t("reminders.preArrival.templateLabel")}
                     </label>
@@ -701,6 +731,7 @@ export default function CompanySettingsPage() {
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.preArrival.templateHelper")}
                     </p>
+                  </div>
                   </div>
                 </div>
 
@@ -722,7 +753,21 @@ export default function CompanySettingsPage() {
                       {t("reminders.returnPrep.helper")}
                     </p>
                   </div>
-                  <div style={{ marginLeft: "calc(16px + var(--space-3))" }}>
+                  <div style={{ marginLeft: "calc(16px + var(--space-3))", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                    <div>
+                      <label htmlFor="return_prep_days_before_return" className="label">{t("reminders.returnPrep.windowLabel")}</label>
+                      <input
+                        id="return_prep_days_before_return" name="return_prep_days_before_return" type="number"
+                        min="0" step="1" className="input"
+                        placeholder="3"
+                        value={formData.return_prep_days_before_return} onChange={handleChange}
+                        disabled={!isAdmin} style={{ width: "100%", maxWidth: "160px" }}
+                      />
+                      <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
+                        {t("reminders.returnPrep.windowHelper")}
+                      </p>
+                    </div>
+                    <div>
                     <label htmlFor="return_prep_template" className="label">
                       {t("reminders.returnPrep.templateLabel")}
                     </label>
@@ -739,6 +784,7 @@ export default function CompanySettingsPage() {
                     <p className="helper-text" style={{ marginTop: "var(--space-1)" }}>
                       {t("reminders.returnPrep.templateHelper")}
                     </p>
+                  </div>
                   </div>
                 </div>
 

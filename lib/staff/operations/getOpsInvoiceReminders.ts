@@ -39,7 +39,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
 
   const { data: settings } = await supabase
     .from('company_settings')
-    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, final_payment_due_days, company_timezone')
+    .select('final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, review_request_reminders_enabled, final_payment_due_days, company_timezone, pre_arrival_days_before_pickup, return_prep_days_before_return')
     .eq('id', companyId)
     .maybeSingle()
 
@@ -135,7 +135,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
     // Pre-arrival WhatsApp: confirmed, not yet sent
     if (
       b.status === 'confirmed' &&
-      daysUntilPickup <= 3 &&
+      daysUntilPickup <= ((settings as any)?.pre_arrival_days_before_pickup ?? 3) &&
       (settings?.pre_arrival_reminders_enabled ?? true) &&
       b.prearrival_reminder_enabled !== false &&
       b.prearrival_whatsapp_sent !== true
@@ -161,7 +161,7 @@ export async function getOpsInvoiceReminders(): Promise<OpsInvoiceReminder[]> {
       b.return_whatsapp_sent !== true
     ) {
       const daysUntilReturn = daysFromToday(b.return_at)
-      if (daysUntilReturn <= 3) results.push({
+      if (daysUntilReturn <= ((settings as any)?.return_prep_days_before_return ?? 3)) results.push({
         type: 'return_prep',
         id: `${b.id}-return-prep`,
         bookingId: b.id,

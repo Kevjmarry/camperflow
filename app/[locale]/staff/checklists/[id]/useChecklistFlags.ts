@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Dispatch, SetStateAction } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ChecklistItemType, IssueSeverity, SyncError, FlagDraft } from './types';
+import type { ChecklistItemType, IssueSeverity, SyncError, FlagDraft, StoredEvidencePhoto, NewEvidencePhoto, EvidencePhoto } from './types';
 import { uiToDbSeverity, parseSyncError } from './helpers';
 
 const PREP_CHECKLIST_TYPES = new Set(['cleaning', 'mechanical', 'vehicle_readiness', 'pre_season', 'post_season']);
@@ -19,6 +19,7 @@ interface UseChecklistFlagsProps {
   setLocalItems: Dispatch<SetStateAction<ChecklistItemType[]>>;
   isChecklistLocked: boolean;
   setSyncError: Dispatch<SetStateAction<SyncError | null>>;
+  uploadFlagPhoto: (file: File) => Promise<{ path: string; url: string }>;
   t: (key: string, ...args: any[]) => string;
 }
 
@@ -32,6 +33,7 @@ export function useChecklistFlags({
   setLocalItems,
   isChecklistLocked,
   setSyncError,
+  uploadFlagPhoto,
   t,
 }: UseChecklistFlagsProps) {
   const router = useRouter();
@@ -49,13 +51,22 @@ export function useChecklistFlags({
 
   const openFlagPanel = (itemId: string) => {
     if (isChecklistLocked) return;
-    setFlagDraftById((prev) => ({ ...prev, [itemId]: prev[itemId] ?? emptyDraft() }));
+    setFlagDraftById((prev) => {
+      if (prev[itemId]) return { ...prev, [itemId]: { ...prev[itemId], saving: false, error: null } };
+      const item = localItems.find((it) => it.id === itemId);
+      const note = item?.issue_description?.trim() || item?.notes?.trim() || '';
+      const photos: StoredEvidencePhoto[] = (item?.issue_photo_paths ?? []).map((p) => {
+        const { data } = supabase.storage.from('checklist-evidence').getPublicUrl(p);
+        return { kind: 'stored', path: p, url: data.publicUrl, rotation: 0 };
+      });
+      return { ...prev, [itemId]: { ...emptyDraft(), note, photos } };
+    });
     setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: true }));
   };
 
   const closeFlagPanel = (itemId: string) => {
     setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: false }));
-    setFlagDraftById((prev) => { const next = { ...prev }; delete next[itemId]; return next; });
+    // Draft is intentionally preserved so reopening the panel restores typed content.
   };
 
   const handleFlagDraftChange = (itemId: string, field: 'severity' | 'note', value: string) => {
@@ -70,7 +81,8 @@ export function useChecklistFlags({
     setFlagDraftById((prev) => {
       const draft = prev[itemId];
       if (!draft) return prev;
-      const merged = [...(draft.photos ?? []), ...Array.from(files)].slice(0, 3);
+      const incoming: NewEvidencePhoto[] = Array.from(files).map((f) => ({ kind: 'new', file: f }));
+      const merged: EvidencePhoto[] = [...draft.photos, ...incoming].slice(0, 3);
       return { ...prev, [itemId]: { ...draft, photos: merged } };
     });
   };
@@ -99,7 +111,10 @@ export function useChecklistFlags({
     const item = localItems.find((it) => it.id === itemId);
     if (!item) return;
 
-    setFlagDraftById((prev) => ({ ...prev, [itemId]: { ...draft, saving: true, error: null } }));
+    setFlagDraftById((prev) => ({
+      ...prev,
+      [itemId]: { ...(prev[itemId] ?? draft), saving: true, error: null },
+    }));
 
     // Create a vehicle_issues row so the issue is permanently traceable to its source.
     // Only possible when the checklist is linked to a vehicle.
@@ -141,12 +156,29 @@ export function useChecklistFlags({
       if (newIssue) vehicleIssueId = newIssue.id;
     }
 
+    // Upload any newly-selected photos; keep paths from stored photos already in DB.
+    const storedPaths = draft.photos
+      .filter((p): p is StoredEvidencePhoto => p.kind === 'stored')
+      .map((p) => p.path);
+    const newFiles = draft.photos
+      .filter((p): p is NewEvidencePhoto => p.kind === 'new')
+      .map((p) => p.file);
+    const uploadedPaths: string[] = [];
+    if (newFiles.length > 0) {
+      const results = await Promise.allSettled(newFiles.map((f) => uploadFlagPhoto(f)));
+      results.forEach((r) => {
+        if (r.status === 'fulfilled') uploadedPaths.push(r.value.path);
+      });
+    }
+    const allPhotoPaths = [...storedPaths, ...uploadedPaths];
+
     const issueUpdate = {
       issue_flag: true,
       issue_title: item.template.label,
       issue_description: draft.note.trim(),
       issue_severity: uiToDbSeverity(draft.severity),
       issue_blocking: uiToDbSeverity(draft.severity) === 'high',
+      issue_photo_paths: allPhotoPaths.length > 0 ? allPhotoPaths : null,
       linked_vehicle_issue_id: vehicleIssueId,
     };
 
@@ -164,7 +196,8 @@ export function useChecklistFlags({
     }
 
     setLocalItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, ...issueUpdate } : it)));
-    closeFlagPanel(itemId);
+    setFlagDraftById((prev) => { const next = { ...prev }; delete next[itemId]; return next; });
+    setOpenFlagPanelById((prev) => ({ ...prev, [itemId]: false }));
     router.refresh();
   };
 

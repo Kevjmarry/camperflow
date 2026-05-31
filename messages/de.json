@@ -1739,6 +1739,8 @@
       "preArrival": {
         "label": "Vorankunfts-Nachrichten-Erinnerungen aktivieren",
         "helper": "Wird am Tag vor der Abholung gesendet.",
+        "windowLabel": "Erinnerungszeitraum (Tage vor Abholung)",
+        "windowHelper": "Diese Buchung so viele Tage vor der Abholung in der Erinnerungsliste anzeigen.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hallo '{customer_name}', Ihre Abholung für '{vehicle_name}' ist morgen…"
@@ -1746,6 +1748,8 @@
       "returnPrep": {
         "label": "Rückgabevorbereitung-Nachrichten-Erinnerungen aktivieren",
         "helper": "Wird am Tag vor der Rückgabe gesendet.",
+        "windowLabel": "Erinnerungszeitraum (Tage vor Rückgabe)",
+        "windowHelper": "Diese Buchung so viele Tage vor der Rückgabe in der Erinnerungsliste anzeigen.",
         "templateLabel": "Nachrichtenvorlage",
         "templateHelper": "Verfügbare Platzhalter: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hallo '{customer_name}', Ihre Rückgabe für '{vehicle_name}' ist morgen…"

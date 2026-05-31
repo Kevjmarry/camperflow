@@ -1739,6 +1739,8 @@
       "preArrival": {
         "label": "Włącz przypomnienia o wiadomości przed przyjazdem",
         "helper": "Wysyłane dzień przed odbiorem.",
+        "windowLabel": "Okno przypomnień (dni przed odbiorem)",
+        "windowHelper": "Pokazuj tę rezerwację na liście przypomnień tyle dni przed odbiorem.",
         "templateLabel": "Szablon wiadomości",
         "templateHelper": "Dostępne placeholdery: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Dzień dobry, jutro odbiór Twojego '{vehicle_name}'…"
@@ -1746,6 +1748,8 @@
       "returnPrep": {
         "label": "Włącz przypomnienia o wiadomości z przygotowaniem do zwrotu",
         "helper": "Wysyłane dzień przed zwrotem.",
+        "windowLabel": "Okno przypomnień (dni przed zwrotem)",
+        "windowHelper": "Pokazuj tę rezerwację na liście przypomnień tyle dni przed zwrotem.",
         "templateLabel": "Szablon wiadomości",
         "templateHelper": "Dostępne placeholdery: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Dzień dobry, jutro zwrot Twojego '{vehicle_name}'…"

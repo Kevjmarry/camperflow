@@ -444,7 +444,7 @@ export default async function OperationsPage({
                 )}
 
                 <div id="ops-section-reminders">
-                  <OperationsInvoiceReminders reminders={invoiceReminders.filter(r => r.type !== 'pre_arrival' && r.type !== 'return_prep')} whatsappTemplates={whatsappTemplates} />
+                  <OperationsInvoiceReminders reminders={invoiceReminders} whatsappTemplates={whatsappTemplates} />
                 </div>
               </div>
             </div>

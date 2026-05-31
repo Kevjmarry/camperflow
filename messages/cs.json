@@ -1739,6 +1739,8 @@
       "preArrival": {
         "label": "Povolit připomínky zprávy před příjezdem",
         "helper": "Odesláno den před vyzvednutím.",
+        "windowLabel": "Okno připomínky (dní před vyzvednutím)",
+        "windowHelper": "Zobrazovat tuto rezervaci v seznamu připomínek tolik dní před vyzvednutím.",
         "templateLabel": "Šablona zprávy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Dobrý den, vaše vyzvednutí '{vehicle_name}' je zítra…"
@@ -1746,6 +1748,8 @@
       "returnPrep": {
         "label": "Povolit připomínky zprávy k přípravě vrácení",
         "helper": "Odesláno den před vrácením.",
+        "windowLabel": "Okno připomínky (dní před vrácením)",
+        "windowHelper": "Zobrazovat tuto rezervaci v seznamu připomínek tolik dní před vrácením.",
         "templateLabel": "Šablona zprávy",
         "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Dobrý den, vaše vrácení '{vehicle_name}' je zítra…"

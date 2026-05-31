@@ -176,16 +176,41 @@ export function useChecklistReopen({
       return;
     }
 
-    // Step 3c: For return checklists, clear return_vehicle_data from bookings.staff_metadata.
-    // The vehicle data (km/fuel/adblue) is stored there, not in checklist_instances, so the
-    // checklist reset above does not touch it. We preserve all other staff_metadata keys.
+    // Step 3c: For return checklists, clear vehicle data and evidence photos from
+    // bookings.staff_metadata. These are stored there, not in checklist_instances.
+    // We preserve all other staff_metadata keys.
     if (instance.checklist_type === 'return' && instance.booking_id) {
       const currentMeta = (instance.bookings as any)?.staff_metadata ?? {};
-      const newMeta = { ...currentMeta, return_vehicle_data: null };
+
+      // Collect evidence photo paths before clearing so we can delete from Storage.
+      const existingPhotos = (currentMeta.return_evidence_photos ?? {}) as {
+        general?: Array<string | { path: string }>;
+        damage?:  Array<string | { path: string }>;
+      };
+      const toDelete: string[] = [
+        ...(existingPhotos.general ?? []),
+        ...(existingPhotos.damage  ?? []),
+      ].map((e) => (typeof e === 'string' ? e : e.path)).filter(Boolean);
+
+      if (toDelete.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('checklist-evidence')
+          .remove(toDelete);
+        if (storageError) {
+          console.warn('[reopen] Failed to delete evidence photos from storage:', storageError.message);
+        }
+      }
+
+      const newMeta = {
+        ...currentMeta,
+        return_vehicle_data:    null,
+        return_evidence_photos: { general: [], damage: [] },
+        extras_returned:        [],
+      };
       await supabase
         .from('bookings')
         .update({ staff_metadata: newMeta })
-        .eq('id', instance.booking_id)
+        .eq('id', instance.booking_id);
     }
 
     setLocalInstance((prev) => ({

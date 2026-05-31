@@ -106,6 +106,8 @@ export default function ChecklistDetailClient({
   const evidencePhotosRef = useRef(evidencePhotos);
   evidencePhotosRef.current = evidencePhotos;
 
+  const isCaravan = (instance as any).vehicles?.vehicle_category === 'caravan';
+
   // ── Return km validation ──────────────────────────────────────────────────────
   const [returnKmError, setReturnKmError] = useState<string | null>(null);
   const lastSavedReturnKmRef = useRef<string>(
@@ -309,6 +311,7 @@ export default function ChecklistDetailClient({
   // Used by handleToggle, handleCompleteSection, and useHandoverCompletion.
 
   const getMissingPickupData = (): string[] => {
+    if (isCaravan) return [];
     const missing: string[] = [];
     if (!vehicleData.km) missing.push('km');
     if (!vehicleData.fuel) missing.push('fuel');
@@ -413,6 +416,7 @@ export default function ChecklistDetailClient({
     setLocalItems,
     isChecklistLocked: isReadOnly,
     setSyncError,
+    uploadFlagPhoto: (file: File) => uploadEvidencePhoto(file, 'flags'),
     t,
   });
 
@@ -843,7 +847,7 @@ export default function ChecklistDetailClient({
   // booking_id (UUID) is used here so that any photos.rental_id trigger always receives the real bookings.id.
   const uploadEvidencePhoto = async (
     file: File,
-    group: 'general' | 'damage' | 'id',
+    group: 'general' | 'damage' | 'id' | 'flags',
   ): Promise<{ path: string; url: string }> => {
     const compressed = await compressImage(file).catch(() => file);
     const companyId = (instance.bookings as any)?.company_id;
@@ -924,15 +928,30 @@ export default function ChecklistDetailClient({
 
   const handleToggle = async (itemId: string, currentChecked: boolean) => {
     if (isReadOnly) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const newChecked = !currentChecked;
-    const now = new Date().toISOString();
+    // Capture rollback targets synchronously before any async gap.
     const prevItems = localItems;
     const prevInstance = localInstance;
+    const newChecked = !currentChecked;
+    const now = new Date().toISOString();
 
-    const nextItems = localItems.map((it) =>
+    // Optimistic flip fires synchronously so the controlled checkbox doesn't
+    // flicker unchecked while auth.getUser() is in-flight. checked_by is null
+    // until auth resolves; doToggleWrites overwrites it with the real user.id.
+    setLocalItems(
+      prevItems.map((it) =>
+        it.id === itemId
+          ? { ...it, checked: newChecked, checked_at: newChecked ? now : null, checked_by: null }
+          : it
+      )
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLocalItems(prevItems);
+      return;
+    }
+
+    const nextItems = prevItems.map((it) =>
       it.id === itemId
         ? { ...it, checked: newChecked, checked_at: newChecked ? now : null, checked_by: newChecked ? user.id : null }
         : it
@@ -942,7 +961,7 @@ export default function ChecklistDetailClient({
     const wouldComplete = instance.checklist_type === 'pickup' && nextItems.every((it) => it.checked);
     if (wouldComplete) {
       const proceedToggle = async () => {
-        const urgentItems = localItems.filter((it) => it.issue_blocking === true);
+        const urgentItems = prevItems.filter((it) => it.issue_blocking === true);
         if (urgentItems.length > 0) {
           const urgentIds = urgentItems.map((it) => it.id);
           const nextWithUrgentsUnchecked = nextItems.map((it) =>
@@ -958,7 +977,7 @@ export default function ChecklistDetailClient({
           setHandoverSafetyModal({ flaggedItems: urgentItems, triggerCheckedIds: [], triggerCheckedAt: '', triggerCheckedBy: '' });
           return;
         }
-        const flagged = localItems.filter((it) => !!it.issue_flag);
+        const flagged = prevItems.filter((it) => !!it.issue_flag);
         if (flagged.length > 0) {
           showHandoverSafetyModal(flagged, async () => {
             await doToggleWrites(itemId, newChecked, now, user.id, nextItems, prevItems, prevInstance, currentChecked);
@@ -1297,6 +1316,9 @@ export default function ChecklistDetailClient({
     onSaveFlag: () => { handleSaveFlag(item.id); promoteReturnToInProgress(); },
     onNotesChange: (value: string) => handleNotesChange(item.id, value),
     onNotesBlur: (value: string) => handleNotesBlur(item.id, value),
+    issuePhotoUrls: (item.issue_photo_paths ?? []).map(
+      (p) => supabase.storage.from('checklist-evidence').getPublicUrl(p).data.publicUrl
+    ),
   });
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -1364,17 +1386,19 @@ export default function ChecklistDetailClient({
               </p>
             </div>
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <VehicleDataBlock
-                vehicleData={vehicleData}
-                onChange={(field, value) => {
-                  setVehicleData((prev) => ({ ...prev, [field]: value }));
-                  saveHandoverVehicleField(field as 'km' | 'fuel' | 'adblue', value);
-                }}
-                isLocked={isReadOnly}
-                highlight={validationHighlights.missingVehicleData}
-                fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
-                adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
-              />
+              {!isCaravan && (
+                <VehicleDataBlock
+                  vehicleData={vehicleData}
+                  onChange={(field, value) => {
+                    setVehicleData((prev) => ({ ...prev, [field]: value }));
+                    saveHandoverVehicleField(field as 'km' | 'fuel' | 'adblue', value);
+                  }}
+                  isLocked={isReadOnly}
+                  highlight={validationHighlights.missingVehicleData}
+                  fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
+                  adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
+                />
+              )}
               <EvidenceBlock
                 evidencePhotos={evidencePhotos}
                 onAdd={async (group, files) => {
@@ -1562,59 +1586,61 @@ export default function ChecklistDetailClient({
           {/* Phase 1: Inspection */}
           <PhaseCard phase={1} label={t('returnPhase1Label')}>
             <div style={{ padding: '16px' }}>
-              <VehicleDataBlock
-                vehicleData={vehicleData}
-                onChange={(field, value) => {
-                  setVehicleData((prev) => ({ ...prev, [field]: value }));
-                  if (field === 'km') {
-                    const retKm = value !== '' ? parseFloat(value) : NaN;
+              {!isCaravan && (
+                <VehicleDataBlock
+                  vehicleData={vehicleData}
+                  onChange={(field, value) => {
+                    setVehicleData((prev) => ({ ...prev, [field]: value }));
+                    if (field === 'km') {
+                      const retKm = value !== '' ? parseFloat(value) : NaN;
+                      const hvdKmStr: string = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? '';
+                      const hvdKm = hvdKmStr !== '' ? parseFloat(hvdKmStr) : NaN;
+                      if (!isNaN(retKm) && !isNaN(hvdKm) && retKm < hvdKm) {
+                        setReturnKmError(t('returnKmBelowHandover', { handoverKm: hvdKm }));
+                        return;
+                      }
+                      setReturnKmError(null);
+                      if (!isNaN(retKm) && !isNaN(hvdKm) && (retKm - hvdKm) > 10000) {
+                        return; // defer save to onKmBlur confirm
+                      }
+                      saveReturnVehicleField('km', value);
+                      lastSavedReturnKmRef.current = value;
+                      promoteReturnToInProgress();
+                      return;
+                    }
+                    saveReturnVehicleField(field as 'km' | 'fuel' | 'adblue', value);
+                    promoteReturnToInProgress();
+                  }}
+                  onKmBlur={() => {
+                    const retKm = vehicleData.km !== '' ? parseFloat(vehicleData.km) : NaN;
                     const hvdKmStr: string = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? '';
                     const hvdKm = hvdKmStr !== '' ? parseFloat(hvdKmStr) : NaN;
                     if (!isNaN(retKm) && !isNaN(hvdKm) && retKm < hvdKm) {
-                      setReturnKmError(t('returnKmBelowHandover', { handoverKm: hvdKm }));
-                      return;
-                    }
-                    setReturnKmError(null);
-                    if (!isNaN(retKm) && !isNaN(hvdKm) && (retKm - hvdKm) > 10000) {
-                      return; // defer save to onKmBlur confirm
-                    }
-                    saveReturnVehicleField('km', value);
-                    lastSavedReturnKmRef.current = value;
-                    promoteReturnToInProgress();
-                    return;
-                  }
-                  saveReturnVehicleField(field as 'km' | 'fuel' | 'adblue', value);
-                  promoteReturnToInProgress();
-                }}
-                onKmBlur={() => {
-                  const retKm = vehicleData.km !== '' ? parseFloat(vehicleData.km) : NaN;
-                  const hvdKmStr: string = (instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? '';
-                  const hvdKm = hvdKmStr !== '' ? parseFloat(hvdKmStr) : NaN;
-                  if (!isNaN(retKm) && !isNaN(hvdKm) && retKm < hvdKm) {
-                    setVehicleData((prev) => ({ ...prev, km: lastSavedReturnKmRef.current }));
-                    return;
-                  }
-                  setReturnKmError(null);
-                  if (!isNaN(retKm) && !isNaN(hvdKm) && retKm >= hvdKm && (retKm - hvdKm) > 10000) {
-                    const confirmed = window.confirm(
-                      t('returnKmHighJumpConfirm', { returnKm: retKm, handoverKm: hvdKm, diff: Math.round(retKm - hvdKm) })
-                    );
-                    if (!confirmed) {
                       setVehicleData((prev) => ({ ...prev, km: lastSavedReturnKmRef.current }));
                       return;
                     }
-                    saveReturnVehicleField('km', vehicleData.km);
-                    lastSavedReturnKmRef.current = vehicleData.km;
-                    promoteReturnToInProgress();
-                  }
-                }}
-                kmError={returnKmError ?? undefined}
-                isLocked={isReadOnly}
-                highlight={false}
-                fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
-                adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
-                handoverKm={(instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? ''}
-              />
+                    setReturnKmError(null);
+                    if (!isNaN(retKm) && !isNaN(hvdKm) && retKm >= hvdKm && (retKm - hvdKm) > 10000) {
+                      const confirmed = window.confirm(
+                        t('returnKmHighJumpConfirm', { returnKm: retKm, handoverKm: hvdKm, diff: Math.round(retKm - hvdKm) })
+                      );
+                      if (!confirmed) {
+                        setVehicleData((prev) => ({ ...prev, km: lastSavedReturnKmRef.current }));
+                        return;
+                      }
+                      saveReturnVehicleField('km', vehicleData.km);
+                      lastSavedReturnKmRef.current = vehicleData.km;
+                      promoteReturnToInProgress();
+                    }
+                  }}
+                  kmError={returnKmError ?? undefined}
+                  isLocked={isReadOnly}
+                  highlight={false}
+                  fuelOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'Fuel level')?.template.options ?? undefined}
+                  adblueOptions={localItems.find((i) => i.template.ui_section === 'vehicle_data' && i.template.label === 'AdBlue level')?.template.options ?? undefined}
+                  handoverKm={(instance.bookings as any)?.staff_metadata?.handover_vehicle_data?.km ?? ''}
+                />
+              )}
             </div>
           </PhaseCard>
 

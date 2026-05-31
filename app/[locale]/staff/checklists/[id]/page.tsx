@@ -52,11 +52,17 @@ export default async function ChecklistDetailPage({
         status,
         company_id,
         staff_metadata,
-        vehicle_id
+        vehicle_id,
+        vehicle:vehicles (
+          id,
+          name,
+          vehicle_category
+        )
       ),
       vehicle:vehicles (
         id,
-        name
+        name,
+        vehicle_category
       )
     `
     )
@@ -84,6 +90,7 @@ export default async function ChecklistDetailPage({
       issue_description,
       issue_severity,
       issue_blocking,
+      issue_photo_paths,
       linked_vehicle_issue_id,
       template:checklist_template_items!template_item_id (
         label,
@@ -112,8 +119,10 @@ export default async function ChecklistDetailPage({
     extrasCatalog = (cs as any)?.extras_catalog ?? null;
   }
 
-  // Normalize vehicle (array -> single object)
+  // Normalize vehicle: prefer instance.vehicle_id join, fall back to booking's vehicle
   const veh = Array.isArray((instance as any).vehicle) ? (instance as any).vehicle[0] : (instance as any).vehicle;
+  const bkVehRaw = Array.isArray((bk as any)?.vehicle) ? (bk as any)?.vehicle[0] : (bk as any)?.vehicle;
+  const resolvedVeh = veh ?? bkVehRaw ?? null;
   const normalizedInstance = {
     ...instance,
     bookings: bk
@@ -122,7 +131,7 @@ export default async function ChecklistDetailPage({
           company_settings: extrasCatalog !== null ? { extras_catalog: extrasCatalog } : null,
         }
       : null,
-    vehicles: veh ? { id: veh.id, name: veh.name } : null,
+    vehicles: resolvedVeh ? { id: resolvedVeh.id, name: resolvedVeh.name, vehicle_category: resolvedVeh.vehicle_category ?? null } : null,
   };
 
   // Normalize template (array -> single object)
@@ -142,6 +151,7 @@ export default async function ChecklistDetailPage({
         issue_description: item.issue_description,
         issue_severity: item.issue_severity,
         issue_blocking: item.issue_blocking,
+        issue_photo_paths: item.issue_photo_paths ?? null,
         linked_vehicle_issue_id: item.linked_vehicle_issue_id,
         template: {
           label: tpl?.label ?? 'Untitled item',

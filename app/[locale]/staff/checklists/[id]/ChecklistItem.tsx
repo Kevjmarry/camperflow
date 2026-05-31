@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { EvidencePhoto } from './types';
 
 type DbIssueSeverity = 'low' | 'medium' | 'high' | 'critical';
 type IssueSeverity = 'attention' | 'urgent';
@@ -18,6 +19,7 @@ export type ChecklistItemType = {
   issue_description: string | null;
   issue_severity: DbIssueSeverity | null;
   issue_blocking: boolean | null;
+  issue_photo_paths: string[] | null;
   linked_vehicle_issue_id: string | null;
   template: {
     label: string;
@@ -31,7 +33,7 @@ export type FlagDraft = {
   note: string;
   saving: boolean;
   error: string | null;
-  photos: File[];
+  photos: EvidencePhoto[];
 };
 
 function dbToUiSeverity(db: DbIssueSeverity | null | undefined): IssueSeverity {
@@ -70,6 +72,7 @@ type ChecklistItemProps = {
   onSaveFlag: () => void;
   onNotesChange: (value: string) => void;
   onNotesBlur: (value: string) => void;
+  issuePhotoUrls: string[];
 };
 
 export default function ChecklistItem({
@@ -93,6 +96,7 @@ export default function ChecklistItem({
   onSaveFlag,
   onNotesChange,
   onNotesBlur,
+  issuePhotoUrls,
 }: ChecklistItemProps) {
   const t = useTranslations('checklistDetail');
 
@@ -367,6 +371,45 @@ export default function ChecklistItem({
             </div>
           )}
 
+          {/* Saved flag detail — description + photo thumbnails shown when panel is closed */}
+          {isFlagged && !isFlagPanelOpen && (item.issue_description || issuePhotoUrls.length > 0) && (
+            <div style={{ marginTop: '6px' }}>
+              {item.issue_description && (
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#92400e',
+                    lineHeight: '1.4',
+                    marginBottom: issuePhotoUrls.length > 0 ? '6px' : 0,
+                  }}
+                >
+                  {item.issue_description}
+                </div>
+              )}
+              {issuePhotoUrls.length > 0 && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {issuePhotoUrls.map((url, idx) => (
+                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt=""
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '1px solid #fbbf24',
+                          display: 'block',
+                        }}
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Inline flag panel */}
           {isFlagPanelOpen && flagDraft && (
             <div
@@ -432,49 +475,56 @@ export default function ChecklistItem({
                 </div>
                 {flagDraft.photos.length > 0 && (
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                    {flagDraft.photos.map((file, idx) => (
-                      <div
-                        key={idx}
-                        style={{ position: 'relative', width: '64px', height: '64px', flexShrink: 0 }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt=""
-                          style={{
-                            width: '64px',
-                            height: '64px',
-                            objectFit: 'cover',
-                            borderRadius: '4px',
-                            border: '1px solid #fbbf24',
-                            display: 'block',
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onFlagRemovePhoto(idx)}
-                          style={{
-                            position: 'absolute',
-                            top: '-6px',
-                            right: '-6px',
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            border: '1px solid #fbbf24',
-                            backgroundColor: '#fff',
-                            color: '#92400e',
-                            fontSize: '10px',
-                            lineHeight: '14px',
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            padding: 0,
-                            fontWeight: 700,
-                          }}
+                    {flagDraft.photos.map((photo, idx) => {
+                      const src = photo.kind === 'stored'
+                        ? photo.url
+                        : URL.createObjectURL(photo.file);
+                      const isFailed = photo.kind === 'failed';
+                      return (
+                        <div
+                          key={idx}
+                          style={{ position: 'relative', width: '64px', height: '64px', flexShrink: 0 }}
                         >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={src}
+                            alt=""
+                            style={{
+                              width: '64px',
+                              height: '64px',
+                              objectFit: 'cover',
+                              borderRadius: '4px',
+                              border: isFailed ? '1px solid #ef4444' : '1px solid #fbbf24',
+                              display: 'block',
+                              opacity: photo.kind === 'new' ? 0.65 : 1,
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => onFlagRemovePhoto(idx)}
+                            style={{
+                              position: 'absolute',
+                              top: '-6px',
+                              right: '-6px',
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              border: '1px solid #fbbf24',
+                              backgroundColor: '#fff',
+                              color: '#92400e',
+                              fontSize: '10px',
+                              lineHeight: '14px',
+                              textAlign: 'center',
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontWeight: 700,
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {flagDraft.photos.length < 3 && (

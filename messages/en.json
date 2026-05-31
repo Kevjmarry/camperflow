@@ -1739,6 +1739,8 @@
       "preArrival": {
         "label": "Enable pre-arrival message reminders",
         "helper": "Sent the day before pickup.",
+        "windowLabel": "Reminder window (days before pickup)",
+        "windowHelper": "Show this booking in the reminders list this many days before pickup.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hello again, your '{vehicle_name}' pickup is tomorrow…"
@@ -1746,6 +1748,8 @@
       "returnPrep": {
         "label": "Enable return-prep message reminders",
         "helper": "Sent the day before return.",
+        "windowLabel": "Reminder window (days before return)",
+        "windowHelper": "Show this booking in the reminders list this many days before return.",
         "templateLabel": "Message template",
         "templateHelper": "Available placeholders: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
         "templatePlaceholder": "Hello again, your '{vehicle_name}' return is tomorrow…"

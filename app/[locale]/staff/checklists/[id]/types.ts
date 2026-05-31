@@ -52,6 +52,7 @@ export type ChecklistItemType = {
   issue_description: string | null;
   issue_severity: DbIssueSeverity | null;
   issue_blocking: boolean | null;
+  issue_photo_paths: string[] | null;
   linked_vehicle_issue_id: string | null;
   template: {
     label: string;
@@ -75,7 +76,7 @@ export type FlagDraft = {
   note: string;
   saving: boolean;
   error: string | null;
-  photos: File[];
+  photos: EvidencePhoto[];
 };
 
 export type SyncError = {
