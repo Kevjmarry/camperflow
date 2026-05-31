@@ -107,7 +107,7 @@ export default async function GuestBookingPage({ params }: PageProps) {
   const t = await getTranslations({ locale, namespace: "guestBooking" });
 
   // Map locale to date locale string
-  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : "en-GB";
+  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : locale === "pl" ? "pl-PL" : locale === "cs" ? "cs-CZ" : "en-GB";
 
   const { data: booking, error: bookingError } = await supabase
     .rpc("get_guest_booking_by_code", { p_code: code })

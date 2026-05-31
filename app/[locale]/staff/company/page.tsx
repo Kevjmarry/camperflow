@@ -860,7 +860,7 @@ export default function CompanySettingsPage() {
                     type="button"
                     className="btn btn-secondary"
                     onClick={() =>
-                      setExtrasCatalog([...extrasCatalog, { id: crypto.randomUUID(), name: "", name_i18n: { en: "", de: "", sk: "", pl: "" }, active: true }])
+                      setExtrasCatalog([...extrasCatalog, { id: crypto.randomUUID(), name: "", name_i18n: { en: "", de: "", sk: "", pl: "", cs: "" }, active: true }])
                     }
                     style={{ alignSelf: "flex-start", fontSize: "14px", marginTop: "var(--space-1)" }}
                   >

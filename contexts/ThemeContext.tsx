@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 export interface ExtraCatalogItem {
   id: string;
   name: string; // legacy fallback — do not drop until migration is confirmed
-  name_i18n: { en: string; de: string; sk: string; pl: string };
+  name_i18n: { en: string; de: string; sk: string; pl: string; cs: string };
   active: boolean;
 }
 

@@ -1192,22 +1192,22 @@ export default function ChecklistDetailClient({
     if (instance.checklist_type !== 'return') return [];
     const bookings = instance.bookings as (typeof instance.bookings & {
       staff_metadata?: { handed_over_extras?: string[] };
-      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] };
+      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string; pl: string; cs: string } }[] };
     }) | null;
     const handedOverIds: string[] = bookings?.staff_metadata?.handed_over_extras ?? [];
-    const catalog: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] = bookings?.company_settings?.extras_catalog ?? [];
+    const catalog: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string; pl: string; cs: string } }[] = bookings?.company_settings?.extras_catalog ?? [];
     return handedOverIds
       .map((id) => catalog.find((e) => e.id === id))
-      .filter((e): e is { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } } => e !== undefined);
+      .filter((e): e is { id: string; name: string; name_i18n?: { en: string; de: string; sk: string; pl: string; cs: string } } => e !== undefined);
   })();
 
   // ── Pickup extras — full catalog ───────────────────────────────────────────────
   const pickupExtras = (() => {
     if (!isPickupOrHandover) return [];
     const bookings = instance.bookings as (typeof instance.bookings & {
-      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[] };
+      company_settings?: { extras_catalog?: { id: string; name: string; name_i18n?: { en: string; de: string; sk: string; pl: string; cs: string } }[] };
     }) | null;
-    return (bookings?.company_settings?.extras_catalog ?? []) as { id: string; name: string; name_i18n?: { en: string; de: string; sk: string } }[];
+    return (bookings?.company_settings?.extras_catalog ?? []) as { id: string; name: string; name_i18n?: { en: string; de: string; sk: string; pl: string; cs: string } }[];
   })();
 
   const sortedItems = [...localItems].sort((a, b) => a.template.sort_order - b.template.sort_order);

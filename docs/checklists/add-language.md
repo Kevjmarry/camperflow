@@ -20,10 +20,54 @@ booking guest-locale validation, cookie action — **all auto**.
 ## 2 — Create the message file
 
 - [ ] Copy `messages/en.json` to `messages/[locale].json`
-- [ ] Translate all values (do not change any key names)
+- [ ] Translate all values using the **batch workflow below** (do not change any key names)
 - [ ] Run `npm run check:i18n` — must pass with zero errors before continuing
 
-> **Widget namespace (`widget.*`):** This namespace (~30 keys) powers the public-facing availability embed that appears on camper company websites — it is the copy guests read, not internal staff UI. Translate the enquiry form labels, error messages, success messages, and calendar hint text carefully. Keys include `enquiry.ctaButton`, `enquiry.formTitle`, `enquiry.errorRequired`, `calendar.pickupSelected`, and the `legend.*` group.
+> **Widget namespace (`widget.*`):** This namespace (~30 keys) powers the public-facing availability embed that appears on camper company websites — it is the copy guests read, not internal staff UI. Translate the enquiry form labels, error messages, success messages, and calendar hint text carefully. Keys includes `enquiry.ctaButton`, `enquiry.formTitle`, `enquiry.errorRequired`, `calendar.pickupSelected`, and the `legend.*` group.
+
+### 2a — Batch translation workflow (required)
+
+> **Why batches?** The full `en.json` locale file is large enough that asking Claude (or any LLM)
+> to translate the entire file in a single response will exceed output limits and produce a
+> truncated, unusable result. **Always split translation into the six batches below.**
+> This was proven with the Polish locale and must be followed for all future languages
+> (CZ, HU, HR, SL, ES, IT, FR, NL, and any others).
+
+For each batch: translate only the listed sections, paste the output into the locale file,
+then run `npm run check:i18n` before moving to the next batch.
+
+**Batch 1**
+- [ ] `auth`
+- [ ] `navigation`
+- [ ] `entry`
+- [ ] `signup`
+
+**Batch 2**
+- [ ] `vehicles`
+- [ ] `compliance`
+- [ ] `checklist labels`
+
+**Batch 3**
+- [ ] `bookings`
+- [ ] `booking detail`
+- [ ] `import`
+
+**Batch 4**
+- [ ] `checklists`
+- [ ] `templates`
+- [ ] `runtime flows`
+
+**Batch 5**
+- [ ] `operations`
+- [ ] `customers`
+- [ ] `team`
+
+**Batch 6**
+- [ ] `company`
+- [ ] `guest portal`
+- [ ] `widget`
+- [ ] `billing`
+- [ ] remaining sections
 
 ---
 

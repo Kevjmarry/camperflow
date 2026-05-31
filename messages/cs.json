@@ -1,0 +1,2574 @@
+{
+  "entry": {
+    "appName": "CamperFlow",
+    "guest": {
+      "title": "Přístup pro hosty",
+      "description": "Zadejte kód rezervace pro zobrazení detailů vašeho karavanu",
+      "bookingCodeLabel": "Kód rezervace",
+      "bookingCodePlaceholder": "e.g. CF-2024-1234",
+      "bookingCodeHelp": "Najdete ho v potvrzovacím e-mailu",
+      "continue": "Pokračovat"
+    },
+    "divider": {
+      "or": "nebo"
+    },
+    "staff": {
+      "title": "Přihlášení zaměstnanců",
+      "description": "Přístup k operačnímu panelu",
+      "login": "Přihlášení zaměstnanců",
+      "offlineError": "Vyžadováno internetové připojení"
+    },
+    "signup": {
+      "cta": "Nový v CamperFlow?",
+      "link": "Vytvořte si bezplatný účet"
+    },
+    "footer": {
+      "legal": "Pokračováním souhlasíte s podmínkami pronájmu a zásadami ochrany osobních údajů"
+    }
+  },
+  "staffLogin": {
+    "title": "Přihlášení zaměstnanců",
+    "subtitle": "Přihlaste se pro přístup k operačnímu panelu",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Heslo",
+    "passwordPlaceholder": "Zadejte heslo",
+    "signIn": "Přihlásit se",
+    "signingIn": "Přihlašování…",
+    "backToHome": "Zpět na úvod",
+    "rememberEmail": "Zapamatovat e-mail na tomto zařízení",
+    "inviteOnly": "Účty jsou vytvářeny pouze na pozvání. Kontaktujte svého manažera.",
+    "error": {
+      "accessDenied": "Přístup zamítnut. Tento účet nemá oprávnění zaměstnance.",
+      "unexpected": "Došlo k neočekávané chybě. Zkuste to prosím znovu.",
+      "accessDeniedError": "Přístup zamítnut. Váš účet nemá povolen provozní režim."
+    },
+    "backToSignIn": "Zpět na přihlášení",
+    "forgotPassword": "Zapomněli jste heslo?",
+    "passwordsNoMatch": "Hesla se neshodují.",
+    "passwordTooShort": "Heslo musí mít alespoň 8 znaků.",
+    "passwordMinPlaceholder": "Min. 8 znaků",
+    "resetRequest": {
+      "title": "Obnovení hesla",
+      "subtitle": "Zadejte e-mail a my vám pošleme odkaz pro obnovení.",
+      "checkEmail": "Zkontrolujte e-mail s odkazem pro obnovení.",
+      "sendLink": "Odeslat odkaz pro obnovení",
+      "sending": "Odesílání…"
+    },
+    "reset": {
+      "title": "Nastavit nové heslo",
+      "subtitle": "Zadejte a potvrďte nové heslo níže.",
+      "verifying": "Ověřování odkazu pro obnovení…",
+      "sessionMissing": "Odkaz pro obnovení vypršel nebo je neplatný.",
+      "newPasswordLabel": "Nové heslo",
+      "confirmPasswordLabel": "Potvrdit nové heslo",
+      "confirmPasswordPlaceholder": "Opakujte nové heslo",
+      "updatePassword": "Aktualizovat heslo",
+      "updating": "Aktualizace…",
+      "success": "Heslo bylo aktualizováno! Přesměrování na přihlášení…"
+    },
+    "invite": {
+      "title": "Nastavte si heslo",
+      "subtitle": "Vytvořte heslo pro dokončení nastavení účtu.",
+      "verifying": "Ověřování odkazu pozvánky…",
+      "invalidLink": "Neplatný odkaz pozvánky.",
+      "passwordLabel": "Heslo",
+      "confirmPasswordLabel": "Potvrdit heslo",
+      "confirmPasswordPlaceholder": "Opakujte heslo",
+      "setPassword": "Nastavit heslo",
+      "settingUp": "Nastavování…",
+      "success": "Účet nastaven! Přesměrování na přihlášení…",
+      "unexpected": "Došlo k neočekávané chybě."
+    }
+  },
+  "signup": {
+    "title": "Vytvořte si účet",
+    "subtitle": "Začněte spravovat svoji flotilu karavanů s CamperFlow",
+    "nameLabel": "Celé jméno",
+    "namePlaceholder": "Vaše celé jméno",
+    "companyNameLabel": "Název společnosti",
+    "companyNamePlaceholder": "Název vaší půjčovny",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Heslo",
+    "passwordPlaceholder": "Min. 8 znaků",
+    "submit": "Vytvořit účet",
+    "submitting": "Vytváření…",
+    "success": "Účet byl vytvořen! Zkontrolujte e-mail pro potvrzení a poté se přihlaste.",
+    "backToHome": "Zpět na úvod",
+    "alreadyHaveAccount": "Již máte účet?",
+    "signIn": "Přihlásit se",
+    "error": {
+      "unexpected": "Došlo k neočekávané chybě. Zkuste to prosím znovu.",
+      "passwordTooShort": "Heslo musí mít alespoň 8 znaků.",
+      "emailTaken": "Tento e-mail je již zaregistrován. Místo toho se přihlaste."
+    }
+  },
+  "pageContainer": {
+    "signOut": "Odhlásit se"
+  },
+  "staffTeam": {
+    "backToDashboard": "Zpět na přehled",
+    "title": "Tým",
+    "member": "člen",
+    "members": "členů",
+    "loading": "Načítání zaměstnanců...",
+    "error": {
+      "notAuthenticated": "Nejste přihlášeni",
+      "noProfile": "Profil zaměstnance nenalezen",
+      "failed": "Nepodařilo se načíst zaměstnance"
+    },
+    "you": "Vy",
+    "role": {
+      "manager": "Manažer",
+      "cleaner": "Uklízeč",
+      "mechanical": "Mechanik"
+    },
+    "photoAlt": "Fotografie zaměstnance",
+    "memberCount": "{count, plural, =1 {člen} other {členů}}",
+    "errorNoProfile": "Profil zaměstnance nenalezen",
+    "errorLoadFailed": "Nepodařilo se načíst zaměstnance",
+    "youBadge": "Vy",
+    "roleManager": "Manažer",
+    "roleCleaner": "Uklízeč",
+    "roleMechanical": "Mechanik",
+    "capabilityJoiner": " + ",
+    "sectionActive": "Aktivní",
+    "sectionInactive": "Neaktivní",
+    "addMember": "Přidat člena týmu",
+    "overLimitBanner": "Někteří členové týmu překračují limit vašeho plánu.",
+    "overLimitBannerLink": "Upgradovat plán",
+    "overLimitChip": "Překročen limit plánu"
+  },
+  "vehicleDetail": {
+    "notFound": {
+      "title": "Vozidlo nenalezeno",
+      "description": "Vozidlo, které hledáte, neexistuje nebo bylo smazáno.",
+      "back": "Zpět na vozidla",
+      "backButton": "Zpět na vozidla"
+    },
+    "loading": "Načítání vozidla...",
+    "backToVehicles": "Zpět na vozidla",
+    "title": "Detail vozidla",
+    "pageTitle": "Detail vozidla",
+    "errorLoad": "Nepodařilo se načíst vozidlo",
+    "editButton": "Upravit vozidlo",
+    "error": {
+      "notAuthenticated": "Nejste přihlášeni",
+      "failedPrefix": "Nepodařilo se načíst vozidlo: ",
+      "unexpectedPrefix": "Neočekávaná chyba: ",
+      "generic": "Nepodařilo se načíst vozidlo"
+    },
+    "status": {
+      "ready": "Připraveno",
+      "preparing": "Příprava",
+      "onRent": "Pronajato"
+    },
+    "field": {
+      "registration": "Registrace",
+      "year": "Rok",
+      "make": "Značka",
+      "model": "Model"
+    },
+    "fields": {
+      "photo": "Fotografie",
+      "noPhoto": "Bez fotografie",
+      "registrationPlate": "Registrační značka",
+      "make": "Značka",
+      "model": "Model",
+      "year": "Rok",
+      "vin": "VIN",
+      "notes": "Poznámky",
+      "noNotes": "Žádné poznámky",
+      "latestOdometer": "Poslední stav odometru",
+      "vehicleCategory": "Kategorie",
+      "vehicleCategoryMotorhome": "Obytný automobil",
+      "vehicleCategoryCampervan": "Campervan",
+      "vehicleCategoryCaravan": "Karavan"
+    },
+    "dimensions": {
+      "title": "Rozměry",
+      "length": "Délka",
+      "width": "Šířka",
+      "height": "Výška"
+    },
+    "videoTour": {
+      "title": "Video prohlídka"
+    },
+    "section": {
+      "photo": "Fotografie",
+      "vin": "VIN",
+      "notes": "Poznámky"
+    },
+    "photoAlt": "Vozidlo",
+    "compliance": {
+      "title": "Shoda vozidla",
+      "addButton": "Přidat záznam shody",
+      "loading": "Načítání záznamů shody...",
+      "empty": "Žádné záznamy shody nenalezeny.",
+      "table": {
+        "type": "Typ",
+        "expiryDate": "Datum platnosti",
+        "status": "Stav",
+        "editButton": "Upravit",
+        "deleteButton": "Smazat",
+        "deleteCancel": "Zrušit",
+        "deleteConfirm": "Potvrdit"
+      },
+      "status": {
+        "expired": "Vypršelo",
+        "expiring": "Brzy vyprší",
+        "ok": "OK"
+      },
+      "badge": {
+        "blocksReadiness": "Blokuje připravenost",
+        "operational": "Provozní"
+      },
+      "motorwayVignette": "Dálniční vigneta — {notes}",
+      "dueAtKm": "Splatné při {n} km",
+      "editModal": {
+        "title": "Upravit {name}",
+        "expiryDateLabel": "Datum platnosti",
+        "notesLabel": "Poznámky",
+        "errorExpiryRequired": "Datum platnosti je povinné",
+        "errorSaveFailed": "Nepodařilo se uložit změny",
+        "cancel": "Zrušit",
+        "saving": "Ukládání...",
+        "save": "Uložit",
+        "nameLabel": "Název záznamu shody vozidla",
+        "errorNameRequired": "Prosím zadejte název.",
+        "blocksReadinessLabel": "Blokuje připravenost vozidla",
+        "serviceDueKmLabel": "Servis splatný při km",
+        "errorDateOrKmRequired": "Prosím zadejte datum platnosti nebo km pro servis",
+        "warningDaysOverrideLabel": "Vlastní počet dní varování před vypršením",
+        "warningKmOverrideLabel": "Vlastní počet km varování před servisem"
+      },
+      "addModal": {
+        "title": "Přidat záznam shody",
+        "allTracked": "Všechny typy shody jsou již pro toto vozidlo sledovány.",
+        "close": "Zavřít",
+        "typeLabel": "Typ shody",
+        "expiryDateLabel": "Datum platnosti",
+        "notesLabel": "Poznámky",
+        "errorTypeRequired": "Prosím vyberte typ shody",
+        "errorExpiryRequired": "Datum platnosti je povinné",
+        "errorSaveFailed": "Nepodařilo se přidat záznam shody",
+        "cancel": "Zrušit",
+        "saving": "Přidávání...",
+        "add": "Přidat",
+        "customOption": "Vlastní shoda vozidla",
+        "customNameLabel": "Název záznamu shody vozidla",
+        "customNamePlaceholder": "např. Hasicí přístroj …",
+        "errorCustomNameRequired": "Prosím zadejte název.",
+        "customBlocksReadinessLabel": "Blokuje připravenost vozidla",
+        "serviceDueKmLabel": "Servis splatný při km",
+        "errorDateOrKmRequired": "Prosím zadejte datum platnosti nebo km pro servis",
+        "warningDaysOverrideLabel": "Vlastní počet dní varování před vypršením",
+        "warningKmOverrideLabel": "Vlastní počet km varování před servisem"
+      },
+      "systemTypes": {
+        "technicalInspection": "Technická prohlídka",
+        "insurance": "Pojištění",
+        "gasInspection": "Plynová inspekce",
+        "habitationService": "Servis obytného prostoru",
+        "generalService": "Generální servis",
+        "engineService": "Motorový servis"
+      }
+    },
+    "checklists": {
+      "title": "Kontrolní seznamy vozidla",
+      "loading": "Načítání kontrolních seznamů…",
+      "empty": "Žádné kontrolní seznamy vozidla nejsou nakonfigurovány.",
+      "open": "Otevřít",
+      "continue": "Pokračovat",
+      "view": "Zobrazit",
+      "notStarted": "Nezahájeno",
+      "inProgress": "Probíhá",
+      "completed": "Dokončeno"
+    },
+    "issues": {
+      "title": "Označení v kontrolních seznamech",
+      "loading": "Načítání…",
+      "empty": "Žádná označení v kontrolních seznamech",
+      "fallbackTitle": "Označení v kontrolním seznamu",
+      "blocking": "Blokující",
+      "attention": "Pozornost",
+      "reported": "Nahlášeno {date}",
+      "viewChecklist": "Zobrazit kontrolní seznam →",
+      "markResolved": "Označit jako vyřešené",
+      "resolving": "Řešení…"
+    },
+    "vehicleCalendar": {
+      "title": "Synchronizace kalendáře",
+      "connect": "Připojit kalendář",
+      "urlPlaceholder": "https://…/calendar.ics",
+      "importButton": "Importovat / Náhled kalendáře",
+      "syncNow": "Synchronizovat nyní",
+      "syncing": "Synchronizace…",
+      "autoSyncInterval": "Interval automatické synchronizace",
+      "cronScheduleLabel": "Denně ve 23:00 UTC",
+      "intervalNone": "Zakázáno",
+      "interval1h": "Každou hodinu",
+      "interval6h": "Každých 6 hodin",
+      "interval12h": "Každých 12 hodin",
+      "interval24h": "Každých 24 hodin",
+      "lastSynced": "Naposledy synchronizováno",
+      "syncSuccess": "Úspěch",
+      "syncError": "Selhalo",
+      "syncResultDetail": "{created} vytvořeno · {updated} aktualizováno · {blocked} blokováno",
+      "noUrlToSync": "Nejprve zadejte a importujte iCal URL pro aktivaci synchronizace",
+      "status": "Stav",
+      "connected": "Připojeno",
+      "notConnected": "Nepřipojeno",
+      "syncInterval": "Interval synchronizace",
+      "never": "Nikdy",
+      "lastSyncResult": "Výsledek poslední synchronizace",
+      "staleWarning": "Poslední synchronizace je starší než 26 hodin — může být neaktuální"
+    }
+  },
+  "bookings": {
+    "backToDashboardArrow": "Zpět na přehled",
+    "title": "Rezervace",
+    "subtitle": "Správa rezervací zákazníků",
+    "action": {
+      "newBooking": "Nová rezervace",
+      "importBookings": "Importovat rezervace",
+      "edit": "Upravit",
+      "view": "Zobrazit",
+      "viewEdit": "Zobrazit / Upravit",
+      "viewBooking": "Zobrazit rezervaci",
+      "viewEditBooking": "Zobrazit a upravit rezervaci",
+      "addBlockedPeriod": "Přidat blokované období"
+    },
+    "filter": {
+      "statusLabel": "Stav:",
+      "all": "Vše",
+      "pending": "Čekající",
+      "confirmed": "Potvrzená",
+      "onRent": "Pronajatá",
+      "completed": "Dokončená",
+      "cancelled": "Zrušená",
+      "vehicleLabel": "Vozidlo:",
+      "allVehicles": "Všechna vozidla",
+      "sourceTypeLabel": "Zdroj:",
+      "allSources": "Všechny zdroje",
+      "dateFromLabel": "Od:",
+      "dateToLabel": "Do:",
+      "searchPlaceholder": "Hledat dle jména, čísla rezervace…",
+      "clearFilters": "Vymazat filtry",
+      "activeOnly": "Pouze aktivní",
+      "completedOnly": "Pouze dokončené",
+      "hideCancelled": "Skrýt zrušené",
+      "showBlocks": "Zobrazit blokovaná období"
+    },
+    "sort": {
+      "label": "Řadit:",
+      "nextPickup": "Příští vyzvednutí",
+      "rentingNow": "Aktuálně pronajato",
+      "lastReturned": "Naposledy vráceno",
+      "newestCreated": "Nejnovější",
+      "recentlyUpdated": "Nedávno aktualizované"
+    },
+    "loading": "Načítání rezervací...",
+    "empty": "Žádné rezervace nenalezeny.",
+    "emptyAdminSuffix": " Vytvořte první rezervaci pro začátek.",
+    "noResults": "Žádné rezervace neodpovídají vašim filtrům.",
+    "yearGroupBookings": "{count, plural, one {# rezervace} few {# rezervace} other {# rezervací}}",
+    "blockImportedLabel": "Importováno",
+    "blockEditedLabel": "Upraveno v CamperFlow",
+    "addBlockedPeriod": "Přidat blokované období",
+    "blockModal": {
+      "titleCreate": "Přidat blokované období",
+      "titleEdit": "Upravit blokované období",
+      "vehicleLabel": "Vozidlo",
+      "blockTypeLabel": "Typ",
+      "labelField": "Popis (volitelné)",
+      "startAtLabel": "Začátek",
+      "endAtLabel": "Konec",
+      "save": "Uložit",
+      "delete": "Smazat",
+      "deleteConfirm": "Smazat toto blokované období?",
+      "cancel": "Zrušit",
+      "errorRequired": "Vozidlo, typ, začátek a konec jsou povinné.",
+      "errorEndBeforeStart": "Konec musí být po začátku.",
+      "errorSave": "Nepodařilo se uložit."
+    },
+    "table": {
+      "bookingNumber": "Č. rezervace",
+      "customer": "Zákazník",
+      "vehicle": "Vozidlo",
+      "vehicleStatus": "Stav vozidla",
+      "pickup": "Vyzvednutí",
+      "pickupIn": "Vyzvednutí za",
+      "return": "Vrácení",
+      "returnIn": "Vrácení za",
+      "status": "Stav",
+      "tasks": "Úkoly",
+      "days": "Dny",
+      "nextAction": "Další akce",
+      "actions": "Akce"
+    },
+    "unassigned": "Nepřiřazeno",
+    "date": {
+      "locale": "cs-CZ"
+    },
+    "placeholder": {
+      "dash": "-"
+    },
+    "statusLabels": {
+      "draft": "Čekající",
+      "confirmed": "Potvrzená",
+      "blocked": "Blokovaná",
+      "onRent": "Pronajatá",
+      "completed": "Dokončená",
+      "cancelled": "Zrušená"
+    },
+    "error": {
+      "notAuthenticated": "Nejste přihlášeni",
+      "permissionsFailed": "Nepodařilo se ověřit oprávnění",
+      "loadFailed": "Nepodařilo se načíst rezervace"
+    },
+    "nextAction": {
+      "confirmBooking": "Potvrdit rezervaci",
+      "completeChecklist": "Dokončit kontrolní seznam",
+      "returnChecklist": "Kontrolní seznam vrácení",
+      "viewBooking": "Zobrazit rezervaci",
+      "view": "Zobrazit"
+    },
+    "time": {
+      "today": "Dnes",
+      "tomorrow": "Zítra",
+      "daysAhead": "{count}d",
+      "days": "{count}d"
+    },
+    "vehicleReadiness": {
+      "ready": "Připraveno",
+      "preparing": "Příprava",
+      "onRent": "Pronajato"
+    }
+  },
+  "guestBooking": {
+    "title": "Vaše rezervace",
+    "guestAccess": "Přístup pro hosty",
+    "bookingInformation": "Informace o rezervaci",
+    "bookingNumber": "Číslo rezervace",
+    "status": "Stav",
+    "statusValues": {
+      "confirmed": "Potvrzená",
+      "pending": "Čekající",
+      "completed": "Dokončená",
+      "cancelled": "Zrušená",
+      "on_rent": "Pronajatá"
+    },
+    "pickupDate": "Datum vyzvednutí",
+    "returnDate": "Datum vrácení",
+    "additionalNotes": "Dodatečné poznámky",
+    "vehicleInformation": "Informace o vozidle",
+    "vehicle": "Vozidlo",
+    "licensePlate": "Registrační značka",
+    "vin": "VIN",
+    "dimensions": "Rozměry",
+    "dimensionLength": "D",
+    "dimensionWidth": "Š",
+    "dimensionHeight": "V",
+    "customerInformation": "Informace o zákazníkovi",
+    "name": "Jméno",
+    "email": "E-mailová adresa",
+    "phone": "Telefonní číslo",
+    "checklists": "Kontrolní seznamy",
+    "checklistDefault": "Kontrolní seznam",
+    "checklistCompleted": "Dokončeno",
+    "checklistAvailable": "Dostupné",
+    "checklistLocked": "Uzamčeno",
+    "notSpecified": "Nezadáno",
+    "notAccessibleTitle": "Rezervace není přístupná",
+    "notAccessibleMessage": "Kód rezervace",
+    "notAccessibleMessageEnd": "nelze zobrazit.",
+    "contactUs": "Kontaktujte nás prosím a sdělte nám kód rezervace.",
+    "notFoundTitle": "Rezervace nenalezena",
+    "notFoundMessage": "Kód rezervace",
+    "notFoundMessageEnd": "neexistuje.",
+    "back": "Zpět",
+    "evidencePhotosTitle": "Fotografie z prohlídky",
+    "evidenceHandover": "Předání",
+    "evidenceReturn": "Vrácení",
+    "evidenceGroupGeneral": "Celkový stav",
+    "evidenceGroupDamage": "Poškození",
+    "evidenceDownloadAll": "Stáhnout všechny fotografie",
+    "includedInBooking": "Součástí vaší rezervace",
+    "videoTour": "Video prohlídka",
+    "make": "Značka",
+    "model": "Model",
+    "year": "Rok",
+    "evidenceZipping": "Příprava…",
+    "videoTourIframeTitle": "Video prohlídka vozidla",
+    "lightboxAriaLabel": "Prohlížeč fotografií",
+    "lightboxClose": "Zavřít",
+    "lightboxPrev": "Předchozí fotografie",
+    "lightboxNext": "Další fotografie"
+  },
+  "guestBookings": {
+    "redirecting": "Přesměrování…",
+    "bookingLookup": "Vyhledání rezervace",
+    "incompleteLinkMessage": "Tomuto odkazu chybí kód rezervace.",
+    "instructionMessage": "Vraťte se prosím a znovu zadejte kód rezervace."
+  },
+  "guestChecklist": {
+    "loading": "Načítání…",
+    "error": "Chyba",
+    "checklistNotFoundOrInvalidCode": "Kontrolní seznam nenalezen nebo neplatný kód",
+    "checklistNotFound": "Kontrolní seznam nenalezen",
+    "backToPortal": "Zpět na portál",
+    "backToBooking": "Zpět na rezervaci",
+    "checklistFallback": "Kontrolní seznam",
+    "status": "Stav",
+    "progress": "Průběh",
+    "itemsCount": "{completed} z {total} položek",
+    "noItemsAvailable": "Žádné položky kontrolního seznamu nejsou k dispozici.",
+    "note": "Poznámka",
+    "completedOn": "✓ Dokončeno {date}",
+    "guideNotice": "Tento kontrolní seznam slouží jako průvodce. Digitální vyplnění bude brzy k dispozici.",
+    "required": "Povinné"
+  },
+  "staff": {
+    "nav": {
+      "operations": "Provoz",
+      "bookings": "Rezervace",
+      "vehicles": "Vozidla",
+      "checklists": "Kontrolní seznamy",
+      "guestContent": "Obsah pro hosty",
+      "team": "Tým zaměstnanců",
+      "customers": "Zákazníci",
+      "company": "Nastavení společnosti",
+      "addons": "Doplňky",
+      "billing": "Fakturace",
+      "language": "Jazyk",
+      "more": "Více"
+    },
+    "operations": {
+      "showMore": "Zobrazit dalších {count}",
+      "showLess": "Zobrazit méně",
+      "quietDay": {
+        "title": "Dnes nic neplánováno.",
+        "subtitle": "Co nás čeká dál."
+      },
+      "completedBookings": {
+        "title": "Dokončené rezervace",
+        "viewAll": "Zobrazit vše",
+        "empty": "Žádné dokončené rezervace.",
+        "returnedOn": "Vráceno {date}",
+        "view": "Zobrazit"
+      },
+      "extras": {
+        "nights": "{count}n",
+        "guests": "{count} hostů",
+        "pets": "Domácí mazlíčci",
+        "airportPickup": "Vyzvednutí na letišti",
+        "extraDriver": "Přidatný řidič"
+      },
+      "nextUp": {
+        "nextPickup": "Příští vyzvednutí",
+        "nextReturn": "Příští vrácení",
+        "view": "Zobrazit rezervaci",
+        "nonePickup": "Žádná nadcházející vyzvednutí",
+        "noneReturn": "Žádná nadcházející vrácení",
+        "prev": "Předchozí",
+        "next": "Další",
+        "itemOf": "{current} z {total}",
+        "dueToday": "Dnes",
+        "dueTomorrow": "Zítra",
+        "dueInDays": "Za {count} dní",
+        "preArrivalMessage": "Zpráva před příjezdem",
+        "returnPrepMessage": "Zpráva k přípravě vrácení",
+        "copyMessage": "Kopírovat zprávu",
+        "messageCopied": "Zkopírováno!",
+        "markSent": "Označit jako odesláno",
+        "cardView": "Zobrazení karet",
+        "listView": "Zobrazení seznamu"
+      },
+      "upcomingReturns": {
+        "title": "Nadcházející vrácení",
+        "viewAll": "Zobrazit vše",
+        "empty": "Žádná nadcházející vrácení.",
+        "inDays": "za {count}d",
+        "view": "Zobrazit"
+      },
+      "blockTypes": {
+        "unavailable": "Nedostupné",
+        "maintenance": "Údržba",
+        "work": "Práce",
+        "owner_use": "Použití vlastníkem",
+        "manual_note": "Poznámka",
+        "external_hold": "Externí blokace"
+      },
+      "vehicleBlocks": {
+        "title": "Blokace vozidel",
+        "defaultLabel": "Zablokované období",
+        "activeNow": "Aktivní nyní",
+        "until": "Do {date}"
+      },
+      "onRentNow": {
+        "title": "Aktuálně pronajato",
+        "empty": "Žádná vozidla momentálně na pronájmu.",
+        "vehicle": "Vozidlo",
+        "customer": "Zákazník",
+        "comingBack": "Vrácení",
+        "prepWindow": "Okno přípravy",
+        "noUpcomingBooking": "Žádná nadcházející rezervace",
+        "nextBookingAt": "Další: {date}, {time}",
+        "view": "Zobrazit",
+        "prepSeverity": {
+          "short": "Krátké",
+          "medium": "Střední",
+          "comfortable": "Komfortní"
+        },
+        "sameDayPrep": "Tentýž den",
+        "prepDayOne": "1 den",
+        "prepDays": "{count} dní",
+        "overdueHours": "před {count}h",
+        "overdueDays": "před {count}d",
+        "inHours": "za {count}h",
+        "inDaysShort": "za {count}d",
+        "nextPickupLabel": "Příští vyzvednutí"
+      },
+      "summary": {
+        "pickupsToday": "Vyzvednutí dnes",
+        "returnsToday": "Vrácení dnes",
+        "vehiclesPreparing": "Vozidla v přípravě",
+        "overdueReturns": "Zpožděná vrácení"
+      },
+      "status": {
+        "blockedVehicle": "Zablokované vozidlo",
+        "blockingChecklistIssue": "Blokující problém kontrolního seznamu",
+        "expiredCompliance": "Vypršená shoda vozidla",
+        "openVehicleIssue": "Otevřená závada vozidla",
+        "readyForPickup": "Připraveno k vyzvednutí",
+        "urgentIssue": "Urgentní problém",
+        "attentionIssue": "Problém vyžadující pozornost",
+        "handoverComplete": "Předání dokončeno",
+        "prepNeeded": "Vyžaduje přípravu"
+      },
+      "action": {
+        "preparing": "Příprava",
+        "startHandover": "Zahájit předání",
+        "continueHandover": "Pokračovat v předání",
+        "awaitReturn": "Čekat na vrácení",
+        "startReturn": "Zahájit vrácení"
+      },
+      "pickups": {
+        "title": "Vyzvednutí dnes",
+        "noneScheduled": "Nic neplánováno",
+        "noneToday": "Dnes žádná vyzvednutí.",
+        "view": "Zobrazit",
+        "handover": "Předání"
+      },
+      "returns": {
+        "title": "Vrácení dnes",
+        "noneScheduled": "Nic neplánováno",
+        "noneToday": "Dnes žádná vrácení.",
+        "view": "Zobrazit",
+        "returnLabel": "Vrácení"
+      },
+      "vehiclesPreparing": {
+        "title": "Vozidla v přípravě",
+        "none": "Žádná vozidla momentálně v přípravě.",
+        "pickup": "Vyzvednutí",
+        "view": "Zobrazit"
+      },
+      "upcomingPickups": {
+        "title": "Nadcházející vyzvednutí",
+        "viewAll": "Zobrazit vše",
+        "empty": "Žádná nadcházející vyzvednutí.",
+        "view": "Zobrazit",
+        "inDays": "za {count}d"
+      },
+      "countdown": {
+        "today": "Dnes",
+        "tomorrow": "Zítra",
+        "days": "{count} dní"
+      },
+      "backToDashboard": "Zpět na přehled",
+      "pageTitle": "Provoz",
+      "pageSubtitle": "Dnešní vyzvednutí, vrácení a připravenost vozidel na první pohled.",
+      "attentionNeeded": "Vyžaduje pozornost",
+      "attentionChip": {
+        "blocked": "Zablokováno",
+        "operationalHold": "Provozní blokace",
+        "checklistIssue": "Problém kontrolního seznamu",
+        "expiredCompliance": "Vypršená shoda vozidla",
+        "warningCompliance": "Shoda vozidla brzy vyprší",
+        "vehicleIssue": "Závada vozidla",
+        "urgentIssue": "Urgentní problém",
+        "attentionIssue": "Problém vyžadující pozornost",
+        "expiredPrefix": "Vypršelo",
+        "expiringPrefix": "Brzy vyprší:",
+        "checklistFlag": "Příznak kontrolního seznamu"
+      },
+      "reminders": {
+        "title": "Připomínky",
+        "empty": "Žádné čekající připomínky.",
+        "view": "Zobrazit",
+        "type": {
+          "balance_invoice": "Odeslat fakturu na zbývajících 50 %",
+          "pre_arrival": "Odeslat zprávu před příjezdem",
+          "return_prep": "Odeslat zprávu k přípravě vrácení",
+          "review_imported": "Zkontrolovat připomínky",
+          "review_request": "Odeslat žádost o hodnocení"
+        },
+        "timing": {
+          "returnYesterday": "Vrácení včera",
+          "returnToday": "Vrácení dnes",
+          "returnTomorrow": "Vrácení zítra",
+          "returnInDays": "Vrácení za {count}d",
+          "returnDaysAgo": "Vrácení před {count}d",
+          "pickupTomorrow": "Vyzvednutí zítra",
+          "pickupToday": "Vyzvednutí dnes",
+          "pickupInDays": "Vyzvednutí za {count}d"
+        },
+        "copyWhatsApp": "Kopírovat zprávu",
+        "copied": "Zkopírováno!",
+        "noReviewLink": "Odkaz na hodnocení není nastaven"
+      },
+      "vehicleStatus": {
+        "ready": "Připraveno",
+        "preparing": "Příprava",
+        "blocked": "Zablokováno",
+        "on_rent": "Pronajato",
+        "in_progress": "Probíhá",
+        "confirmed": "Potvrzeno",
+        "cancelled": "Zrušeno",
+        "completed": "Dokončeno",
+        "not_started": "Nezahájeno",
+        "draft": "Koncept",
+        "pending": "Čekající"
+      },
+      "bookingTimeline": {
+        "title": "Časová osa rezervací vozidel",
+        "empty": "Žádná vozidla nenalezena.",
+        "legend": {
+          "confirmed": "Potvrzeno",
+          "onRent": "Pronajato",
+          "blocked": "Zablokováno",
+          "pending": "Čekající",
+          "completed": "Dokončeno",
+          "vehicleBlock": "Zablokované období",
+          "staleBlock": "Zastaralá blokace (rezervace existuje): {label}"
+        },
+        "modal": {
+          "from": "Od",
+          "to": "Do",
+          "durationDays": "{days, plural, one {# den} few {# dny} other {# dní}}",
+          "importedBadge": "Importováno",
+          "editedBadge": "Upraveno v CamperFlow",
+          "sourceTypeLabel": "Zdroj",
+          "edit": "Upravit",
+          "delete": "Smazat",
+          "deleteConfirm": "Smazat toto zablokované období?",
+          "cancel": "Zrušit"
+        },
+        "footerHint": "Zvýrazněný sloupec = dnes · Procházení scrollem · Zrušené rezervace skryty"
+      },
+      "demoMode": {
+        "banner": "Demo režim — pouze ukázková data"
+      }
+    },
+    "checklistsPage": {
+      "loading": "Načítání…",
+      "backToDashboard": "Zpět na přehled",
+      "title": "Kontrolní seznamy",
+      "subtitle": "Správa kontrolních seznamů při vyzvednutí, vrácení a úklidu",
+      "manageTemplates": "Spravovat výchozí kontrolní seznamy",
+      "filters": {
+        "scope": "Oblast:",
+        "status": "Stav:"
+      },
+      "scope": {
+        "all": "Vše",
+        "booking": "Rezervace",
+        "vehicle": "Vozidlo"
+      },
+      "status": {
+        "all": "Vše",
+        "not_started": "Nezahájeno",
+        "in_progress": "Probíhá",
+        "completed": "Dokončeno"
+      },
+      "checklistTypes": {
+        "cleaning": "Úklid",
+        "pickup": "Výdej",
+        "return": "Příjem",
+        "handover": "Předání",
+        "guest_prereturn": "Předodevzdání hostem",
+        "vehicle_readiness": "Připravenost vozidla",
+        "maintenance": "Údržba",
+        "mechanical": "Mechanika",
+        "pre_season": "Předsezónní",
+        "post_season": "Posezónní"
+      },
+      "severity": {
+        "low": "Nízká",
+        "medium": "Střední",
+        "high": "Vysoká"
+      },
+      "table": {
+        "type": "Typ",
+        "name": "Název",
+        "booking": "Rezervace",
+        "customer": "Zákazník",
+        "vehicle": "Vozidlo",
+        "dates": "Data",
+        "status": "Stav",
+        "issue": "Problém",
+        "severity": "Závažnost",
+        "pickup": "Vyzvednutí",
+        "pickupIn": "Vyzvednutí za",
+        "return": "Vrácení",
+        "returnIn": "Vrácení za",
+        "progress": "Průběh",
+        "nextAction": "Další akce",
+        "waitingForPrep": "Čeká na přípravu"
+      },
+      "sections": {
+        "notStarted": "Nezahájeno",
+        "inProgress": "Probíhá",
+        "completed": "Dokončeno",
+        "vehicleChecklists": "Kontrolní seznamy vozidel",
+        "openIssues": "Otevřené problémy ({count})"
+      },
+      "empty": {
+        "bookingChecklists": "Žádné kontrolní seznamy rezervací nenalezeny.",
+        "vehicleChecklists": "Kontrolní seznamy připravenosti vozidel se aktualizují. Zkuste to brzy."
+      },
+      "bookingRef": "Rezervace #{number}",
+      "actions": {
+        "open": "Otevřít",
+        "continue": "Pokračovat",
+        "viewReport": "Zobrazit zprávu",
+        "locked": "Uzamčeno"
+      },
+      "daysUntil": {
+        "today": "Dnes",
+        "tomorrow": "Zítra",
+        "days": "{count} dní"
+      }
+    },
+    "bookings": {
+      "new": {
+        "checkingPermissions": "Ověřování oprávnění...",
+        "backToBookings": "Zpět na rezervace",
+        "title": "Nová rezervace",
+        "subtitle": "Vytvořit novou rezervaci zákazníka",
+        "sections": {
+          "bookingDetails": "Detaily rezervace",
+          "customerDetails": "Detaily zákazníka",
+          "extras": "Doplňky"
+        },
+        "fields": {
+          "pickupAt": "Datum a čas vyzvednutí",
+          "returnAt": "Datum a čas vrácení",
+          "vehicleOptional": "Vozidlo (volitelné)",
+          "status": "Stav",
+          "customerName": "Jméno zákazníka",
+          "customerPhone": "Telefonní číslo",
+          "emailOptional": "E-mail (volitelné)",
+          "notesOptional": "Poznámky (volitelné)",
+          "extras": {
+            "coffeeMachine": "Kávovar",
+            "paddleboard": "Paddleboard",
+            "electricGrill": "Elektrický gril",
+            "electricPaddleBoardPump": "Elektrická pumpa na paddleboard"
+          }
+        },
+        "vehicle": {
+          "unassigned": "Nepřiřazeno",
+          "helper": "Lze přiřadit později"
+        },
+        "statusOptions": {
+          "pending": "Čekající",
+          "confirmed": "Potvrzená",
+          "blocked": "Blokovaná"
+        },
+        "statusHelper": "Vyberte počáteční stav rezervace",
+        "placeholders": {
+          "fullName": "Celé jméno",
+          "phone": "+420 123 456 789",
+          "email": "email@example.com",
+          "notes": "Přidejte jakékoli další informace..."
+        },
+        "blockedOptionalHelper": "Volitelné pro blokované rezervace",
+        "create": "Vytvořit rezervaci",
+        "creating": "Vytváření...",
+        "cancel": "Zrušit",
+        "conflictWarning": "Upozornění: Vozidlo je již rezervováno v tomto období (Rezervace {bookingNumber}). Vyberte prosím jiné vozidlo nebo data.",
+        "errors": {
+          "notAdmin": "Přístup zamítnut: Pouze administrátoři mohou vytvářet rezervace",
+          "noCompany": "Informace o společnosti nebyly načteny",
+          "customerNameRequired": "Jméno zákazníka je povinné",
+          "customerPhoneRequired": "Telefonní číslo zákazníka je povinné",
+          "datesRequired": "Datum vyzvednutí a vrácení jsou povinné",
+          "returnAfterPickup": "Datum vrácení musí být po datu vyzvednutí",
+          "vehicleUnavailable": "Nelze vytvořit rezervaci: Vozidlo není dostupné pro vybraná data",
+          "createFailed": "Nepodařilo se vytvořit rezervaci"
+        }
+      }
+    },
+    "vehicles": {
+      "new": {
+        "loading": "Načítání...",
+        "back": "Zpět na vozidla",
+        "title": "Přidat vozidlo",
+        "subtitle": "Přidejte nové vozidlo do vaší flotily",
+        "photo": {
+          "label": "Fotografie vozidla (volitelné)",
+          "hint": "Nahrajte fotografii vozidla",
+          "selectedPrefix": "Vybráno: ",
+          "chooseFile": "Vybrat soubor"
+        },
+        "field": {
+          "name": "Název vozidla *",
+          "registrationPlate": "Registrační značka *",
+          "make": "Značka *",
+          "model": "Model *",
+          "year": "Rok *",
+          "vin": "VIN (volitelné)",
+          "lengthM": "Délka (m)",
+          "widthM": "Šířka (m)",
+          "heightM": "Výška (m)",
+          "status": "Stav",
+          "notes": "Poznámky (volitelné)",
+          "operationalHold": "Provozní blokace",
+          "holdReason": "Důvod blokace",
+          "holdReasonPlaceholder": "Důvod blokace...",
+          "vehicleCategory": "Kategorie vozidla",
+          "vehicleCategoryMotorhome": "Obytný automobil",
+          "vehicleCategoryCampervan": "Campervan",
+          "vehicleCategoryCaravan": "Karavan"
+        },
+        "status": {
+          "ready": "Připraveno",
+          "preparing": "Příprava",
+          "onRent": "Pronajato"
+        },
+        "action": {
+          "create": "Vytvořit vozidlo",
+          "creating": "Vytváření...",
+          "cancel": "Zrušit"
+        },
+        "error": {
+          "unableLoadStaff": "Nelze načíst data zaměstnanců",
+          "cannotSubmitMissingCompanyId": "Nelze odeslat: chybí company_id",
+          "yearInvalid": "Rok musí být čtyřmístné číslo",
+          "insertFailedPrefix": "Vložení selhalo: ",
+          "unexpectedPrefix": "Neočekávaná chyba: ",
+          "vehicleLimitReached": "Byl dosažen limit vozidel.",
+          "overLimit": "Váš účet překračuje limit plánu. Nová vozidla nelze přidávat, dokud neupgradujete nebo neodeberete přebytečné zdroje.",
+          "upgradePlan": "Upgradovat plán"
+        }
+      }
+    }
+  },
+  "bookingDetail": {
+    "title": "Detail rezervace",
+    "loading": "Načítání rezervace...",
+    "date": {
+      "locale": "cs-CZ"
+    },
+    "notFound": {
+      "title": "Rezervace nenalezena",
+      "message": "Rezervace, kterou hledáte, neexistuje nebo byla smazána."
+    },
+    "status": {
+      "pending": "Čekající",
+      "confirmed": "Potvrzená",
+      "blocked": "Blokovaná",
+      "onRent": "Pronajatá",
+      "completed": "Dokončená",
+      "cancelled": "Zrušená"
+    },
+    "vehicle": {
+      "unassigned": "Nepřiřazeno",
+      "status": {
+        "ready": "Připraveno",
+        "preparing": "Příprava",
+        "onRent": "Pronajato"
+      }
+    },
+    "placeholder": {
+      "dash": "-"
+    },
+    "field": {
+      "status": "Stav",
+      "vehicle": "Vozidlo",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení",
+      "pickupDateTime": "Datum a čas vyzvednutí",
+      "returnDateTime": "Datum a čas vrácení",
+      "customerName": "Jméno zákazníka",
+      "phoneNumber": "Telefonní číslo",
+      "emailOptional": "E-mail (volitelné)",
+      "notes": "Poznámky",
+      "guests": "Hosté",
+      "pets": "Domácí zvířata",
+      "airportTransfer": "Vyzvednutí na letišti",
+      "extraDriver": "Přídavný řidič",
+      "whatsappOptin": "Souhlas s WhatsApp",
+      "marketingOptin": "Souhlas s marketingem",
+      "internalNotes": "Interní poznámky (pouze personál)"
+    },
+    "section": {
+      "bookingDetails": "Detaily rezervace",
+      "customerDetails": "Detaily zákazníka",
+      "tripDetails": "Detaily cesty",
+      "internalNotes": "Interní poznámky",
+      "extras": "Doplňky",
+      "operations": "Operace"
+    },
+    "booking": {
+      "reminders": "Připomínky"
+    },
+    "customer": {
+      "title": "Zákazník",
+      "unnamed": "Nepojmenovaný zákazník",
+      "noContactInfo": "Žádné kontaktní údaje",
+      "noLinked": "Žádný propojený zákazník",
+      "linkChangeButton": "Propojit / změnit zákazníka",
+      "selectPlaceholder": "-- Vybrat zákazníka --",
+      "linkSavesImmediately": "Změna propojeného zákazníka se okamžitě uloží.",
+      "linkedSuccess": "Zákazník byl úspěšně propojen."
+    },
+    "extras": {
+      "coffeeMachine": "Kávovar",
+      "paddleboard": "Paddleboard",
+      "electricGrill": "Elektrický gril",
+      "electricPaddleBoardPump": "Elektrická pumpa na paddleboard",
+      "emptyHint": "Žádné doplňky nakonfigurovány. Přidejte doplňky v nastavení společnosti."
+    },
+    "operations": {
+      "invoiceSetupLabel": "Nastavení faktury",
+      "invoiceSetupHint": "Určuje, zda má CamperFlow připomínat personálu odeslání faktury za zbytek platby před vyzvednutím.",
+      "tasksProgress": "Provozní úkoly: {done} / {total} dokončeno",
+      "tasksHint": "Zaškrtněte úkoly po dokončení — zaškrtnuté úkoly přestávají zobrazovat v připomínkách Provozu.",
+      "paymentPlan": {
+        "notSet": "Nenastaveno",
+        "split": "50 % nyní + 50 % později",
+        "full": "100 % předem",
+        "custom": "Vlastní platba"
+      },
+      "task": {
+        "balanceInvoice": "Závěrečná platba zkontrolována",
+        "balanceInvoiceReminder": "Připomenout závěrečnou platbu",
+        "balanceReminderTiming": "{days} dní před vyzvednutím",
+        "balanceReminderTimingCustom": "{days} dní před vyzvednutím",
+        "preArrivalMessage": "Zpráva před příjezdem",
+        "preArrivalReminder": "Připomenout odeslání zprávy před příjezdem",
+        "returnPrepMessage": "Zpráva k přípravě na vrácení",
+        "returnPrepReminder": "Připomenout odeslání zprávy k přípravě na vrácení",
+        "reviewRequestReminder": "Připomenout odeslání žádosti o recenzi",
+        "statusLabel": "Stav:",
+        "notSent": "Nedokončeno",
+        "sent": "Dokončeno",
+        "markChecked": "Označit jako zkontrolované",
+        "markSent": "Označit jako odeslané",
+        "disableReminder": "Vypnout připomínku",
+        "enableReminder": "Zapnout připomínku",
+        "reminderDisabled": "Připomínka vypnuta · Zapnout",
+        "sentAt": "Odesláno · {date}",
+        "clear": "Smazat"
+      }
+    },
+    "tripDetails": {
+      "noOverride": "Použít importovanou hodnotu",
+      "notSet": "Nenastaveno",
+      "yes": "Ano",
+      "no": "Ne",
+      "usingImported": "Importováno",
+      "staffOverride": "Upraveno personálem",
+      "noImportedValue": "Nezadáno",
+      "maxGuests": "Maximálně {max} pro toto vozidlo",
+      "guestExceedsCapacity": "Počet hostů překračuje kapacitu vozidla (max. {max})"
+    },
+    "summary": {
+      "customer": "Zákazník",
+      "vehicle": "Vozidlo",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení"
+    },
+    "quickActions": {
+      "label": "Rychlé akce:",
+      "markOnRent": "Označit jako pronajato",
+      "markCompleted": "Označit jako dokončeno"
+    },
+    "checklists": {
+      "title": "Kontrolní seznamy",
+      "empty": "Žádné kontrolní seznamy pro tuto rezervaci",
+      "checklistSuffix": " Kontrolní seznam",
+      "viewChecklist": "Zobrazit kontrolní seznam",
+      "openChecklist": "Otevřít kontrolní seznam",
+      "viewReport": "Zobrazit zprávu",
+      "continueChecklist": "Pokračovat v kontrolním seznamu",
+      "status": {
+        "notStarted": "Nezahájeno",
+        "inProgress": "Probíhá",
+        "completed": "Dokončeno"
+      },
+      "systemTypes": {
+        "handover": "Kontrolní seznam předání",
+        "return": "Kontrolní seznam vrácení",
+        "cleaning": "Kontrolní seznam úklidu",
+        "mechanical": "Mechanický kontrolní seznam",
+        "pickup": "Kontrolní seznam přípravy vyzvednutí"
+      }
+    },
+    "action": {
+      "backToBookings": "Zpět na rezervace",
+      "backToBookingsArrow": "Zpět na rezervace",
+      "saveChanges": "Uložit změny",
+      "saving": "Ukládání...",
+      "cancelBooking": "Zrušit rezervaci",
+      "delete": "Smazat",
+      "downloadEvidenceReport": "Stáhnout protokol o kontrole",
+      "downloadEvidencePhotos": "Stáhnout fotografie z kontroly (ZIP)"
+    },
+    "error": {
+      "notAuthenticated": "Nejste přihlášeni",
+      "permissionsFailed": "Nepodařilo se ověřit oprávnění",
+      "loadFailed": "Nepodařilo se načíst rezervaci",
+      "customerNameRequired": "Jméno zákazníka je povinné",
+      "returnAfterPickup": "Datum vrácení musí být po datu vyzvednutí",
+      "vehicleUnavailable": "Nelze uložit: Vozidlo není dostupné pro vybraná data",
+      "updateFailed": "Nepodařilo se aktualizovat rezervaci",
+      "updatePermissionDenied": "Přístup zamítnut: Nemáte oprávnění k aktualizaci této rezervace",
+      "statusUpdateFailed": "Nepodařilo se aktualizovat stav rezervace",
+      "cancelFailed": "Nepodařilo se zrušit rezervaci",
+      "deleteFailed": "Nepodařilo se smazat rezervaci",
+      "deletePermissionDenied": "Přístup zamítnut: Nemáte oprávnění ke smazání této rezervace",
+      "pickupChecklistRequired": "Kontrolní seznam vyzvednutí musí být dokončen před označením rezervace jako pronajato.",
+      "returnChecklistRequired": "Kontrolní seznam vrácení musí být dokončen před označením rezervace jako dokončeno.",
+      "customerLoadFailed": "Nepodařilo se načíst záznam zákazníka",
+      "reminderMarkFailed": "Nepodařilo se označit připomínku"
+    },
+    "warning": {
+      "vehicleConflict": "Upozornění: Vozidlo je již rezervováno v tomto období (Rezervace {bookingNumber}). Vyberte prosím jiné vozidlo nebo data.",
+      "sameDayConflict": "Obrat ve stejný den: Vozidlo je také rezervováno v tento den (Rezervace {bookingNumber}). Přesto uložit?"
+    },
+    "success": {
+      "bookingUpdated": "Rezervace byla úspěšně aktualizována",
+      "statusUpdated": "Stav rezervace byl úspěšně aktualizován"
+    },
+    "confirm": {
+      "cancelBooking": "Zrušit tuto rezervaci? Stav bude nastaven na zrušeno.",
+      "deleteBooking": "Opravdu chcete smazat tuto rezervaci? Tuto akci nelze vrátit zpět."
+    },
+    "pickupChecklistReopenHint": "Kontrolní seznam vyzvednutí byl dříve dokončen. Můžete ho upravit a znovu dokončit.",
+    "revert": {
+      "button": "Vrátit předání",
+      "modalTitle": "Vrátit předání",
+      "modalDescription": "Tím se rezervace vrátí z Pronajato zpět na Potvrzená. Vozidlo bude znovu označeno jako dostupné.",
+      "reasonLabel": "Důvod (volitelné)",
+      "reasonPlaceholder": "Zadejte důvod vrácení...",
+      "confirm": "Potvrdit vrácení",
+      "cancel": "Zrušit",
+      "reverting": "Vracení...",
+      "errorFailed": "Nepodařilo se vrátit rezervaci"
+    },
+    "guestAccess": {
+      "title": "Přístup pro hosty",
+      "subtitle": "Sdílejte kód rezervace nebo QR kód se svým hostem",
+      "bookingCode": "Kód rezervace",
+      "guestLink": "Odkaz pro hosty",
+      "copy": "Kopírovat",
+      "copyLink": "Kopírovat odkaz",
+      "copied": "Zkopírováno!",
+      "downloadQr": "Stáhnout QR",
+      "share": "Sdílet",
+      "shareTitle": "Přístup k rezervaci pro hosty",
+      "printHint": "Exportuje 400×400 px — ideální pro štítky 50×50 mm"
+    }
+  },
+  "staffTeamMember": {
+    "backToTeam": "Zpět na tým",
+    "loading": "Načítání zaměstnance…",
+    "unnamedStaff": "Zaměstnanec bez jména",
+    "inactive": "Neaktivní",
+    "roleLabel": "Role:",
+    "edit": "Upravit",
+    "deactivating": "Deaktivace...",
+    "deactivate": "Deaktivovat zaměstnance",
+    "delete": "Smazat",
+    "deleting": "Mazání...",
+    "deleteConfirm": "Opravdu chcete trvale smazat tohoto zaměstnance? Tuto akci nelze vrátit zpět.",
+    "deleteConfirmLinked": "VAROVÁNÍ: Tento zaměstnanec má propojený účet. Smazáním profilu dojde k odebrání přístupu a může to ovlivnit historii přihlášení a související záznamy.",
+    "deleteNotAllowed": "Zaměstnance mohou mazat pouze správci.",
+    "deleteSelfNotAllowed": "Vlastní profil nelze smazat.",
+    "deleteFailed": "Nepodařilo se smazat zaměstnance. Zkuste to prosím znovu.",
+    "capabilitiesLabel": "Schopnosti",
+    "contactLabel": "Kontakt",
+    "phoneLabel": "Telefon:",
+    "emailLabel": "E-mail:",
+    "notesLabel": "Poznámky",
+    "confirmDeactivate": "Deaktivovat tohoto zaměstnance? Nebude se již zobrazovat jako aktivní.",
+    "joiner": " + ",
+    "uploading": "Nahrávání…",
+    "saving": "Ukládání...",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "loginAccess": {
+      "title": "Přístup k přihlášení",
+      "loginEnabled": "✓ Přihlášení povoleno",
+      "noLoginYet": "Zatím žádné přihlášení",
+      "inviteSent": "Pozvánka odeslána",
+      "enableLogin": "Povolit přihlášení / Odeslat pozvánku",
+      "resendAccess": "Znovu odeslat přístup",
+      "sending": "Odesílání…",
+      "recoveryLinkTitle": "Odkaz pro obnovu",
+      "copyLink": "Kopírovat odkaz",
+      "copied": "Zkopírováno!"
+    },
+    "types": {
+      "manager": "Manažer",
+      "cleaner": "Uklízeč",
+      "mechanical": "Mechanik"
+    },
+    "capabilities": {
+      "cleaning": "Úklid",
+      "mechanical": "Mechanika"
+    },
+    "roles": {
+      "staff": "Zaměstnanec",
+      "management": "Vedení"
+    },
+    "fields": {
+      "firstName": "Jméno *",
+      "lastName": "Příjmení *",
+      "role": "Role",
+      "canManage": "Může spravovat (nastaveno automaticky dle role)",
+      "canClean": "Může uklízet",
+      "canMechanical": "Může provádět mechanické práce",
+      "phone": "Telefon",
+      "email": "E-mail",
+      "uploadPhoto": "Nahrát fotografii",
+      "chooseFile": "Vybrat soubor",
+      "photoUrl": "URL fotografie",
+      "notes": "Poznámky",
+      "active": "Aktivní"
+    },
+    "errors": {
+      "profileNotFound": "Profil uživatele nenalezen",
+      "memberNotFound": "Zaměstnanec nenalezen",
+      "loadFailed": "Nepodařilo se načíst zaměstnance",
+      "uploadFailed": "Nahrávání selhalo",
+      "uploadPhotoFailed": "Nepodařilo se nahrát fotografii",
+      "nameRequired": "Jméno a příjmení jsou povinné.",
+      "saveFailed": "Nepodařilo se uložit změny",
+      "deactivateFailed": "Nepodařilo se deaktivovat zaměstnance",
+      "deleteActiveMember": "Smazat lze pouze neaktivní zaměstnance.",
+      "inviteFailed": "Nepodařilo se odeslat pozvánku."
+    },
+    "passwordRequired": "Zadejte prosím nové heslo a potvrďte ho.",
+    "passwordMismatch": "Hesla se neshodují.",
+    "passwordTooShort": "Heslo musí mít alespoň 6 znaků.",
+    "passwordRecentLoginRequired": "Z bezpečnostních důvodů se prosím odhlaste a znovu přihlaste před změnou hesla.",
+    "passwordUpdateSuccess": "Heslo bylo úspěšně změněno.",
+    "passwordUpdateFailed": "Nepodařilo se změnit heslo.",
+    "statusActive": "Aktivní",
+    "statusInactive": "Neaktivní",
+    "reactivate": "Reaktivovat",
+    "reactivating": "Reaktivace...",
+    "reactivateConfirm": "Reaktivovat tohoto zaměstnance?",
+    "reactivateFailed": "Nepodařilo se reaktivovat zaměstnance.",
+    "notAllowedToggleActive": "Zaměstnance mohou aktivovat nebo deaktivovat pouze správci."
+  },
+  "staffVehicles": {
+    "errors": {
+      "notAuthenticated": "Nejste přihlášeni",
+      "failedCheckPermissions": "Nepodařilo se ověřit oprávnění",
+      "failedLoadVehicles": "Nepodařilo se načíst vozidla"
+    },
+    "navigation": {
+      "backToDashboard": "Zpět na přehled"
+    },
+    "title": "Vozidla",
+    "subtitle": "Správa vaší flotily",
+    "actions": {
+      "addVehicle": "Přidat vozidlo"
+    },
+    "loading": "Načítání vozidel...",
+    "empty": {
+      "noVehicles": "Žádná vozidla nenalezena.",
+      "addFirstVehicle": " Přidejte své první vozidlo pro začátek."
+    },
+    "status": {
+      "ready": "Připraveno",
+      "preparing": "Příprava",
+      "onRent": "Pronajato",
+      "liveLabel": "Aktuální stav vozidla"
+    },
+    "buttons": {
+      "edit": "Upravit",
+      "view": "Zobrazit"
+    },
+    "blockingReason": {
+      "openIssue": "Otevřená závada",
+      "expiredCompliance": "Vypršená shoda vozidla",
+      "checklistIncomplete": "Kontrolní seznam neúplný",
+      "expiredComplianceWithName": "Vypršelo: {name}"
+    },
+    "holdStatus": {
+      "outOfService": "Mimo provoz",
+      "outOfServiceWithReason": "Mimo provoz: {reason}"
+    },
+    "overLimitBanner": "Některá vozidla překračují limit vašeho plánu.",
+    "overLimitBannerLink": "Upgradovat plán",
+    "overLimitChip": "Překročen limit plánu"
+  },
+  "staffVehicleEdit": {
+    "title": "Upravit vozidlo",
+    "backToVehicles": "Zpět na vozidla",
+    "loading": "Načítání vozidla...",
+    "nameLabel": "Název",
+    "namePlaceholder": "Název vozidla",
+    "registrationPlateLabel": "Registrační značka",
+    "registrationPlatePlaceholder": "např. AB-123-CD",
+    "makeLabel": "Značka",
+    "makePlaceholder": "např. Mercedes-Benz",
+    "modelLabel": "Model",
+    "modelPlaceholder": "např. Sprinter",
+    "yearLabel": "Rok",
+    "yearPlaceholder": "např. 2022",
+    "vinLabel": "VIN",
+    "vinPlaceholder": "Identifikační číslo vozidla",
+    "lengthLabel": "Délka (m)",
+    "widthLabel": "Šířka (m)",
+    "heightLabel": "Výška (m)",
+    "notesLabel": "Poznámky",
+    "notesPlaceholder": "Další poznámky...",
+    "statusLabel": "Stav",
+    "statusReady": "Připraveno",
+    "statusPreparing": "Příprava",
+    "statusOnRent": "Pronajato",
+    "photoLabel": "Fotografie vozidla",
+    "photoSelectedPrefix": "Vybráno",
+    "photoHint": "Nahrajte fotografii vozidla",
+    "photoPreviewAlt": "Fotografie vozidla",
+    "photoUrlLabel": "URL fotografie (volitelné)",
+    "photoUrlPlaceholder": "https://...",
+    "photoUploadFailed": "Nepodařilo se nahrát fotografii.",
+    "uploading": "Nahrávání...",
+    "saveButton": "Uložit změny",
+    "saving": "Ukládání...",
+    "deleteButton": "Smazat",
+    "deleting": "Mazání...",
+    "confirmDelete": "Opravdu chcete smazat toto vozidlo? Tuto akci nelze vrátit zpět.",
+    "notAuthenticated": "Pro úpravu vozidel musíte být přihlášeni.",
+    "notAllowed": "Nemáte oprávnění k úpravě vozidel.",
+    "vehicleNotFound": "Vozidlo nenalezeno.",
+    "loadFailed": "Nepodařilo se načíst vozidlo.",
+    "saveFailed": "Nepodařilo se uložit změny.",
+    "deleteFailed": "Nepodařilo se smazat vozidlo.",
+    "createdBanner": "Vozidlo bylo úspěšně vytvořeno. Nyní můžete níže přidat záznamy shody vozidla.",
+    "operationalHoldLabel": "Provozní blokace",
+    "holdReasonLabel": "Důvod blokace",
+    "holdReasonPlaceholder": "Důvod blokace...",
+    "lengthPlaceholder": "např. 5,99",
+    "widthPlaceholder": "např. 2,10",
+    "heightPlaceholder": "např. 2,85",
+    "chooseFile": "Vybrat soubor",
+    "youtubeUrlLabel": "YouTube URL (volitelné)",
+    "vehicleCategoryLabel": "Kategorie vozidla",
+    "vehicleCategoryMotorhome": "Obytný automobil",
+    "vehicleCategoryCampervan": "Campervan",
+    "vehicleCategoryCaravan": "Karavan"
+  },
+  "staffTeamNew": {
+    "checkingPermissions": "Kontrola oprávnění…",
+    "backToTeam": "Zpět na tým",
+    "title": "Přidat člena týmu",
+    "subtitle": "Vytvořte nový zaměstnanecký účet pro vaši společnost.",
+    "accessDenied": {
+      "title": "Přístup odepřen",
+      "message": "Nemáte oprávnění spravovat tým."
+    },
+    "comingSoon": {
+      "message": "Připravujeme",
+      "description": "Tato obrazovka je připravena, ale vytváření členů týmu bude zpřístupněno později.",
+      "returnToList": "Zpět na seznam týmu"
+    },
+    "errors": {
+      "profileNotFound": "Profil zaměstnance nenalezen.",
+      "nameRequired": "Jméno a příjmení jsou povinné.",
+      "noCompany": "K vašemu účtu není přiřazena žádná společnost.",
+      "photoUploadFailed": "Nahrávání fotografie selhalo.",
+      "createFailed": "Nepodařilo se vytvořit člena týmu.",
+      "emailRequiredForLogin": "E-mail je povinný při povoleném přihlášení",
+      "invalidEmail": "Zadejte prosím platnou e-mailovou adresu",
+      "inviteFailed": "Nepodařilo se odeslat pozvánku k přihlášení",
+      "duplicateEmail": "Člen týmu s tímto e-mailem již existuje.",
+      "staffLimitReached": "Byl dosažen limit zaměstnanců.",
+      "overLimit": "Váš účet překročil limit plánu. Nové zaměstnance nelze přidat, dokud neupgradujete plán nebo neodeberete přebytečné zdroje.",
+      "upgradePlan": "Upgradovat plán"
+    },
+    "form": {
+      "firstName": "Jméno",
+      "lastName": "Příjmení",
+      "role": "Role",
+      "roleStaff": "Zaměstnanec",
+      "roleAdmin": "Správce",
+      "capabilities": "Schopnosti",
+      "canClean": "Může uklízet vozidla",
+      "canMechanical": "Může provádět mechanické práce",
+      "phone": "Telefon",
+      "email": "E-mail",
+      "photo": "Fotografie",
+      "notes": "Poznámky",
+      "save": "Uložit",
+      "saving": "Ukládání...",
+      "cancel": "Zrušit",
+      "enableLogin": "Povolit přihlášení (odeslat pozvánku)",
+      "enableLoginDescription": "Odešle e-mailovou pozvánku umožňující této osobě se přihlásit a nastavit heslo",
+      "removePhoto": "Odebrat fotografii",
+      "chooseFile": "Vybrat soubor"
+    }
+  },
+  "guestPickup": {
+    "title": "Informace o vyzvednutí",
+    "pickupDateTime": "Datum a čas vyzvednutí",
+    "vehicle": "Vozidlo",
+    "placeholder": "Pokyny k vyzvednutí budou k dispozici zde, jakmile je půjčovna nakonfiguruje.",
+    "pickupInfo": "Pokyny k vyzvednutí",
+    "contactPhone": "Telefon",
+    "contactWhatsapp": "WhatsApp",
+    "importantBeforePickup": "Důležité před vyzvednutím",
+    "beforeYouArriveTitle": "Před příjezdem",
+    "beforeYouArrive0": "Dejte nám vědět svůj odhadovaný čas příjezdu",
+    "beforeYouArrive1": "Vyhraďte si dostatek času; předání trvá přibližně 1 hodinu",
+    "beforeYouArrive2": "Pokud záloha nebyla zaplacena bankovním převodem, musí být zaplacena v hotovosti",
+    "navigate": "Navigovat",
+    "stepsTitle": "Kroky při vyzvednutí",
+    "moreDetails": "Více informací"
+  },
+  "guestReturn": {
+    "title": "Informace o vrácení",
+    "returnDateTime": "Datum a čas vrácení",
+    "vehicle": "Vozidlo",
+    "placeholder": "Pokyny k vrácení budou k dispozici zde, jakmile je půjčovna nakonfiguruje.",
+    "returnInfo": "Pokyny k vrácení",
+    "contactPhone": "Telefon",
+    "contactWhatsapp": "WhatsApp",
+    "checklistTitle": "Kontrolní seznam vrácení",
+    "noChecklist": "Pro tuto rezervaci nebyl vytvořen žádný kontrolní seznam vrácení.",
+    "noItems": "Tento kontrolní seznam nemá žádné položky.",
+    "beforeYouReturnTitle": "Před vrácením",
+    "beforeYouReturn0": "Vyplňte kontrolní seznam vrácení",
+    "beforeYouReturn1": "Dejte nám vědět svůj odhadovaný čas příjezdu",
+    "beforeYouReturn2": "Počítejte s delší cestou; obytné automobily a karavany jedou pomaleji než osobní auto",
+    "beforeYouReturn3": "Vyprázdněte záchodovou kazetu a nádrž odpadní vody",
+    "beforeYouReturn4": "Pokud je to možné, dotankujte poblíž naší základny před vrácením",
+    "beforeYouReturn5": "Vyhraďte si dostatek času na umytí a úklid vozidla před předáním",
+    "untitledItem": "Položka bez názvu",
+    "checklistPolicyNote": "Pokud položky nebudou splněny, mohou být účtovány další poplatky podle zásad společnosti.",
+    "checklistGuideNote": "Tento kontrolní seznam budete moci vyplnit zde před vrácením. Prozatím jej použijte jako průvodce.",
+    "detailedReturnInstructions": "Podrobné pokyny k vrácení",
+    "navigate": "Navigovat",
+    "moreDetails": "Více informací",
+    "nearbyPlaces": "Místa v okolí"
+  },
+  "guestFaq": {
+    "title": "Nejčastější dotazy",
+    "empty": "Zatím nebyly přidány žádné nejčastěji kladené otázky."
+  },
+  "guestHelp": {
+    "title": "Pomoc a návody",
+    "subtitle": "Průvodci, rychlá řešení a kontaktní údaje pro váš pronájem.",
+    "contactIntro": "Potřebujete pomoc? Kontaktujte nás pomocí tlačítek níže.",
+    "quickFixesTitle": "Rychlá řešení",
+    "drivingTitle": "Jízda a bezpečnost",
+    "howToVideosTitle": "Instruktážní videa"
+  },
+  "guestDashboard": {
+    "title": "Moje rezervace",
+    "subtitle": "Vše, co potřebujete pro svůj pronájem.",
+    "summaryCode": "Kód rezervace",
+    "guestAccess": "Přístup pro hosty",
+    "useDifferentCode": "Použít jiný kód rezervace",
+    "comingSoon": "Již brzy",
+    "noCodeTitle": "Žádný kód rezervace",
+    "noCodeMessage": "Použijte prosím odkaz uvedený v potvrzení rezervace.",
+    "notFoundTitle": "Rezervace nenalezena",
+    "notFoundMessage": "Kód rezervace",
+    "notFoundMessageEnd": "neexistuje.",
+    "notFoundHint": "Platné kódy vypadají jako BK-20260327-BHUG — používejte pouze velká písmena.",
+    "back": "Zpět",
+    "cards": {
+      "bookingDetails": "Detaily rezervace",
+      "pickupInfo": "Informace o vyzvednutí",
+      "returnInfo": "Informace o vrácení",
+      "faq": "Nejčastější dotazy",
+      "help": "Pomoc a návody",
+      "emergency": "Nouzové situace a asistence",
+      "feedback": "Zpětná vazba k výletu"
+    }
+  },
+  "staffGuestContent": {
+    "navigation": {
+      "backToDashboard": "Zpět na přehled"
+    },
+    "title": "Obsah pro hosty",
+    "description": {
+      "admin": "Spravujte obsah zobrazovaný hostům během jejich pronájmu",
+      "viewer": "Zobrazit obsah pro hosty této společnosti"
+    },
+    "loading": "Načítání obsahu pro hosty…",
+    "actions": {
+      "saveChanges": "Uložit změny",
+      "saving": "Ukládání…",
+      "cancel": "Zrušit",
+      "removePlace": "Odebrat",
+      "addPlace": "+ Přidat místo"
+    },
+    "errors": {
+      "loadFailed": "Nepodařilo se načíst obsah pro hosty. Obnovte prosím stránku.",
+      "saveSettingsFailed": "Nepodařilo se uložit obsah pro hosty"
+    },
+    "success": {
+      "saved": "Obsah pro hosty byl uložen!"
+    },
+    "sections": {
+      "contact": "Kontaktní čísla",
+      "emergencyContacts": "Nouzové kontakty",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení",
+      "guestGuide": "Průvodce pro hosty",
+      "faq": "Nejčastější dotazy",
+      "returnChecklist": "Kontrolní seznam vrácení",
+      "bookingDetails": "Detaily rezervace",
+      "helpHowTo": "Pomoc a návody"
+    },
+    "labels": {
+      "contactPhone": "Kontaktní telefon",
+      "whatsappNumber": "Číslo WhatsApp",
+      "accidentNumbers": "Nehoda",
+      "breakdownNumbers": "Porucha",
+      "primaryPhone": "Primární číslo",
+      "secondaryPhone": "Sekundární číslo",
+      "beforeArrival": "Před příjezdem",
+      "pickupInfo": "Informace o vyzvednutí",
+      "beforeReturn": "Před vrácením",
+      "returnInfo": "Informace o vrácení",
+      "includedItems": "Co je zahrnuto",
+      "rulesAndTips": "Pravidla a tipy",
+      "importantBeforePickup": "Důležité před vyzvednutím",
+      "nearbyPlaces": "Místa v okolí",
+      "nearbyPlacesDesc": "zobrazena jako klikatelné mapové odkazy na stránce vrácení",
+      "returnNotes": "Poznámky k vrácení",
+      "returnNotesDesc": "volitelné, zobrazeno ve sbírném panelu",
+      "helpIntro": "Úvod k nápovědě",
+      "quickFixes": "Rychlá řešení",
+      "howToVideos": "Instruktážní videa"
+    },
+    "helpers": {
+      "emergencyPhoneUsage": "Tato čísla jsou hostům zobrazena na stránce Nouzové situace. Nechte prázdné pro zobrazení zástupného textu.",
+      "textareaHelper": "Každý bod udržujte krátký a čitelný pro hosty.",
+      "linesEndingHeadings": "Řádky končící : = nadpisy.",
+      "mapsLinkNavigate": "Mapový odkaz = panel Navigovat.",
+      "importantBeforePickupHint": "Zobrazeno v panelu Důležité před vyzvednutím.",
+      "nearbyPlacesEmpty": "Žádná místa v okolí nejsou nakonfigurována.",
+      "helpIntroHint": "Zobrazeno jako úvodní text v kontaktním panelu.",
+      "quickFixesHint": "Řádky končící : = název akordeonu. Následující řádky = číslované kroky.",
+      "howToVideosHint": "Řádky končící : = název skupiny. YouTube/video odkazy níže = vložení přehrávače."
+    },
+    "placeholders": {
+      "contactPhone": "+420 123 456 789",
+      "whatsappNumber": "+420 123 456 789",
+      "phonePlaceholder": "+420 123 456 789",
+      "beforeArrival": "Co by hosté měli připravit před příjezdem…",
+      "pickupInfo": "Kde najít klíče, přístupové kódy, parkování…",
+      "beforeReturn": "Co by hosté měli udělat před vrácením vozidla…",
+      "returnInfo": "Kde odevzdat klíče, očekávání čistoty…",
+      "includedItems": "Uveďte položky zahrnuté v pronájmu…",
+      "rulesAndTips": "Pravidla, tipy na cestu…",
+      "nearbyPlaceLabel": "Popis (např. Supermarket)",
+      "returnNotes": "Jakékoli další pokyny k vrácení…",
+      "helpIntro": "Krátký úvodní text zobrazený v záhlaví kontaktního panelu nápovědy…"
+    },
+    "faq": {
+      "helper": "Nejčastěji kladené otázky zobrazované hostům v portálu pronájmu.",
+      "questionLabel": "Otázka {number}",
+      "questionPlaceholder": "Otázka",
+      "answerPlaceholder": "Odpověď",
+      "removeButton": "Odebrat",
+      "addButton": "Přidat FAQ",
+      "empty": "Žádné položky FAQ nejsou nakonfigurovány."
+    },
+    "checklist": {
+      "helper": "Kontrolní seznam, který hosté vyplňují před vrácením vozidla.",
+      "itemCount": "{count} položek",
+      "notConfigured": "Žádný kontrolní seznam vrácení není nakonfigurován.",
+      "editButton": "Upravit šablonu",
+      "viewTemplates": "Zobrazit všechny šablony kontrolních seznamů",
+      "statusActive": "Aktivní",
+      "statusInactive": "Neaktivní"
+    },
+    "sidebar": {
+      "whatGuestsSee": "Co vidí hosté",
+      "map": {
+        "contactNumbers": "Kontaktní čísla",
+        "contactNumbersWhere": "Stránka nouzových situací a záhlaví portálu",
+        "beforeArrival": "Před příjezdem",
+        "beforeArrivalWhere": "Zpráva před příjezdem",
+        "pickupInfo": "Informace o vyzvednutí",
+        "pickupInfoWhere": "Stránka vyzvednutí",
+        "beforeReturn": "Před vrácením",
+        "beforeReturnWhere": "Zpráva k přípravě na vrácení",
+        "returnInfo": "Informace o vrácení",
+        "returnInfoWhere": "Stránka vrácení",
+        "guestGuide": "Průvodce pro hosty",
+        "guestGuideWhere": "Stránka průvodce vozidlem",
+        "faq": "Nejčastější dotazy",
+        "faqWhere": "Stránka FAQ"
+      }
+    },
+    "hints": {
+      "needsTranslation": "Vyžaduje překlad"
+    },
+    "copyFrom": {
+      "button": "Kopírovat z původního jazyka ({lang})",
+      "confirm": "Kopírovat veškerý obsah z {from} do {to}? Přepíše veškeré neuložené změny na aktuální kartě.",
+      "warning": "Přeložte před uložením, jinak hosté uvidí nesprávný jazyk.",
+      "langHint": "Slovenština momentálně obsahuje váš stávající obsah. Angličtinu a němčinu lze vyplnit ručně."
+    }
+  },
+  "staffCompany": {
+    "navigation": {
+      "backToDashboard": "Zpět na přehled"
+    },
+    "title": "Nastavení společnosti",
+    "description": {
+      "admin": "Přizpůsobte vzhled a branding vaší společnosti",
+      "viewer": "Zobrazit branding a vzhled společnosti"
+    },
+    "sections": {
+      "information": "Informace o společnosti",
+      "logo": "Logo společnosti",
+      "brandColors": "Barvy značky",
+      "preview": "Náhled",
+      "emergencyContacts": "Nouzové kontakty"
+    },
+    "labels": {
+      "companyName": "Název společnosti",
+      "primaryColor": "Primární barva",
+      "secondaryColor": "Sekundární barva",
+      "accidentNumbers": "Nehoda",
+      "breakdownNumbers": "Porucha",
+      "primaryPhone": "Primární číslo",
+      "secondaryPhone": "Sekundární číslo",
+      "address": "Adresa společnosti",
+      "companyEmail": "E-mail společnosti",
+      "registrationId": "IČO / registrace",
+      "vatId": "DIČ",
+      "mapLink": "Mapový odkaz"
+    },
+    "placeholders": {
+      "companyName": "Název vaší společnosti",
+      "yourCompany": "Vaše společnost",
+      "phonePlaceholder": "+420 123 456 789",
+      "address": "Ulice, Město, PSČ, Stát",
+      "companyEmail": "info@vasaspolecnost.cz",
+      "registrationId": "např. 12345678",
+      "vatId": "např. CZ12345678",
+      "mapLink": "https://maps.app.goo.gl/..."
+    },
+    "helpers": {
+      "logoRequirements": "PNG, JPG nebo SVG. Max 2 MB. Doporučeno: 200×80 px",
+      "primaryColorUsage": "Používáno pro tlačítka a odkazy",
+      "secondaryColorUsage": "Používáno pro akcenty a zvýraznění",
+      "emergencyPhoneUsage": "Tato čísla jsou hostům zobrazena na stránce Nouzové situace. Nechte prázdné pro zobrazení zástupného textu.",
+      "addressUsage": "Tištěno na protokolech o kontrole a PDF dokumentech.",
+      "mapLinkUsage": "Používáno v šablonách zpráv jako '{map_link}'."
+    },
+    "actions": {
+      "uploadLogo": "Nahrát logo",
+      "changeLogo": "Změnit logo",
+      "saveChanges": "Uložit změny",
+      "saving": "Ukládání…",
+      "uploadingLogo": "Nahrávání loga…",
+      "cancel": "Zrušit"
+    },
+    "preview": {
+      "logoAlt": "Náhled loga",
+      "logoInHeader": "Logo",
+      "primaryButton": "Primární tlačítko",
+      "secondaryButton": "Sekundární tlačítko",
+      "statusOnRent": "Pronajato",
+      "statusNeedsCleaning": "Vyžaduje úklid"
+    },
+    "errors": {
+      "companyNameRequired": "Název společnosti je povinný",
+      "invalidFileType": "Vyberte prosím soubor obrázku (PNG, JPG nebo SVG)",
+      "fileTooLarge": "Logo musí být menší než 2 MB",
+      "loadFailed": "Nepodařilo se načíst nastavení společnosti. Obnovte prosím stránku.",
+      "uploadLogoFailed": "Nepodařilo se nahrát logo",
+      "saveSettingsFailed": "Nepodařilo se uložit nastavení společnosti"
+    },
+    "success": {
+      "saved": "Nastavení společnosti bylo úspěšně uloženo!"
+    },
+    "loading": "Načítání nastavení společnosti…",
+    "bookingDefaults": {
+      "title": "Výchozí nastavení rezervací",
+      "pickupTimeLabel": "Výchozí čas vyzvednutí",
+      "pickupTimeHelper": "Používáno jako výchozí čas vyzvednutí pro nové rezervace.",
+      "dropoffTimeLabel": "Výchozí čas vrácení",
+      "dropoffTimeHelper": "Používáno jako výchozí čas vrácení pro nové rezervace.",
+      "timezoneLabel": "Časové pásmo společnosti",
+      "timezoneHelper": "Používáno pro import rezervací a zobrazení dat."
+    },
+    "reminders": {
+      "title": "Připomínky",
+      "subtitle": "Ovládá, které připomínky se zobrazují zaměstnancům na nástěnce Provozu.",
+      "balanceInvoice": {
+        "label": "Povolit připomínky doplatku faktury",
+        "helper": "<strong>Rozdělené platby</strong> používají hlavní okno připomínek; <strong>vlastní platby</strong> používají vlastní okno níže. <strong>100 % předem</strong> a rezervace bez platby jsou vždy vyloučeny.",
+        "windowLabel": "Okno připomínek začíná (dní před vyzvednutím)",
+        "windowHelper": "Platí pouze pro rozdělené platby.",
+        "cutoffLabel": "Hranice 100 % předem (dní před vyzvednutím)",
+        "cutoffHelper": "Rezervace s tímto blízkým vyzvednutím jsou považovány za <strong>100 % předem</strong> — nezobrazuje se žádná připomínka doplatku.",
+        "exampleHint": "Např. 35 a 30 → připomínky rozdělených plateb se zobrazují 31–35 dní před vyzvednutím.",
+        "customWindowLabel": "Okno připomínek vlastní platby (dní před vyzvednutím)",
+        "customWindowHelper": "Platí pouze pro vlastní platby (např. platba při vyzvednutí, barter, ruční dohoda)."
+      },
+      "preArrival": {
+        "label": "Povolit připomínky zprávy před příjezdem",
+        "helper": "Odesláno den před vyzvednutím.",
+        "templateLabel": "Šablona zprávy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Dobrý den, vaše vyzvednutí '{vehicle_name}' je zítra…"
+      },
+      "returnPrep": {
+        "label": "Povolit připomínky zprávy k přípravě vrácení",
+        "helper": "Odesláno den před vrácením.",
+        "templateLabel": "Šablona zprávy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{booking_code}', '{pickup_date}', '{return_date}', '{guest_link}', '{map_link}'",
+        "templatePlaceholder": "Dobrý den, vaše vrácení '{vehicle_name}' je zítra…"
+      },
+      "reviewRequest": {
+        "label": "Povolit připomínky zprávy o recenzích a hodnocení",
+        "helper": "Odesláno v den vrácení nebo den po vrácení.",
+        "templateLabel": "Šablona zprávy",
+        "templateHelper": "Dostupné zástupné symboly: '{customer_name}', '{vehicle_name}', '{guest_link}', '{booking_code}', '{company_phone}', '{map_link}'",
+        "templatePlaceholder": "Dobrý den, doufáme, že jste si užili pronájem '{vehicle_name}'…",
+        "googleReviewUrlLabel": "Odkaz na veřejné hodnocení",
+        "googleReviewUrlHelper": "Vložte URL veřejné stránky s hodnoceními (např. Google Maps). Hosté, kteří ohodnotí svůj výlet kladně, budou přesměrováni sem.",
+        "googleReviewUrlPlaceholder": "https://g.page/r/…/review",
+        "noReviewUrlWarning": "Zatím nebyl přidán žádný odkaz na veřejné hodnocení. Hosté, kteří dají kladnou zpětnou vazbu, neuvidí tlačítko recenze, dokud toto pole nevyplníte.",
+        "previewFeedbackPage": "Náhled průběhu zpětné vazby hosta",
+        "previewFeedbackNoBooking": "Žádné rezervace nenalezeny — přidejte rezervaci pro náhled."
+      }
+    },
+    "extrasCatalog": {
+      "title": "Katalog doplňků",
+      "subtitle": "Definujte doplňky dostupné pro rezervace (např. dětská sedačka, stojan na kola). Personál vybírá z tohoto seznamu při vytváření nebo úpravě rezervace.",
+      "namePlaceholder": "Název doplňku",
+      "activeLabel": "Aktivní",
+      "removeButton": "Odebrat",
+      "addButton": "Přidat doplněk",
+      "empty": "Žádné doplňky nakonfigurovány.",
+      "copyFromSk": "Kopírovat z původního jazyka (SK)",
+      "copyFromSkWarning": "Zkopírováno ze slovenštiny. Přeložte prosím před uložením."
+    },
+    "guestInfo": {
+      "title": "Informace pro hosty",
+      "subtitle": "Obsah zobrazovaný hostům v jejich portálu pronájmu — pokyny k vyzvednutí, pravidla domu atd.",
+      "contactPhone": "Kontaktní telefon",
+      "whatsappNumber": "Číslo WhatsApp",
+      "accordions": {
+        "pickupInfo": "Informace o vyzvednutí",
+        "pickupInfoPlaceholder": "Kde najít klíče, přístupové kódy, parkování…",
+        "returnInfo": "Informace o vrácení",
+        "returnInfoPlaceholder": "Kde odevzdat klíče, očekávání čistoty…",
+        "beforeArrival": "Před příjezdem",
+        "beforeArrivalPlaceholder": "Co by hosté měli připravit před příjezdem…",
+        "beforeReturn": "Před vrácením",
+        "beforeReturnPlaceholder": "Co by hosté měli udělat před vrácením vozidla…",
+        "whatsIncluded": "Co je zahrnuto",
+        "whatsIncludedPlaceholder": "Uveďte položky zahrnuté v pronájmu…",
+        "rulesAndTips": "Pravidla a tipy",
+        "rulesAndTipsPlaceholder": "Pravidla, tipy na cestu…",
+        "faq": "Nejčastější dotazy",
+        "faqHelper": "Nejčastěji kladené otázky zobrazované hostům v portálu pronájmu.",
+        "questionLabel": "Otázka {number}",
+        "questionPlaceholder": "Otázka",
+        "answerPlaceholder": "Odpověď",
+        "removeButton": "Odebrat",
+        "addFaqButton": "Přidat FAQ",
+        "noFaq": "Žádné položky FAQ nejsou nakonfigurovány."
+      }
+    },
+    "billing": {
+      "title": "Fakturace a faktury",
+      "description": "Spravujte předplatné, zobrazujte faktury a aktualizujte platební údaje v zákaznickém portálu Stripe.",
+      "openPortal": "Otevřít fakturační portál"
+    },
+    "systemRecovery": {
+      "title": "Obnova systému",
+      "description": "Administrativní nástroje pro obnovu stavu systému po období nečinnosti.",
+      "backlogReview": {
+        "title": "Kontrola nedokončených rezervací",
+        "description": "Procházejte zpožděné rezervace jednu po druhé a rozhodněte, co s každou udělat: označit jako dokončenou, zrušit nebo přeskočit. Vynutí uzavření přidružených instancí kontrolního seznamu pro každou rezervaci, na které provedete akci. Problémy vozidel, bloky shody vozidla a ruční blokace nejsou ovlivněny.",
+        "button": "Zkontrolovat nevyřízené rezervace",
+        "errorLoad": "Nepodařilo se načíst zpožděné rezervace",
+        "errorSubmit": "Nepodařilo se použít rozhodnutí",
+        "modal": {
+          "title": "Kontrola nedokončených rezervací",
+          "loading": "Načítání zpožděných rezervací…",
+          "empty": "Žádné zpožděné rezervace nenalezeny. Není co kontrolovat.",
+          "listHint": "Zvolte akci pro každou rezervaci. Přeskočené rezervace zůstanou beze změny.",
+          "markAllOnRentComplete": "Označit všechny probíhající jako Dokončené",
+          "returnedLabel": "vráceno",
+          "instancesLabel": "{count} čekající instance kontrolního seznamu",
+          "action_complete": "Dokončit",
+          "action_cancel": "Zrušit",
+          "action_skip": "Přeskočit",
+          "warning": "Připravenost vozidla se po uzavření každé rezervace přepočítá automaticky.",
+          "reasonLabel": "Důvod (platí pro všechny nepřeskočené rezervace)",
+          "reasonPlaceholder": "např. Obnova systému po přestávce zaměstnanců — uzavření nevyřízených rezervací od března 2026",
+          "reasonMinLength": "Důvod musí mít alespoň 10 znaků",
+          "cancel": "Zrušit",
+          "close": "Zavřít",
+          "submit": "Použít rozhodnutí",
+          "submitting": "Zpracování…",
+          "success": "Hotovo: {completed} dokončeno, {cancelled} zrušeno, {skipped} přeskočeno. {instances} instance(í) kontrolního seznamu uzavřeno."
+        }
+      }
+    }
+  },
+  "guestEmergency": {
+    "noCodeTitle": "Žádný kód rezervace",
+    "noCodeMessage": "Nebyl nalezen žádný kód rezervace. Použijte prosím odkaz z potvrzovacího e-mailu.",
+    "back": "Zpět na přehled",
+    "notConfigured": "Zatím nenakonfigurováno",
+    "title": "Nouzové situace a asistence",
+    "subtitle": "K dispozici 24 / 7 — pomoc je jen jedno volání",
+    "languageNote": "Podpora je k dispozici v angličtině a němčině (EN / DE). Zavolejte nám a pomůžeme vám ve vámi preferovaném jazyce.",
+    "accident": {
+      "title": "Nehoda",
+      "instructions": "Zachovejte klid a ujistěte se, že jsou všichni v bezpečí. Pokud je to možné, odsuňte vozidla z provozu a zapněte výstražná světla. Pokud jsou zranění, zavolejte záchranné složky, poté nás okamžitě kontaktujte pomocí čísel níže.",
+      "phone1Label": "Primární nouzový kontakt",
+      "phone2Label": "Sekundární kontakt / mimo pracovní dobu"
+    },
+    "breakdown": {
+      "title": "Porucha",
+      "instructions": "Bezpečně zastavte a zapněte výstražná světla. Umístěte výstražný trojúhelník alespoň 50 m za vozidlem. Nepokoušejte se o opravy na dálnicích. Zavolejte nám a my zajistíme silniční pomoc nebo náhradní vozidlo.",
+      "phone1Label": "Linka silniční pomoci",
+      "phone2Label": "Pohotovostní linka pro poruchy mimo pracovní dobu"
+    }
+  },
+  "staffChecklistsTemplates": {
+    "loading": "Načítání…",
+    "backToChecklists": "Zpět na kontrolní seznamy",
+    "pageTitle": "Spravovat výchozí kontrolní seznamy",
+    "pageSubtitle": "Definujte šablony kontrolních seznamů používané při vytvoření rezervace nebo přípravě vozidel.",
+    "createTemplate": "+ Vytvořit šablonu",
+    "sectionBooking": "Šablony rezervací",
+    "sectionVehicle": "Šablony vozidel",
+    "noTemplates": "Zatím žádné šablony.",
+    "colName": "Název",
+    "colType": "Typ",
+    "colItems": "Položky",
+    "colStatus": "Stav",
+    "colActions": "Akce",
+    "badgeActive": "Aktivní",
+    "badgeInactive": "Neaktivní",
+    "badgeSystem": "CF výchozí",
+    "actionViewEdit": "Zobrazit/Upravit"
+  },
+  "newChecklistTemplate": {
+    "loading": "Načítání…",
+    "backToTemplates": "Zpět na šablony",
+    "pageTitle": "Vytvořit šablonu",
+    "pageSubtitle": "Definujte novou šablonu kontrolního seznamu pro rezervace nebo údržbu vozidel.",
+    "sectionTitle": "Detaily šablony",
+    "fieldName": "Název",
+    "fieldNamePlaceholder": "např. Standardní kontrolní seznam vyzvednutí",
+    "fieldAppliesTo": "Platí pro",
+    "scopeBookingLabel": "Rezervace — sleduje úkoly pro konkrétní pronájem",
+    "scopeVehicleLabel": "Vozidlo — sleduje úkoly pro konkrétní vůz",
+    "fieldWhenCreated": "Kdy má být tento kontrolní seznam vytvořen?",
+    "fieldActive": "Aktivní",
+    "btnCreate": "Vytvořit šablonu",
+    "btnCreating": "Vytváření…",
+    "btnCancel": "Zrušit",
+    "errorNameRequired": "Název je povinný.",
+    "errorCreateFailed": "Nepodařilo se vytvořit šablonu."
+  },
+  "checklistTypeLabels": {
+    "pickup": "Výdej",
+    "return": "Příjem",
+    "handover": "Předání",
+    "cleaning": "Úklid",
+    "mechanical": "Mechanika",
+    "guest_prereturn": "Předodevzdání hostem",
+    "pre_season": "Předsezónní",
+    "post_season": "Posezónní",
+    "vehicle_readiness": "Připravenost vozidla"
+  },
+  "checklistTypeExplanations": {
+    "sectionCreatedWhen": "Automaticky vytvořen při",
+    "sectionVisibleTo": "Viditelný pro",
+    "sectionUsedFor": "Použit pro",
+    "vehicleMaintenanceBadge": "🔧 Údržba vozidla",
+    "vehicleMaintenanceNote": "Probíhá mimo cyklus rezervace",
+    "swipeHint": "Přejděte pro zobrazení celého životního cyklu →",
+    "pickup": {
+      "createdWhen": {
+        "0": "Rezervace přejde do stavu „Potvrzeno“",
+        "1": "Vozidlo je předáno hostovi"
+      },
+      "visibleTo": {
+        "0": "Personál půjčovny",
+        "1": "Správci"
+      },
+      "usedFor": "Ověření a zaznamenání stavu vozidla na začátku pronájmu."
+    },
+    "return": {
+      "createdWhen": {
+        "0": "Host vrátí vozidlo",
+        "1": "Personál zpracovává konec pronájmu"
+      },
+      "visibleTo": {
+        "0": "Personál půjčovny",
+        "1": "Správci"
+      },
+      "usedFor": "Kontrola stavu vozidla, hladiny paliva a kilometrů při vrácení."
+    },
+    "cleaning": {
+      "createdWhen": {
+        "0": "Byl dokončen kontrolní seznam vrácení",
+        "1": "Vozidlo je označeno jako vyžadující úklid"
+      },
+      "visibleTo": {
+        "0": "Personál úklidu",
+        "1": "Správci"
+      },
+      "usedFor": "Zaznamenání dokončených úklidových úkolů před opětovným zpřístupněním vozidla."
+    },
+    "guest_prereturn": {
+      "createdWhen": {
+        "0": "Odesláno hostovi před datem vrácení",
+        "1": "Spuštěno automaticky na základě plánu vrácení"
+      },
+      "visibleTo": {
+        "0": "Hosté",
+        "1": "Personál půjčovny"
+      },
+      "usedFor": "Připomenutí požadavků na vrácení hostům a zachycení poznámek o stavu před vrácením."
+    },
+    "pre_season": {
+      "createdWhen": {
+        "0": "Personál ho vytvoří na začátku sezóny pronájmu",
+        "1": "Spuštěno plánovaným pracovním postupem zahájení sezóny"
+      },
+      "visibleTo": {
+        "0": "Mechanický personál",
+        "1": "Správci"
+      },
+      "usedFor": "Příprava vozidel na sezónu pronájmu — bezpečnost, shoda vozidla a kontroly vybavení."
+    },
+    "post_season": {
+      "createdWhen": {
+        "0": "Personál ho vytvoří na konci sezóny pronájmu",
+        "1": "Spuštěno plánovaným pracovním postupem ukončení sezóny"
+      },
+      "visibleTo": {
+        "0": "Mechanický personál",
+        "1": "Správci"
+      },
+      "usedFor": "Zimování vozidel a zaznamenání přípravy na uskladnění na konci sezóny."
+    },
+    "lifecycleStages": {
+      "bookingCreated": "Rezervace vytvořena",
+      "confirmed": "Potvrzeno",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení",
+      "cleaning": "Úklid",
+      "ready": "Připraveno"
+    }
+  },
+  "staffChecklistTemplateDetail": {
+    "loading": "Načítání…",
+    "backToTemplates": "Zpět na šablony",
+    "globalErrorFallback": "Šablona nenalezena.",
+    "notFoundError": "Šablona nenalezena nebo k ní nemáte přístup.",
+    "errorNoCompany": "K tomuto účtu není přiřazena žádná společnost.",
+    "errorLoadItemsFailed": "Nepodařilo se načíst položky kontrolního seznamu.",
+    "legacyTypeLabel": "{type} (starší verze)",
+    "errorNameRequired": "Název je povinný.",
+    "errorSaveFailed": "Nepodařilo se uložit šablonu.",
+    "errorSystemCannotDelete": "Systémové šablony kontrolních seznamů nelze smazat.",
+    "deleteConfirm": "Smazat „{name}“? Tuto akci nelze vrátit zpět.",
+    "errorDeleteFailed": "Nepodařilo se smazat šablonu.",
+    "errorItemLabelRequired": "Popis je povinný.",
+    "errorItemSaveFailed": "Nepodařilo se uložit položku.",
+    "errorReorderStep1": "Nepodařilo se uložit nové pořadí (krok 1).",
+    "errorReorderStep2": "Nepodařilo se uložit nové pořadí (krok 2).",
+    "errorReorderStep3": "Nepodařilo se uložit nové pořadí (krok 3).",
+    "errorMoveSectionTemp": "Nepodařilo se přesunout sekci (dočasný krok {step}).",
+    "errorMoveSectionAssign": "Nepodařilo se přesunout sekci (krok přiřazení).",
+    "sectionDefault": "Obecné",
+    "pageTitle": "Upravit šablonu",
+    "pageSubtitle": "Aktualizujte detaily šablony nebo ji smažte.",
+    "sectionTemplateDetails": "Detaily šablony",
+    "saveSuccess": "Šablona byla úspěšně uložena.",
+    "fieldName": "Název",
+    "systemNameHint": "Názvy výchozích šablon CF nelze měnit.",
+    "fieldAppliesTo": "Platí pro",
+    "scopeBookingValue": "Rezervace — sleduje úkoly pro konkrétní pronájem",
+    "scopeVehicleValue": "Vozidlo — sleduje úkoly pro konkrétní vůz",
+    "scopeReadOnlyHint": "Po vytvoření nelze změnit.",
+    "fieldWhenCreated": "Kdy má být tento kontrolní seznam vytvořen?",
+    "systemTypeHint": "Typy výchozích šablon CF nelze měnit.",
+    "fieldActive": "Aktivní",
+    "btnSaving": "Ukládání…",
+    "btnSaveChanges": "Uložit změny",
+    "systemCannotDelete": "Výchozí šablony CF nelze smazat.",
+    "btnDeleting": "Mazání…",
+    "btnDeleteTemplate": "Smazat šablonu",
+    "desktopTip": "Tip: Pro rychlejší přeuspořádání a hromadné úpravy použijte desktop.",
+    "sectionItems": "Položky kontrolního seznamu",
+    "searchPlaceholder": "Hledat položky…",
+    "searchAriaLabel": "Hledat položky kontrolního seznamu",
+    "filterShowRequired": "Zobrazit pouze povinné",
+    "btnExpandAll": "Rozbalit vše",
+    "btnCollapseAll": "Sbalit vše",
+    "dismissError": "Zavřít",
+    "loadingItems": "Načítání položek…",
+    "emptyItems": "Zatím žádné položky. Přidejte položky do této šablony pro začátek.",
+    "emptyFiltered": "Žádné položky neodpovídají vašim filtrům.",
+    "moveSectionUpTitle": "Přesunout sekci nahoru",
+    "moveSectionUpAria": "Přesunout sekci „{section}“ nahoru",
+    "moveSectionDownTitle": "Přesunout sekci dolů",
+    "moveSectionDownAria": "Přesunout sekci „{section}“ dolů",
+    "inputTypeBadgeNumber": "číslo",
+    "itemRequiredBadge": "pov.",
+    "btnEdit": "Upravit",
+    "itemFieldLabel": "Popis",
+    "itemFieldInputType": "Typ vstupu",
+    "inputTypeCheckbox": "Zaškrtávací políčko",
+    "inputTypeNumber": "Číslo",
+    "itemFieldRequired": "Povinné",
+    "reorderLabel": "Přeuspořádat:",
+    "moveItemUpAria": "Přesunout položku nahoru",
+    "moveItemDownAria": "Přesunout položku dolů",
+    "reorderSaving": "Ukládání…",
+    "btnSavingItem": "Ukládání…",
+    "btnSave": "Uložit",
+    "btnCancel": "Zrušit",
+    "btnAddItem": "Přidat položku",
+    "btnAddFirstItem": "+ Přidat první položku",
+    "defaultNewItemLabel": "Nová položka",
+    "errorAddFirstItemFailed": "Nepodařilo se přidat položku.",
+    "addItemSectionLabel": "Sekce",
+    "sectionOptionNewSection": "Nová sekce…",
+    "newSectionNamePlaceholder": "Název sekce",
+    "itemFieldSection": "Sekce",
+    "pickupVehicleDataTitle": "Data vozidla",
+    "pickupVehicleDataDesc": "Pole zaznamenávaná při zahájení předání.",
+    "pickupVehicleDataKm": "Kilometry",
+    "pickupVehicleDataFuel": "Hladina paliva",
+    "pickupVehicleDataAdblue": "Hladina AdBlue",
+    "pickupChecklistActionsTitle": "Akce kontrolního seznamu",
+    "pickupOfficeTitle": "Kancelář",
+    "returnPhaseInspection": "Prohlídka",
+    "returnPhaseCondition": "Stav a důkazy",
+    "returnPhaseCloseOut": "Uzavření",
+    "returnVehicleDataTitle": "Data vozidla",
+    "returnVehicleDataDesc": "Zaznamenejte odometr při vrácení a hladiny vozidla.",
+    "returnEvidenceTitle": "Fotodůkazy",
+    "returnEvidenceDesc": "Zachyťte fotografie celkového stavu a veškeré nové poškození zjištěné při vrácení.",
+    "returnChecklistActionsTitle": "Akce kontrolního seznamu",
+    "returnChecklistActionsDesc": "Dokončete všechny požadované kontroly vrácení před uzavřením pronájmu.",
+    "returnCloseOutTitle": "Uzavření vrácení",
+    "returnCloseOutDesc": "Potvrďte klíče, doklady a položky uzavření smlouvy.",
+    "returnDepositStatusTitle": "Stav zálohy",
+    "returnDepositStatusDesc": "Zaznamenejte výsledek bezpečnostní zálohy.",
+    "inputTypeDropdown": "Rozbalovací seznam",
+    "itemDropdownOptions": "Možnosti rozbalovacího seznamu",
+    "dropdownOptionPlaceholder": "Možnost {n}",
+    "removeOptionAria": "Odebrat možnost",
+    "addOption": "+ Přidat možnost",
+    "dragToReorderAria": "Přetáhněte pro přeuspořádání",
+    "dragToReorderSectionAria": "Přetáhněte sekci pro přeuspořádání"
+  },
+  "checklistDetail": {
+    "backToBooking": "Zpět na rezervaci",
+    "backToVehicle": "Zpět na vozidlo",
+    "backToChecklists": "Zpět na kontrolní seznamy",
+    "noBookingLinked": "Žádná rezervace není propojena",
+    "statusNotStarted": "Nezahájeno",
+    "statusInProgress": "Probíhá",
+    "statusCompleted": "Dokončeno",
+    "checklistCompleted": "Kontrolní seznam dokončen",
+    "goToBooking": "Přejít na rezervaci",
+    "completeSection": "Dokončit sekci",
+    "completeSectionConfirm": "Označit všechny položky v „{section}“ jako dokončené?",
+    "addNote": "Přidat poznámku",
+    "editNote": "Upravit poznámku",
+    "notesPlaceholder": "Poznámky…",
+    "sectionOther": "Ostatní",
+    "sectionProgress": "{completed}/{total} dokončeno",
+    "typeUnknown": "Kontrolní seznam",
+    "type_handover": "Kontrolní seznam předání",
+    "type_pickup": "Kontrolní seznam vyzvednutí",
+    "type_return": "Kontrolní seznam vrácení",
+    "type_cleaning": "Kontrolní seznam úklidu",
+    "type_mechanical": "Mechanický kontrolní seznam",
+    "type_guest_prereturn": "Kontrolní seznam před vrácením",
+    "type_vehicle_readiness": "Kontrolní seznam připravenosti vozidla",
+    "type_pre_season": "Předsezónní kontrolní seznam",
+    "type_post_season": "Posezónní kontrolní seznam",
+    "lockFallback": "Tento kontrolní seznam je uzamčen z důvodu obchodního pravidla.",
+    "errorItemUpdateFailed": "Nepodařilo se uložit položku kontrolního seznamu — změna nebyla zaznamenána.",
+    "errorStatusSyncFailed": "Synchronizace stavu selhala — položky kontrolního seznamu byly uloženy, ale celkový stav nebylo možné aktualizovat.",
+    "flag": "Označit",
+    "flagged": "Označeno",
+    "severity": "Závažnost",
+    "severityInfo": "Informace",
+    "severityAttention": "Pozornost",
+    "severityUrgent": "Naléhavé",
+    "issueNoteRequired": "Poznámka je povinná.",
+    "issueNotePlaceholder": "Popište problém… (povinné)",
+    "saveFlag": "Uložit označení",
+    "saving": "Ukládání…",
+    "cancel": "Zrušit",
+    "flagAlreadyOpen": "Pro tuto položku již existuje otevřené označení.",
+    "flagSaveFailed": "Uložení selhalo.",
+    "resolveFlag": "Vyřešit",
+    "resolving": "Řešení…",
+    "lockedBookingCompleted": "Tento kontrolní seznam je uzamčen, protože propojená rezervace byla dokončena.",
+    "completedAndLocked": "Tento kontrolní seznam je dokončen a uzamčen.",
+    "quickMode": "Rychlý režim",
+    "dismiss": "Zavřít",
+    "completing": "Dokončování…",
+    "doneGoBack": "Hotovo — zpět",
+    "completeChecklist": "Dokončit kontrolní seznam",
+    "allItemsChecked": "Všech {total} položek zaškrtnuto",
+    "itemsCheckedOf": "{checked} z {total} položek zaškrtnuto",
+    "checklistIsComplete": "Kontrolní seznam je dokončen.",
+    "itemsRemaining": "{count, plural, one {# položka zbývá.} few {# položky zbývají.} other {# položek zbývá.}}",
+    "quickCompleteConfirm": "Dokončit všechny {count, plural, one {# zbývající položku} few {# zbývající položky} other {# zbývajících položek}} a ukončit tento kontrolní seznam?",
+    "errorDetailMessage": "zpráva:",
+    "errorDetailCode": "kód:",
+    "errorDetailDetails": "detaily:",
+    "errorDetailHint": "nápověda:",
+    "rawErrorJson": "Hrubý JSON chyby",
+    "safetyModalTitle": "Otevřené označené problémy",
+    "safetyModalBody": "Na tomto kontrolním seznamu jsou stále otevřené následující problémy:",
+    "safetyModalMoreIssues": "{count, plural, one {+# další problém} few {+# další problémy} other {+# dalších problémů}}",
+    "safetyModalQuestion": "Je vozidlo bezpečné k předání?",
+    "safetyModalConfirm": "Ano, bezpečné k předání",
+    "safetyModalMarkUrgent": "Označit jako naléhavé",
+    "safetyModalCancel": "Ne, ponechat kontrolní seznam otevřený",
+    "urgentModalTitle": "Naléhavé problémy — předání blokováno",
+    "urgentModalBody": "Jeden nebo více naléhavých problémů musí být vyřešeno před dokončením předání. Vraťte se a nejprve vyřešte všechny naléhavé příznaky.",
+    "urgentModalDismiss": "Zpět na kontrolní seznam",
+    "returnNotifyModalTitle": "Zaznamenány naléhavé problémy",
+    "returnNotifyModalBody": "Při této prohlídce vrácení byly zaznamenány následující naléhavé problémy:",
+    "returnNotifyModalQuestion": "Informovat vedení nyní?",
+    "returnNotifyNow": "Informovat nyní",
+    "returnNotifyLogOnly": "Zaznamenat k dalšímu sledování",
+    "reopenButton": "Znovu otevřít kontrolní seznam předání",
+    "reopenModalTitle": "Znovu otevřít kontrolní seznam předání",
+    "reopenModalBody": "Tím se resetují všechny zaškrtnuté položky, aby bylo možné kontrolní seznam znovu dokončit. Před resetem bude uložen snímek aktuálního stavu.",
+    "reopenReasonPlaceholder": "Důvod (volitelné)…",
+    "reopenConfirm": "Znovu otevřít kontrolní seznam",
+    "reopenCancel": "Zrušit",
+    "reopening": "Znovu otevírání…",
+    "historyTitle": "Historie znovuotevření / vrácení",
+    "historyExpand": "Zobrazit detaily",
+    "historyCollapse": "Skrýt detaily",
+    "historyEmpty": "Zatím žádná historie znovuotevření.",
+    "historyReopenedAt": "Kontrolní seznam znovu otevřen",
+    "historyReason": "Důvod",
+    "historyPreviousStatus": "Předchozí stav",
+    "historyPreviousCompletedAt": "Dříve dokončen",
+    "historySnapshotItems": "Položky v době vrácení",
+    "historyNoReason": "Žádný důvod uveden",
+    "historyChecked": "Zaškrtnuto",
+    "historyUnchecked": "Nezaškrtnuto",
+    "historyFlagged": "Označeno",
+    "historySnapshotStatus": "Předchozí stav",
+    "historySnapshotCompletedAt": "Dříve dokončen",
+    "pickupModeIntro": "Toto vyzvednutí probíhá ve třech fázích: nejprve prohlídka vedená hostitelem, poté kontrola důkazů a nakonec kancelářské papírování k uzavření.",
+    "handoverModeIntro": "Toto předání probíhá ve třech fázích: nejprve prohlídka vedená hostitelem, poté kontrola důkazů a nakonec kancelářské papírování k uzavření.",
+    "phase1Label": "Prohlídka vozidla",
+    "phase1Desc": "Proveďte hosta vozidlem — ovládání, funkce, nouzová výbava a vše, co potřebuje vědět. Zde nejsou žádné položky k zaškrtnutí; jde o vaši řízenou prohlídku bez nutnosti psát.",
+    "phase2Label": "Audit",
+    "phase2Desc": "Projděte každou položku kontrolního seznamu. Označte veškeré poškození, chybějící vybavení nebo problémy před předáním klíčů.",
+    "auditVehicleDataTitle": "Data vozidla",
+    "auditVehicleDataDesc": "Zaznamenejte aktuální stav odometru, hladinu paliva a hladinu AdBlue u dveří řidiče před prohlídkou.",
+    "distanceDriven": "Ujetá vzdálenost",
+    "auditEvidenceTitle": "Důkazy",
+    "auditEvidenceDesc": "Důkladně vyfotografujte stav vozidla — přední část, zadní část, boky a interiér. Tyto fotografie jsou povinné pro každé předání a musí být dokončeny před ukončením tohoto kontrolního seznamu.",
+    "evidenceRequiredBadge": "Povinné",
+    "evidenceRequiredHint": "Je vyžadována alespoň jedna fotografie. Žádné předání nelze dokončit bez fotografických důkazů.",
+    "evidencePhotosCount": "Přidané fotografie: {count}",
+    "evidenceGroupId": "Fotografie průkazu totožnosti / řidičského průkazu",
+    "evidenceGroupIdHint": "(přední a zadní strana)",
+    "evidenceAdd": "Přidat",
+    "evidenceTakePhoto": "Vyfotografovat",
+    "evidenceChoosePhoto": "Vybrat existující",
+    "evidencePendingUpload": "Čeká",
+    "evidenceRetry": "Zkusit znovu",
+    "evidenceNoPhotos": "Zatím žádné fotografie",
+    "auditChecklistTitle": "Akce kontrolního seznamu",
+    "auditChecklistDesc": "Pečlivě projděte každou sekci. Tlačítko označení používejte pouze pro nově zjištěné problémy nebo poškození. Před předáním musí být dokončena všechna pole a kroky na této stránce.",
+    "phase3Label": "Kancelář",
+    "phase3Desc": "Dokončete papírování: podepište nájemní smlouvu, ověřte totožnost, vyberte bezpečnostní zálohu a předejte klíče. Zde nejsou vyžadovány žádné digitální kroky.",
+    "officeConfirmationsTitle": "Kancelářská potvrzení",
+    "officeContractSigned": "Nájemní smlouva podepsána",
+    "officeIdVerified": "Totožnost ověřena",
+    "officeDepositCollected": "Bezpečnostní záloha vybrána",
+    "officeVehicleDocsHandedOver": "Doklady vozidla předány",
+    "officeKeysHandedOver": "Klíče předány",
+    "officeIdPhotosTitle": "Pořízení fotografie průkazu totožnosti (volitelné)",
+    "officeIdPhotosDesc": "Přiložte fotografii průkazu totožnosti zákazníka pro vaše záznamy. Toto je volitelné a zatím není synchronizováno.",
+    "officeAddIdPhoto": "Přidat fotografii průkazu",
+    "handoverCompleteButton": "Předání dokončeno",
+    "handoverErrorAuditIncomplete": "Před dokončením předání musí být zaškrtnuty všechny položky kontrolního seznamu auditu.",
+    "handoverErrorMissingData": "Jsou vyžadována data vozidla (km, palivo, AdBlue) a alespoň jeden fotografický důkaz.",
+    "handoverErrorOfficeIncomplete": "Všechna kancelářská potvrzení (záloha, průkaz totožnosti, smlouva) musí být dokončena.",
+    "handoverErrorHandoverIncomplete": "Všechna potvrzení předání (klíče a doklady) musí být dokončena.",
+    "handoverErrorBlockingFlags": "Na tomto kontrolním seznamu jsou otevřené naléhavé problémy. Vyřešte všechny naléhavé příznaky před dokončením předání.",
+    "handoverErrorAllRequired": "Před dokončením předání musí být dokončeny všechny položky auditu, data vozidla, fotografické důkazy a kancelářská/předávací potvrzení.",
+    "returnCloseConfirmationsTitle": "Uzavření vrácení",
+    "returnKeysReceived": "Klíče přijaty",
+    "returnDocumentsReceived": "Doklady přijaty",
+    "returnContractClosed": "Smlouva uzavřena",
+    "returnDepositStatusTitle": "Stav zálohy",
+    "returnDepositReturned": "Vrácena zákazníkovi",
+    "returnDepositPendingAdmin": "Čeká na administrativní vrácení",
+    "returnDepositHeldDamage": "Zadržena pro poškození",
+    "returnErrorAuditIncomplete": "Před dokončením vrácení musí být zaškrtnuty všechny položky kontroly vrácení.",
+    "returnErrorCloseIncomplete": "Všechna potvrzení uzavření vrácení (klíče, doklady, smlouva) musí být dokončena.",
+    "returnErrorDepositRequired": "Stav zálohy musí být nastaven před dokončením vrácení.",
+    "returnErrorExtrasIncomplete": "Všechny předané doplňky musí být označeny jako vrácené před dokončením vrácení.",
+    "returnKmBelowHandover": "Kilometry při vrácení nemohou být nižší než kilometry při předání ({handoverKm} km).",
+    "returnKmHighJumpConfirm": "Kilometry při vrácení ({returnKm} km) jsou o {diff} km vyšší než kilometry při předání ({handoverKm} km). Uložit tuto hodnotu?",
+    "returnPhaseInspection": "Prohlídka",
+    "returnPhaseCondition": "Stav a důkazy",
+    "returnPhaseCloseOut": "Uzavření",
+    "returnPhaseIntroText": "Toto vrácení probíhá ve třech fázích: prohlídka, stav a důkazy a závěrečné uzavření.",
+    "returnPhase1Label": "Prohlídka / Příjem vozidla",
+    "returnVehicleDataTitle": "Data vozidla",
+    "returnVehicleDataDesc": "Zaznamenejte odometr při vrácení a hladiny vozidla.",
+    "returnEvidenceTitle": "Fotografické důkazy",
+    "returnEvidenceDesc": "Zachyťte fotografie celkového stavu a veškeré nové poškození zjištěné při vrácení.",
+    "returnChecklistActionsTitle": "Akce kontrolního seznamu",
+    "returnChecklistActionsDesc": "Dokončete všechny požadované kontroly vrácení před uzavřením pronájmu.",
+    "returnCloseOutTitle": "Uzavření vrácení",
+    "returnCloseOutDesc": "Potvrďte klíče, doklady a položky uzavření smlouvy.",
+    "returnDepositStatusDesc": "Zaznamenejte výsledek bezpečnostní zálohy.",
+    "evidenceLabelGeneral": "Celkový stav",
+    "evidenceLabelDamage": "Poškození",
+    "evidenceLabelId": "Průkaz totožnosti / Řidičský průkaz",
+    "lightboxClose": "Zavřít prohlížeč fotografií",
+    "lightboxPrev": "Předchozí fotografie",
+    "lightboxNext": "Další fotografie",
+    "lightboxDownload": "Stáhnout",
+    "lightboxRotateLeft": "Otočit doleva",
+    "lightboxRotateRight": "Otočit doprava",
+    "evidenceGroupGeneral": "Fotografie celkového stavu",
+    "evidenceGroupDamage": "Fotografie poškození",
+    "evidenceGroupDamageReturn": "<strong>Nové</strong> fotografie poškození",
+    "evidenceReturnDesc": "Vyfotografujte celkový stav vozidla při vrácení, poté zdokumentujte veškeré <strong>nově zjištěné poškození</strong>.",
+    "addFlagPhoto": "+ Přidat fotografii",
+    "vehicleDataFuel": "Palivo",
+    "vehicleDataAdblue": "AdBlue",
+    "vehicleDataSelectPlaceholder": "— Vybrat —",
+    "vehicleDataFull": "Plné",
+    "vehicleDataEmpty": "Prázdné",
+    "offlineBanner": "Jste offline — tento kontrolní seznam je jen pro čtení. Připojte se znovu pro provádění změn.",
+    "extrasHandedOverTitle": "Předané doplňky",
+    "extrasHandedOverItem": "{name} předáno",
+    "extrasReturnedTitle": "Vrácené doplňky",
+    "extrasReturnedItem": "{name} vráceno",
+    "flagPhotosTitle": "Fotografie (volitelné)",
+    "pickupWarningTitle": "Chybí povinné informace",
+    "pickupWarningBody": "Nezadali jste následující:",
+    "pickupWarningContinue": "Přesto pokračovat",
+    "pickupWarningGoBack": "Zpět",
+    "pickupWarningFieldKm": "KM",
+    "pickupWarningFieldFuel": "Palivo",
+    "pickupWarningFieldAdblue": "AdBlue",
+    "pickupWarningFieldPhotos": "Fotografie"
+  },
+  "bookingsImport": {
+    "backToBookings": "Zpět na rezervace",
+    "title": "Import rezervací",
+    "subtitle": "Nahrajte CSV nebo JSON export z vaší platformy pro rezervace.",
+    "serverError": "Chyba serveru {status}",
+    "tabs": {
+      "file": "Nahrání souboru",
+      "ical": "iCal URL"
+    },
+    "ical": {
+      "urlLabel": "URL zdroje",
+      "urlPlaceholder": "https://…/calendar.ics",
+      "vehicleLabel": "Vozidlo",
+      "vehiclePlaceholder": "Vyberte vozidlo",
+      "vehiclesLoading": "Načítání vozidel…",
+      "fetchButton": "Načíst a zobrazit náhled",
+      "fetching": "Načítání zdroje…",
+      "fetchError": "Nepodařilo se načíst iCal zdroj",
+      "noVehicleSelected": "Před načtením prosím vyberte vozidlo.",
+      "vehicleMode": "Režim vozidla",
+      "vehicleModeSingle": "Jedno vozidlo",
+      "vehicleModeMulti": "Více vozidel"
+    },
+    "dropzone": {
+      "primary": "Přetáhněte soubor sem",
+      "accepted": "Přijímané formáty: .csv, .json",
+      "browse": "Procházet soubor",
+      "inputLabel": "Nahrát soubor s rezervacemi"
+    },
+    "file": {
+      "remove": "Odebrat"
+    },
+    "preview": {
+      "placeholder": "Náhled importu se zobrazí zde po nahrání.",
+      "parsing": "Zpracování souboru…",
+      "fetchingIcal": "Načítání iCal zdroje…",
+      "matchingVehicles": "Párování vozidel…",
+      "checkingExisting": "Kontrola existujících rezervací…",
+      "undetectedSource": "Nepodařilo se detekovat zdroj importu pro tento soubor.",
+      "parseError": "Nepodařilo se zpracovat soubor",
+      "readError": "Nepodařilo se přečíst soubor"
+    },
+    "match": {
+      "vehicleNotFound": "Vozidlo nenalezeno",
+      "ambiguous": "Nalezeno více shod vozidel",
+      "noCompanyId": "Váš účet není spojen s žádnou společností.",
+      "vehicleQueryError": "Nepodařilo se načíst vozidla pro vaši společnost.",
+      "statusMatched": "spárováno",
+      "statusUnmatched": "nespárováno",
+      "statusAmbiguous": "nejednoznačné"
+    },
+    "summary": {
+      "sourceType": "Typ zdroje",
+      "totalRows": "Celkem řádků",
+      "toCreate": "Vytvořit",
+      "toUpdate": "Aktualizovat",
+      "toBlock": "Blokování vozidel",
+      "rowsWithErrors": "Řádky s chybami",
+      "rowsSkipped": "Přeskočeno"
+    },
+    "action": {
+      "create": "vytvořit",
+      "update": "aktualizovat",
+      "block": "blokovat",
+      "skip": "přeskočit",
+      "error": "chyba"
+    },
+    "table": {
+      "rowNum": "#",
+      "sourceId": "ID zdroje",
+      "vehicleRef": "Odkaz vozidla",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení",
+      "match": "Shoda",
+      "action": "Akce",
+      "issue": "Problém"
+    },
+    "bulkAssign": {
+      "sectionTitle": "Přiřadit nespárované odkazy vozidel",
+      "rowCount": "{count} nespárovaných řádků",
+      "selectPlaceholder": "Vyberte vozidlo",
+      "assignButton": "Přiřadit"
+    },
+    "import": {
+      "button": "Použít {count} změn",
+      "buttonApplied": "Import dokončen",
+      "importing": "Importování…",
+      "unexpectedError": "Během importu došlo k neočekávané chybě.",
+      "resultTitle": "Import dokončen",
+      "resultCreated": "{count} vytvořeno",
+      "resultUpdated": "{count} aktualizováno",
+      "resultBlocked": "{count} blokování vozidel importováno",
+      "resultErrors": "{count} chyb",
+      "rowError": "Řádek {row}: {message}",
+      "defaultBlockLabel": "Blokované období"
+    }
+  },
+  "staffCustomers": {
+    "backToDashboard": "Přehled",
+    "title": "Zákazníci",
+    "newCustomer": "+ Nový zákazník",
+    "empty": "Zatím žádní zákazníci",
+    "loading": "Načítání…",
+    "searchPlaceholder": "Hledat podle jména, e-mailu nebo telefonu…",
+    "noResults": "Žádní zákazníci neodpovídají vašemu hledání.",
+    "table": {
+      "name": "Jméno",
+      "email": "E-mail",
+      "phone": "Telefon",
+      "created": "Vytvořeno"
+    },
+    "missingPhone": "Chybí kontaktní údaje ({count}) *",
+    "missingPhoneNote": "* Zákazníkům importovaným z vašeho rezervačního systému mohou chybět kontaktní údaje. Otevřete každý záznam a přidejte nebo aktualizujte je, aby se správně zobrazovaly a fungovaly v CamperFlow."
+  },
+  "staffCustomerDetail": {
+    "notFound": "Zákazník nenalezen.",
+    "backToCustomers": "Zpět na zákazníky",
+    "backLink": "Zákazníci",
+    "unnamedCustomer": "Zákazník bez jména",
+    "viewAllBookings": "Zobrazit všechny rezervace",
+    "noContactInfo": "Žádné kontaktní informace",
+    "totalBookings": "Celkem rezervací:",
+    "lastBooking": "Poslední rezervace:",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "saveContact": "Uložit",
+    "savedSuccess": "Kontaktní informace uloženy.",
+    "saveError": "Nepodařilo se uložit kontaktní informace.",
+    "bookingsTitle": "Rezervace",
+    "noBookings": "Tento zákazník zatím nemá žádné rezervace",
+    "table": {
+      "bookingNumber": "Rezervace č.",
+      "status": "Stav",
+      "pickup": "Vyzvednutí",
+      "return": "Vrácení"
+    },
+    "status": {
+      "pending": "Čekající",
+      "confirmed": "Potvrzeno",
+      "blocked": "Zablokováno",
+      "on_rent": "Pronajato",
+      "completed": "Dokončeno",
+      "cancelled": "Zrušeno"
+    }
+  },
+  "guestFeedback": {
+    "title": "Jaký byl váš výlet?",
+    "subtitle": "Rádi bychom slyšeli o vašich zkušenostech.",
+    "positive": "Vše proběhlo dobře",
+    "negative": "Něco mohlo být lepší",
+    "positiveSubtext": "Vždy rádi slyšíme, když vše proběhne dobře",
+    "negativeSubtext": "Pomozte nám pochopit, co by mohlo být lepší",
+    "positiveHeading": "Skvělé!",
+    "positiveBody": "Víme, že psaní recenzí není každého oblíbená činnost, ale pokud jste si svůj výlet opravdu užili a rádi byste tuto společnost doporučili přátelům nebo rodině, vaše recenze pro nás skutečně hodně znamená.",
+    "reviewCta": "Napsat recenzi",
+    "positiveNoReviewUrl": "Děkujeme za vaše laskavá slova! Upřímně si vážíme vašich zkušeností.",
+    "negativeHeading": "Děkujeme, že nám to dáváte vědět",
+    "negativeBody": "Řekněte nám prosím, co se stalo. Vaše zpráva jde přímo našemu týmu.",
+    "placeholder": "Popište, co mohlo být lepší…",
+    "submit": "Odeslat",
+    "submitting": "Odesílání…",
+    "doneHeading": "Zpětná vazba přijata",
+    "doneBody": "Děkujeme. Podíváme se na to.",
+    "noCode": "Nebyl nalezen žádný kód rezervace. Použijte prosím odkaz z potvrzovací zprávy.",
+    "notFound": "Rezervace nenalezena.",
+    "back": "Zpět",
+    "previewBadge": "Náhled",
+    "submitError": "Něco se pokazilo. Zkuste to prosím znovu."
+  },
+  "installBanner": {
+    "title": "Nainstalovat CamperFlow",
+    "dismiss": "Zavřít",
+    "chromiumHint": "Přidejte na domovskou obrazovku pro rychlý přístup",
+    "chromiumButton": "Nainstalovat",
+    "iosBefore": "Klepněte na",
+    "iosAfter": "poté",
+    "iosAction": "Přidat na domovskou obrazovku",
+    "fallbackHint": "Otevřete menu prohlížeče a zvolte \"Nainstalovat\" nebo \"Přidat na domovskou obrazovku\""
+  },
+  "staffBilling": {
+    "title": "Fakturace a předplatné",
+    "backToCompany": "Zpět",
+    "loading": "Načítání informací o fakturaci…",
+    "sections": {
+      "currentPlan": "Aktuální plán",
+      "usageLimits": "Využití",
+      "billingActions": "Fakturační akce",
+      "invoicesPayments": "Faktury a platební metody"
+    },
+    "plan": {
+      "name": "Plán",
+      "status": "Stav",
+      "price": "Cena",
+      "renewal": "Příští platba",
+      "expiry": "Vyprší",
+      "per_month": "měsíc",
+      "per_year": "rok",
+      "unknown": "Neznámý plán",
+      "notSyncedWarning": "Plán ještě není synchronizován."
+    },
+    "status": {
+      "active": "Aktivní",
+      "trialing": "Zkušební",
+      "past_due": "Po splatnosti",
+      "cancelled": "Zrušeno",
+      "none": "Žádné předplatné"
+    },
+    "usage": {
+      "vehicles": "Vozidla",
+      "staff": "Zaměstnanci",
+      "used": "{used} / {limit}",
+      "extraPurchased": "{purchased} / {max} doplňků"
+    },
+    "actions": {
+      "manageBilling": "Správa fakturace",
+      "changePlan": "Změnit plán",
+      "opening": "Otevírání…"
+    },
+    "history": {
+      "openPortal": "Otevřít fakturační portál"
+    },
+    "overLimit": {
+      "title": "Účet překračuje limit plánu",
+      "message": "Vaše aktuální využití překračuje limity vašeho plánu. Můžete nadále používat stávající data, ale přidávání nových vozidel nebo zaměstnanců je zakázáno, dokud neupgradujete. Upozornění: přebytečná vozidla, zaměstnanci a související konfigurační data mohou být trvale odstraněna po budoucím období odkladu."
+    },
+    "errors": {
+      "loadFailed": "Nepodařilo se načíst informace o fakturaci. Obnovte prosím stránku."
+    }
+  },
+  "widget": {
+    "unavailable": "Widget dostupnosti momentálně není k dispozici.",
+    "noVehicles": "Pro tento widget nejsou nakonfigurována žádná vozidla.",
+    "defaultTitle": "Dostupnost vozidel",
+    "defaultSubtitle": "Vyberte data pro dotaz na dostupnost",
+    "poweredBy": "Provozováno na CamperFlow",
+    "legend": {
+      "available": "Dostupné",
+      "booked": "Rezervované",
+      "unavailable": "Nedostupné"
+    },
+    "calendar": {
+      "pickupSelected": "Datum vyzvednutí vybráno — nyní klikněte na datum vrácení"
+    },
+    "enquiry": {
+      "ctaButton": "Ověřit dostupnost / Nezávazná poptávka",
+      "formTitle": "Poptávka rezervace",
+      "formSubtitle": "Vyplňte své údaje a my se vám brzy ozveme.",
+      "vehicleLabel": "Vozidlo",
+      "vehiclePlaceholder": "Vyberte vozidlo…",
+      "pickupLabel": "Datum vyzvednutí",
+      "returnLabel": "Datum vrácení",
+      "nameLabel": "Vaše jméno",
+      "namePlaceholder": "Celé jméno",
+      "emailLabel": "E-mailová adresa",
+      "emailPlaceholder": "vas@email.cz",
+      "phoneLabel": "Telefon (volitelné)",
+      "phonePlaceholder": "+420 123 456 789",
+      "messageLabel": "Zpráva (volitelné)",
+      "messagePlaceholder": "Jakékoli dotazy nebo zvláštní požadavky…",
+      "submit": "Odeslat poptávku",
+      "submitting": "Odesílání…",
+      "successTitle": "Poptávka odeslána!",
+      "successMessage": "Obdrželi jsme vaši poptávku a brzy se vám ozveme.",
+      "errorRequired": "Vyplňte prosím všechna povinná pole.",
+      "errorReturnDate": "Datum vrácení musí být po datu vyzvednutí.",
+      "errorVehicle": "Vyberte prosím vozidlo.",
+      "errorGeneric": "Něco se pokazilo. Zkuste to prosím znovu.",
+      "errorNetwork": "Chyba sítě. Zkuste to prosím znovu."
+    }
+  }
+}

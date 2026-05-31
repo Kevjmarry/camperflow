@@ -60,7 +60,7 @@ export default async function GuestReturnPage({ params, searchParams }: PageProp
   const t = await getTranslations({ locale, namespace: "guestReturn" });
   const tBooking = await getTranslations({ locale, namespace: "guestBooking" });
 
-  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : "en-GB";
+  const dateLocale = locale === "de" ? "de-DE" : locale === "sk" ? "sk-SK" : locale === "pl" ? "pl-PL" : locale === "cs" ? "cs-CZ" : "en-GB";
 
   if (!code) {
     return (
