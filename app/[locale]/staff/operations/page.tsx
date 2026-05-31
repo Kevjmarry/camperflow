@@ -382,19 +382,23 @@ export default async function OperationsPage({
             {/* Mobile: this div IS the card. Desktop: transparent passthrough. */}
             <div className="surface page-surface ops-inner-card">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                <OperationsOnRentNow rows={onRentNow} companyTimezone={timelineData.companyTimezone} />
-                <OperationsNextUp
-                  pickups={nextPickups}
-                  returns={upcomingReturns.slice(0, 3)}
-                  companyTimezone={timelineData.companyTimezone}
-                  preArrivalReminders={invoiceReminders.filter(r => r.type === 'pre_arrival')}
-                  returnPrepReminders={invoiceReminders.filter(r => r.type === 'return_prep')}
-                  whatsappTemplates={whatsappTemplates}
-                />
+                <div id="ops-section-on-rent">
+                  <OperationsOnRentNow rows={onRentNow} companyTimezone={timelineData.companyTimezone} />
+                </div>
+                <div id="ops-section-next-up">
+                  <OperationsNextUp
+                    pickups={nextPickups}
+                    returns={upcomingReturns.slice(0, 3)}
+                    companyTimezone={timelineData.companyTimezone}
+                    preArrivalReminders={invoiceReminders.filter(r => r.type === 'pre_arrival')}
+                    returnPrepReminders={invoiceReminders.filter(r => r.type === 'return_prep')}
+                    whatsappTemplates={whatsappTemplates}
+                  />
+                </div>
 
                 {/* Attention needed strip */}
                 {urgentItems.length > 0 && (
-                  <div className="ops-section-card">
+                  <div id="ops-section-attention" className="ops-section-card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                       <span style={{ fontSize: '13px', fontWeight: 600, color: 'rgb(var(--danger))' }}>
                         {t('attentionNeeded')}
@@ -439,7 +443,9 @@ export default async function OperationsPage({
                   </div>
                 )}
 
-                <OperationsInvoiceReminders reminders={invoiceReminders.filter(r => r.type !== 'pre_arrival' && r.type !== 'return_prep')} whatsappTemplates={whatsappTemplates} />
+                <div id="ops-section-reminders">
+                  <OperationsInvoiceReminders reminders={invoiceReminders.filter(r => r.type !== 'pre_arrival' && r.type !== 'return_prep')} whatsappTemplates={whatsappTemplates} />
+                </div>
               </div>
             </div>
 
