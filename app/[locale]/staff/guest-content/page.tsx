@@ -170,21 +170,25 @@ export default function GuestContentPage() {
   const [success, setSuccess] = useState(false);
   const [activeLang, setActiveLang] = useState<Lang>(() => locale === "de" ? "DE" : locale === "sk" ? "SK" : locale === "pl" ? "PL" : locale === "cs" ? "CS" : "EN");
   const [copyWarning, setCopyWarning] = useState(false);
+  const [configuredOriginalLang, setConfiguredOriginalLang] = useState<Lang | null>(null);
 
-  // Derived: first language with saved content in guest_content_i18n (SK→EN→DE)
+  // Derived: company's configured original language (or first lang with saved content)
   const originalLang = useMemo<Lang | null>(() => {
-    for (const lang of ["SK", "EN", "DE"] as Lang[]) {
+    const hasContent = (lang: Lang) => {
       const fields = rawI18nJson[lang];
-      if (!fields) continue;
-      const hasContent = Object.entries(fields).some(([k, v]) =>
+      if (!fields) return false;
+      return Object.entries(fields).some(([k, v]) =>
         k === "faq_items"
           ? Array.isArray(v) && v.length > 0
           : typeof v === "string" && v.trim().length > 0
       );
-      if (hasContent) return lang;
+    };
+    if (configuredOriginalLang && hasContent(configuredOriginalLang)) return configuredOriginalLang;
+    for (const lang of LANGS) {
+      if (hasContent(lang)) return lang;
     }
     return null;
-  }, [rawI18nJson]);
+  }, [rawI18nJson, configuredOriginalLang]);
 
   // Derived: current lang's i18n fields and FAQ helper
   const currentI18n = i18nByLang[activeLang];
@@ -225,7 +229,7 @@ export default function GuestContentPage() {
       const [{ data: settings }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n")
+          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n, default_guest_language")
           .eq("id", companyId)
           .maybeSingle(),
         supabase
@@ -252,6 +256,8 @@ export default function GuestContentPage() {
       // The JSONB column holds { EN: {...}, DE: {...}, SK: {...} } or null
       const rawJson: I18nJson = ((settings as any)?.guest_content_i18n ?? {}) as I18nJson;
       setRawI18nJson(rawJson);
+      const rawLang = ((settings as any)?.default_guest_language ?? "").toUpperCase();
+      setConfiguredOriginalLang((LANGS as readonly string[]).includes(rawLang) ? rawLang as Lang : null);
 
       // Legacy flat columns are SK-only fallback — EN and DE start empty unless
       // guest_content_i18n already has saved content for that language.

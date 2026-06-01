@@ -25,6 +25,7 @@ interface Props {
   preArrivalReminders?: OpsInvoiceReminder[]
   returnPrepReminders?: OpsInvoiceReminder[]
   whatsappTemplates?: OpsWhatsAppTemplates
+  today?: string
 }
 
 function formatDate(iso: string, locale: string) {
@@ -39,8 +40,7 @@ function formatTime(iso: string, locale: string, timeZone?: string) {
   return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
 }
 
-function countdownDays(iso: string): number {
-  const now = new Date()
+function countdownDays(iso: string, now: Date): number {
   const target = new Date(iso)
   return Math.floor(
     (new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime() -
@@ -226,10 +226,11 @@ function NextCard({
   )
 }
 
-export default function OperationsNextUp({ pickups, returns, companyTimezone, preArrivalReminders = [], returnPrepReminders = [], whatsappTemplates }: Props) {
+export default function OperationsNextUp({ pickups, returns, companyTimezone, preArrivalReminders = [], returnPrepReminders = [], whatsappTemplates, today }: Props) {
   const { locale } = useParams<{ locale: string }>()
   const t = useTranslations('staff.operations.nextUp')
   const tOps = useTranslations('staff.operations')
+  const effectiveToday = today ? new Date(today) : new Date()
 
   const vehicleStatusLabels: Record<string, string> = {
     ready: tOps('vehicleStatus.ready'),
@@ -250,7 +251,7 @@ export default function OperationsNextUp({ pickups, returns, companyTimezone, pr
   }
 
   function countdown(iso: string): string {
-    const diff = countdownDays(iso)
+    const diff = countdownDays(iso, effectiveToday)
     if (diff === 0) return tOps('countdown.today')
     if (diff === 1) return tOps('countdown.tomorrow')
     return tOps('countdown.days', { count: diff })
@@ -487,7 +488,7 @@ export default function OperationsNextUp({ pickups, returns, companyTimezone, pr
                       {ret.vehicleName}
                     </span>
                     {(() => {
-                      const diff = countdownDays(ret.returnAt)
+                      const diff = countdownDays(ret.returnAt, effectiveToday)
                       const label = diff === 0 ? t('dueToday') : diff === 1 ? t('dueTomorrow') : t('dueInDays', { count: diff })
                       return <span style={getStatusChipStyle('on_rent')}>{label}</span>
                     })()}
@@ -569,7 +570,7 @@ export default function OperationsNextUp({ pickups, returns, companyTimezone, pr
                 {pickups.map((p, idx) => {
                   const preArrivalReminder = preArrivalReminders.find(r => r.bookingId === p.id && !handledReminderIds.has(r.id)) ?? null
                   const preArrivalMsg = preArrivalReminder ? buildReminderMessage(preArrivalReminder) : null
-                  const diff = countdownDays(p.pickupAt)
+                  const diff = countdownDays(p.pickupAt, effectiveToday)
                   const cdText = diff === 0 ? tOps('countdown.today') : diff === 1 ? tOps('countdown.tomorrow') : tOps('countdown.days', { count: diff })
                   return (
                     <div
@@ -661,7 +662,7 @@ export default function OperationsNextUp({ pickups, returns, companyTimezone, pr
                 {returns.map((rtn, idx) => {
                   const returnPrepReminder = returnPrepReminders.find(r => r.bookingId === rtn.id && !handledReminderIds.has(r.id)) ?? null
                   const returnPrepMsg = returnPrepReminder ? buildReminderMessage(returnPrepReminder) : null
-                  const diff = countdownDays(rtn.returnAt)
+                  const diff = countdownDays(rtn.returnAt, effectiveToday)
                   const cdText = diff === 0 ? tOps('countdown.today') : diff === 1 ? tOps('countdown.tomorrow') : tOps('countdown.days', { count: diff })
                   return (
                     <div

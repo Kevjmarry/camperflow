@@ -393,6 +393,7 @@ export default async function OperationsPage({
                     preArrivalReminders={invoiceReminders.filter(r => r.type === 'pre_arrival')}
                     returnPrepReminders={invoiceReminders.filter(r => r.type === 'return_prep')}
                     whatsappTemplates={whatsappTemplates}
+                    today={getDemoToday(timelineData.companyId).toISOString()}
                   />
                 </div>
 

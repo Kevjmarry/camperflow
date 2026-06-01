@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent, ChangeEvent } from "react";
+import { useState, useEffect, useMemo, FormEvent, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -57,6 +57,7 @@ export default function CompanySettingsPage() {
   const [extrasCatalog, setExtrasCatalog] = useState<ExtraCatalogItem[]>([]);
   const [activeExtrasLang, setActiveExtrasLang] = useState<Locale>(locale as Locale);
   const [extrasLangCopyWarning, setExtrasLangCopyWarning] = useState(false);
+  const [extrasConfiguredOriginalLang, setExtrasConfiguredOriginalLang] = useState<Locale | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   // isRealAdmin: role === 'admin' only — used for the System Recovery section.
   // isAdmin (above) also includes can_manage and gates the regular form fields.
@@ -84,6 +85,17 @@ export default function CompanySettingsPage() {
   const [backlogResult, setBacklogResult] = useState<{
     completed: number; cancelled: number; skipped: number; instances: number;
   } | null>(null);
+
+  // Prefers company's configured guest language if that lang has extras content; falls back across all locales.
+  const extrasOriginalLang = useMemo<Locale | null>(() => {
+    const hasContent = (lang: Locale) =>
+      extrasCatalog.some((x) => (x.name_i18n?.[lang] ?? "").trim().length > 0);
+    if (extrasConfiguredOriginalLang && hasContent(extrasConfiguredOriginalLang)) return extrasConfiguredOriginalLang;
+    for (const lang of locales) {
+      if (hasContent(lang)) return lang;
+    }
+    return null;
+  }, [extrasCatalog, extrasConfiguredOriginalLang]);
 
   // ── Auth / profile load ────────────────────────────────────────────────────
 
@@ -136,7 +148,7 @@ export default function CompanySettingsPage() {
       const [{ data }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, map_link, pre_arrival_days_before_pickup, return_prep_days_before_return")
+          .select("pickup_time, dropoff_time, final_payment_due_days, final_payment_urgent_days, custom_payment_reminder_days, final_payment_reminders_enabled, pre_arrival_reminders_enabled, return_prep_reminders_enabled, extras_catalog, company_timezone, pre_arrival_whatsapp_template, return_prep_whatsapp_template, map_link, pre_arrival_days_before_pickup, return_prep_days_before_return, default_guest_language")
           .eq("id", company.id)
           .maybeSingle(),
         supabase
@@ -182,6 +194,8 @@ export default function CompanySettingsPage() {
         setExtrasCatalog((data as any).extras_catalog ?? []);
         setPreArrivalTemplate((data as any).pre_arrival_whatsapp_template ?? '');
         setReturnPrepTemplate((data as any).return_prep_whatsapp_template ?? '');
+        const rawLang = ((data as any).default_guest_language ?? "").toLowerCase();
+        setExtrasConfiguredOriginalLang((locales as readonly string[]).includes(rawLang) ? rawLang as Locale : null);
       }
     };
     load();
@@ -822,13 +836,14 @@ export default function CompanySettingsPage() {
                     </button>
                   ))}
                 </div>
-                {isAdmin && activeExtrasLang !== "sk" && extrasCatalog.length > 0 && (
+                {isAdmin && extrasOriginalLang !== null && extrasOriginalLang !== activeExtrasLang && (
                   <button
                     type="button"
                     onClick={() => {
+                      const src = extrasOriginalLang;
                       setExtrasCatalog(extrasCatalog.map((x) => ({
                         ...x,
-                        name_i18n: { ...x.name_i18n, [activeExtrasLang]: x.name_i18n?.sk ?? "" },
+                        name_i18n: { ...x.name_i18n, [activeExtrasLang]: x.name_i18n?.[src] ?? "" },
                       })));
                       setExtrasLangCopyWarning(true);
                     }}
@@ -843,7 +858,7 @@ export default function CompanySettingsPage() {
                       lineHeight: "1.4",
                     }}
                   >
-                    {t("extrasCatalog.copyFromSk")}
+                    {t("extrasCatalog.copyFromSk").replace("SK", extrasOriginalLang.toUpperCase())}
                   </button>
                 )}
               </div>
