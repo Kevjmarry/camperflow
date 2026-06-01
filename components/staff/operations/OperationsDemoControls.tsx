@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 
+type DryRunResult = {
+  dryRun: true
+  snapshotCapturedAt: string
+  needsConfirmation: boolean
+  counts: Record<string, { current: number; snapshot: number }>
+}
+
 const SHORTCUTS = [
   { label: 'Pickup story',     id: 'ops-section-on-rent' },
   { label: 'Return story',     id: 'ops-section-next-up' },
@@ -12,7 +19,10 @@ const SHORTCUTS = [
 export default function OperationsDemoControls() {
   const [screenshotMode, setScreenshotMode] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [restored, setRestored] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
+  const [dryRunResult, setDryRunResult] = useState<DryRunResult | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const shortcutsRef = useRef<HTMLDivElement>(null)
 
@@ -39,12 +49,17 @@ export default function OperationsDemoControls() {
     if (resetting) return
     setResetting(true)
     setResetError(null)
+    setDryRunResult(null)
+    setRestored(false)
     try {
       const res = await fetch('/api/staff/demo/reset', { method: 'POST' })
-      if (res.ok) {
+      const body = await res.json()
+      if (res.ok && body.dryRun) {
+        setDryRunResult(body as DryRunResult)
+        setResetting(false)
+      } else if (res.ok) {
         window.location.reload()
       } else {
-        const body = await res.json()
         setResetError(body.error ?? 'Reset failed')
         setResetting(false)
       }
@@ -52,6 +67,32 @@ export default function OperationsDemoControls() {
       console.error('[demo reset] error', err)
       setResetError('Reset failed')
       setResetting(false)
+    }
+  }
+
+  async function handleConfirm() {
+    if (confirming) return
+    setConfirming(true)
+    setResetError(null)
+    try {
+      const res = await fetch('/api/staff/demo/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmRestore: true }),
+      })
+      const body = await res.json()
+      if (res.ok && body.restored) {
+        setDryRunResult(null)
+        setRestored(true)
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        setResetError(body.error ?? 'Restore failed')
+        setConfirming(false)
+      }
+    } catch (err) {
+      console.error('[demo restore] error', err)
+      setResetError('Restore failed')
+      setConfirming(false)
     }
   }
 
@@ -145,25 +186,132 @@ export default function OperationsDemoControls() {
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-            <button
-              onClick={handleReset}
-              disabled={resetting}
-              title="Reset demo data"
-              style={{
-                ...sharedBtnStyle,
-                cursor: resetting ? 'not-allowed' : 'pointer',
-                opacity: resetting ? 0.4 : 0.75,
-              }}
-            >
-              {resetting ? 'Resetting…' : 'Reset demo data'}
-            </button>
-            {resetError && (
-              <span style={{ fontSize: '10px', color: '#b91c1c', whiteSpace: 'nowrap' }}>
-                {resetError}
-              </span>
+          {/* Reset button + dry-run / confirm panel */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+              <button
+                onClick={handleReset}
+                disabled={resetting || confirming}
+                title="Reset demo data"
+                style={{
+                  ...sharedBtnStyle,
+                  cursor: (resetting || confirming) ? 'not-allowed' : 'pointer',
+                  opacity: (resetting || confirming) ? 0.4 : 0.75,
+                }}
+              >
+                {resetting ? 'Checking…' : restored ? 'Restored!' : 'Reset demo data'}
+              </button>
+              {resetError && (
+                <span style={{ fontSize: '10px', color: '#b91c1c', whiteSpace: 'nowrap' }}>
+                  {resetError}
+                </span>
+              )}
+            </div>
+
+            {dryRunResult && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                right: 0,
+                background: 'rgb(var(--surface))',
+                border: '1px solid rgb(var(--border))',
+                borderRadius: 'var(--radius)',
+                boxShadow: 'var(--shadow)',
+                zIndex: 50,
+                padding: '10px 14px',
+                fontSize: '11px',
+                color: 'rgb(var(--text))',
+                minWidth: '320px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: 600, color: '#92400e' }}>Dry-run — no changes made</span>
+                  <button
+                    onClick={() => setDryRunResult(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'rgb(var(--muted))', padding: '0 0 0 8px', lineHeight: 1 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div style={{ color: 'rgb(var(--muted))', marginBottom: '8px', fontSize: '10px' }}>
+                  Snapshot: {new Date(dryRunResult.snapshotCapturedAt).toLocaleString()}
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgb(var(--border))' }}>
+                      <th style={{ textAlign: 'left', padding: '2px 6px 4px 0', fontWeight: 500, color: 'rgb(var(--muted))' }}>Table</th>
+                      <th style={{ textAlign: 'right', padding: '2px 6px 4px', fontWeight: 500, color: 'rgb(var(--muted))' }}>Current</th>
+                      <th style={{ textAlign: 'right', padding: '2px 0 4px 6px', fontWeight: 500, color: 'rgb(var(--muted))' }}>Snapshot</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(dryRunResult.counts).map(([table, { current, snapshot }]) => (
+                      <tr key={table} style={{ borderBottom: '1px solid rgb(var(--border) / 0.4)' }}>
+                        <td style={{ padding: '3px 6px 3px 0', fontFamily: 'monospace', fontSize: '10px' }}>{table}</td>
+                        <td style={{ textAlign: 'right', padding: '3px 6px' }}>{current}</td>
+                        <td style={{
+                          textAlign: 'right',
+                          padding: '3px 0 3px 6px',
+                          color: current !== snapshot ? '#b45309' : 'inherit',
+                          fontWeight: current !== snapshot ? 600 : 400,
+                        }}>{snapshot}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                  {dryRunResult.needsConfirmation ? (
+                    <>
+                      <span style={{ fontSize: '10px', color: 'rgb(var(--muted))' }}>
+                        Counts differ — restore to snapshot?
+                      </span>
+                      <button
+                        onClick={handleConfirm}
+                        disabled={confirming}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#fff',
+                          background: confirming ? '#9a3412' : '#c2410c',
+                          border: 'none',
+                          borderRadius: 'var(--radius)',
+                          padding: '5px 12px',
+                          cursor: confirming ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {confirming ? 'Restoring…' : 'Confirm Restore'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '10px', color: '#059669' }}>
+                        All counts match snapshot
+                      </span>
+                      <button
+                        onClick={handleConfirm}
+                        disabled={confirming}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: '#374151',
+                          background: 'transparent',
+                          border: '1px solid rgb(var(--border))',
+                          borderRadius: 'var(--radius)',
+                          padding: '5px 12px',
+                          cursor: confirming ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
+                          opacity: confirming ? 0.4 : 1,
+                        }}
+                      >
+                        {confirming ? 'Restoring…' : 'Restore anyway'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
+
           <button
             onClick={() => setScreenshotMode(true)}
             title="Hide demo labels for screenshots"
