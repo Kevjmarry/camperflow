@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTransition, useState, useRef, useEffect } from 'react';
 import { activeLocales, localeNames, type Locale } from '@/i18n';
 
-export default function LocaleSwitcher() {
+export default function LocaleSwitcher({ availableLocales }: { availableLocales?: readonly Locale[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -13,6 +13,7 @@ export default function LocaleSwitcher() {
 
   const segments = pathname.split('/');
   const currentLocale = segments[1] as Locale;
+  const locales = availableLocales && availableLocales.length > 0 ? availableLocales : activeLocales;
 
   function switchLocale(newLocale: Locale) {
     if (currentLocale === newLocale) return;
@@ -86,7 +87,7 @@ export default function LocaleSwitcher() {
             padding: '4px',
           }}
         >
-          {activeLocales.map((loc) => (
+          {locales.map((loc) => (
             <button
               key={loc}
               onClick={() => switchLocale(loc)}

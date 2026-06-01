@@ -1,10 +1,33 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useTheme } from '@/contexts/ThemeContext'
 import LocaleSwitcher from '@/components/LocaleSwitcher'
+import { createClient } from '@/lib/supabase/client'
+import { activeLocales, type Locale } from '@/i18n'
 
 export default function GuestHeader() {
   const { company } = useTheme()
+  const [guestLocales, setGuestLocales] = useState<readonly Locale[]>(activeLocales)
+
+  useEffect(() => {
+    if (!company?.id) return
+    const supabase = createClient()
+    supabase
+      .from('company_settings')
+      .select('guest_languages_order')
+      .eq('id', company.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const order = (data as any)?.guest_languages_order as string[] | null
+        if (order && order.length > 0) {
+          const valid = order.filter((l): l is Locale =>
+            (activeLocales as readonly string[]).includes(l)
+          )
+          if (valid.length > 0) setGuestLocales(valid)
+        }
+      })
+  }, [company?.id])
 
   return (
     <nav
@@ -74,7 +97,7 @@ export default function GuestHeader() {
             borderLeft: '1px solid rgb(var(--border))',
           }}
         >
-          <LocaleSwitcher />
+          <LocaleSwitcher availableLocales={guestLocales} />
         </div>
       </div>
     </nav>

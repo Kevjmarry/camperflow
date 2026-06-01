@@ -1541,7 +1541,8 @@
       "faq": "FAQ",
       "returnChecklist": "Lista kontrolna zwrotu",
       "bookingDetails": "Szczegóły rezerwacji",
-      "helpHowTo": "Pomoc i poradniki"
+      "helpHowTo": "Pomoc i poradniki",
+      "guestLanguages": "Języki gości"
     },
     "labels": {
       "contactPhone": "Telefon kontaktowy",
@@ -1635,6 +1636,12 @@
       "confirm": "Skopiować całą zawartość z {from} do {to}? Spowoduje to nadpisanie niezapisanych zmian na bieżącej karcie.",
       "warning": "Przetłumacz przed zapisaniem, aby goście widzieli właściwy język.",
       "langHint": "Słowacki aktualnie zawiera Twoją istniejącą zawartość. Angielski i Niemiecki można wypełnić ręcznie."
+    },
+    "languageSettings": {
+      "description": "Wybierz, na jakie języki mogą przełączać się goście w portalu i w jakiej kolejności się wyświetlają.",
+      "alwaysEnabled": "domyślny",
+      "moveUp": "Przesuń w górę",
+      "moveDown": "Przesuń w dół"
     }
   },
   "staffCompany": {

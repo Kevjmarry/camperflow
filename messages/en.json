@@ -1541,7 +1541,8 @@
       "faq": "FAQ",
       "returnChecklist": "Return Checklist",
       "bookingDetails": "Booking Details",
-      "helpHowTo": "Help & How-to"
+      "helpHowTo": "Help & How-to",
+      "guestLanguages": "Guest Languages"
     },
     "labels": {
       "contactPhone": "Contact phone",
@@ -1635,6 +1636,12 @@
       "confirm": "Copy all content from {from} into {to}? This will overwrite any unsaved changes on the current tab.",
       "warning": "Translate before saving or guests will see the wrong language.",
       "langHint": "Slovak currently contains your existing content. English and German can be filled manually."
+    },
+    "languageSettings": {
+      "description": "Choose which languages guests can switch to in the portal, and the order they appear.",
+      "alwaysEnabled": "default",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
     }
   },
   "staffCompany": {

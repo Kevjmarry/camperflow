@@ -7,6 +7,7 @@ import Link from "next/link";
 import PageContainer from "@/components/PageContainer";
 import { createClient } from "@/lib/supabase/client";
 import BackLink from "@/components/staff/BackLink";
+import { localeNames, type Locale } from "@/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,10 +96,10 @@ const EMPTY_SHARED: SharedFields = {
 
 // ─── LangTabs ─────────────────────────────────────────────────────────────────
 
-function LangTabs({ active, onChange }: { active: Lang; onChange: (l: Lang) => void }) {
+function LangTabs({ active, onChange, langs }: { active: Lang; onChange: (l: Lang) => void; langs: readonly Lang[] }) {
   return (
     <div style={{ borderBottom: "1px solid rgb(var(--border))" }}>
-      {LANGS.map((lang) => (
+      {langs.map((lang) => (
         <button
           key={lang}
           type="button"
@@ -172,6 +173,34 @@ export default function GuestContentPage() {
   const [copyWarning, setCopyWarning] = useState(false);
   const [configuredOriginalLang, setConfiguredOriginalLang] = useState<Lang | null>(null);
 
+  // Guest language settings — lowercase locale codes matching DB
+  const ALL_LOCALES = ['sk', 'en', 'de', 'pl', 'cs'] as const;
+  const [langOrder, setLangOrder] = useState<string[]>([...ALL_LOCALES]);
+  const [langEnabled, setLangEnabled] = useState<Set<string>>(new Set(ALL_LOCALES));
+
+  // Derived: enabled langs in configured order, always including default_guest_language
+  const visibleLangs = useMemo<Lang[]>(() => {
+    const ordered = langOrder
+      .filter(l => langEnabled.has(l))
+      .map(l => l.toUpperCase() as Lang)
+      .filter(l => (LANGS as readonly string[]).includes(l));
+    if (configuredOriginalLang && !ordered.includes(configuredOriginalLang)) {
+      ordered.push(configuredOriginalLang);
+    }
+    return ordered.length > 0 ? ordered : [...LANGS];
+  }, [langOrder, langEnabled, configuredOriginalLang]);
+
+  // If the active tab is no longer visible, fall back to default_guest_language or first visible
+  useEffect(() => {
+    if (!visibleLangs.includes(activeLang)) {
+      const fallback =
+        configuredOriginalLang && visibleLangs.includes(configuredOriginalLang)
+          ? configuredOriginalLang
+          : visibleLangs[0];
+      if (fallback) setActiveLang(fallback);
+    }
+  }, [visibleLangs]);
+
   // Derived: company's configured original language (or first lang with saved content)
   const originalLang = useMemo<Lang | null>(() => {
     const hasContent = (lang: Lang) => {
@@ -229,7 +258,7 @@ export default function GuestContentPage() {
       const [{ data: settings }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n, default_guest_language")
+          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n, default_guest_language, guest_languages_order")
           .eq("id", companyId)
           .maybeSingle(),
         supabase
@@ -258,6 +287,16 @@ export default function GuestContentPage() {
       setRawI18nJson(rawJson);
       const rawLang = ((settings as any)?.default_guest_language ?? "").toUpperCase();
       setConfiguredOriginalLang((LANGS as readonly string[]).includes(rawLang) ? rawLang as Lang : null);
+
+      // Guest language settings
+      const storedOrder: string[] = (settings as any)?.guest_languages_order ?? [];
+      if (storedOrder.length > 0) {
+        const enabledSet = new Set(storedOrder);
+        const allLower = ['sk', 'en', 'de', 'pl', 'cs'];
+        const disabled = allLower.filter(l => !enabledSet.has(l));
+        setLangOrder([...storedOrder, ...disabled]);
+        setLangEnabled(enabledSet);
+      }
 
       // Legacy flat columns are SK-only fallback — EN and DE start empty unless
       // guest_content_i18n already has saved content for that language.
@@ -326,6 +365,32 @@ export default function GuestContentPage() {
     setCopyWarning(true);
   };
 
+  const handleLangToggle = (locale: string) => {
+    const defaultLang = configuredOriginalLang?.toLowerCase();
+    if (locale === defaultLang) return;
+    setLangEnabled(prev => {
+      const next = new Set(prev);
+      if (next.has(locale)) { next.delete(locale); } else { next.add(locale); }
+      return next;
+    });
+  };
+
+  const handleLangMoveUp = (locale: string) => {
+    const idx = langOrder.indexOf(locale);
+    if (idx <= 0) return;
+    const next = [...langOrder];
+    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+    setLangOrder(next);
+  };
+
+  const handleLangMoveDown = (locale: string) => {
+    const idx = langOrder.indexOf(locale);
+    if (idx < 0 || idx >= langOrder.length - 1) return;
+    const next = [...langOrder];
+    [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+    setLangOrder(next);
+  };
+
   const handleSharedChange = (e: ChangeEvent<HTMLInputElement>) =>
     setSharedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -358,14 +423,19 @@ export default function GuestContentPage() {
         },
       };
 
+      const defaultLang = configuredOriginalLang?.toLowerCase();
+      const enabledOrdered = langOrder.filter(l => langEnabled.has(l));
+      if (defaultLang && !enabledOrdered.includes(defaultLang)) enabledOrdered.push(defaultLang);
+
       const [{ data: rows, error: settingsErr }, { error: companyErr }] = await Promise.all([
         supabase
           .from("company_settings")
           .update({
-            contact_phone:        sharedData.contact_phone.trim()    || null,
-            contact_whatsapp:     sharedData.contact_whatsapp.trim() || null,
-            return_nearby_places: returnNearbyPlaces.length > 0 ? returnNearbyPlaces : null,
-            guest_content_i18n:   updatedJson,
+            contact_phone:           sharedData.contact_phone.trim()    || null,
+            contact_whatsapp:        sharedData.contact_whatsapp.trim() || null,
+            return_nearby_places:    returnNearbyPlaces.length > 0 ? returnNearbyPlaces : null,
+            guest_content_i18n:      updatedJson,
+            guest_languages_order:   enabledOrdered.length > 0 ? enabledOrdered : null,
           })
           .eq("id", companyId)
           .select("id"),
@@ -384,6 +454,11 @@ export default function GuestContentPage() {
       if (!rows || rows.length === 0) throw new Error(t("errors.saveSettingsFailed"));
       // Keep rawI18nJson in sync so subsequent saves merge correctly
       setRawI18nJson(updatedJson);
+      // Keep langOrder in sync (strip disabled locales from front, re-append)
+      const allLower = ['sk', 'en', 'de', 'pl', 'cs'];
+      const disabled = allLower.filter(l => !enabledOrdered.includes(l));
+      setLangOrder([...enabledOrdered, ...disabled]);
+      setLangEnabled(new Set(enabledOrdered));
       setSuccess(true);
       setCopyWarning(false);
       setTimeout(() => setSuccess(false), 3000);
@@ -425,44 +500,116 @@ export default function GuestContentPage() {
             <p style={{ marginTop: "var(--space-2)", color: "rgb(var(--muted))" }}>
               {isAdmin ? t("description.admin") : t("description.viewer")}
             </p>
-            <div style={{ marginTop: "var(--space-4)" }}>
-              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
-                <LangTabs active={activeLang} onChange={handleLangChange} />
-                {isAdmin && originalLang && originalLang !== activeLang && (
-                  <div style={{ paddingBottom: "1px" }}>
-                    <button
-                      type="button"
-                      onClick={handleCopyFrom}
-                      style={{
-                        fontSize: "12px",
-                        padding: "3px 10px",
-                        borderRadius: "var(--radius)",
-                        border: "1px solid rgb(var(--border))",
-                        background: "none",
-                        cursor: "pointer",
-                        color: "rgb(var(--muted))",
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      {t("copyFrom.button", { lang: originalLang })}
-                    </button>
-                  </div>
-                )}
-              </div>
-              {copyWarning && (
-                <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
-                  {t("copyFrom.warning")}
-                </p>
-              )}
-              <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
-                {t("copyFrom.langHint")}
-              </p>
-            </div>
           </div>
 
           {/* Main form */}
           <div>
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-8)" }}>
+
+                {/* Guest Language Settings */}
+                <div>
+                  <SectionHeading
+                    title={t("sections.guestLanguages")}
+                    subtitle={t("languageSettings.description")}
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxWidth: "360px" }}>
+                    {langOrder.map((locale, idx) => {
+                      const isDefault = locale === configuredOriginalLang?.toLowerCase();
+                      const enabled = langEnabled.has(locale);
+                      return (
+                        <div
+                          key={locale}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "var(--space-3)",
+                            padding: "var(--space-2) var(--space-3)",
+                            borderRadius: "var(--radius)",
+                            border: "1px solid rgb(var(--border))",
+                            background: enabled ? "rgb(var(--brand) / 0.04)" : "transparent",
+                            opacity: !enabled ? 0.65 : 1,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={enabled}
+                            disabled={!isAdmin || isDefault}
+                            onChange={() => handleLangToggle(locale)}
+                            style={{ cursor: isDefault || !isAdmin ? "default" : "pointer", flexShrink: 0 }}
+                          />
+                          <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgb(var(--muted))", minWidth: "22px" }}>
+                            {locale}
+                          </span>
+                          <span style={{ fontSize: "14px", flex: 1 }}>
+                            {localeNames[locale as Locale]}
+                          </span>
+                          {isDefault && (
+                            <span style={{ fontSize: "11px", color: "rgb(var(--muted))", fontStyle: "italic", flexShrink: 0 }}>
+                              {t("languageSettings.alwaysEnabled")}
+                            </span>
+                          )}
+                          {isAdmin && enabled && (
+                            <div style={{ display: "flex", gap: "2px", flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                onClick={() => handleLangMoveUp(locale)}
+                                disabled={idx === 0}
+                                aria-label={t("languageSettings.moveUp")}
+                                style={{ padding: "2px 5px", fontSize: "12px", border: "1px solid rgb(var(--border))", borderRadius: "var(--radius-sm)", background: "none", cursor: idx === 0 ? "default" : "pointer", opacity: idx === 0 ? 0.3 : 1, lineHeight: 1 }}
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleLangMoveDown(locale)}
+                                disabled={idx === langOrder.length - 1}
+                                aria-label={t("languageSettings.moveDown")}
+                                style={{ padding: "2px 5px", fontSize: "12px", border: "1px solid rgb(var(--border))", borderRadius: "var(--radius-sm)", background: "none", cursor: idx === langOrder.length - 1 ? "default" : "pointer", opacity: idx === langOrder.length - 1 ? 0.3 : 1, lineHeight: 1 }}
+                              >
+                                ↓
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Language tabs + copy-from */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
+                    <LangTabs active={activeLang} onChange={handleLangChange} langs={visibleLangs} />
+                    {isAdmin && originalLang && originalLang !== activeLang && (
+                      <div style={{ paddingBottom: "1px" }}>
+                        <button
+                          type="button"
+                          onClick={handleCopyFrom}
+                          style={{
+                            fontSize: "12px",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius)",
+                            border: "1px solid rgb(var(--border))",
+                            background: "none",
+                            cursor: "pointer",
+                            color: "rgb(var(--muted))",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {t("copyFrom.button", { lang: originalLang })}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {copyWarning && (
+                    <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
+                      {t("copyFrom.warning")}
+                    </p>
+                  )}
+                  <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
+                    {t("copyFrom.langHint")}
+                  </p>
+                </div>
 
                 {/* Contact Numbers — shared across all languages */}
                 <div>

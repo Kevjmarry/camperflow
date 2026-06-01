@@ -1541,7 +1541,8 @@
       "faq": "Často kladené otázky",
       "returnChecklist": "Kontrolný zoznam vrátenia",
       "bookingDetails": "Detaily rezervácie",
-      "helpHowTo": "Pomoc & Návody"
+      "helpHowTo": "Pomoc & Návody",
+      "guestLanguages": "Jazyky hostí"
     },
     "labels": {
       "contactPhone": "Kontaktný telefón",
@@ -1635,6 +1636,12 @@
       "confirm": "Kopírovať všetok obsah z {from} do {to}? Toto prepíše všetky neuлоžené zmeny na aktuálnej karte.",
       "warning": "Pred uložením preložte, inak hostía uvidí nesprávny jazyk.",
       "langHint": "Slovenčina momentuálne obsahuje váš existujúci obsah. Angličtinu a nemčinu môžete vyplnť manuálne."
+    },
+    "languageSettings": {
+      "description": "Vyberte, na ktoré jazyky môžu hostia prepínať v portáli, a poradie, v akom sa zobrazujú.",
+      "alwaysEnabled": "predvolený",
+      "moveUp": "Presunúť hore",
+      "moveDown": "Presunúť dole"
     }
   },
   "staffCompany": {

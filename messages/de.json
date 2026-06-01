@@ -1541,7 +1541,8 @@
       "faq": "FAQ",
       "returnChecklist": "Rückgabe-Checkliste",
       "bookingDetails": "Buchungsdetails",
-      "helpHowTo": "Hilfe & Anleitungen"
+      "helpHowTo": "Hilfe & Anleitungen",
+      "guestLanguages": "Gastsprachen"
     },
     "labels": {
       "contactPhone": "Kontakttelefon",
@@ -1635,6 +1636,12 @@
       "confirm": "Gesamten Inhalt von {from} nach {to} kopieren? Dies überschreibt alle nicht gespeicherten Änderungen im aktuellen Tab.",
       "warning": "Vor dem Speichern übersetzen, sonst sehen Gäste die falsche Sprache.",
       "langHint": "Slowakisch enthält derzeit Ihre vorhandenen Inhalte. Englisch und Deutsch können manuell ausgefüllt werden."
+    },
+    "languageSettings": {
+      "description": "Wähle aus, zwischen welchen Sprachen Gäste im Portal wechseln können und in welcher Reihenfolge sie angezeigt werden.",
+      "alwaysEnabled": "Standard",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten"
     }
   },
   "staffCompany": {
