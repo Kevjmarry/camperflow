@@ -1646,9 +1646,12 @@
     "aiTranslate": {
       "button": "Przetłumacz AI z {lang}",
       "translating": "Tłumaczenie…",
+      "loadingTitle": "Tłumaczę treść dla gości…",
+      "loadingSubtitle": "Może to potrwać do 3 minut.",
       "previewTitle": "Podgląd tłumaczenia AI — {lang}",
       "previewSubtitle": "Sprawdź tłumaczenie przed zastosowaniem. Po zastosowaniu możesz edytować każde pole.",
       "apply": "Zastosuj tłumaczenie",
+      "applyAndSave": "Zastosuj tłumaczenie i zapisz zmiany",
       "cancel": "Anuluj",
       "errorFailed": "Tłumaczenie nie powiodło się. Spróbuj ponownie.",
       "errorStructure": "Tłumaczenie ma nieoczekiwaną strukturę. Spróbuj ponownie.",

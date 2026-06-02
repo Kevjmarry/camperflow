@@ -1646,9 +1646,12 @@
     "aiTranslate": {
       "button": "AI přeložit z {lang}",
       "translating": "Překládám…",
+      "loadingTitle": "Překládám obsah pro hosty…",
+      "loadingSubtitle": "Může to trvat až 3 minuty.",
       "previewTitle": "Náhled AI překladu — {lang}",
       "previewSubtitle": "Zkontrolujte překlad před použitím. Po použití můžete každé pole upravit.",
       "apply": "Použít překlad",
+      "applyAndSave": "Použít překlad a uložit změny",
       "cancel": "Zrušit",
       "errorFailed": "Překlad se nezdařil. Zkuste to znovu.",
       "errorStructure": "Překlad má neočekávanou strukturu. Zkuste to znovu.",

@@ -399,59 +399,10 @@ export default function GuestContentPage() {
     }
   };
 
-  const handleApplyTranslation = () => {
-    if (!translationPreview) return;
-    setI18nByLang(prev => ({ ...prev, [activeLang]: translationPreview }));
-    setTranslationPreview(null);
-    setCopyWarning(true);
-  };
-
-  const handleCancelTranslation = () => {
-    setTranslationPreview(null);
-    setTranslationError("");
-  };
-
-  const handleLangToggle = (locale: string) => {
-    const defaultLang = configuredOriginalLang?.toLowerCase();
-    if (locale === defaultLang) return;
-    setLangEnabled(prev => {
-      const next = new Set(prev);
-      if (next.has(locale)) { next.delete(locale); } else { next.add(locale); }
-      return next;
-    });
-  };
-
-  const handleLangMoveUp = (locale: string) => {
-    const idx = langOrder.indexOf(locale);
-    if (idx <= 0) return;
-    const next = [...langOrder];
-    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-    setLangOrder(next);
-  };
-
-  const handleLangMoveDown = (locale: string) => {
-    const idx = langOrder.indexOf(locale);
-    if (idx < 0 || idx >= langOrder.length - 1) return;
-    const next = [...langOrder];
-    [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
-    setLangOrder(next);
-  };
-
-  const handleSharedChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setSharedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleI18nChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setI18nByLang(prev => ({
-      ...prev,
-      [activeLang]: { ...prev[activeLang], [e.target.name]: e.target.value },
-    }));
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const doSave = async (i18nOverride?: I18nFields) => {
     setError(""); setSuccess(false); setSaving(true);
     try {
-      const i18n = i18nByLang[activeLang];
-      // Merge only the active language into the existing JSONB; other langs are preserved
+      const i18n = i18nOverride ?? i18nByLang[activeLang];
       const updatedJson: I18nJson = {
         ...rawI18nJson,
         [activeLang]: {
@@ -498,9 +449,7 @@ export default function GuestContentPage() {
       if (settingsErr) throw settingsErr;
       if (companyErr) throw companyErr;
       if (!rows || rows.length === 0) throw new Error(t("errors.saveSettingsFailed"));
-      // Keep rawI18nJson in sync so subsequent saves merge correctly
       setRawI18nJson(updatedJson);
-      // Keep langOrder in sync (strip disabled locales from front, re-append)
       const allLower = ['sk', 'en', 'de', 'pl', 'cs'];
       const disabled = allLower.filter(l => !enabledOrdered.includes(l));
       setLangOrder([...enabledOrdered, ...disabled]);
@@ -513,6 +462,60 @@ export default function GuestContentPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelTranslation = () => {
+    setTranslationPreview(null);
+    setTranslationError("");
+  };
+
+  const handleApplyAndSave = async () => {
+    if (!translationPreview) return;
+    const applied = translationPreview;
+    setI18nByLang(prev => ({ ...prev, [activeLang]: applied }));
+    setTranslationPreview(null);
+    setTranslationError("");
+    await doSave(applied);
+  };
+
+  const handleLangToggle = (locale: string) => {
+    const defaultLang = configuredOriginalLang?.toLowerCase();
+    if (locale === defaultLang) return;
+    setLangEnabled(prev => {
+      const next = new Set(prev);
+      if (next.has(locale)) { next.delete(locale); } else { next.add(locale); }
+      return next;
+    });
+  };
+
+  const handleLangMoveUp = (locale: string) => {
+    const idx = langOrder.indexOf(locale);
+    if (idx <= 0) return;
+    const next = [...langOrder];
+    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+    setLangOrder(next);
+  };
+
+  const handleLangMoveDown = (locale: string) => {
+    const idx = langOrder.indexOf(locale);
+    if (idx < 0 || idx >= langOrder.length - 1) return;
+    const next = [...langOrder];
+    [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+    setLangOrder(next);
+  };
+
+  const handleSharedChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setSharedData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleI18nChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setI18nByLang(prev => ({
+      ...prev,
+      [activeLang]: { ...prev[activeLang], [e.target.name]: e.target.value },
+    }));
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await doSave();
   };
 
   // ── Loading state ──────────────────────────────────────────────────────────
@@ -1080,6 +1083,68 @@ export default function GuestContentPage() {
         </div>
       </div>
       </div>
+      {/* AI Translation Loading Modal */}
+      {translating && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgb(0 0 0 / 0.55)",
+            zIndex: 300,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-4)",
+          }}
+        >
+          <div
+            style={{
+              background: "rgb(var(--surface))",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "0 20px 60px rgb(0 0 0 / 0.3)",
+              width: "100%",
+              maxWidth: "420px",
+              padding: "var(--space-10) var(--space-8)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "var(--space-4)",
+              textAlign: "center",
+            }}
+          >
+            <>
+              <style>{`
+                @keyframes cf-ai-spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+              <span
+                style={{
+                  width: "38px",
+                  height: "38px",
+                  borderTop: "5px solid rgb(var(--brand))",
+                  borderRight: "2px solid rgb(var(--brand) / 0.35)",
+                  borderBottom: "5px solid transparent",
+                  borderLeft: "2px solid transparent",
+                  borderRadius: "50%",
+                  display: "block",
+                  flexShrink: 0,
+                  animation: "cf-ai-spin 0.85s linear infinite",
+                }}
+              />
+            </>
+            <div>
+              <p style={{ fontSize: "17px", fontWeight: 700, color: "rgb(var(--text))", margin: 0 }}>
+                {t("aiTranslate.loadingTitle")}
+              </p>
+              <p style={{ fontSize: "14px", color: "rgb(var(--muted))", marginTop: "var(--space-2)", marginBottom: 0 }}>
+                {t("aiTranslate.loadingSubtitle")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Translation Preview Modal */}
       {translationPreview && (
         <div
@@ -1093,7 +1158,6 @@ export default function GuestContentPage() {
             justifyContent: "center",
             padding: "var(--space-4)",
           }}
-          onClick={handleCancelTranslation}
         >
           <div
             style={{
@@ -1196,10 +1260,11 @@ export default function GuestContentPage() {
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={handleApplyTranslation}
-                style={{ fontSize: "14px" }}
+                onClick={handleApplyAndSave}
+                disabled={saving}
+                style={{ fontSize: "14px", opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}
               >
-                {t("aiTranslate.apply")}
+                {saving ? t("actions.saving") : t("aiTranslate.applyAndSave")}
               </button>
             </div>
           </div>

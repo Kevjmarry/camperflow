@@ -1646,9 +1646,12 @@
     "aiTranslate": {
       "button": "KI-Übersetzung aus {lang}",
       "translating": "Übersetze…",
+      "loadingTitle": "Gastinhalte werden übersetzt…",
+      "loadingSubtitle": "Das kann bis zu 3 Minuten dauern.",
       "previewTitle": "KI-Übersetzungsvorschau — {lang}",
       "previewSubtitle": "Überprüfe die Übersetzung, bevor du sie anwendest. Du kannst danach alle Felder bearbeiten.",
       "apply": "Übersetzung übernehmen",
+      "applyAndSave": "Übersetzung übernehmen und speichern",
       "cancel": "Abbrechen",
       "errorFailed": "Übersetzung fehlgeschlagen. Bitte versuche es erneut.",
       "errorStructure": "Übersetzung hat unerwartete Struktur. Bitte versuche es erneut.",

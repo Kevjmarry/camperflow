@@ -1646,9 +1646,12 @@
     "aiTranslate": {
       "button": "AI Translate from {lang}",
       "translating": "Translating…",
+      "loadingTitle": "Translating guest content…",
+      "loadingSubtitle": "This can take up to 3 minutes.",
       "previewTitle": "AI Translation Preview — {lang}",
       "previewSubtitle": "Review the translation before applying. You can edit any field after applying.",
       "apply": "Apply translation",
+      "applyAndSave": "Apply translation and save changes",
       "cancel": "Cancel",
       "errorFailed": "Translation failed. Please try again.",
       "errorStructure": "Translation returned an unexpected structure. Please try again.",
