@@ -1643,7 +1643,20 @@
       "moveUp": "Move up",
       "moveDown": "Move down"
     },
-    "aiTranslate": {
+    "aiGenerate": {
+    "button": "Generate AI Draft",
+    "generating": "Generating…",
+    "loadingTitle": "Generating guest content draft…",
+    "loadingSubtitle": "This takes up to 30 seconds.",
+    "previewTitle": "AI Draft Preview — {lang}",
+    "previewSubtitle": "Review the generated draft before saving. You can edit any field after applying.",
+    "applyAndSave": "Apply draft and save",
+    "cancel": "Cancel",
+    "errorFailed": "Generation failed. Please try again.",
+    "companyInfoBanner": "For best AI results, complete your",
+    "companyInfoLink": "Company Info"
+  },
+  "aiTranslate": {
       "button": "AI Translate from {lang}",
       "translating": "Translating…",
       "loadingTitle": "Translating guest content…",

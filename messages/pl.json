@@ -1643,6 +1643,19 @@
       "moveUp": "Przesuń w górę",
       "moveDown": "Przesuń w dół"
     },
+    "aiGenerate": {
+      "button": "Generuj szkic AI",
+      "generating": "Generowanie…",
+      "loadingTitle": "Generowanie treści dla gości…",
+      "loadingSubtitle": "To może potrwać do 30 sekund.",
+      "previewTitle": "Podgląd szkicu AI — {lang}",
+      "previewSubtitle": "Przejrzyj szkic przed zapisaniem. Po zastosowaniu możesz edytować dowolne pole.",
+      "applyAndSave": "Zastosuj szkic i zapisz",
+      "cancel": "Anuluj",
+      "errorFailed": "Generowanie nie powiodło się. Spróbuj ponownie.",
+      "companyInfoBanner": "Dla najlepszych wyników AI uzupełnij najpierw swoje",
+      "companyInfoLink": "Informacje o firmie"
+    },
     "aiTranslate": {
       "button": "Przetłumacz AI z {lang}",
       "translating": "Tłumaczenie…",

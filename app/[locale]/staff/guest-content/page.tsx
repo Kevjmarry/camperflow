@@ -178,6 +178,12 @@ export default function GuestContentPage() {
   const [translationPreview, setTranslationPreview] = useState<I18nFields | null>(null);
   const [translationError, setTranslationError] = useState("");
 
+  // AI generation state
+  const [generating, setGenerating] = useState(false);
+  const [generationPreview, setGenerationPreview] = useState<I18nFields | null>(null);
+  const [generationError, setGenerationError] = useState("");
+  const [companyInfoIncomplete, setCompanyInfoIncomplete] = useState(false);
+
   // Guest language settings — lowercase locale codes matching DB
   const ALL_LOCALES = ['sk', 'en', 'de', 'pl', 'cs'] as const;
   const [langOrder, setLangOrder] = useState<string[]>([...ALL_LOCALES]);
@@ -227,6 +233,10 @@ export default function GuestContentPage() {
   // Derived: current lang's i18n fields and FAQ helper
   const currentI18n = i18nByLang[activeLang];
   const faqItems = currentI18n.faq_items;
+
+  // Derived: unified AI preview (translation or generation)
+  const previewData = translationPreview ?? generationPreview;
+  const isGenerationPreview = !translationPreview && !!generationPreview;
   const setFaqItems = (items: FaqItem[]) =>
     setI18nByLang(prev => ({
       ...prev,
@@ -263,12 +273,12 @@ export default function GuestContentPage() {
       const [{ data: settings }, { data: companyRow }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n, default_guest_language, guest_languages_order")
+          .select("name, contact_phone, contact_whatsapp, pickup_info, important_before_pickup, return_info, rules_and_tips, before_arrival_info, before_return_info, included_items, faq_items, return_nearby_places, help_intro, help_quick_fixes, help_videos, guest_content_i18n, default_guest_language, guest_languages_order")
           .eq("id", companyId)
           .maybeSingle(),
         supabase
           .from("companies")
-          .select("emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary")
+          .select("address, emergency_accident_phone_primary, emergency_accident_phone_secondary, emergency_breakdown_phone_primary, emergency_breakdown_phone_secondary")
           .eq("id", companyId)
           .maybeSingle(),
       ]);
@@ -351,6 +361,9 @@ export default function GuestContentPage() {
       const rawNearbyPlaces = (settings as any)?.return_nearby_places;
       setReturnNearbyPlaces(rawNearbyPlaces ?? []);
       setReturnChecklist(template ?? null);
+      const companyName = (settings as any)?.name ?? "";
+      const companyAddress = (companyRow as any)?.address ?? "";
+      setCompanyInfoIncomplete(!companyName || !companyAddress);
       setLoading(false);
     };
     load();
@@ -464,17 +477,48 @@ export default function GuestContentPage() {
     }
   };
 
-  const handleCancelTranslation = () => {
+  const handleAiGenerate = async () => {
+    if (!configuredOriginalLang) return;
+    setGenerationError("");
+    setGenerating(true);
+    try {
+      const existingContent = i18nByLang[configuredOriginalLang];
+      const hasExisting = Object.entries(existingContent).some(([k, v]) =>
+        k === "faq_items" ? (v as unknown[]).length > 0 : typeof v === "string" && v.trim().length > 0
+      );
+      const res = await fetch("/api/staff/generate-guest-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hasExisting ? { existing: existingContent } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenerationError(data?.error || t("aiGenerate.errorFailed"));
+        return;
+      }
+      setGenerationPreview(data.generated as I18nFields);
+    } catch {
+      setGenerationError(t("aiGenerate.errorFailed"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCancelPreview = () => {
     setTranslationPreview(null);
     setTranslationError("");
+    setGenerationPreview(null);
+    setGenerationError("");
   };
 
   const handleApplyAndSave = async () => {
-    if (!translationPreview) return;
-    const applied = translationPreview;
+    const applied = translationPreview ?? generationPreview;
+    if (!applied) return;
     setI18nByLang(prev => ({ ...prev, [activeLang]: applied }));
     setTranslationPreview(null);
+    setGenerationPreview(null);
     setTranslationError("");
+    setGenerationError("");
     await doSave(applied);
   };
 
@@ -650,20 +694,42 @@ export default function GuestContentPage() {
                         <button
                           type="button"
                           onClick={handleAiTranslate}
-                          disabled={translating}
+                          disabled={translating || generating}
                           style={{
                             fontSize: "12px",
                             padding: "3px 10px",
                             borderRadius: "var(--radius)",
                             border: "1px solid rgb(var(--brand) / 0.4)",
                             background: "rgb(var(--brand) / 0.06)",
-                            cursor: translating ? "not-allowed" : "pointer",
+                            cursor: (translating || generating) ? "not-allowed" : "pointer",
                             color: translating ? "rgb(var(--muted))" : "rgb(var(--brand))",
                             lineHeight: "1.4",
-                            opacity: translating ? 0.6 : 1,
+                            opacity: (translating || generating) ? 0.6 : 1,
                           }}
                         >
                           {translating ? t("aiTranslate.translating") : t("aiTranslate.button", { lang: originalLang })}
+                        </button>
+                      </div>
+                    )}
+                    {isAdmin && configuredOriginalLang && activeLang === configuredOriginalLang && (
+                      <div style={{ paddingBottom: "1px" }}>
+                        <button
+                          type="button"
+                          onClick={handleAiGenerate}
+                          disabled={generating || translating}
+                          style={{
+                            fontSize: "12px",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius)",
+                            border: "1px solid rgb(var(--brand) / 0.4)",
+                            background: "rgb(var(--brand) / 0.06)",
+                            cursor: (generating || translating) ? "not-allowed" : "pointer",
+                            color: generating ? "rgb(var(--muted))" : "rgb(var(--brand))",
+                            lineHeight: "1.4",
+                            opacity: (generating || translating) ? 0.6 : 1,
+                          }}
+                        >
+                          {generating ? t("aiGenerate.generating") : t("aiGenerate.button")}
                         </button>
                       </div>
                     )}
@@ -676,6 +742,19 @@ export default function GuestContentPage() {
                   {translationError && (
                     <p style={{ fontSize: "12px", color: "rgb(var(--error))", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
                       {translationError}
+                    </p>
+                  )}
+                  {generationError && (
+                    <p style={{ fontSize: "12px", color: "rgb(var(--error))", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
+                      {generationError}
+                    </p>
+                  )}
+                  {isAdmin && configuredOriginalLang && activeLang === configuredOriginalLang && companyInfoIncomplete && (
+                    <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
+                      {t("aiGenerate.companyInfoBanner")}{" "}
+                      <Link href={`/${locale}/staff/company`} style={{ color: "inherit", textDecoration: "underline" }}>
+                        {t("aiGenerate.companyInfoLink")}
+                      </Link>
                     </p>
                   )}
                   <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
@@ -1083,8 +1162,8 @@ export default function GuestContentPage() {
         </div>
       </div>
       </div>
-      {/* AI Translation Loading Modal */}
-      {translating && (
+      {/* AI Loading Modal — shared between translation and generation */}
+      {(translating || generating) && (
         <div
           style={{
             position: "fixed",
@@ -1135,18 +1214,18 @@ export default function GuestContentPage() {
             </>
             <div>
               <p style={{ fontSize: "17px", fontWeight: 700, color: "rgb(var(--text))", margin: 0 }}>
-                {t("aiTranslate.loadingTitle")}
+                {generating ? t("aiGenerate.loadingTitle") : t("aiTranslate.loadingTitle")}
               </p>
               <p style={{ fontSize: "14px", color: "rgb(var(--muted))", marginTop: "var(--space-2)", marginBottom: 0 }}>
-                {t("aiTranslate.loadingSubtitle")}
+                {generating ? t("aiGenerate.loadingSubtitle") : t("aiTranslate.loadingSubtitle")}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* AI Translation Preview Modal */}
-      {translationPreview && (
+      {/* AI Preview Modal — shared between translation and generation */}
+      {previewData && (
         <div
           style={{
             position: "fixed",
@@ -1176,10 +1255,12 @@ export default function GuestContentPage() {
             {/* Modal header */}
             <div style={{ padding: "var(--space-5) var(--space-6)", borderBottom: "1px solid rgb(var(--border))" }}>
               <h2 style={{ fontSize: "18px", fontWeight: 700, color: "rgb(var(--text))", margin: 0 }}>
-                {t("aiTranslate.previewTitle", { lang: activeLang })}
+                {isGenerationPreview
+                  ? t("aiGenerate.previewTitle", { lang: activeLang })
+                  : t("aiTranslate.previewTitle", { lang: activeLang })}
               </h2>
               <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)", marginBottom: 0 }}>
-                {t("aiTranslate.previewSubtitle")}
+                {isGenerationPreview ? t("aiGenerate.previewSubtitle") : t("aiTranslate.previewSubtitle")}
               </p>
             </div>
 
@@ -1199,7 +1280,7 @@ export default function GuestContentPage() {
                   ["help_videos", t("labels.howToVideos")],
                 ] as [keyof I18nFields, string][]
               ).map(([field, label]) => {
-                const val = translationPreview[field];
+                const val = previewData[field];
                 const text = typeof val === "string" ? val : "";
                 return (
                   <div key={field}>
@@ -1226,13 +1307,13 @@ export default function GuestContentPage() {
               })}
 
               {/* FAQ items preview */}
-              {translationPreview.faq_items.length > 0 && (
+              {previewData.faq_items.length > 0 && (
                 <div>
                   <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "rgb(var(--muted))", marginBottom: "var(--space-2)" }}>
                     {t("sections.faq")}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                    {translationPreview.faq_items.map((item, i) => (
+                    {previewData.faq_items.map((item, i) => (
                       <div key={i} style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-3)", background: "rgb(var(--brand) / 0.04)" }}>
                         <div style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-1)" }}>
                           {item.question || t("aiTranslate.previewEmpty")}
@@ -1252,10 +1333,10 @@ export default function GuestContentPage() {
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={handleCancelTranslation}
+                onClick={handleCancelPreview}
                 style={{ fontSize: "14px" }}
               >
-                {t("aiTranslate.cancel")}
+                {isGenerationPreview ? t("aiGenerate.cancel") : t("aiTranslate.cancel")}
               </button>
               <button
                 type="button"
@@ -1264,7 +1345,7 @@ export default function GuestContentPage() {
                 disabled={saving}
                 style={{ fontSize: "14px", opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}
               >
-                {saving ? t("actions.saving") : t("aiTranslate.applyAndSave")}
+                {saving ? t("actions.saving") : (isGenerationPreview ? t("aiGenerate.applyAndSave") : t("aiTranslate.applyAndSave"))}
               </button>
             </div>
           </div>

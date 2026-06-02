@@ -1643,6 +1643,19 @@
       "moveUp": "Nach oben",
       "moveDown": "Nach unten"
     },
+    "aiGenerate": {
+      "button": "KI-Entwurf generieren",
+      "generating": "Generiere…",
+      "loadingTitle": "Gastinhalt wird erstellt…",
+      "loadingSubtitle": "Das dauert bis zu 30 Sekunden.",
+      "previewTitle": "KI-Entwurf Vorschau — {lang}",
+      "previewSubtitle": "Überprüfen Sie den Entwurf vor dem Speichern. Sie können alle Felder nach dem Übernehmen bearbeiten.",
+      "applyAndSave": "Entwurf übernehmen und speichern",
+      "cancel": "Abbrechen",
+      "errorFailed": "Generierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "companyInfoBanner": "Für beste KI-Ergebnisse füllen Sie zuerst Ihre",
+      "companyInfoLink": "Firmeninfo"
+    },
     "aiTranslate": {
       "button": "KI-Übersetzung aus {lang}",
       "translating": "Übersetze…",

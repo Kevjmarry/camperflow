@@ -1643,6 +1643,19 @@
       "moveUp": "Přesunout nahoru",
       "moveDown": "Přesunout dolů"
     },
+    "aiGenerate": {
+      "button": "Generovat AI návrh",
+      "generating": "Generuje se…",
+      "loadingTitle": "Generuje se obsah pro hosty…",
+      "loadingSubtitle": "Trvá to až 30 sekund.",
+      "previewTitle": "Náhled AI návrhu — {lang}",
+      "previewSubtitle": "Zkontrolujte návrh před uložením. Po použití můžete upravit libovolné pole.",
+      "applyAndSave": "Použít návrh a uložit",
+      "cancel": "Zrušit",
+      "errorFailed": "Generování selhalo. Zkuste to znovu.",
+      "companyInfoBanner": "Pro nejlepší výsledky AI nejprve vyplňte své",
+      "companyInfoLink": "Informace o firmě"
+    },
     "aiTranslate": {
       "button": "AI přeložit z {lang}",
       "translating": "Překládám…",
