@@ -1642,6 +1642,19 @@
       "alwaysEnabled": "Standard",
       "moveUp": "Nach oben",
       "moveDown": "Nach unten"
+    },
+    "aiTranslate": {
+      "button": "KI-Übersetzung aus {lang}",
+      "translating": "Übersetze…",
+      "previewTitle": "KI-Übersetzungsvorschau — {lang}",
+      "previewSubtitle": "Überprüfe die Übersetzung, bevor du sie anwendest. Du kannst danach alle Felder bearbeiten.",
+      "apply": "Übersetzung übernehmen",
+      "cancel": "Abbrechen",
+      "errorFailed": "Übersetzung fehlgeschlagen. Bitte versuche es erneut.",
+      "errorStructure": "Übersetzung hat unerwartete Struktur. Bitte versuche es erneut.",
+      "errorNotConfigured": "KI-Übersetzung ist nicht konfiguriert. OPENAI_API_KEY fehlt.",
+      "errorNotEnabled": "Zielsprache ist in den Gastsprachen nicht aktiviert.",
+      "previewEmpty": "(leer)"
     }
   },
   "staffCompany": {

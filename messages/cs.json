@@ -1642,6 +1642,19 @@
       "alwaysEnabled": "výchozí",
       "moveUp": "Přesunout nahoru",
       "moveDown": "Přesunout dolů"
+    },
+    "aiTranslate": {
+      "button": "AI přeložit z {lang}",
+      "translating": "Překládám…",
+      "previewTitle": "Náhled AI překladu — {lang}",
+      "previewSubtitle": "Zkontrolujte překlad před použitím. Po použití můžete každé pole upravit.",
+      "apply": "Použít překlad",
+      "cancel": "Zrušit",
+      "errorFailed": "Překlad se nezdařil. Zkuste to znovu.",
+      "errorStructure": "Překlad má neočekávanou strukturu. Zkuste to znovu.",
+      "errorNotConfigured": "AI překlad není nakonfigurován. Chybí OPENAI_API_KEY.",
+      "errorNotEnabled": "Cílový jazyk není povolen v jazycích hostů.",
+      "previewEmpty": "(prázdné)"
     }
   },
   "staffCompany": {

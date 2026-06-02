@@ -173,6 +173,11 @@ export default function GuestContentPage() {
   const [copyWarning, setCopyWarning] = useState(false);
   const [configuredOriginalLang, setConfiguredOriginalLang] = useState<Lang | null>(null);
 
+  // AI translation state
+  const [translating, setTranslating] = useState(false);
+  const [translationPreview, setTranslationPreview] = useState<I18nFields | null>(null);
+  const [translationError, setTranslationError] = useState("");
+
   // Guest language settings — lowercase locale codes matching DB
   const ALL_LOCALES = ['sk', 'en', 'de', 'pl', 'cs'] as const;
   const [langOrder, setLangOrder] = useState<string[]>([...ALL_LOCALES]);
@@ -356,6 +361,7 @@ export default function GuestContentPage() {
   const handleLangChange = (l: Lang) => {
     setActiveLang(l);
     setCopyWarning(false);
+    setTranslationError("");
   };
 
   const handleCopyFrom = () => {
@@ -363,6 +369,46 @@ export default function GuestContentPage() {
     if (!window.confirm(t("copyFrom.confirm", { from: originalLang, to: activeLang }))) return;
     setI18nByLang(prev => ({ ...prev, [activeLang]: { ...prev[originalLang] } }));
     setCopyWarning(true);
+  };
+
+  const handleAiTranslate = async () => {
+    if (!originalLang || !configuredOriginalLang) return;
+    setTranslationError("");
+    setTranslating(true);
+    try {
+      const sourceContent = i18nByLang[originalLang];
+      const res = await fetch("/api/staff/translate-guest-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceLang: originalLang,
+          targetLang: activeLang,
+          content: sourceContent,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTranslationError(data?.error || t("aiTranslate.errorFailed"));
+        return;
+      }
+      setTranslationPreview(data.translated as I18nFields);
+    } catch {
+      setTranslationError(t("aiTranslate.errorFailed"));
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleApplyTranslation = () => {
+    if (!translationPreview) return;
+    setI18nByLang(prev => ({ ...prev, [activeLang]: translationPreview }));
+    setTranslationPreview(null);
+    setCopyWarning(true);
+  };
+
+  const handleCancelTranslation = () => {
+    setTranslationPreview(null);
+    setTranslationError("");
   };
 
   const handleLangToggle = (locale: string) => {
@@ -581,7 +627,7 @@ export default function GuestContentPage() {
                   <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
                     <LangTabs active={activeLang} onChange={handleLangChange} langs={visibleLangs} />
                     {isAdmin && originalLang && originalLang !== activeLang && (
-                      <div style={{ paddingBottom: "1px" }}>
+                      <div style={{ paddingBottom: "1px", display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
                         <button
                           type="button"
                           onClick={handleCopyFrom}
@@ -598,12 +644,35 @@ export default function GuestContentPage() {
                         >
                           {t("copyFrom.button", { lang: originalLang })}
                         </button>
+                        <button
+                          type="button"
+                          onClick={handleAiTranslate}
+                          disabled={translating}
+                          style={{
+                            fontSize: "12px",
+                            padding: "3px 10px",
+                            borderRadius: "var(--radius)",
+                            border: "1px solid rgb(var(--brand) / 0.4)",
+                            background: "rgb(var(--brand) / 0.06)",
+                            cursor: translating ? "not-allowed" : "pointer",
+                            color: translating ? "rgb(var(--muted))" : "rgb(var(--brand))",
+                            lineHeight: "1.4",
+                            opacity: translating ? 0.6 : 1,
+                          }}
+                        >
+                          {translating ? t("aiTranslate.translating") : t("aiTranslate.button", { lang: originalLang })}
+                        </button>
                       </div>
                     )}
                   </div>
                   {copyWarning && (
                     <p style={{ fontSize: "12px", color: "#b45309", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
                       {t("copyFrom.warning")}
+                    </p>
+                  )}
+                  {translationError && (
+                    <p style={{ fontSize: "12px", color: "rgb(var(--error))", fontWeight: 500, marginTop: "var(--space-2)", marginBottom: 0 }}>
+                      {translationError}
                     </p>
                   )}
                   <p className="helper-text" style={{ marginTop: "var(--space-2)" }}>
@@ -1011,6 +1080,131 @@ export default function GuestContentPage() {
         </div>
       </div>
       </div>
+      {/* AI Translation Preview Modal */}
+      {translationPreview && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgb(0 0 0 / 0.45)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-4)",
+          }}
+          onClick={handleCancelTranslation}
+        >
+          <div
+            style={{
+              background: "rgb(var(--surface))",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "0 20px 60px rgb(0 0 0 / 0.3)",
+              width: "100%",
+              maxWidth: "660px",
+              maxHeight: "82vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ padding: "var(--space-5) var(--space-6)", borderBottom: "1px solid rgb(var(--border))" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 700, color: "rgb(var(--text))", margin: 0 }}>
+                {t("aiTranslate.previewTitle", { lang: activeLang })}
+              </h2>
+              <p style={{ fontSize: "13px", color: "rgb(var(--muted))", marginTop: "var(--space-1)", marginBottom: 0 }}>
+                {t("aiTranslate.previewSubtitle")}
+              </p>
+            </div>
+
+            {/* Scrollable field preview */}
+            <div style={{ overflowY: "auto", flex: 1, padding: "var(--space-5) var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              {(
+                [
+                  ["before_arrival_info", t("labels.beforeArrival")],
+                  ["pickup_info", t("labels.pickupInfo")],
+                  ["important_before_pickup", t("labels.importantBeforePickup")],
+                  ["before_return_info", t("labels.beforeReturn")],
+                  ["return_info", t("labels.returnNotes")],
+                  ["included_items", t("labels.includedItems")],
+                  ["rules_and_tips", t("labels.rulesAndTips")],
+                  ["help_intro", t("labels.helpIntro")],
+                  ["help_quick_fixes", t("labels.quickFixes")],
+                  ["help_videos", t("labels.howToVideos")],
+                ] as [keyof I18nFields, string][]
+              ).map(([field, label]) => {
+                const val = translationPreview[field];
+                const text = typeof val === "string" ? val : "";
+                return (
+                  <div key={field}>
+                    <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "rgb(var(--muted))", marginBottom: "var(--space-1)" }}>
+                      {label}
+                    </div>
+                    <div style={{
+                      fontSize: "13px",
+                      color: text ? "rgb(var(--text))" : "rgb(var(--muted))",
+                      background: "rgb(var(--brand) / 0.04)",
+                      border: "1px solid rgb(var(--border))",
+                      borderRadius: "var(--radius)",
+                      padding: "var(--space-2) var(--space-3)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      maxHeight: "120px",
+                      overflowY: "auto",
+                      fontFamily: "inherit",
+                    }}>
+                      {text || t("aiTranslate.previewEmpty")}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* FAQ items preview */}
+              {translationPreview.faq_items.length > 0 && (
+                <div>
+                  <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "rgb(var(--muted))", marginBottom: "var(--space-2)" }}>
+                    {t("sections.faq")}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                    {translationPreview.faq_items.map((item, i) => (
+                      <div key={i} style={{ border: "1px solid rgb(var(--border))", borderRadius: "var(--radius)", padding: "var(--space-3)", background: "rgb(var(--brand) / 0.04)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "rgb(var(--text))", marginBottom: "var(--space-1)" }}>
+                          {item.question || t("aiTranslate.previewEmpty")}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "rgb(var(--muted))", whiteSpace: "pre-wrap" }}>
+                          {item.answer || t("aiTranslate.previewEmpty")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div style={{ padding: "var(--space-4) var(--space-6)", borderTop: "1px solid rgb(var(--border))", display: "flex", gap: "var(--space-3)", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCancelTranslation}
+                style={{ fontSize: "14px" }}
+              >
+                {t("aiTranslate.cancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleApplyTranslation}
+                style={{ fontSize: "14px" }}
+              >
+                {t("aiTranslate.apply")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }
