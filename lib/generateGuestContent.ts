@@ -179,5 +179,5 @@ export async function generateGuestContent(
     throw err;
   }
 
-  return parsed;
+  return parsed as I18nFields;
 }
