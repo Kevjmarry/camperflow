@@ -72,16 +72,16 @@ export async function POST(
       updated = reverted;
     }
 
-    // ── Reset associated handover checklist instance(s) ──────────────────────
+    // ── Reset all booking checklist instances (handover, return, cleaning, mechanical)
     // Order matters: instance FIRST, items SECOND.
-    // Resetting items triggers a DB status-sync trigger that writes back to
-    // checklist_instances. If the instance is still 'completed' at that point,
-    // a lock trigger raises P0001 and the items UPDATE fails. Resetting the
-    // instance to 'pending' first eliminates that conflict.
+    // Resetting items may fire DB triggers that write back to checklist_instances.
+    // If the instance is still 'completed' at that point a lock trigger can raise
+    // P0001 and the items UPDATE fails. Resetting the instance to 'pending' first
+    // eliminates that conflict.
     //
     // Service role is required here: the RLS USING clause on checklist_instances
-    // only permits writes when status='completed'. An in_progress handover instance
-    // (partial handover that was never finished) would be silently excluded from
+    // only permits writes when status='completed'. An in_progress instance
+    // (partial work that was never finished) would be silently excluded from
     // both SELECT and UPDATE by the user-scoped client, causing the reset to be
     // skipped entirely. Auth/company scope is enforced above; service role is used
     // only for the checklist read+reset where RLS would otherwise block legitimate
@@ -96,7 +96,7 @@ export async function POST(
       .from('checklist_instances')
       .select('id, status, started_at, started_by, completed_at, completed_by')
       .eq('booking_id', bookingId)
-      .eq('checklist_type', 'handover');
+      .in('checklist_type', ['handover', 'return', 'cleaning', 'mechanical']);
 
     if (instanceFetchError) {
       console.error('[revert booking] failed to fetch checklist instances', instanceFetchError);
@@ -154,11 +154,17 @@ export async function POST(
           started_by: null,
           completed_at: null,
           completed_by: null,
+          // handover fields
           office_deposit_collected: false,
           office_id_verified: false,
           office_contract_signed: false,
           handover_keys_given: false,
           handover_documents_given: false,
+          // return fields
+          return_keys_received: false,
+          return_documents_received: false,
+          return_contract_closed: false,
+          return_deposit_status: null,
         })
         .in('id', instanceIds)
         .select('id');
