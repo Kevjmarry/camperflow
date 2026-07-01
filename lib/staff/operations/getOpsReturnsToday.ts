@@ -36,11 +36,9 @@ export async function getOpsReturnsToday(): Promise<OpsReturn[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, return_at, booking_status, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, return_items_done, return_items_total, vehicle_blocked')
+    .select('id, booking_number, customer_name, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, return_items_done, return_items_total, vehicle_blocked')
     .eq('company_id', companyId)
-    // Only genuinely active rentals can have a real overdue or today-return event.
-    // Confirmed iCal imports that were never activated must not appear here.
-    .eq('booking_status', 'on_rent')
+    .eq('operational_status', 'on_rent')
     .in('ops_flag', ['return_today', 'overdue_return'])
     .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('return_at', { ascending: true })

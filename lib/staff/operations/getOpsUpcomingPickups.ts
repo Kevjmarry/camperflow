@@ -114,10 +114,10 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, booking_status')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, operational_status')
     .eq('company_id', companyId)
     .is('ops_flag', null)
-    .not('booking_status', 'in', '(cancelled,on_rent,completed)')
+    .not('operational_status', 'in', '(cancelled,on_rent,completed)')
     .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('pickup_at', { ascending: true })
 
@@ -336,7 +336,6 @@ export async function getOpsUpcomingPickups(): Promise<OpsUpcomingPickup[]> {
       ...extras,
     }
   })
-  .filter((p) => !(new Date(p.pickupAt) < now && p.handoverDone))
   .sort((a, b) => {
     if (a.daysUntil < 0 && b.daysUntil >= 0) return -1
     if (a.daysUntil >= 0 && b.daysUntil < 0) return 1

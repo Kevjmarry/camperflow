@@ -983,7 +983,11 @@
       "blocked": "Blockiert",
       "onRent": "In Vermietung",
       "completed": "Abgeschlossen",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "basedOnHandover": "Basierend auf abgeschlossener Übergabe-Checkliste",
+      "basedOnReturn": "Basierend auf abgeschlossener Rückgabe-Checkliste",
+      "syncFailed": "Buchungsstatus wurde nach der Übergabe nicht aktualisiert. Die Übergabe-Checkliste ist abgeschlossen — Status auf \"In Vermietung\" setzen und speichern.",
+      "syncFailedDismiss": "Schließen"
     },
     "vehicle": {
       "unassigned": "Nicht zugewiesen",

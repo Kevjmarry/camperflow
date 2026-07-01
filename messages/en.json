@@ -983,7 +983,11 @@
       "blocked": "Blocked",
       "onRent": "On Rent",
       "completed": "Completed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "basedOnHandover": "Based on completed handover checklist",
+      "basedOnReturn": "Based on completed return checklist",
+      "syncFailed": "Booking status did not update after handover. The handover checklist is complete — set status to \"On Rent\" and save to correct.",
+      "syncFailedDismiss": "Dismiss"
     },
     "vehicle": {
       "unassigned": "Unassigned",

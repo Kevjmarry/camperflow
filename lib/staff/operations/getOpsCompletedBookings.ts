@@ -33,7 +33,7 @@ export async function getOpsCompletedBookings(): Promise<OpsCompletedBooking[]> 
     .from('ops_bookings')
     .select('id, booking_number, customer_name, vehicle_name, vehicle_id, vehicle_blocked, return_at, pickup_at')
     .eq('company_id', companyId)
-    .eq('booking_status', 'completed')
+    .eq('operational_status', 'completed')
     .order('return_at', { ascending: false })
     .limit(20)
 

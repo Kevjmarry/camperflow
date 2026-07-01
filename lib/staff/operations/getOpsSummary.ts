@@ -45,7 +45,7 @@ export async function getOpsSummary(): Promise<OpsSummary> {
       .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .in('booking_status', ['confirmed', 'blocked'])
+      .in('operational_status', ['confirmed', 'blocked'])
       .gte('pickup_at', todayStart.toISOString())
       .lte('pickup_at', todayEnd.toISOString()),
 
@@ -53,7 +53,7 @@ export async function getOpsSummary(): Promise<OpsSummary> {
       .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('booking_status', 'on_rent')
+      .eq('operational_status', 'on_rent')
       .gte('return_at', todayStart.toISOString())
       .lte('return_at', todayEnd.toISOString()),
 
@@ -65,13 +65,11 @@ export async function getOpsSummary(): Promise<OpsSummary> {
       .eq('company_id', companyId)
       .eq('status', 'preparing'),
 
-    // Only count genuinely active on_rent bookings as overdue — confirmed
-    // iCal imports that were never activated should never appear here.
     supabase
       .from('ops_bookings')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', companyId)
-      .eq('booking_status', 'on_rent')
+      .eq('operational_status', 'on_rent')
       .eq('is_overdue', true),
   ])
 

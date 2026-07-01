@@ -98,11 +98,12 @@ export function useHandoverCompletion({
 
     // Transition booking to on_rent and persist handed_over_extras in one write.
     // The DB trigger on bookings (migration 011) will recompute vehicle readiness.
+    // Guarded by .eq('status', 'confirmed') so we never downgrade an already-on-rent booking.
     if (instance.checklist_type === 'handover' && instance.booking_id) {
       const handedOverIds = Object.entries(pickupExtrasCheckedRef.current)
         .filter(([, v]) => v)
         .map(([k]) => k);
-      await supabase
+      const { error: statusSyncError } = await supabase
         .from('bookings')
         .update({
           status: 'on_rent',
@@ -110,6 +111,26 @@ export function useHandoverCompletion({
         })
         .eq('id', instance.booking_id)
         .eq('status', 'confirmed');
+
+      if (statusSyncError) {
+        // Checklist is already saved — do not block navigation. Surface a visible
+        // warning on the booking detail page so staff can correct the status manually.
+        console.error(
+          '[CamperFlow] Handover status sync failed for booking',
+          instance.booking_id,
+          '—',
+          statusSyncError.message,
+          statusSyncError.code,
+        );
+        try {
+          sessionStorage.setItem(
+            `cf_status_sync_failed_${instance.booking_id}`,
+            JSON.stringify({ at: new Date().toISOString(), error: statusSyncError.message }),
+          );
+        } catch {
+          // sessionStorage unavailable (e.g. private mode) — failure already logged above.
+        }
+      }
     }
 
     navigateAfterCompletion();

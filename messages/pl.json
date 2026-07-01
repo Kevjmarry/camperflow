@@ -983,7 +983,11 @@
       "blocked": "Zablokowana",
       "onRent": "W wynajmie",
       "completed": "Zakończona",
-      "cancelled": "Anulowana"
+      "cancelled": "Anulowana",
+      "basedOnHandover": "Na podstawie ukończonej listy kontrolnej wydania",
+      "basedOnReturn": "Na podstawie ukończonej listy kontrolnej zwrotu",
+      "syncFailed": "Status rezerwacji nie zaktualizował się po wydaniu. Lista kontrolna wydania jest ukończona — ustaw status na \"W wynajmie\" i zapisz.",
+      "syncFailedDismiss": "Zamknij"
     },
     "vehicle": {
       "unassigned": "Nieprzypisany",

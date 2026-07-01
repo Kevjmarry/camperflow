@@ -80,7 +80,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
   // Bookings overlapping the window: return_at >= windowStart AND pickup_at <= windowEnd
   const { data: bookings, error: bError } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, vehicle_id, pickup_at, return_at, booking_status')
+    .select('id, booking_number, customer_name, vehicle_id, pickup_at, return_at, booking_status, operational_status')
     .eq('company_id', companyId)
     .in('vehicle_id', vehicleIds)
     .not('booking_status', 'eq', 'cancelled')
@@ -139,7 +139,7 @@ export async function getOpsBookingTimeline(): Promise<OpsTimelineData> {
         vehicleId: b.vehicle_id as string,
         pickupAt: b.pickup_at,
         returnAt: b.return_at!,
-        status: b.booking_status ?? 'draft',
+        status: b.operational_status ?? b.booking_status ?? 'draft',
       })),
     vehicleBlocks,
     companyTimezone,

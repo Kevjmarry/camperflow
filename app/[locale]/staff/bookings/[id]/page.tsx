@@ -360,12 +360,25 @@ export default function BookingDetailPage() {
   const [opsEnabled, setOpsEnabled] = useState<{ balance_invoice_reminder_enabled: boolean | null; prearrival_reminder_enabled: boolean | null; return_prep_reminder_enabled: boolean | null; review_request_reminder_enabled: boolean | null }>({ balance_invoice_reminder_enabled: null, prearrival_reminder_enabled: null, return_prep_reminder_enabled: null, review_request_reminder_enabled: null });
   const [finalPaymentDueDays, setFinalPaymentDueDays] = useState<number | null>(null);
   const [customPaymentReminderDays, setCustomPaymentReminderDays] = useState<number>(1);
+  const [operationalStatus, setOperationalStatus] = useState<string | null>(null);
+  const [statusSyncFailed, setStatusSyncFailed] = useState(false);
 
   const selectedStatus = normalizeStatus(formData.status);
   const isNoCustomerRequired = selectedStatus === 'blocked' || selectedStatus === 'cancelled';
 
   useEffect(() => {
     checkUserCapabilities();
+    // Consume a pending sync-failure flag written by useHandoverCompletion when the
+    // booking status write failed silently after handover checklist completion.
+    try {
+      const key = `cf_status_sync_failed_${id}`;
+      if (sessionStorage.getItem(key)) {
+        setStatusSyncFailed(true);
+        sessionStorage.removeItem(key);
+      }
+    } catch {
+      // sessionStorage unavailable (private mode) — no-op.
+    }
   }, []);
 
   useEffect(() => {
@@ -553,6 +566,16 @@ export default function BookingDetailPage() {
         }
 
         await fetchChecklistInstances();
+
+        // Fetch operational_status from ops_bookings — this is the checklist-driven
+        // source of truth that may differ from booking.status when a status write
+        // failed after handover/return checklist completion.
+        const { data: opsRow } = await supabase
+          .from('ops_bookings')
+          .select('operational_status')
+          .eq('id', data.id)
+          .maybeSingle();
+        setOperationalStatus((opsRow as any)?.operational_status ?? null);
       }
     } catch (err: any) {
       console.error('Fetch booking error:', err?.message);
@@ -1295,6 +1318,8 @@ export default function BookingDetailPage() {
               selectedVehicle={getSelectedVehicle()}
               locale={locale}
               t={t as (key: string) => string}
+              operationalStatus={operationalStatus}
+              statusSyncFailed={statusSyncFailed}
             />
           </div>
 

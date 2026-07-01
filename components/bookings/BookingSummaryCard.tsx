@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { getStatusChipStyle } from "@/lib/statusChip";
 
 export type BookingStatus = 'draft' | 'confirmed' | 'blocked' | 'on_rent' | 'completed' | 'cancelled';
@@ -25,9 +26,15 @@ interface Props {
   selectedVehicle: BookingSummaryVehicle | null;
   locale: string;
   t: (key: string) => string;
+  /** Computed from ops_bookings.operational_status — checklist-driven source of truth. */
+  operationalStatus?: string | null;
+  /** True when the booking status write failed silently after handover completion. */
+  statusSyncFailed?: boolean;
 }
 
-export function BookingSummaryCard({ booking, selectedVehicle, locale, t }: Props) {
+export function BookingSummaryCard({ booking, selectedVehicle, locale, t, operationalStatus, statusSyncFailed }: Props) {
+  const [syncWarningDismissed, setSyncWarningDismissed] = useState(false);
+
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString(locale, {
       month: 'short',
@@ -56,15 +63,66 @@ export function BookingSummaryCard({ booking, selectedVehicle, locale, t }: Prop
     }
   };
 
+  const effectiveStatus = (operationalStatus as BookingStatus | null) ?? booking.status;
+  const statusDiffers = operationalStatus != null && operationalStatus !== booking.status;
+  const statusNote = statusDiffers
+    ? operationalStatus === 'on_rent'
+      ? t('status.basedOnHandover')
+      : operationalStatus === 'completed'
+      ? t('status.basedOnReturn')
+      : null
+    : null;
+
+  const showSyncWarning = statusSyncFailed && !syncWarningDismissed;
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+      {showSyncWarning && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 'var(--space-3)',
+          padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-4)',
+          background: 'rgb(var(--warning) / 0.1)',
+          border: '1px solid rgb(var(--warning) / 0.35)',
+          borderRadius: 'var(--radius)',
+          fontSize: '13px',
+          color: 'rgb(var(--text))',
+        }}>
+          <span style={{ color: 'rgb(var(--warning))', fontWeight: 600, flexShrink: 0 }}>⚠</span>
+          <span style={{ flex: 1 }}>{t('status.syncFailed')}</span>
+          <button
+            type="button"
+            onClick={() => setSyncWarningDismissed(true)}
+            style={{
+              flexShrink: 0,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              color: 'rgb(var(--muted))',
+              padding: '0 var(--space-1)',
+            }}
+          >
+            {t('status.syncFailedDismiss')}
+          </button>
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: '28px', color: 'rgb(var(--text))' }}>
           {booking.booking_number}
         </h1>
-        <span style={getStatusChipStyle(booking.status)}>
-          {getStatusLabel(booking.status)}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingTop: '6px' }}>
+          <span style={getStatusChipStyle(effectiveStatus)}>
+            {getStatusLabel(effectiveStatus)}
+          </span>
+          {statusNote && (
+            <span style={{ fontSize: '11px', color: 'rgb(var(--muted))', lineHeight: 1.3 }}>
+              {statusNote}
+            </span>
+          )}
+        </div>
       </div>
       <div style={{
         marginTop: 'var(--space-3)',

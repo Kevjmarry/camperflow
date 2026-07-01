@@ -110,10 +110,9 @@ export async function getOpsUpcomingReturns(): Promise<OpsUpcomingReturnsResult>
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked, booking_status')
+    .select('id, booking_number, customer_name, pickup_at, return_at, vehicle_name, vehicle_id, vehicle_blocked')
     .eq('company_id', companyId)
-    .neq('booking_status', 'completed')
-    .neq('booking_status', 'cancelled')
+    .eq('operational_status', 'on_rent')
     .gte('return_at', startOfToday.toISOString())
     .order('return_at', { ascending: true })
     .limit(20)

@@ -39,7 +39,7 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
     .from('ops_bookings')
     .select('id, booking_number, customer_name, vehicle_name, vehicle_id, return_at, is_overdue')
     .eq('company_id', companyId)
-    .eq('booking_status', 'on_rent')
+    .eq('operational_status', 'on_rent')
     .order('return_at', { ascending: true })
 
   if (onRentError) throw onRentError
@@ -57,7 +57,7 @@ export async function getOpsOnRentNow(): Promise<OpsOnRentRow[]> {
         .from('ops_bookings')
         .select('id, vehicle_id, pickup_at')
         .eq('company_id', companyId)
-        .in('booking_status', ['confirmed', 'blocked'])
+        .in('operational_status', ['confirmed', 'blocked'])
         .in('vehicle_id', vehicleIds)
         .gte('pickup_at', minReturnAt)
         .order('pickup_at', { ascending: true })

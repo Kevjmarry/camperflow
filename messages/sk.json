@@ -983,7 +983,11 @@
       "blocked": "Blokovaná",
       "onRent": "Prenajatá",
       "completed": "Dokončená",
-      "cancelled": "Zrušená"
+      "cancelled": "Zrušená",
+      "basedOnHandover": "Na základe dokončeného odovzdávacieho protokolu",
+      "basedOnReturn": "Na základe dokončeného preberacieho protokolu",
+      "syncFailed": "Stav rezervácie sa po odovzdaní neaktualizoval. Odovzdávací protokol je dokončený — nastavte stav na \"Prenajatá\" a uložte.",
+      "syncFailedDismiss": "Zavrieť"
     },
     "vehicle": {
       "unassigned": "Nepriradené",

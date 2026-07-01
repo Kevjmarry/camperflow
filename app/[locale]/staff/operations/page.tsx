@@ -249,7 +249,8 @@ export default async function OperationsPage({
 
   // Build the Next pickup tile feed: today's active pickups first, then upcoming.
   // This ensures pickups that are happening now or are overdue stay visible.
-  const todayPickupsAsUpcoming: OpsUpcomingPickup[] = pickups.map((p) => ({
+  // Exclude bookings whose handover is already done — they belong in On Rent Now.
+  const todayPickupsAsUpcoming: OpsUpcomingPickup[] = pickups.filter((p) => p.handoverStatus !== 'completed').map((p) => ({
     id: p.id,
     bookingNumber: p.bookingNumber,
     customerName: p.customerName,

@@ -46,9 +46,10 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
 
   const { data, error } = await supabase
     .from('ops_bookings')
-    .select('id, booking_number, customer_name, pickup_at, booking_status, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, handover_items_done, handover_items_total')
+    .select('id, booking_number, customer_name, pickup_at, operational_status, vehicle_name, vehicle_id, next_action, hours_to_pickup, ops_flag, ops_priority, vehicle_blocked, handover_items_done, handover_items_total')
     .eq('company_id', companyId)
     .eq('ops_flag', 'pickup_today')
+    .not('operational_status', 'in', '(on_rent,completed,cancelled)')
     .order('ops_priority', { ascending: true, nullsFirst: false })
     .order('pickup_at', { ascending: true })
 
@@ -200,7 +201,7 @@ export async function getOpsPickupsToday(): Promise<OpsPickup[]> {
       pickupAt: b.pickup_at,
       opsFlag: b.ops_flag ?? null,
       opsPriority: b.ops_priority ?? null,
-      status: b.booking_status as 'confirmed' | 'blocked',
+      status: b.operational_status as 'confirmed' | 'blocked',
       handoverStatus: handover
         ? (handover.status as 'pending' | 'in_progress' | 'completed')
         : 'pending',
