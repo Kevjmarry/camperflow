@@ -119,6 +119,14 @@ export default async function GuestPage({ params, searchParams }: PageProps) {
     .rpc("get_guest_booking_by_code", { p_code: code })
     .maybeSingle<GuestBooking>();
 
+  // TEMP DEBUG — remove once logo issue is confirmed fixed
+  console.log("[GuestPage] RPC branding result:", {
+    code,
+    company_id: booking?.company_id,
+    company_name: booking?.company_name,
+    logo_url: booking?.logo_url,
+  });
+
   if (!booking) {
     return (
       <div style={{ maxWidth: "600px", margin: "0 auto" }}>

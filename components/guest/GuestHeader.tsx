@@ -9,6 +9,16 @@ import { activeLocales, type Locale } from '@/i18n'
 export default function GuestHeader() {
   const { company } = useTheme()
   const [guestLocales, setGuestLocales] = useState<readonly Locale[]>(activeLocales)
+  const [logoFailed, setLogoFailed] = useState(false)
+
+  useEffect(() => {
+    setLogoFailed(false)
+  }, [company?.logo_url])
+
+  // TEMP DEBUG — remove once logo issue is confirmed fixed
+  useEffect(() => {
+    console.log('[GuestHeader] company from ThemeContext:', company)
+  }, [company])
 
   useEffect(() => {
     if (!company?.id) return
@@ -58,10 +68,11 @@ export default function GuestHeader() {
           overflow: 'hidden',
         }}
       >
-        {company?.logo_url && (
+        {company?.logo_url && !logoFailed && (
           <img
             src={company.logo_url}
             alt={company.name}
+            onError={() => setLogoFailed(true)}
             style={{ height: '28px', width: 'auto', objectFit: 'contain', display: 'block', flexShrink: 0 }}
           />
         )}

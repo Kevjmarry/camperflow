@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useParams, useRouter } from "next/navigation";
 import StaffNav from "@/components/staff/StaffNav";
+import StaffMobileHeader from "@/components/staff/StaffMobileHeader";
 import MobileBottomNav from "@/components/staff/MobileBottomNav";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -34,6 +35,7 @@ export default function StaffShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div data-zone="staff" style={{ display: "contents" }}>
+      {!isAuthPage && <StaffMobileHeader />}
       {!isAuthPage && <StaffNav />}
       {children}
       {!isAuthPage && <MobileBottomNav />}
