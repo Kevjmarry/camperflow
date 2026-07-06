@@ -18,6 +18,7 @@ import PhaseCard from './PhaseCard';
 import PhaseSummaryStrip from './PhaseSummaryStrip';
 import VehicleDataBlock from './VehicleDataBlock';
 import EvidenceBlock from './EvidenceBlock';
+import PostCompletionActivityLog from './PostCompletionActivityLog';
 import AuditChecklistBlock from './AuditChecklistBlock';
 import OfficeSectionCard from './OfficeSectionCard';
 import HandoverFooter from './HandoverFooter';
@@ -35,6 +36,7 @@ import { isLockError, parseSyncError, getPickupAuditDisplayLabel, getReturnAudit
 import { saveChecklistSnapshot, loadChecklistSnapshot } from '@/lib/offline/checklist-cache';
 
 import type {
+  ActivityLogEntry,
   ChecklistInstanceType,
   ChecklistItemType,
   DbIssueSeverity,
@@ -106,6 +108,9 @@ export default function ChecklistDetailClient({
   const evidencePhotosRef = useRef(evidencePhotos);
   evidencePhotosRef.current = evidencePhotos;
 
+  // ── Post-completion supplementary evidence (append-only activity log) ────────
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+
   const isCaravan = (instance as any).vehicles?.vehicle_category === 'caravan';
 
   // ── Return km validation ──────────────────────────────────────────────────────
@@ -159,6 +164,21 @@ export default function ChecklistDetailClient({
   useEffect(() => {
     saveChecklistSnapshot(instance, initialItems);
   }, [instance, initialItems]);
+
+  // Load the post-completion activity log (append-only additions made after this
+  // checklist was completed). Kept separate from the reopen-history fetch since it
+  // survives across reopen/re-complete cycles as a durable audit trail.
+  useEffect(() => {
+    supabase
+      .from('checklist_completion_activity')
+      .select('*')
+      .eq('checklist_instance_id', instance.id)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        if (data) setActivityLog(data as ActivityLogEntry[]);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instance.id]);
 
   // Offline fallback: if the SW served a stale shell and we have no live data, hydrate from IDB
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,6 +292,11 @@ export default function ChecklistDetailClient({
     instance.bookings?.status === 'completed';
   const isReadOnly = isChecklistLocked || localInstance.status === 'completed' || isOffline;
 
+  // Once completed, staff can still append new photos/notes — just not touch anything that
+  // existed before completion. Blocked by the same booking-completed lock and offline as
+  // everything else, since we can't safely queue an audited addition without connectivity.
+  const canAddSupplementaryEvidence = localInstance.status === 'completed' && !isChecklistLocked && !isOffline;
+
   const isPickupOrHandover =
     instance.checklist_type === 'pickup' || instance.checklist_type === 'handover';
 
@@ -374,10 +399,15 @@ export default function ChecklistDetailClient({
 
   // ── Hooks ────────────────────────────────────────────────────────────────────
 
-  const { userId, initialsByUserId, fetchInitialsForUsers } = useChecklistUser({
+  const { userId, companyId, initialsByUserId, fetchInitialsForUsers } = useChecklistUser({
     supabase,
     localItems,
   });
+
+  useEffect(() => {
+    const missing = [...new Set(activityLog.map((a) => a.created_by))].filter((id) => !(id in initialsByUserId));
+    if (missing.length > 0) fetchInitialsForUsers(missing);
+  }, [activityLog, initialsByUserId, fetchInitialsForUsers]);
 
   const {
     syncError,
@@ -802,6 +832,45 @@ export default function ChecklistDetailClient({
     const newMeta = { ...staffMetaRef.current, handover_evidence_photos: rep };
     staffMetaRef.current = newMeta;
     await supabase.from('bookings').update({ staff_metadata: newMeta }).eq('id', instance.booking_id);
+  };
+
+  // ── Post-completion supplementary evidence — append-only, never touches original evidence ──
+  const addSupplementaryNote = async (itemId: string | null, text: string) => {
+    if (!userId || !companyId) return;
+    const { data, error } = await supabase
+      .from('checklist_completion_activity')
+      .insert({
+        checklist_instance_id: instance.id,
+        item_id: itemId,
+        company_id: companyId,
+        kind: 'note',
+        note_text: text,
+        created_by: userId,
+      })
+      .select('*')
+      .single();
+    if (error) { setSyncError(parseSyncError(error, 'item_update_failed')); return; }
+    if (data) setActivityLog((prev) => [...prev, data as ActivityLogEntry]);
+  };
+
+  const addSupplementaryPhotos = async (group: 'general' | 'damage' | 'id', paths: string[]) => {
+    if (!userId || !companyId || paths.length === 0) return;
+    const { data, error } = await supabase
+      .from('checklist_completion_activity')
+      .insert(
+        paths.map((path) => ({
+          checklist_instance_id: instance.id,
+          item_id: null,
+          company_id: companyId,
+          kind: 'photo' as const,
+          photo_path: path,
+          photo_group: group,
+          created_by: userId,
+        }))
+      )
+      .select('*');
+    if (error) { setSyncError(parseSyncError(error, 'item_update_failed')); return; }
+    if (data) setActivityLog((prev) => [...prev, ...(data as ActivityLogEntry[])]);
   };
 
   // ── Compress an image file before upload (canvas-based, JPEG, max 1800px) ──────
@@ -1319,6 +1388,9 @@ export default function ChecklistDetailClient({
     issuePhotoUrls: (item.issue_photo_paths ?? []).map(
       (p) => supabase.storage.from('checklist-evidence').getPublicUrl(p).data.publicUrl
     ),
+    canAddSupplementaryNote: canAddSupplementaryEvidence,
+    supplementaryNotes: activityLog.filter((a) => a.kind === 'note' && a.item_id === item.id),
+    onAddSupplementaryNote: (text: string) => addSupplementaryNote(item.id, text),
   });
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -1355,14 +1427,22 @@ export default function ChecklistDetailClient({
         onDismissSyncError={() => setSyncError(null)}
         isCompleted={localInstance.status === 'completed'}
         canReopen={
-          instance.checklist_type === 'handover' &&
-          instance.bookings?.status === 'confirmed' &&
+          ((instance.checklist_type === 'handover' && instance.bookings?.status === 'confirmed') ||
+            (instance.checklist_type === 'return' && instance.bookings?.status === 'on_rent')) &&
           !isChecklistLocked
         }
         hasBooking={!!instance.booking_id}
         onReopen={() => setReopenModal(true)}
         onGoToBooking={handleGoToBooking}
         isOffline={isOffline}
+        isReturn={instance.checklist_type === 'return'}
+      />
+
+      <PostCompletionActivityLog
+        entries={activityLog}
+        initialsByUserId={initialsByUserId}
+        canAddNote={canAddSupplementaryEvidence}
+        onAddNote={(text) => addSupplementaryNote(null, text)}
       />
 
       {isPickupOrHandover ? (
@@ -1426,9 +1506,13 @@ export default function ChecklistDetailClient({
                     return { ...prev, [group]: next };
                   });
                   if (succeeded.length > 0) {
-                    const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
-                    const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
-                    await saveHandoverEvidencePhotos(newRep);
+                    if (localInstance.status === 'completed') {
+                      await addSupplementaryPhotos(group, succeeded.map((s) => s.path));
+                    } else {
+                      const norm = normalizeHep((staffMetaRef.current as any)?.handover_evidence_photos);
+                      const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
+                      await saveHandoverEvidencePhotos(newRep);
+                    }
                   }
                 }}
                 onRetry={(group, idx) => {
@@ -1461,7 +1545,8 @@ export default function ChecklistDetailClient({
                   const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
                   await saveHandoverEvidencePhotos(newRep);
                 }}
-                isLocked={isReadOnly}
+                canAdd={!isReadOnly || canAddSupplementaryEvidence}
+                canRemove={!isReadOnly}
                 highlight={validationHighlights.missingPhotos}
               />
               <AuditChecklistBlock
@@ -1674,9 +1759,13 @@ export default function ChecklistDetailClient({
                     return { ...prev, [group]: next };
                   });
                   if (succeeded.length > 0) {
-                    const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
-                    const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
-                    await saveReturnEvidencePhotos(newRep);
+                    if (localInstance.status === 'completed') {
+                      await addSupplementaryPhotos(group, succeeded.map((s) => s.path));
+                    } else {
+                      const norm = normalizeRep((staffMetaRef.current as any)?.return_evidence_photos);
+                      const newRep = { ...norm, [group]: [...norm[group as keyof typeof norm], ...succeeded.map((s) => ({ path: s.path, rotation: 0 }))] };
+                      await saveReturnEvidencePhotos(newRep);
+                    }
                   }
                 }}
                 onRetry={(group, idx) => {
@@ -1710,7 +1799,8 @@ export default function ChecklistDetailClient({
                   const newRep = { ...norm, [group]: norm[group as keyof typeof norm].map((e) => e.path === photo.path ? { ...e, rotation } : e) };
                   await saveReturnEvidencePhotos(newRep);
                 }}
-                isLocked={isReadOnly}
+                canAdd={!isReadOnly || canAddSupplementaryEvidence}
+                canRemove={!isReadOnly}
                 highlight={false}
                 variant="return"
               />
@@ -1860,8 +1950,8 @@ export default function ChecklistDetailClient({
         </>
       )}
 
-      {/* Reopen/revert history — handover only */}
-      {instance.checklist_type === 'handover' && (
+      {/* Reopen/revert history — handover and return only (the only types with a reopen UI) */}
+      {(instance.checklist_type === 'handover' || instance.checklist_type === 'return') && (
         <ReopenHistorySection
           reopenHistory={reopenHistory}
           expandedHistoryIds={expandedHistoryIds}
@@ -1879,6 +1969,7 @@ export default function ChecklistDetailClient({
         reopening={reopening}
         onConfirm={handleReopenConfirm}
         onCancel={() => { setReopenModal(false); setReopenReason(''); }}
+        isReturn={instance.checklist_type === 'return'}
       />
 
       <HandoverSafetyModal

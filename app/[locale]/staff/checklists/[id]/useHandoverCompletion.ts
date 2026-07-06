@@ -96,19 +96,22 @@ export function useHandoverCompletion({
       return;
     }
 
-    // Transition booking to on_rent and persist handed_over_extras in one write.
+    // Transition booking to on_rent and persist handed_over_extras as two separate
+    // writes. Once this handover is completed, migration 080's append-only trigger
+    // guards bookings.staff_metadata for this booking — if a concurrent session added
+    // an evidence photo since our last sync, staffMetaRef.current is stale and the
+    // metadata write can be rejected. Keeping status a separate statement means that
+    // rejection can never block the on_rent transition itself.
     // The DB trigger on bookings (migration 011) will recompute vehicle readiness.
     // Guarded by .eq('status', 'confirmed') so we never downgrade an already-on-rent booking.
     if (instance.checklist_type === 'handover' && instance.booking_id) {
       const handedOverIds = Object.entries(pickupExtrasCheckedRef.current)
         .filter(([, v]) => v)
         .map(([k]) => k);
+
       const { error: statusSyncError } = await supabase
         .from('bookings')
-        .update({
-          status: 'on_rent',
-          staff_metadata: { ...staffMetaRef.current, handed_over_extras: handedOverIds },
-        })
+        .update({ status: 'on_rent' })
         .eq('id', instance.booking_id)
         .eq('status', 'confirmed');
 
@@ -130,6 +133,23 @@ export function useHandoverCompletion({
         } catch {
           // sessionStorage unavailable (e.g. private mode) — failure already logged above.
         }
+      }
+
+      const { error: metaSyncError } = await supabase
+        .from('bookings')
+        .update({ staff_metadata: { ...staffMetaRef.current, handed_over_extras: handedOverIds } })
+        .eq('id', instance.booking_id);
+
+      if (metaSyncError) {
+        // Non-fatal: the booking status transition above already succeeded independently.
+        // Worst case, handed_over_extras isn't recorded this time — log for follow-up.
+        console.error(
+          '[CamperFlow] Handover extras sync failed for booking',
+          instance.booking_id,
+          '—',
+          metaSyncError.message,
+          metaSyncError.code,
+        );
       }
     }
 

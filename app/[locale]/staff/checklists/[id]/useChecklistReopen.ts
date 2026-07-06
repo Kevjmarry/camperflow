@@ -38,7 +38,7 @@ export function useChecklistReopen({
   const [expandedHistoryIds, setExpandedHistoryIds] = useState<Record<string, boolean>>({});
 
   const fetchReopenHistory = useCallback(async () => {
-    if (instance.checklist_type !== 'handover') return;
+    if (instance.checklist_type !== 'handover' && instance.checklist_type !== 'return') return;
     const { data } = await supabase
       .from('checklist_reopen_history')
       .select('id, reopened_at, reason, snapshot')
@@ -122,6 +122,10 @@ export function useChecklistReopen({
       office_contract_signed: false,
       handover_keys_given: false,
       handover_documents_given: false,
+      return_keys_received: false,
+      return_documents_received: false,
+      return_contract_closed: false,
+      return_deposit_status: null,
     };
     const { data: instanceData, error: instanceError } = await supabase
       .from('checklist_instances')
@@ -225,6 +229,10 @@ export function useChecklistReopen({
       office_contract_signed: false,
       handover_keys_given: false,
       handover_documents_given: false,
+      return_keys_received: false,
+      return_documents_received: false,
+      return_contract_closed: false,
+      return_deposit_status: null,
     }));
     setLocalItems((prev) =>
       prev.map((it) => ({

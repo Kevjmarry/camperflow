@@ -13,7 +13,10 @@ type EvidenceBlockProps = {
   onRemove: (group: Group, index: number) => void;
   onRotate?: (group: Group, index: number, rotation: number) => void;
   onRetry?: (group: Group, index: number) => void;
-  isLocked: boolean;
+  /** Whether new photos can be added. True even when the checklist is completed — additions are append-only. */
+  canAdd: boolean;
+  /** Whether existing photos can be removed. False once the checklist is completed, even if canAdd is true. */
+  canRemove: boolean;
   highlight?: boolean;
   title?: string;
   variant?: 'return';
@@ -306,7 +309,7 @@ function PhotoLightbox({
 // EvidenceBlock
 // ---------------------------------------------------------------------------
 
-export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotate, onRetry, isLocked, highlight, title, variant }: EvidenceBlockProps) {
+export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotate, onRetry, canAdd, canRemove, highlight, title, variant }: EvidenceBlockProps) {
   const t = useTranslations('checklistDetail');
   const totalPhotos = evidencePhotos.general.length + evidencePhotos.damage.length + evidencePhotos.id.length;
   const [openChooser, setOpenChooser] = useState<Group | null>(null);
@@ -532,7 +535,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                           </button>
                         </div>
                       )}
-                      {!isLocked && !isUploading && (
+                      {canRemove && !isUploading && (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onRemove(group, idx); }}
@@ -560,7 +563,7 @@ export default function EvidenceBlock({ evidencePhotos, onAdd, onRemove, onRotat
                   );
                 })}
 
-                {!isLocked && (
+                {canAdd && (
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     {/* Hidden camera input (mobile: opens camera) */}
                     <input

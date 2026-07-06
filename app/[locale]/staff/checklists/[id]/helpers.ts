@@ -116,22 +116,19 @@ export function parseSyncError(error: any, kind: SyncError['kind']): SyncError {
   };
 }
 
+/**
+ * Matches the P0001 exceptions raised by the completion-lock triggers in
+ * migration 080 (checklist_instances / checklist_instance_items / bookings
+ * staff_metadata) plus the handover-before-return guard from migration 007.
+ */
 export function isLockError(error: any): boolean {
   if (!(error?.code === 'P0001') || typeof error?.message !== 'string') return false;
   const msg: string = error.message;
   return (
-    msg.includes('Cannot modify handover/return checklists after booking is completed.') ||
-    (msg.includes('Cannot edit a') && (msg.includes('handover') || msg.includes('return')) && msg.includes('after')) ||
-    (msg.includes('Cannot edit') && msg.includes('checklist item') && msg.includes('must be completed first')) ||
-    (msg.includes('Cannot') && (msg.includes('before pickup') || msg.includes('before handover')))
-  );
-}
-
-export function isReturnAfterCompletionLockError(error: any): boolean {
-  return (
-    error?.code === 'P0001' &&
-    typeof error?.message === 'string' &&
-    error.message.includes('Cannot edit a return checklist after the booking has been completed.')
+    msg.includes('Cannot modify checklist after completion.') ||
+    msg.includes('Cannot modify checklist item after completion.') ||
+    msg.includes('Cannot remove existing evidence photos after checklist completion.') ||
+    msg.includes('Cannot complete return checklist: handover must be completed first')
   );
 }
 

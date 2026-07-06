@@ -15,6 +15,7 @@ type ChecklistBannersProps = {
   onReopen: () => void;
   onGoToBooking: () => void;
   isOffline?: boolean;
+  isReturn?: boolean;
 };
 
 export default function ChecklistBanners({
@@ -29,6 +30,7 @@ export default function ChecklistBanners({
   onReopen,
   onGoToBooking,
   isOffline,
+  isReturn,
 }: ChecklistBannersProps) {
   const t = useTranslations('checklistDetail');
 
@@ -206,7 +208,7 @@ export default function ChecklistBanners({
                   cursor: 'pointer',
                 }}
               >
-                {t('reopenButton')}
+                {t(isReturn ? 'reopenButtonReturn' : 'reopenButton')}
               </button>
             )}
             {hasBooking && (

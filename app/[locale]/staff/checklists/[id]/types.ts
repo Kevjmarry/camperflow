@@ -117,6 +117,18 @@ export type ReopenHistoryEntry = {
   };
 };
 
+/** A post-completion addition — row from checklist_completion_activity. Immutable once created. */
+export type ActivityLogEntry = {
+  id: string;
+  item_id: string | null;
+  kind: 'note' | 'photo';
+  note_text: string | null;
+  photo_path: string | null;
+  photo_group: 'general' | 'damage' | 'id' | null;
+  created_by: string;
+  created_at: string;
+};
+
 export type HandoverField =
   | 'office_contract_signed'
   | 'office_id_verified'

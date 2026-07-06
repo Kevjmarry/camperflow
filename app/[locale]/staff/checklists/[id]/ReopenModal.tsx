@@ -9,6 +9,7 @@ type ReopenModalProps = {
   reopening: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  isReturn?: boolean;
 };
 
 export default function ReopenModal({
@@ -18,6 +19,7 @@ export default function ReopenModal({
   reopening,
   onConfirm,
   onCancel,
+  isReturn,
 }: ReopenModalProps) {
   const t = useTranslations('checklistDetail');
 
@@ -50,7 +52,7 @@ export default function ReopenModal({
       >
         <div>
           <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'rgb(var(--text))', margin: '0 0 6px' }}>
-            {t('reopenModalTitle')}
+            {t(isReturn ? 'reopenModalTitleReturn' : 'reopenModalTitle')}
           </h2>
           <p style={{ fontSize: '14px', color: 'rgb(var(--muted))', margin: 0 }}>
             {t('reopenModalBody')}

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import type { MutableRefObject, Dispatch, SetStateAction } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChecklistItemType, ChecklistInstanceType, SyncError } from './types';
-import { computeInstanceUpdate, parseSyncError, isLockError, isReturnAfterCompletionLockError } from './helpers';
+import { computeInstanceUpdate, parseSyncError, isLockError } from './helpers';
 import type { InstanceStatusSnapshot } from './helpers';
 
 type SyncResult = { ok: true } | { locked: true } | { error: SyncError };
@@ -59,9 +59,6 @@ export function useChecklistStatusSync({
       const { error } = await supabase.from('checklist_instances').update(update).eq('id', instanceId);
 
       if (error) {
-        if (isReturnAfterCompletionLockError(error) && localInstanceRef.current.status === 'completed') {
-          return { ok: true };
-        }
         if (isLockError(error)) {
           setLocalItems(prevItems);
           setLocalInstance(prevInstance);

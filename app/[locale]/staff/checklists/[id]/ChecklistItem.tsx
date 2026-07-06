@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { EvidencePhoto } from './types';
+import type { ActivityLogEntry, EvidencePhoto } from './types';
 
 type DbIssueSeverity = 'low' | 'medium' | 'high' | 'critical';
 type IssueSeverity = 'attention' | 'urgent';
@@ -73,6 +74,11 @@ type ChecklistItemProps = {
   onNotesChange: (value: string) => void;
   onNotesBlur: (value: string) => void;
   issuePhotoUrls: string[];
+  /** True once the checklist is completed and this item is eligible to receive append-only supplementary notes. */
+  canAddSupplementaryNote?: boolean;
+  /** Post-completion notes added for this item — immutable once created. */
+  supplementaryNotes?: ActivityLogEntry[];
+  onAddSupplementaryNote?: (text: string) => void;
 };
 
 export default function ChecklistItem({
@@ -97,8 +103,21 @@ export default function ChecklistItem({
   onNotesChange,
   onNotesBlur,
   issuePhotoUrls,
+  canAddSupplementaryNote,
+  supplementaryNotes,
+  onAddSupplementaryNote,
 }: ChecklistItemProps) {
   const t = useTranslations('checklistDetail');
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+
+  const submitSupplementaryNote = () => {
+    const trimmed = noteDraft.trim();
+    if (!trimmed) return;
+    onAddSupplementaryNote?.(trimmed);
+    setNoteDraft('');
+    setIsAddingNote(false);
+  };
 
   const checkerInitials =
     item.checked && item.checked_by
@@ -317,6 +336,27 @@ export default function ChecklistItem({
                 )}
               </div>
             )}
+
+            {/* Locked but still eligible for append-only additions */}
+            {isChecklistLocked && canAddSupplementaryNote && !isAddingNote && (
+              <button
+                type="button"
+                onClick={() => setIsAddingNote(true)}
+                style={{
+                  fontSize: '12px',
+                  color: 'rgb(var(--brand))',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                  textDecoration: 'underline',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {t('addNote')}
+              </button>
+            )}
           </div>
 
           {/* Notes: read-only preview when closed */}
@@ -368,6 +408,77 @@ export default function ChecklistItem({
               }}
             >
               {item.notes}
+            </div>
+          )}
+
+          {/* Post-completion supplementary notes — immutable once added, distinct from the original note above */}
+          {supplementaryNotes && supplementaryNotes.length > 0 && (
+            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {supplementaryNotes.map((entry) => (
+                <div
+                  key={entry.id}
+                  style={{
+                    fontSize: '12px',
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid rgb(var(--border))',
+                    backgroundColor: 'rgba(var(--brand), 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgb(var(--muted))', marginBottom: '3px' }}>
+                    <span style={{ fontWeight: 600 }}>{t('addedAfterCompletion')}</span>
+                    <span>·</span>
+                    <span>{new Date(entry.created_at).toLocaleString()}</span>
+                    {initialsByUserId[entry.created_by] && (
+                      <>
+                        <span>·</span>
+                        <span>{initialsByUserId[entry.created_by]}</span>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ color: 'rgb(var(--text))', lineHeight: 1.4 }}>{entry.note_text}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isChecklistLocked && isAddingNote && (
+            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <textarea
+                placeholder={t('notesPlaceholder')}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                rows={2}
+                className="input"
+                autoFocus
+                style={{ width: '100%', resize: 'vertical', fontSize: '14px', fontFamily: 'inherit' }}
+              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={submitSupplementaryNote}
+                  disabled={!noteDraft.trim()}
+                  className="btn btn-primary"
+                  style={{ padding: '4px 12px', fontSize: '12px' }}
+                >
+                  {t('saveNote')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingNote(false); setNoteDraft(''); }}
+                  style={{
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    border: '1px solid rgb(var(--border))',
+                    backgroundColor: 'rgb(var(--surface))',
+                    color: 'rgb(var(--muted))',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('cancel')}
+                </button>
+              </div>
             </div>
           )}
 
