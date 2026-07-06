@@ -45,6 +45,15 @@ interface GuestBooking {
     handover_evidence_photos?: PhotoPaths;
     return_evidence_photos?: PhotoPaths;
   } | null;
+
+  supplementary_evidence_photos?: SupplementaryPhoto[] | null;
+}
+
+interface SupplementaryPhoto {
+  checklist_type: string;
+  photo_group: "general" | "damage" | "id";
+  photo_path: string;
+  created_at: string;
 }
 
 interface CompanySettings {
@@ -184,27 +193,36 @@ export default async function GuestBookingPage({ params }: PageProps) {
   const toUrls = (items: PhotoItem[] | undefined) =>
     (items ?? []).flatMap((item) => (typeof item?.path === "string" ? [toPublicUrl(item.path)] : []));
 
+  // Supplementary photos added by staff after checklist completion (see
+  // checklist_completion_activity, migration 080/081) — merged into the same
+  // handover/return × general/damage groups as the original evidence photos.
+  const supplementaryPhotos = booking.supplementary_evidence_photos ?? [];
+  const supplementaryUrls = (checklistType: string, photoGroup: "general" | "damage") =>
+    supplementaryPhotos
+      .filter((p) => p.checklist_type === checklistType && p.photo_group === photoGroup)
+      .map((p) => toPublicUrl(p.photo_path));
+
   type EvidenceGroup = { labelA: string; labelB: string; urls: string[] };
   const evidenceGroups: EvidenceGroup[] = [
     {
       labelA: t("evidenceHandover"),
       labelB: t("evidenceGroupGeneral"),
-      urls: toUrls(handoverMeta.general),
+      urls: [...toUrls(handoverMeta.general), ...supplementaryUrls("handover", "general")],
     },
     {
       labelA: t("evidenceHandover"),
       labelB: t("evidenceGroupDamage"),
-      urls: toUrls(handoverMeta.damage),
+      urls: [...toUrls(handoverMeta.damage), ...supplementaryUrls("handover", "damage")],
     },
     {
       labelA: t("evidenceReturn"),
       labelB: t("evidenceGroupGeneral"),
-      urls: toUrls(returnMeta.general),
+      urls: [...toUrls(returnMeta.general), ...supplementaryUrls("return", "general")],
     },
     {
       labelA: t("evidenceReturn"),
       labelB: t("evidenceGroupDamage"),
-      urls: toUrls(returnMeta.damage),
+      urls: [...toUrls(returnMeta.damage), ...supplementaryUrls("return", "damage")],
     },
   ].filter((g) => g.urls.length > 0);
 
